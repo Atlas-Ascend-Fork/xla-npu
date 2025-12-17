@@ -5,14 +5,15 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "pjrt_c_api_npu_internal.h"
-#include "xla/pjrt/c/pjrt_c_api_wrapper_impl.h"
-#include "xla/pjrt/pjrt_npu/npu/npu_client.h"
 #include "xla/pjrt/pjrt_client.h"
+#include "xla/pjrt/c/pjrt_c_api_wrapper_impl.h"
 #include "xla/pjrt/c/pjrt_c_api_ffi_extension.h"
 #include "xla/pjrt/c/pjrt_c_api_ffi_internal.h"
 #include "xla/pjrt/c/pjrt_c_api_phase_compile_extension.h"
 #include "xla/pjrt/c/pjrt_c_api_phase_compile_internal.h"
+
+#include "pjrt_c_api_npu_internal.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
 
 namespace pjrt {
 namespace npu_plugin {

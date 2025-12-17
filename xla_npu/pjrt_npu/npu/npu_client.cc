@@ -1,6 +1,7 @@
-#include "npu_client.h"
-#include "xla/pjrt/pjrt_npu/npu/npu_device.h"
-#include "xla/pjrt/pjrt_npu/host_memory_spaces.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
+#include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
+
 namespace xla {
 // Returns the CPU devices from the given PjRtCpuDevices.
 // Precondition: `devices` doesn't contain nullptr.

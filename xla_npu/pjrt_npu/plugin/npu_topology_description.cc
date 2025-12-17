@@ -1,4 +1,4 @@
-#include "xla/pjrt/pjrt_npu/plugin/npu_topology_description.h"
+#include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 
 #include <cstdint>
 #include <memory>
@@ -17,11 +17,12 @@
 #include "xla/pjrt/pjrt_compiler.h"
 #include "xla/pjrt/pjrt_device_description.h"
 #include "xla/pjrt/pjrt_device_dimensions.h"
-#include "xla/pjrt/pjrt_npu/plugin/npu_device_description.h"
 // #include "xla/pjrt/plugin/xla_cpu/cpu_topology.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/tsl/lib/strings/proto_serialization.h"
+
+#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 
 namespace xla {
 std::vector<std::unique_ptr<const PjRtDeviceDescription>> NpuTopologyDescription::DeviceDescriptions() const

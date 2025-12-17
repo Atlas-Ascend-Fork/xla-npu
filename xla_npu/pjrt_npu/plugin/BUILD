@@ -13,10 +13,9 @@ cc_library(
     srcs = ["npu_device_description.cc"],
     hdrs = ["npu_device_description.h"],
     deps = [
-        # ":cpu_topology",
         "//xla/pjrt:pjrt_common",
         "//xla/pjrt:pjrt_device_description",
-        "//xla/pjrt/pjrt_npu:pjrt_common",
+        "//xla/xla_npu/pjrt_npu:pjrt_common",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
@@ -29,7 +28,6 @@ cc_library(
     hdrs = ["npu_topology_description.h"],
     deps = [
         ":npu_device_description",
-        # ":cpu_topology",
         "//xla:shape_util",
         "//xla/pjrt:pjrt_client",
         "//xla/pjrt:pjrt_common",

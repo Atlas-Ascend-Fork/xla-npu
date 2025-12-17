@@ -13,8 +13,9 @@
 // #include "xla/pjrt/cpu/execution_stream_event_map.h"
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
-#include "xla/pjrt/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/pjrt/semaphore.h"
+
+#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 
 namespace xla {
 class PjRtNpuDevice final : public PjRtDevice {

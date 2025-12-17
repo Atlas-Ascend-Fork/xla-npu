@@ -31,7 +31,7 @@ cc_library(
     hdrs = ["pjrt_c_api_npu_internal.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//xla/pjrt/pjrt_npu/npu:npu_client",
+        "//xla/xla_npu/pjrt_npu/npu:npu_client",
         
         "//xla/pjrt/c:pjrt_c_api_ffi_extension_hdrs",
         "//xla/pjrt/c:pjrt_c_api_ffi_internal",
