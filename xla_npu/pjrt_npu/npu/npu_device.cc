@@ -11,7 +11,8 @@
 // #include "xla/pjrt/cpu/execution_stream_event_map.h"
 #include "xla/pjrt/host_memory_spaces.h"
 #include "xla/pjrt/pjrt_client.h"
-#include "npu_device.h"
+
+#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 
 namespace xla {
 

@@ -14,7 +14,6 @@ package(
 cc_library(
     name = "pjrt_common",
     hdrs = ["pjrt_common.h"],
-    # visibility = internal_visibility([":friends"]),
     deps = [
         "//xla/pjrt/proto:pjrt_value_type_proto_cc",
         "//xla/tsl/lib/gtl:int_type",
@@ -26,7 +25,6 @@ cc_library(
     name = "host_memory_spaces",
     srcs = ["host_memory_spaces.cc"],
     hdrs = ["host_memory_spaces.h"],
-    # visibility = internal_visibility([":friends"]),
     deps = [
         "//xla/pjrt:pjrt_client",
         "@com_google_absl//absl/log:check",
