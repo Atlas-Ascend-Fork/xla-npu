@@ -17,6 +17,16 @@ git checkout main  # 或特定commit id指定的版本
 ### Load Cmake Project
 
 ### Build Project
+#### 1. 使用IDE构建
+#### 2. 命令行构建
+~~~
+cd xla_npu
+cmake -G Ninja .. \
+    -DLLVM_BUILD_DIR="用户编译构建llvm后的构建目录" \
+    -DLLVM_SOURCE_DIR="用户下载的llvm的源码目录"
+    
+cmake --build . --target demo
+~~~
 
 ### Run Demo
 
