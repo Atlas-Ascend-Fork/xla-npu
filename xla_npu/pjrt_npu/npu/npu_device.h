@@ -1,5 +1,5 @@
-#ifndef NPU_DEVICE_H
-#define NPU_DEVICE_H
+#ifndef NPU_DEVICE_H_
+#define NPU_DEVICE_H_
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
@@ -92,4 +92,4 @@ private:
 };
 
 }  // namespace xla
-#endif
+#endif //NPU_DEVICE_H_

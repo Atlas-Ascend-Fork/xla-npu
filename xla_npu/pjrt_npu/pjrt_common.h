@@ -1,5 +1,5 @@
-#ifndef PJRT_COMMON_H
-#define PJRT_COMMON_H
+#ifndef PJRT_NPU_PJRT_COMMON_H_
+#define PJRT_NPU_PJRT_COMMON_H_
 #include "xla/pjrt/pjrt_common.h"
 
 namespace xla {
@@ -10,4 +10,4 @@ inline const char* NpuName()
     return kNpuPlatformName;
 }
 }
-#endif  //PJRT_COMMON_H
+#endif  //PJRT_NPU_PJRT_COMMON_H_
