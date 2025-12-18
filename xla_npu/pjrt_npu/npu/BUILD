@@ -44,6 +44,7 @@ cc_library(
         ":npu_device",
         "//xla/xla_npu/pjrt_npu:host_memory_spaces",
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
+        "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla:array",
         "//xla:debug_options_flags",

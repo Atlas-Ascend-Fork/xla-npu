@@ -1,5 +1,5 @@
-#ifndef NPU_TOPOLOGY_DESCRIPTION_H
-#define NPU_TOPOLOGY_DESCRIPTION_H
+#ifndef NPU_TOPOLOGY_DESCRIPTION_H_
+#define NPU_TOPOLOGY_DESCRIPTION_H_
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -90,4 +90,4 @@ private:
     absl::flat_hash_map<std::string, PjRtDeviceAttribute> attributes_ = {};
 };
 }  // namespace xla
-#endif  //NPU_TOPOLOGY_DESCRIPTION_H
+#endif  //NPU_TOPOLOGY_DESCRIPTION_H_

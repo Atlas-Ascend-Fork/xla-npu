@@ -1,5 +1,6 @@
-#ifndef NPU_CLIENT_H
-#define NPU_CLIENT_H
+#ifndef NPU_CLIENT_H_
+#define NPU_CLIENT_H_
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -19,6 +20,7 @@
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
 
@@ -35,6 +37,7 @@ public:
 
     int device_count() const override
     {
+        npu::AclGetErrMsg(); // only for debug
         return devices_.size();
     }
 
@@ -103,4 +106,4 @@ inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_
   return std::unique_ptr<PjRtClient>(new PjRtNpuClient(process_index, std::move(devices)));
 }
 }  // namespace xla
-#endif  //NPU_CLIENT_H
+#endif  //NPU_CLIENT_H_

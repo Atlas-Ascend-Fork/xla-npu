@@ -1,5 +1,5 @@
-#ifndef HOST_MEMORY_SPACES_H
-#define HOST_MEMORY_SPACES_H
+#ifndef PJRT_NPU_HOST_MEMORY_SPACES_H_
+#define PJRT_NPU_HOST_MEMORY_SPACES_H_
 #include "absl/strings/string_view.h"
 #include "xla/pjrt/pjrt_client.h"
 
@@ -53,4 +53,4 @@ private:
     std::string to_string_;
 };
 }  // namespace xla
-#endif  //HOST_MEMORY_SPACES_H
+#endif  //PJRT_NPU_HOST_MEMORY_SPACES_H_

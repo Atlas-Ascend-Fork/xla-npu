@@ -1,5 +1,5 @@
-#ifndef NPU_DEVICE_DESCRIPTION_H
-#define NPU_DEVICE_DESCRIPTION_H
+#ifndef NPU_DEVICE_DESCRIPTION_H_
+#define NPU_DEVICE_DESCRIPTION_H_
 
 #include <string>
 
@@ -50,4 +50,4 @@ private:
     absl::flat_hash_map<std::string, PjRtDeviceAttribute> attributes_ = {};
 };
 }  // namespace xla
-#endif  //NPU_DEVICE_DESCRIPTION_H
+#endif  //NPU_DEVICE_DESCRIPTION_H_
