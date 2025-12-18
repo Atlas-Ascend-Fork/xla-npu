@@ -11,17 +11,17 @@ else()
 endif()
 
 # 包含头文件和源文件目录
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/Mair)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/Mair/IR)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transforms)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo)
 include_directories(${LLVM_SOURCE_DIR}/llvm/include)
 include_directories(${LLVM_SOURCE_DIR}/mlir/include)
 include_directories(${LLVM_BUILD_DIR}/include)
 include_directories(${LLVM_BUILD_DIR}/tools/mlir/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/ir)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/transforms)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/stablehlo)
 
 # 查找 MLIR（会自动关联查找 LLVM，无需单独 find_package(LLVM)）
 find_package(MLIR REQUIRED CONFIG)
