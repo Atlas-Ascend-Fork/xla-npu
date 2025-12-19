@@ -14,15 +14,34 @@
 
 #include "pjrt_c_api_npu_internal.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace pjrt {
 namespace npu_plugin {
 PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args)
 {
     std::cout << "NPU PJRT_CLIENT_CREATE" << std::endl;
-    int device_id = 1;
+    int device_id = 0;
     int process_index = 0;
     std::vector<std::unique_ptr<xla::PjRtNpuDevice>> devices;
+    
+    aclError acl_init = npu::AclInit(nullptr);
+    if (acl_init != ACL_SUCCESS) {
+        return new PJRT_Error{absl::UnavailableError("ACL init failed.")};
+    }
+    uint32_t device_count = -1;
+    aclError acl_device_count = npu::AclrtGetDeviceCount(&device_count);
+    if (acl_device_count != ACL_SUCCESS) {
+        return new PJRT_Error{absl::UnavailableError("ACL get device count failed.")};
+    }
+    if (device_count <= 0) {
+        return new PJRT_Error{absl::UnavailableError("Threre is no valid device.")};
+    }
+    aclError acl_set_device = npu::AclrtSetDevice(device_id);
+    if (acl_set_device != ACL_SUCCESS) {
+        return new PJRT_Error{absl::UnavailableError("ACL set device failed.")};
+    }
+    
     devices.push_back(std::make_unique<xla::PjRtNpuDevice>(process_index, device_id));
     auto client = xla::GetPjRtNpuClient(process_index, std::move(devices));
     args->client = CreateWrapperClient(std::move(client.value()));
