@@ -92,4 +92,18 @@ absl::Span<PjRtMemorySpace* const> PjRtNpuClient::memory_spaces() const
 {
     return memory_spaces_;
 }
+
+absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
+PjRtCpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
+    std::string result;
+    llvm:raw_string_ostream os(result);
+    module.print(os);
+    std::cout << os.str << std::endl;
+    return absl::UnimplementedError("Compile with MLIR Module is not supported.");
+}
+
+absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
+PjRtCpuClient::CompileAndLoad(const XlaComputation& computation, CompileOptions options) {
+    return absl::UnimplementedError("CompileAndLoad with XlaComputation is not supported.");
+}
 }  // namespace xla
