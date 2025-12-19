@@ -81,6 +81,13 @@ public:
     {
         return &topology_;
     }
+    
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        const XlaComputation& computation, CompileOptions options) override;
+
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        mlir::ModuleOp module, CompileOptions options) override;
+
 
 private:
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
