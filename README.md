@@ -51,6 +51,6 @@ module {
 }
 ~~~
 
-## Pjrt Npu Usage Guid
+## Pjrt Npu Usage Guide
 ### Build And Debug
 参考issue中的指导文档 https://gitcode.com/cann/xla-npu/issues/1?ref=&did=3642491#tid-3642491, 后续会将步骤固化到README中
