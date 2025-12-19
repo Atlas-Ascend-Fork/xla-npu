@@ -14,6 +14,7 @@
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
+#include "xla/pjrt/common_pjrt_client.h"
 #include "tsl/platform/fingerprint.h"
 
 #include "xla/xla_npu/pjrt_npu/pjrt_common.h"
@@ -24,7 +25,7 @@
 
 namespace xla {
 
-class PjRtNpuClient final : public PjRtClient {
+class PjRtNpuClient final : public CommonPjRtClient {
 public:
     PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
 
