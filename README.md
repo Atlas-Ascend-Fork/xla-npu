@@ -1,24 +1,25 @@
 # xla-npu
 
 ## Dialect Converter Quick Start
-### Set CMake Options
+### 采用cmake构建
+#### Set CMake Options
 ~~~
 -DLLVM_BUILD_DIR="用户编译构建llvm后的构建目录"
 -DLLVM_SOURCE_DIR="用户下载的llvm的源码目录"
 ~~~
 
-### Add git submodule
+#### Add git submodule
 ~~~
 git submodule add https://github.com/openxla/stablehlo.git xla_npu/mair/third_party/stablehlo
 cd xla_npu/mair/third_party/stablehlo
 git checkout main  # 或特定commit id指定的版本
 ~~~
 
-### Load Cmake Project
+#### Load Cmake Project
 
-### Build Project
-#### 1. 使用IDE构建
-#### 2. 命令行构建
+#### Build Project
+##### 1. 使用IDE构建
+##### 2. 命令行构建
 ~~~
 cd xla_npu
 cmake -G Ninja .. \
@@ -26,6 +27,13 @@ cmake -G Ninja .. \
     -DLLVM_SOURCE_DIR="用户下载的llvm的源码目录"
     
 cmake --build . --target demo
+~~~
+
+### 采用bazel构建
+#### 1. 参考“xla-npu中pjrt-npu构建流程”此issue搭建bazel构建环境，拉取xla代码到本地，将xla-npu仓中的xla_npu目录软链接到openxla代码的xla目录下
+#### 2. 执行如下命令构建demo
+~~~
+bazel build --incompatible_disallow_empty_glob=false --remote_download_minimal --spawn_strategy=local --verbose_failures --copt=-w //xla/xla_npu/mair:demo
 ~~~
 
 ### Run Demo
