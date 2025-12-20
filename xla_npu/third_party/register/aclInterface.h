@@ -9,10 +9,13 @@ namespace npu {
   This API is used to get error msg
   */
 const char *AclGetErrMsg();
-const aclError AclInit(const char *configPath);
-const aclError AclrtGetDeviceCount(uint32_t *count);
-const aclError AclrtGetDevice(uint32_t *device_id);
-const aclError AclrtSetDevice(uint32_t device_id);
+aclError AclInit(const char *configPath);
+aclError AclrtGetDeviceCount(uint32_t *count);
+aclError AclrtGetDevice(uint32_t *device_id);
+aclError AclrtSetDevice(uint32_t device_id);
+aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy);
+aclError AclrtFree(void *devPtr);
+
 } // namespace npu
 
 #endif // REGISTER_ACLINTERFACE_H_

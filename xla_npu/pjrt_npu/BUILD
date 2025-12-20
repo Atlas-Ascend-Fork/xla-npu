@@ -27,6 +27,7 @@ cc_library(
     hdrs = ["host_memory_spaces.h"],
     deps = [
         "//xla/pjrt:pjrt_client",
+        
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/strings:string_view",

@@ -26,15 +26,14 @@ void *FunctionLoader::Get(const std::string &name)
     if (this->handle == nullptr) {
         auto handle = dlopen(this->fileName.c_str(), this->flags);
         if (handle == nullptr) {
-            // AT_ERROR(dlerror());
-            return nullptr;
+            throw std::runtime_error(dlerror());
         }
         this->handle = handle;
     }
 
     auto itr = registry.find(name);
     if (itr == registry.end()) {
-        // AT_ERROR("function(", name, ") is not registered.");
+        throw std::runtime_error("function(" + name + ") is not registered.");
         return nullptr;
     }
 
@@ -66,7 +65,7 @@ void FunctionRegister::Register(const std::string &name, const std::string &func
 {
     auto itr = registry.find(name);
     if (itr == registry.end()) {
-        // AT_ERROR(name, " library should register first.");
+        throw std::runtime_error(name + " library should register first.");
         return;
     }
     itr->second->Set(funcName);
