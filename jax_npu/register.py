@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import jax
 import jax.numpy as jnp
 import warnings
@@ -7,7 +8,7 @@ import sys
 
 # Note: No need for ctypes.CDLL() anymore, JAX loads the library automatically with the correct ENV var
 # 1. Define the platform name and library path
-PLATFORM_NAME = 'NPU' # Use a simple name without underscores for safety
+PLATFORM_NAME = 'npu' # Use a simple name without underscores for safety
 LIBRARY_PATH = os.path.abspath("pjrt_c_api_npu_plugin.so")
 
 # 2. Set the mandatory environment variable
@@ -22,6 +23,10 @@ os.environ['JAX_PLATFORMS'] = PLATFORM_NAME
 import jax.lib.xla_client
 print(f"JAX Rerunning client discovery for platform: {PLATFORM_NAME}")
 
+# Debug: Test npu device memory malloc
+np_arr = np.array([1.0, 2.0, 3.0], dtype=np.float32, copy=True, order='K')
+npu_device = jax.devices("npu")[0]
+npu_arr = jax.device_put(np_arr, device=npu_device)
 
 # --- Run a simple JAX program ---
 try:

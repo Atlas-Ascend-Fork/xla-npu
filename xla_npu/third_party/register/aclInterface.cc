@@ -16,6 +16,8 @@ LOAD_FUNCTION(aclInit)
 LOAD_FUNCTION(aclrtGetDeviceCount)
 LOAD_FUNCTION(aclrtGetDevice)
 LOAD_FUNCTION(aclrtSetDevice)
+LOAD_FUNCTION(aclrtMalloc)
+LOAD_FUNCTION(aclrtFree)
 
 const char *AclGetErrMsg()
 {
@@ -30,7 +32,7 @@ const char *AclGetErrMsg()
     return "";
 }
 
-const aclError AclInit(const char *configPath)
+aclError AclInit(const char *configPath)
 {
     typedef aclError (*AclInit)(const char*);
     static AclInit func = nullptr;
@@ -40,7 +42,7 @@ const aclError AclInit(const char *configPath)
     return func(configPath);
 }
 
-const aclError AclrtGetDeviceCount(uint32_t *count) 
+aclError AclrtGetDeviceCount(uint32_t *count) 
 {
     typedef aclError (*AclrtGetDeviceCount)(uint32_t*);
     static AclrtGetDeviceCount func = nullptr;
@@ -50,7 +52,7 @@ const aclError AclrtGetDeviceCount(uint32_t *count)
     return func(count);
 }
 
-const aclError AclrtGetDevice(uint32_t *device_id)
+aclError AclrtGetDevice(uint32_t *device_id)
 {
     typedef aclError (*AclrtGetDevice)(uint32_t*);
     static AclrtGetDevice func = nullptr;
@@ -60,7 +62,7 @@ const aclError AclrtGetDevice(uint32_t *device_id)
     return func(device_id);
 }
 
-const aclError AclrtSetDevice(uint32_t device_id)
+aclError AclrtSetDevice(uint32_t device_id)
 {
     typedef aclError (*AclrtSetDevice)(uint32_t);
     static AclrtSetDevice func = nullptr;
@@ -68,6 +70,32 @@ const aclError AclrtSetDevice(uint32_t device_id)
         func = (AclrtSetDevice) GET_FUNC(aclrtSetDevice);
     }
     return func(device_id);
+}
+
+aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy)
+{
+    typedef aclError (*aclrtMallocFunc)(void **, size_t, aclrtMemMallocPolicy);
+    static aclrtMallocFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtMallocFunc)GET_FUNC(aclrtMalloc);
+    }
+    if (func != nullptr) {
+        return func(devPtr, size, policy);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
+}
+
+aclError AclrtFree(void *devPtr)
+{
+    typedef aclError (*aclrtFreeFunc)(void *);
+    static aclrtFreeFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtFreeFunc)GET_FUNC(aclrtFree);
+    }
+    if (func != nullptr) {
+        return func(devPtr);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
 } // namespace npu

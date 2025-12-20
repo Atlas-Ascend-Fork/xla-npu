@@ -1,6 +1,9 @@
-#include "host_memory_spaces.h"
 #include "tsl/platform/fingerprint.h"
+
+#include "host_memory_spaces.h"
+
 namespace xla {
+
 NpuDeviceMemorySpace::NpuDeviceMemorySpace(int id, PjRtDevice* device) : id_(id), device_(device)
 {
     DCHECK(device_ != nullptr && device_->client() != nullptr);
@@ -14,4 +17,5 @@ const int NpuDeviceMemorySpace::kKindId = []() {
     uint32_t kind_id = tsl::Fingerprint32(NpuDeviceMemorySpace::kKind);
     return static_cast<int>(kind_id);
 }();
+
 }  // namespace xla
