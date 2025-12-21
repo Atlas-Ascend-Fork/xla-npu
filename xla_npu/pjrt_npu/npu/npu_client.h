@@ -14,6 +14,8 @@
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
+#include "xla/pjrt/transpose.h"
+#include "xla/pjrt/common_pjrt_client.h"
 #include "tsl/platform/fingerprint.h"
 
 #include "xla/xla_npu/pjrt_npu/pjrt_common.h"
@@ -24,7 +26,13 @@
 
 namespace xla {
 
-class PjRtNpuClient final : public PjRtClient {
+inline const char* DataLayout() {
+    static constexpr char kDataLayout[] =
+        "e-p6:32:32-i64:64-i128:128-i256:256-v16:16-v32:32-n16:32:64";
+    return kDataLayout;
+}
+
+class PjRtNpuClient final : public CommonPjRtClient {
 public:
     PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
 
@@ -80,6 +88,41 @@ public:
     {
         return &topology_;
     }
+    
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        const XlaComputation& computation, CompileOptions options) override;
+
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        mlir::ModuleOp module, CompileOptions options) override;
+
+
+    // Computes the memory requirements for storing shape on memory_space.
+    absl::StatusOr<int64_t> GetOnDeviceBytesCount(
+      PjRtMemorySpace* memory_space, const xla::Shape& shape) const override;
+
+    // Allocates a raw buffer of a particular size after an optional
+    // allocate_after. Backends may support retrying allocation on oom which
+    // can be controlled via retry_on_oom.
+    absl::StatusOr<tsl::RCReference<CommonPjRtRawBuffer>>
+      AllocateRawBuffer(PjRtMemorySpace* memory_space, size_t on_device_bytes_count,
+                  bool retry_on_oom,
+                  tsl::AsyncValueRef<bool> allocate_after) override;
+
+    absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> LinearizeHostBufferInto(
+      const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
+      std::optional<absl::Span<int64_t const>> byte_strides,
+      HostBufferSemantics host_buffer_semantics,
+      absl::AnyInvocable<void() &&> on_done_with_host_buffer,
+      const xla::Shape& device_shape,
+      tsl::RCReference<CommonPjRtRawBuffer> raw_buffer) override;
+
+    // Defines a pjrt buffer from a shape, raw_buffer and definition events.
+    absl::StatusOr<std::unique_ptr<PjRtBuffer>> DefineBuffer(
+      const Shape& on_device_shape,
+      tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
+      absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4>
+          definition_device_events,
+      bool raw_buffer_is_mutable) override;
 
 private:
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
@@ -99,11 +142,17 @@ private:
     // Pointers to `owned_memory_spaces_`.
     std::vector<PjRtMemorySpace*> memory_spaces_;
     NpuTopologyDescription topology_;
+    // A cache for transpose plans. We use transposes to convert
+    // (possibly strided) buffers provided to BufferFromHostBuffer into dense
+    // major-to-minor layout.
+    absl::Mutex transpose_mu_;
+    TransposePlanCache transpose_cache_ ABSL_GUARDED_BY(transpose_mu_);
 };
 
 inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
 {
   return std::unique_ptr<PjRtClient>(new PjRtNpuClient(process_index, std::move(devices)));
 }
+
 }  // namespace xla
 #endif  //NPU_CLIENT_H_

@@ -1,8 +1,12 @@
+#include <llvm/IR/DataLayout.h>
+
 #include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
+#include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
 
 namespace xla {
+    
 // Returns the CPU devices from the given PjRtCpuDevices.
 // Precondition: `devices` doesn't contain nullptr.
 static std::vector<NpuTopologyDescription::Device> GetDevices(absl::Span<const std::unique_ptr<PjRtNpuDevice>> devices)
@@ -19,6 +23,7 @@ static std::vector<NpuTopologyDescription::Device> GetDevices(absl::Span<const s
 PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
     : process_index_(process_index),
       owned_devices_(std::move(devices)),
+      transpose_cache_(1024),
       topology_(platform_id(), platform_name(), platform_version(), GetDevices(devices))
 {
     for (const std::unique_ptr<PjRtNpuDevice>& device : owned_devices_) {
@@ -91,5 +96,77 @@ absl::StatusOr<PjRtDevice*> PjRtNpuClient::LookupAddressableDevice(PjRtLocalDevi
 absl::Span<PjRtMemorySpace* const> PjRtNpuClient::memory_spaces() const
 {
     return memory_spaces_;
+}
+
+absl::StatusOr<int64_t> PjRtNpuClient::GetOnDeviceBytesCount(
+    PjRtMemorySpace* memory_space, const Shape& shape) const
+{
+    auto pointer_size = llvm::DataLayout(DataLayout())
+            .getPointerSize(0 /* default address space */);
+    if (shape.IsTuple() || shape.is_static()) {
+        return ShapeUtil::ByteSizeOf(shape, pointer_size);
+    }
+    int64_t metadata_size = sizeof(int32_t) * shape.dimensions().size();
+    return ShapeUtil::ByteSizeOf(shape, pointer_size) + metadata_size;
+}
+
+absl::StatusOr<tsl::RCReference<CommonPjRtRawBuffer>> PjRtNpuClient::AllocateRawBuffer(
+    PjRtMemorySpace* memory_space, size_t on_device_bytes_count,
+    bool retry_on_oom,
+    tsl::AsyncValueRef<bool> allocate_after)
+{
+    return xla::NpuRawBuffer::Allocate(memory_space, on_device_bytes_count);
+}
+
+absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> PjRtNpuClient::LinearizeHostBufferInto(
+    const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
+    std::optional<absl::Span<int64_t const>> byte_strides,
+    HostBufferSemantics host_buffer_semantics,
+    absl::AnyInvocable<void() &&> on_done_with_host_buffer,
+    const xla::Shape& device_shape,
+    tsl::RCReference<CommonPjRtRawBuffer> raw_buffer)
+{
+    return tsl::down_cast<NpuRawBuffer*>(raw_buffer.get())
+        ->CopyFromHostBuffer(
+            data, type, dims, byte_strides, host_buffer_semantics,
+            std::move(on_done_with_host_buffer), device_shape,
+            async_work_runner(), &transpose_mu_, &transpose_cache_);
+}
+
+absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
+    const Shape& on_device_shape,
+    tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
+    absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4>
+        definition_device_events,
+    bool raw_buffer_is_mutable)
+{
+    absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events;
+    for (auto& ev : definition_device_events) {
+        std::cout << "PjRtNpuClient::DefineBuffer event: " << ev.get() << std::endl;
+        definition_events.push_back(
+            tsl::down_cast<NpuTrackedDeviceEvent*>(ev.get())->event());
+    }
+    return std::unique_ptr<PjRtBuffer>(std::make_unique<CommonPjRtBufferImpl>(
+        on_device_shape,
+        std::make_unique<TrackedNpuDeviceBuffer>(
+            /*owns_buffers=*/raw_buffer_is_mutable,
+            tsl::down_cast<NpuRawBuffer*>(raw_buffer.get())->buffer(),
+            ShapeUtil::ByteSizeOf(on_device_shape), std::move(definition_events)),
+        raw_buffer->memory_space()));
+}
+
+
+absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
+PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
+    std::string result;
+    llvm::raw_string_ostream os(result);
+    module.print(os);
+    std::cout << os.str() << std::endl;
+    return absl::UnimplementedError("Compile with MLIR Module is not supported.");
+}
+
+absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
+PjRtNpuClient::CompileAndLoad(const XlaComputation& computation, CompileOptions options) {
+    return absl::UnimplementedError("CompileAndLoad with XlaComputation is not supported.");
 }
 }  // namespace xla

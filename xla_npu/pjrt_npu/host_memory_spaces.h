@@ -4,6 +4,7 @@
 #include "xla/pjrt/pjrt_client.h"
 
 namespace xla {
+
 class NpuDeviceMemorySpace : public PjRtMemorySpace {
 public:
     static constexpr absl::string_view kKind = "device";
@@ -52,5 +53,6 @@ private:
     std::string debug_string_;
     std::string to_string_;
 };
+
 }  // namespace xla
 #endif  //PJRT_NPU_HOST_MEMORY_SPACES_H_

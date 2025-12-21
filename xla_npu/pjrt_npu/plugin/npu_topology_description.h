@@ -77,9 +77,19 @@ public:
         return attributes_;
     }
 
-    absl::StatusOr<Layout> GetDefaultLayout(PrimitiveType element_type,
-                                                 absl::Span<const int64_t> dims) const override {
-      return absl::StatusOr<Layout>{};
+    absl::StatusOr<Layout> GetDefaultLayout(
+        PrimitiveType element_type,
+        absl::Span<const int64_t> dims) const override {
+        Shape shape = ShapeUtil::MakeShape(element_type, dims);
+        Layout layout = LayoutUtil::GetWithDefaultLayout(shape).layout();
+        // `GetWithDefaultLayout` returns a padded layout for sub-byte types since the
+        // notion of "default" is context dependent and in this case means the default
+        // for literals for historical reasons. Because of this, we need to manually
+        // populate the `element_size_in_bits` for sub-byte types here.
+        if (primitive_util::IsSubByteNonPredType(element_type)) {
+            layout.set_element_size_in_bits(primitive_util::BitWidth(element_type));
+        }
+        return layout;
     }
 
 private:
