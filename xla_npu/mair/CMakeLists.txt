@@ -36,6 +36,7 @@ include(AddLLVM)
 
 add_subdirectory(ir)
 add_subdirectory(transforms)
+add_subdirectory(test)
 
 # 添加 StableHLO目录
 set(STABLEHLO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo")

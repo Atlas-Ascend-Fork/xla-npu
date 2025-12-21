@@ -4,6 +4,9 @@
 #include "llvm/ADT/StringRef.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h" // from @llvm-project
+#include "mlir/Interfaces/SideEffectInterfaces.h"
+#include "mlir/Interfaces/ControlFlowInterfaces.h"
+#include "mlir/Bytecode/BytecodeOpInterface.h"
 
 namespace mlir {
 namespace air {

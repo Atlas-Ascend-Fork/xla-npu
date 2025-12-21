@@ -1,6 +1,9 @@
 #include "mair_ops.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypes.h"
 
 #define GET_OP_CLASSES
 #include "ir/mair_ops.cc.inc"

@@ -22,5 +22,8 @@ add_mlir_dialect_library(AirDialect
         MLIRmair_opsIncGen
 )
 target_link_libraries(AirDialect PUBLIC
+        MLIRInferTypeOpInterface        
+        MLIRSideEffectInterfaces
+        MLIRBytecodeOpInterface
         MLIRIR
 )
