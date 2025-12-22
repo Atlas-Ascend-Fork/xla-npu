@@ -4,6 +4,7 @@
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 #include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
 
 namespace xla {
     
@@ -158,6 +159,7 @@ absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
 PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
+    ge::Graph graph("XLAGraph");
     std::string result;
     llvm::raw_string_ostream os(result);
     module.print(os);
