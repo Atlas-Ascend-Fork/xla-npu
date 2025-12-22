@@ -1,3 +1,7 @@
+
+  
+  
+  
 #ifndef NPU_CLIENT_H_
 #define NPU_CLIENT_H_
 
@@ -116,6 +120,10 @@ public:
       const xla::Shape& device_shape,
       tsl::RCReference<CommonPjRtRawBuffer> raw_buffer) override;
 
+  absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>,
+                             tsl::RCReference<PjRtDeviceEvent>>>
+  CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
+                       absl::string_view debug_info) override;
     // Defines a pjrt buffer from a shape, raw_buffer and definition events.
     absl::StatusOr<std::unique_ptr<PjRtBuffer>> DefineBuffer(
       const Shape& on_device_shape,
@@ -124,6 +132,13 @@ public:
           definition_device_events,
       bool raw_buffer_is_mutable) override;
 
+  tsl::thread::ThreadPool* pjrt_client_thread_pool() const {
+    return pjrt_client_thread_pool_.get();
+  }
+
+  AsyncWorkRunner* async_work_runner() const override {
+    return async_work_runner_.get();
+  }
 private:
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
     int process_index_;
@@ -147,6 +162,8 @@ private:
     // major-to-minor layout.
     absl::Mutex transpose_mu_;
     TransposePlanCache transpose_cache_ ABSL_GUARDED_BY(transpose_mu_);
+    std::unique_ptr<tsl::thread::ThreadPool> pjrt_client_thread_pool_;
+    std::unique_ptr<AsyncWorkRunner> async_work_runner_;
 };
 
 inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
