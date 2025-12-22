@@ -7,6 +7,9 @@
 #include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
+#include "xla/pjrt/thread_pool_async_work_runner.h"
+#include "xla/tsl/platform/env.h"
+#include "xla/tsl/platform/threadpool.h"
 
 namespace xla {
     
@@ -38,11 +41,9 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
       owned_devices_(std::move(devices)),
       transpose_cache_(1024),
       topology_(platform_id(), platform_name(), platform_version(), GetDevices(devices)),
-      pjrt_client_thread_pool_(
-          new tsl::thread::ThreadPool(tsl::Env::Default(), GetThreadOptions(),
-                                      "XLAPjRtNpuClient", 1)),//TODO 线程池大小
-      async_work_runner_(
-          MakeThreadPoolAsyncWorkRunner(pjrt_client_thread_pool_.get()))
+      pjrt_client_thread_pool_(new tsl::thread::ThreadPool(
+        tsl::Env::Default(), GetThreadOptions(), "XLAPjRtNpuClient", 1)), //TODO 线程池大小
+      async_work_runner_(MakeThreadPoolAsyncWorkRunner(pjrt_client_thread_pool_.get()))
 {
     for (const std::unique_ptr<PjRtNpuDevice>& device : owned_devices_) {
         devices_.push_back(device.get());
@@ -151,19 +152,6 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> PjRtNpuClient::LinearizeHostBu
             async_work_runner(), &transpose_mu_, &transpose_cache_);
 }
 
-absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>,
-                             tsl::RCReference<PjRtDeviceEvent>>>
-  PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
-                       absl::string_view debug_info)
-{
-    std::cout << "PjRtNpuClient::CreateLinkedEventPromise" << std::endl;
-    auto definition_event_promise = tsl::MakeIndirectAsyncValue();
-    auto definition_event = tsl::MakeRef<NpuTrackedDeviceEvent>(
-      tsl::AsyncValueRef<NpuEvent>(definition_event_promise));
-    return std::make_pair(tsl::MakeRef<NpuTrackedDeviceEventPromise>(
-                            std::move(definition_event_promise)),
-                        std::move(definition_event));
-}
 absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
     const Shape& on_device_shape,
     tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
@@ -184,6 +172,17 @@ absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
             tsl::down_cast<NpuRawBuffer*>(raw_buffer.get())->buffer(),
             ShapeUtil::ByteSizeOf(on_device_shape), std::move(definition_events)),
         raw_buffer->memory_space()));
+}
+
+absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>, tsl::RCReference<PjRtDeviceEvent>>>
+PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
+    absl::string_view debug_info) {
+    auto definition_event_promise = tsl::MakeIndirectAsyncValue();
+    auto definition_event = tsl::MakeRef<NpuTrackedDeviceEvent>(
+        tsl::AsyncValueRef<NpuEvent>(definition_event_promise));
+    return std::make_pair(tsl::MakeRef<NpuTrackedDeviceEventPromise>(
+                          std::move(definition_event_promise)),
+                          std::move(definition_event));
 }
 
 

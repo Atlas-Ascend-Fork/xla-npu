@@ -260,22 +260,62 @@ NpuRawBuffer::MakeAllocationReadyEvent() {
 void NpuRawBuffer::CopyToLiteralAsync(
     Promise<> promise, tsl::RCReference<PjRtDeviceEventPromise> device_promise,
     MutableLiteralBase* literal, xla::Shape shape) {
-  std::cout<< "NPU do CopyToLiteralAsync" << std::endl;
-  absl::Span<const char> input_span{
-    static_cast<const char*>(buffer_->untyped_data()), buffer_->size_bytes()};
-  size_t output_size =
-      static_cast<size_t>(ShapeUtil::ByteSizeOf(literal->shape()));
-  absl::Span<char> output_span{static_cast<char*>(literal->untyped_data()),
-                               output_size};
+  tsl::profiler::TraceMe traceme("NpuRawBuffer::CopyToLiteralAsync");
+  
+  // Get source device memory pointer and size
+  void* src_device_ptr = buffer_->untyped_data();
+  size_t device_buffer_size = buffer_->size_bytes();
+  
+  // Get destination host memory pointer and size
+  size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(literal->shape()));
+  void* dst_host_ptr = literal->untyped_data();
+  
+  // TODO: obtain device id from real device
+  aclError acl_ret = npu::AclrtSetDevice(0);
+  if (acl_ret != ACL_SUCCESS) {
+      auto error = absl::InternalError(
+          absl::StrCat("AclrtSetDevice set device 0 failed, error code: ", acl_ret));
+      device_promise->SetError(error);
+      promise.Set(error);
+      return;
+  }
+
+  // Handle packed types (sub-byte types like INT4)
   if (primitive_util::IsSubByteNonPredType(shape.element_type())) {
+    // For packed types, we need to unpack after copying
+    // First copy packed data from device to a temporary buffer
+    auto temp_buffer = std::make_unique<char[]>(device_buffer_size);
+    
+    acl_ret = npu::AclrtMemcpy(temp_buffer.get(), device_buffer_size, 
+                                src_device_ptr, device_buffer_size, 
+                                ACL_MEMCPY_DEVICE_TO_HOST);
+    if (acl_ret != ACL_SUCCESS) {
+      auto error = absl::InternalError(
+          absl::StrCat("AclrtMemcpy D2H failed in CopyToLiteralAsync for packed type, error code: ", acl_ret));
+      device_promise->SetError(error);
+      promise.Set(error);
+      return;
+    }
+    
+    // Unpack the data
+    absl::Span<const char> input_span(temp_buffer.get(), device_buffer_size);
+    absl::Span<char> output_span(static_cast<char*>(dst_host_ptr), output_size);
     primitive_util::UnpackIntN(shape.element_type(), input_span, output_span);
   } else {
-    //std::memcpy(output_span.data(), input_span.data(), output_size);
-    auto acl_ret = npu::AclrtMemcpy(output_span.data(), output_size, input_span.data(), output_size, ACL_MEMCPY_DEVICE_TO_HOST);
-    if (acl_ret == ACL_SUCCESS) {
-      std::cout << "D2H success" << std::endl;
+    // For normal types, direct copy from device to host
+    acl_ret = npu::AclrtMemcpy(dst_host_ptr, output_size, 
+                                src_device_ptr, output_size, 
+                                ACL_MEMCPY_DEVICE_TO_HOST);
+    if (acl_ret != ACL_SUCCESS) {
+      auto error = absl::InternalError(
+          absl::StrCat("AclrtMemcpy D2H failed in CopyToLiteralAsync, error code: ", acl_ret));
+      device_promise->SetError(error);
+      promise.Set(error);
+      return;
     }
   }
+  
+  // Set success status
   device_promise->Set(tsl::MakeRef<NpuTrackedDeviceEvent>(
       tsl::MakeAvailableAsyncValueRef<NpuEvent>()));
   promise.Set(absl::OkStatus());
