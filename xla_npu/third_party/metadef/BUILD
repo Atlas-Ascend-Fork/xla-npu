@@ -97,19 +97,25 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "graph_stub",
-    srcs = ["graph_stub.cc"],
+cc_binary(
+    name = "libge_runner_stub",
+    srcs = ["ge_runner_stub.cc"],
     deps = [
         ":metadef_headers",
     ],
-    linkopts = ["-Wl,--export-dynamic"],
-    visibility = ["//visibility:public"],
+    linkshared = True,
+    linkopts = ["-Wl,-soname,libge_runner.so"],
+)
+
+cc_import(
+    name = "ge_runner_stub",
+    shared_library = ":libge_runner_stub",
 )
 
 cc_library(
     name = "metadef_hdrs",
     deps = [
-        ":graph_stub",
+        ":metadef_headers",
+        ":ge_runner_stub",
     ],
 )
