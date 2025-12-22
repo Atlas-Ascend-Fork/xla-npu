@@ -24,9 +24,12 @@ import jax.lib.xla_client
 print(f"JAX Rerunning client discovery for platform: {PLATFORM_NAME}")
 
 # Debug: Test npu device memory malloc
-np_arr = np.array([1.0, 2.0, 3.0], dtype=np.float32, copy=True, order='K')
+np_arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32, copy=True, order='K')
+print("src date: ", np_arr)
 npu_device = jax.devices("npu")[0]
-npu_arr = jax.device_put(np_arr, device=npu_device)
+npu_arr = jax.device_put(np_arr, device=npu_device) # call PJRT_Client_BufferFromHostBuffer from xla
+cpu_arr = jax.device_get(npu_arr) # call PJRT_Buffer_ToHostBuffer from xla
+print("dst data: ", cpu_arr)
 
 # --- Run a simple JAX program ---
 try:
