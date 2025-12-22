@@ -32,6 +32,7 @@
 #include "tsl/profiler/lib/traceme.h"
 
 #include "raw_buffer.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
 constexpr size_t kSmallDataTransferByteSize = 102400;  // 100 KiB
@@ -108,13 +109,27 @@ absl::Status NpuRawBuffer::ValidateSlice(int64_t offset, int64_t slice_size) {
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
 NpuRawBuffer::CopyRawHostToDeviceAndReturnEvent(const void* src, int64_t offset,
                                                 int64_t transfer_size) {
-  return absl::UnimplementedError("NPU does not support CopyRawHostToDeviceAndReturnEvent");
+  TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
+  void* dst = static_cast<char*>(buffer_->untyped_data()) + offset;
+  auto acl_ret = npu::AclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_HOST_TO_DEVICE);
+  if (acl_ret != ACL_SUCCESS) {
+    return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
+  }
+  return tsl::MakeRef<NpuTrackedDeviceEvent>(
+      tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
 NpuRawBuffer::CopyRawDeviceToHostAndReturnEvent(void* dst, int64_t offset,
                                                 int64_t transfer_size) {
-  return absl::UnimplementedError("NPU does not support CopyRawDeviceToHostAndReturnEvent");
+  TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
+  const void* src = static_cast<const char*>(buffer_->untyped_data()) + offset;
+  auto acl_ret = npu::AclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_DEVICE_TO_HOST);
+  if (acl_ret != ACL_SUCCESS) {
+    return absl::InternalError(absl::StrCat("AclrtMemcpy D2H failed, error code: ", acl_ret));
+  }
+  return tsl::MakeRef<NpuTrackedDeviceEvent>(
+      tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromLiteral(
@@ -123,17 +138,16 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromLiteral(
   return absl::UnimplementedError("NPU does not support CopyFromLiteral");
 }
 
-absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
-NpuRawBuffer::CopyFromHostBuffer(
+absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuffer(
     const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
     std::optional<absl::Span<int64_t const>> byte_strides,
     PjRtClient::HostBufferSemantics host_buffer_semantics,
     absl::AnyInvocable<void() &&> on_done_with_host_buffer, const Shape& shape,
     AsyncWorkRunner* async_work_runner, absl::Mutex* transpose_mu,
-    TransposePlanCache* transpose_cache) {
+    TransposePlanCache* transpose_cache)
+{
   tsl::AsyncValueRef<NpuDeviceMemory> device_buffer = buffer_;
-  bool has_default_layout =
-      !byte_strides || HasMajorToMinorLayout(type, dims, *byte_strides);
+  bool has_default_layout = !byte_strides || HasMajorToMinorLayout(type, dims, *byte_strides);
   const int bit_width = primitive_util::BitWidth(type);
   // Packed arrays are unpacked on host and packed on device.
   bool is_packed = primitive_util::IsSubByteNonPredType(type);
@@ -165,7 +179,12 @@ NpuRawBuffer::CopyFromHostBuffer(
       TF_ASSIGN_OR_RETURN(transpose, transpose_cache->GetOrCreate(options));
     }
     if (!is_packed) {
-      transpose->Execute(data, dst_data_ptr);
+      auto data_transposed = std::make_unique<char[]>(byte_size);
+      transpose->Execute(data, data_transposed.get());
+      auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+      if (acl_ret != ACL_SUCCESS) {
+        return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
+      }
     } else {
       // First transpose the unpacked data into a new temporary buffer, then
       // pack the data.
@@ -173,49 +192,59 @@ NpuRawBuffer::CopyFromHostBuffer(
       // support packing.
       auto data_transposed = std::make_unique<char[]>(byte_size);
       transpose->Execute(data, data_transposed.get());
+      auto data_packed = std::make_unique<char[]>(dst_byte_size);
       absl::Span<const char> src_data_span(data_transposed.get(), byte_size);
-      absl::Span<char> dst_data_span(static_cast<char*>(dst_data_ptr),
-                                     dst_byte_size);
+      absl::Span<char> dst_data_span(data_packed.get(), dst_byte_size);
       PackIntN(bit_width, src_data_span, dst_data_span);
+      auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+      if (acl_ret != ACL_SUCCESS) {
+        return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
+      }
     }
     if (on_done_with_host_buffer) {
       std::move(on_done_with_host_buffer)();
       on_done_with_host_buffer = nullptr;
     }
   } else {
-    bool should_sync_copy =
-        host_buffer_semantics ==
-            PjRtClient::HostBufferSemantics::kImmutableOnlyDuringCall ||
-        (byte_size < kSmallDataTransferByteSize);
-    if (should_sync_copy) {
-      std::memcpy(dst_data_ptr, data, byte_size);
-      if (on_done_with_host_buffer) {
+    // bool should_sync_copy =
+    //     host_buffer_semantics ==
+    //         PjRtClient::HostBufferSemantics::kImmutableOnlyDuringCall ||
+    //     (byte_size < kSmallDataTransferByteSize);
+    // if (should_sync_copy) {
+    auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+    if (acl_ret != ACL_SUCCESS) {
+        return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
+    }
+    if (on_done_with_host_buffer) {
         std::move(on_done_with_host_buffer)();
         on_done_with_host_buffer = nullptr;
-      }
-    } else {
-      tsl::AsyncValueRef<NpuEvent> copy_event =
-          tsl::MakeConstructedAsyncValueRef<NpuEvent>();
-      auto result = tsl::MakeRef<NpuTrackedDeviceEvent>(
-          copy_event.CopyRef(), "CpuRawBuffer", "CopyFromHostBuffer");
-      async_work_runner->Schedule([device_buffer, dst_data_ptr, data, byte_size,
-                                   copy_event = std::move(copy_event),
-                                   on_done_with_host_buffer = std::move(
-                                       on_done_with_host_buffer)]() mutable {
-        tsl::profiler::TraceMe traceme("H2D Dispatch");
-        std::memcpy(dst_data_ptr, data, byte_size);
-        if (on_done_with_host_buffer) {
-          std::move(on_done_with_host_buffer)();
-          on_done_with_host_buffer = nullptr;
-        }
-        // Signal copy is complete.
-        copy_event.SetStateConcrete();
-      });
-      return result;
     }
+        // 暂不支持基于流的异步拷贝
+    // } else {
+    //   tsl::AsyncValueRef<NpuEvent> copy_event =
+    //       tsl::MakeConstructedAsyncValueRef<NpuEvent>();
+    //   auto result = tsl::MakeRef<NpuTrackedDeviceEvent>(
+    //       copy_event.CopyRef(), "CpuRawBuffer", "CopyFromHostBuffer");
+    //   async_work_runner->Schedule([device_buffer, dst_data_ptr, data, byte_size,
+    //                                copy_event = std::move(copy_event),
+    //                                on_done_with_host_buffer = std::move(
+    //                                    on_done_with_host_buffer)]() mutable {
+    //     tsl::profiler::TraceMe traceme("H2D Dispatch");
+    //     auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+    //     if (on_done_with_host_buffer) {
+    //       std::move(on_done_with_host_buffer)();
+    //       on_done_with_host_buffer = nullptr;
+    //     }
+    //     // Signal copy is complete.
+    //     if (acl_ret != ACL_SUCCESS) {
+    //       copy_event.SetError(absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret)));
+    //     } else {
+    //       copy_event.SetStateConcrete();
+    //     }
+    //   });
+      // return result;
   }
-  return tsl::MakeRef<NpuTrackedDeviceEvent>(
-      tsl::MakeAvailableAsyncValueRef<NpuEvent>());
+  return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
 void NpuRawBuffer::ReadDynamicShape(tsl::AsyncValueRef<xla::Shape> output_shape,
