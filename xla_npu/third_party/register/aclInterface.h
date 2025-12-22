@@ -15,6 +15,7 @@ aclError AclrtGetDevice(uint32_t *device_id);
 aclError AclrtSetDevice(uint32_t device_id);
 aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy);
 aclError AclrtFree(void *devPtr);
+aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind);
 
 } // namespace npu
 
