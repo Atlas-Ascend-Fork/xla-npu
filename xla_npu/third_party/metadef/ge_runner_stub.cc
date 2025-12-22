@@ -1,9 +1,13 @@
+#include <iostream>
+
 #include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
 
 namespace ge {
-Graph::Graph(const char* name) {}
+Graph::Graph(const char* name) {
+  std::cout << "[STUB] ge Graph constructor" << std::endl;
+}
 
 Graph graph("test");
 
