@@ -260,7 +260,25 @@ NpuRawBuffer::MakeAllocationReadyEvent() {
 void NpuRawBuffer::CopyToLiteralAsync(
     Promise<> promise, tsl::RCReference<PjRtDeviceEventPromise> device_promise,
     MutableLiteralBase* literal, xla::Shape shape) {
-  std::cout << "NPU does not support CopyToLiteralAsync" << std::endl;
+  std::cout<< "NPU do CopyToLiteralAsync" << std::endl;
+  absl::Span<const char> input_span{
+    static_cast<const char*>(buffer_->untyped_data()), buffer_->size_bytes()};
+  size_t output_size =
+      static_cast<size_t>(ShapeUtil::ByteSizeOf(literal->shape()));
+  absl::Span<char> output_span{static_cast<char*>(literal->untyped_data()),
+                               output_size};
+  if (primitive_util::IsSubByteNonPredType(shape.element_type())) {
+    primitive_util::UnpackIntN(shape.element_type(), input_span, output_span);
+  } else {
+    //std::memcpy(output_span.data(), input_span.data(), output_size);
+    auto acl_ret = npu::AclrtMemcpy(output_span.data(), output_size, input_span.data(), output_size, ACL_MEMCPY_DEVICE_TO_HOST);
+    if (acl_ret == ACL_SUCCESS) {
+      std::cout << "D2H success" << std::endl;
+    }
+  }
+  device_promise->Set(tsl::MakeRef<NpuTrackedDeviceEvent>(
+      tsl::MakeAvailableAsyncValueRef<NpuEvent>()));
+  promise.Set(absl::OkStatus());
 }
 
 void NpuRawBuffer::CopyTo(
