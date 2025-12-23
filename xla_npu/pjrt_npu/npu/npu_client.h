@@ -28,6 +28,7 @@
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
 
 namespace xla {
 
@@ -170,6 +171,9 @@ private:
     // Thread pool for running PjRtClient tasks.
     std::unique_ptr<tsl::thread::ThreadPool> pjrt_client_thread_pool_;
     std::unique_ptr<AsyncWorkRunner> async_work_runner_;
+
+    bool ge_initialized = false;
+    std::unique_ptr<ge::Session> global_ge_session = nullptr;
 };
 
 class PjRtNpuExecutable final : public PjRtLoadedExecutable {
@@ -231,23 +235,23 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
       const ExecuteOptions& options,
       std::optional<std::vector<Future<>>>& returned_futures) const override;
 
-  // using PjRtLoadedExecutable::ExecuteSharded;
-  // absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecuteSharded(
-  //     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
-  //     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
-  //     bool fill_future) const override;
+  using PjRtLoadedExecutable::ExecuteSharded;
+  absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecuteSharded(
+      absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+      const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+      bool fill_future) const override;
 
-  // using PjRtLoadedExecutable::ExecutePortable;
-  // absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecutePortable(
-  //     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
-  //     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
-  //     bool fill_future) const override;
+  using PjRtLoadedExecutable::ExecutePortable;
+  absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecutePortable(
+      absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+      const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+      bool fill_future) const override;
 
   void Delete() override;
 
   bool IsDeleted() const override;
 
-  // absl::StatusOr<std::string> SerializeExecutable() const override;
+  absl::StatusOr<std::string> SerializeExecutable() const override;
 
   std::shared_ptr<Executable> npu_executable() const { return npu_executable_; }
 

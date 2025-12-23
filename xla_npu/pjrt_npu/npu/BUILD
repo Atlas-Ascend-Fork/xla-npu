@@ -104,6 +104,7 @@ cc_library(
         "//xla/xla_npu/third_party/register:acl_interface",
         "//xla/xla_npu/third_party/stub:ge_runner",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
+        "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
 
         "//xla:array",
         "//xla:debug_options_flags",

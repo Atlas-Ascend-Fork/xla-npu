@@ -74,14 +74,16 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     // ThunkSequence thunks,
     // std::vector<ConstantAllocation> constants,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-    std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map) {
+    std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
+    std::unique_ptr<GraphData> graph_data) {
     // TargetMachineOptionsProto target_machine_options) {
   // VLOG(2) << "Create NpuExecutable from a thunk sequence; module="
   //         << hlo_module->name() << ", constants=" << constants.size();
 
   std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
       std::move(hlo_module), std::move(hlo_profile_printer_data),
-      std::move(hlo_profile_index_map), std::move(assignment)));
+      std::move(hlo_profile_index_map), std::move(assignment),
+      std::move(graph_data)));
       // std::move(target_machine_options)));
   // executable->function_library_ = std::move(function_library);
 
@@ -118,11 +120,13 @@ NpuExecutable::NpuExecutable(
     std::unique_ptr<HloModule> hlo_module,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-    std::unique_ptr<BufferAssignment> assignment)
+    std::unique_ptr<BufferAssignment> assignment,
+    std::unique_ptr<GraphData> graph_data)
     // TargetMachineOptionsProto target_machine_options)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
                  std::move(hlo_profile_index_map)),
-      assignment_(std::move(assignment)) {
+      assignment_(std::move(assignment)),
+      graph_data_(std::move(graph_data)) {
       // target_machine_options_(std::move(target_machine_options)) {
   if (assignment_ && has_module()) {
     XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
@@ -389,6 +393,12 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::CreateResultShapedBuffer(
     }
   }
   return std::move(result);
+}
+
+absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
+    const ServiceExecutableRunOptions* run_options,
+    std::vector<ExecutionInput> arguments) {
+      return absl::UnimplementedError("NpuExecutable::ExecuteAsyncOnStream is not supported.");
 }
 
 // absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
