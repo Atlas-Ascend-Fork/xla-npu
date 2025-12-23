@@ -16,8 +16,8 @@
 #include <set>
 #include <functional>
 #include <memory>
-#include "graph/tensor.h"
-#include "graph/types.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/types.h"
 
 #ifndef GE_API_TYPES_DEF
 #define GE_API_TYPES_DEF

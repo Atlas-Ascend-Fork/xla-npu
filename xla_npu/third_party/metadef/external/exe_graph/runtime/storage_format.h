@@ -10,7 +10,7 @@
 #ifndef METADEF_CXX_INC_EXE_GRAPH_STORAGE_FORMAT_H_
 #define METADEF_CXX_INC_EXE_GRAPH_STORAGE_FORMAT_H_
 #include <memory>
-#include "graph/types.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/types.h"
 #include "expand_dims_type.h"
 namespace gert {
 struct StorageFormat {

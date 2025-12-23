@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include "graph/ge_error_codes.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ge_error_codes.h"
 
 namespace gert {
 using TensorAddress = void *;

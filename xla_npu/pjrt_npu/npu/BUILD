@@ -102,7 +102,7 @@ cc_library(
         "//xla/xla_npu/pjrt_npu:host_memory_spaces",
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
         "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/metadef:metadef_hdrs",
+        "//xla/xla_npu/third_party/stub:ge_runner",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
 
         "//xla:array",
