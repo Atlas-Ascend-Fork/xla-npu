@@ -15,7 +15,7 @@
 #include "ge_api_types.h"
 #include "ge_error_codes.h"
 #include "ge_feature_memory.h"
-#include "graph/gnode.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/gnode.h"
 
 namespace ge {
 class StreamAllocationSummary;

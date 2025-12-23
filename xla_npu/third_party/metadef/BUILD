@@ -6,7 +6,7 @@ package(
 )
 
 cc_library(
-    name = "metadef_headers",
+    name = "metadef_hdrs",
     hdrs = [
         "external/flow_graph/process_point.h",
         "external/flow_graph/flow_graph.h",
@@ -94,28 +94,5 @@ cc_library(
         "external/ge_common/ge_api_error_codes.h",
         "external/ge_common/ge_error_codes.h",
         "external/ge_common/ge_api_types.h",
-    ],
-)
-
-cc_binary(
-    name = "libge_runner_stub",
-    srcs = ["ge_runner_stub.cc"],
-    deps = [
-        ":metadef_headers",
-    ],
-    linkshared = True,
-    linkopts = ["-Wl,-soname,libge_runner.so"],
-)
-
-cc_import(
-    name = "ge_runner_stub",
-    shared_library = ":libge_runner_stub",
-)
-
-cc_library(
-    name = "metadef_hdrs",
-    deps = [
-        ":metadef_headers",
-        ":ge_runner_stub",
     ],
 )

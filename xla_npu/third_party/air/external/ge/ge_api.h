@@ -15,15 +15,15 @@
 #include <string>
 #include <vector>
 
-#include "ge/ge_api_error_codes.h"
-#include "ge/ge_api_types.h"
-#include "ge/ge_data_flow_api.h"
-#include "ge/ge_continuous_tensor_list_api.h"
-#include "ge/ge_graph_compile_summary.h"
-#include "graph/graph.h"
-#include "graph/tensor.h"
-#include "ge/ge_allocator.h"
-#include "exe_graph/runtime/tensor.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_api_error_codes.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_api_types.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_data_flow_api.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_continuous_tensor_list_api.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_graph_compile_summary.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#include "xla/xla_npu/third_party/metadef/external/ge/ge_allocator.h"
+#include "xla/xla_npu/third_party/metadef/external/exe_graph/runtime/tensor.h"
 namespace ge {
 typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
 

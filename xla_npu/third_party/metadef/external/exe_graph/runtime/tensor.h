@@ -12,7 +12,7 @@
 
 #include <cstring>
 
-#include "graph/ge_error_codes.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ge_error_codes.h"
 #include "storage_shape.h"
 #include "storage_format.h"
 #include "tensor_data.h"
