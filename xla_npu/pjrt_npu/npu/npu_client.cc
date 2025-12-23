@@ -1,3 +1,5 @@
+#include <map>
+#include <memory>
 #include <llvm/IR/DataLayout.h>
 
 #include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
@@ -10,6 +12,9 @@
 #include "xla/pjrt/thread_pool_async_work_runner.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/threadpool.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
+#include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
+#include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
 
 namespace xla {
     
@@ -187,13 +192,63 @@ PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
 
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
-PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
-    ge::Graph graph("XLAGraph");
+PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) { 
     std::string result;
     llvm::raw_string_ostream os(result);
     module.print(os);
     std::cout << os.str() << std::endl;
-    return absl::UnimplementedError("Compile with MLIR Module is not supported.");
+
+    auto graph_data = std::make_unique<npu::GraphData>();
+    graph_data->graph = std::make_shared<ge::Graph>("XLAGraph");
+    graph_data->id = 0;
+
+    std::map<ge::AscendString, ge::AscendString> ge_options;
+    if (!ge_initialized) {    
+        ge_initialized = true;    
+        if (ge::GEInitialize(ge_options) != ge::SUCCESS) {
+            return absl::InternalError("Failed to initialize GE.");
+        } else {
+            (void)ge_options.emplace(ge::AscendString("ge.session_device_id"), ge::AscendString("0"));
+            global_ge_session = std::make_unique<ge::Session>(ge_options);
+            if (global_ge_session == nullptr) {
+                return absl::InternalError("Failed to create GE session.");
+            }
+        }
+    }
+
+    if (global_ge_session->AddGraph(graph_data->id, *graph_data->graph, ge_options) != ge::SUCCESS) {
+        return absl::InternalError("Failed to AddGraph.");
+    }
+    if (global_ge_session->CompileGraph(graph_data->id) != ge::SUCCESS) {
+        return absl::InternalError("Failed to CompileGraph.");
+    }
+    std::shared_ptr<ge::CompiledGraphSummary> summary = global_ge_session->GetCompiledGraphSummary(graph_data->id);
+    if (summary ==  nullptr) {
+        return absl::InternalError("Failed to GetCompiledGraphSummary.");
+    }
+
+
+    TF_ASSIGN_OR_RETURN(
+      auto npu_executable,
+      npu::NpuExecutable::Create(nullptr, nullptr, nullptr, nullptr, std::move(graph_data)));
+
+    int num_replicas;
+    int num_partitions;
+    std::shared_ptr<DeviceAssignment> device_assignment;
+    absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices;
+    std::vector<PjRtLoadedExecutable::LogicalDeviceIds>
+      addressable_device_logical_ids;
+    std::vector<PjRtDevice*> addressable_devices;
+    auto input_options = options;
+
+    auto executable = std::make_unique<PjRtNpuExecutable>(
+      num_replicas, num_partitions, std::move(device_assignment),
+      options.parameter_is_tupled_arguments, std::move(input_options),
+      std::move(npu_executable), std::move(result_buffer_indices),
+      std::move(addressable_device_logical_ids), std::move(addressable_devices),
+      this, nullptr);
+
+    return std::unique_ptr<PjRtLoadedExecutable>(std::move(executable));
 }
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
@@ -232,8 +287,33 @@ PjRtNpuExecutable::Execute(
     return absl::UnimplementedError("PjRtNpuExecutable::Execute is not supported.");
 }
 
+absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>>
+PjRtNpuExecutable::ExecuteSharded(
+    absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+    const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+    bool fill_future) const {
+    return absl::UnimplementedError("PjRtNpuExecutable::ExecutePortable is not supported.");
+}
+
+absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>>
+PjRtNpuExecutable::ExecutePortable(
+    absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+    const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+    bool fill_future) const {
+    return absl::UnimplementedError("PjRtNpuExecutable::ExecutePortable is not supported."); 
+}
+
 void PjRtNpuExecutable::Delete() {}
 
 bool PjRtNpuExecutable::IsDeleted() const { return false; }
+
+absl::StatusOr<std::string> PjRtNpuExecutable::SerializeExecutable() const {
+    return absl::UnimplementedError("PjRtNpuExecutable::SerializeExecutable is not supported."); 
+}
+
+absl::StatusOr<CompiledMemoryStats> PjRtNpuExecutable::GetCompiledMemoryStats()
+    const {
+    return absl::UnimplementedError("PjRtNpuExecutable::GetCompiledMemoryStats is not supported."); 
+}
 
 }  // namespace xla

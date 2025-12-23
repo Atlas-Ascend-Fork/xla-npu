@@ -16,6 +16,7 @@ cc_library(
     srcs = ["npu_executable.cc"],
     hdrs = ["npu_executable.h"],
     deps = [
+        "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
         # ":cpu_runtime",
         # ":executable_proto_cc",
         "//xla:executable_run_options",

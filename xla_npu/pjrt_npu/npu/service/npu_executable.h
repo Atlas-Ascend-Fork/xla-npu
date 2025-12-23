@@ -30,6 +30,9 @@
 #include "xla/service/maybe_owning_device_memory.h"
 #include "xla/service/service_executable_run_options.h"
 // #include "xla/stream_executor/device_memory_allocator.h"
+#include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
+#include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
+
 
 namespace xla {
 namespace npu {
@@ -48,7 +51,8 @@ class NpuExecutable : public Executable {
       // ThunkSequence thunks,
       // std::vector<ConstantAllocation> constants,
       std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-      std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map);
+      std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
+      std::unique_ptr<GraphData> graph_data);
       // TargetMachineOptionsProto target_machine_options);
 
   ~NpuExecutable() override;
@@ -230,10 +234,13 @@ class NpuExecutable : public Executable {
   // Entry function name for the computation.
   std::string entry_function_name_;
 
+  std::unique_ptr<GraphData> graph_data_;
+
   NpuExecutable(std::unique_ptr<HloModule> hlo_module,
                 std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                 std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-                std::unique_ptr<BufferAssignment> assignment);
+                std::unique_ptr<BufferAssignment> assignment,
+                std::unique_ptr<GraphData> graph_data);
                 // TargetMachineOptionsProto target_machine_options);
   NpuExecutable(const NpuExecutable&) = delete;
   NpuExecutable& operator=(const NpuExecutable&) = delete;
