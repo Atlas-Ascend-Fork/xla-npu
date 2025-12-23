@@ -200,4 +200,40 @@ absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
 PjRtNpuClient::CompileAndLoad(const XlaComputation& computation, CompileOptions options) {
     return absl::UnimplementedError("CompileAndLoad with XlaComputation is not supported.");
 }
+
+PjRtNpuExecutable::PjRtNpuExecutable(
+    int num_replicas, int num_partitions,
+    std::shared_ptr<DeviceAssignment> device_assignment,
+    bool parameter_is_tupled_arguments, CompileOptions compile_options,
+    std::unique_ptr<Executable> npu_executable,
+    absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices,
+    std::vector<LogicalDeviceIds> addressable_device_logical_ids,
+    std::vector<PjRtDevice*> addressable_devices, PjRtNpuClient* client,
+    std::unique_ptr<HloModule> unoptimized_hlo_module)
+    : client_(client),
+      num_replicas_(num_replicas),
+      num_partitions_(num_partitions),
+      device_assignment_(std::move(device_assignment)),
+      parameter_is_tupled_arguments_(parameter_is_tupled_arguments),
+      compile_options_(std::move(compile_options)),
+      npu_executable_(std::move(npu_executable)),
+      result_buffer_indices_(std::move(result_buffer_indices)),
+      addressable_device_logical_ids_(
+          std::move(addressable_device_logical_ids)),
+      addressable_devices_(std::move(addressable_devices)),
+      unoptimized_hlo_module_(std::move(unoptimized_hlo_module)) {
+}
+
+absl::StatusOr<std::vector<std::vector<std::unique_ptr<PjRtBuffer>>>>
+PjRtNpuExecutable::Execute(
+    absl::Span<const std::vector<PjRtBuffer*>> argument_handles,
+    const ExecuteOptions& options,
+    std::optional<std::vector<Future<>>>& returned_futures) const {
+    return absl::UnimplementedError("PjRtNpuExecutable::Execute is not supported.");
+}
+
+void PjRtNpuExecutable::Delete() {}
+
+bool PjRtNpuExecutable::IsDeleted() const { return false; }
+
 }  // namespace xla

@@ -26,6 +26,7 @@
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
+#include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
@@ -142,6 +143,7 @@ public:
     }
 
 private:
+    friend class PjRtNpuExecutable;
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
     int process_index_;
     // Includes all devices, including non-addressable devices.
@@ -169,6 +171,161 @@ private:
     std::unique_ptr<tsl::thread::ThreadPool> pjrt_client_thread_pool_;
     std::unique_ptr<AsyncWorkRunner> async_work_runner_;
 };
+
+class PjRtNpuExecutable final : public PjRtLoadedExecutable {
+ public:
+  PjRtNpuExecutable(
+      int num_replicas, int num_partitions,
+      std::shared_ptr<DeviceAssignment> device_assignment,
+      bool parameter_is_tupled_arguments, CompileOptions compile_options,
+      std::unique_ptr<Executable> npu_executable,
+      absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices,
+      std::vector<LogicalDeviceIds> addressable_device_logical_ids,
+      std::vector<PjRtDevice*> addressable_devices, PjRtNpuClient* client,
+      std::unique_ptr<HloModule> unoptimized_hlo_module);
+
+  ~PjRtNpuExecutable() override = default;
+
+  PjRtNpuClient* client() const override { return client_; }
+
+  absl::string_view name() const override {
+    return npu_executable_->shared_module()->name();
+  }
+
+  int num_replicas() const override { return num_replicas_; }
+
+  int num_partitions() const override { return num_partitions_; }
+
+  int64_t SizeOfGeneratedCodeInBytes() const override {
+    return npu_executable_->SizeOfGeneratedCodeInBytes();
+  }
+
+  const DeviceAssignment& device_assignment() const override {
+    return *device_assignment_;
+  }
+
+  absl::Span<const LogicalDeviceIds> addressable_device_logical_ids()
+      const override {
+    return addressable_device_logical_ids_;
+  }
+
+  absl::Span<PjRtDevice* const> addressable_devices() const override {
+    return addressable_devices_;
+  }
+
+  absl::StatusOr<std::vector<std::shared_ptr<HloModule>>> GetHloModules()
+      const override {
+    return Unimplemented("GetHloModules is not supported.");
+  }
+
+  absl::StatusOr<std::vector<std::vector<absl::string_view>>>
+  GetOutputMemoryKinds() const override {
+    return Unimplemented("GetOutputMemoryKinds is not supported.");
+  }
+
+  absl::StatusOr<CompiledMemoryStats> GetCompiledMemoryStats() const override;
+
+  using PjRtLoadedExecutable::Execute;
+  absl::StatusOr<std::vector<std::vector<std::unique_ptr<PjRtBuffer>>>> Execute(
+      absl::Span<const std::vector<PjRtBuffer*>> argument_handles,
+      const ExecuteOptions& options,
+      std::optional<std::vector<Future<>>>& returned_futures) const override;
+
+  // using PjRtLoadedExecutable::ExecuteSharded;
+  // absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecuteSharded(
+  //     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+  //     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+  //     bool fill_future) const override;
+
+  // using PjRtLoadedExecutable::ExecutePortable;
+  // absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecutePortable(
+  //     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
+  //     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
+  //     bool fill_future) const override;
+
+  void Delete() override;
+
+  bool IsDeleted() const override;
+
+  // absl::StatusOr<std::string> SerializeExecutable() const override;
+
+  std::shared_ptr<Executable> npu_executable() const { return npu_executable_; }
+
+  absl::StatusOr<std::optional<std::string>> Fingerprint() const {
+    return fingerprint_;
+  }
+
+  absl::StatusOr<std::string> FingerprintExecutable() const override {
+    return fingerprint_;
+  }
+
+  absl::StatusOr<CompileOptions> GetCompileOptions() const override {
+    return compile_options_;
+  }
+
+ private:
+  friend class PjRtNpuClient;
+
+  // absl::Status SetUpDonation(bool tuple_inputs);
+
+  // Checks that the input buffers passed in by the user have the correct size
+  // on device for the compiled program.
+  // absl::Status CheckBufferCompatibilities(
+  //     absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> input_buffers)
+  //     const;
+
+//   absl::StatusOr<Result> ExecuteHelper(
+//       absl::Span<PjRtBuffer* const> argument_handles, int replica,
+//       int partition, const RunId& run_id, const ExecuteOptions& options,
+//       PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
+//       bool fill_future, PjRtNpuDevice* device = nullptr) const;
+
+  PjRtNpuClient* client_;
+
+  int num_replicas_;
+  int num_partitions_;
+  std::shared_ptr<DeviceAssignment> device_assignment_;
+  bool parameter_is_tupled_arguments_;
+  CompileOptions compile_options_;
+
+  std::shared_ptr<Executable> npu_executable_;
+
+  // Caching `result_buffer_indices_` to avoid lookup
+  // HLO dataflow analysis data structures in program execution critical path.
+
+  // Buffer allocation indices corresponding to each result buffer leaf buffer.
+  absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices_;
+
+  // Size on device of each leaf buffer of the compiled program, cached here
+  // for performance reasons.
+  std::vector<int64_t> input_buffer_sizes_in_bytes_;
+
+  // A sorted vector of parameters that have any aliased buffers and thus must
+  // be donated when executing the computation.
+  std::vector<int> parameters_that_must_be_donated_;
+
+  // The replica and partition indices of device_assignment_ to be run by this
+  // client. On single-host platforms without partitioning, this is all
+  // replicas (i.e. addressable_device_logical_ids_[i] = (i, 0)), but this may
+  // not be the case on multi-host platforms. If there are 4 replicas and 2
+  // partitions on a single host platform, size of
+  // addressable_device_logical_ids_ is 4*2 = 8.
+  std::vector<LogicalDeviceIds> addressable_device_logical_ids_;
+
+  // addressable_devices_[i] is the Device to which
+  // addressable_device_logical_ids_[i] is assigned. shared_ptrs instead of
+  // unique_ptrs to play well with the Python bindings (see xla.cc).
+  std::vector<PjRtDevice*> addressable_devices_;
+
+  // Cached result of comparing HloCostAnalysis FLOP estimate for execute
+  // critical path.
+  bool cheap_computation_;
+
+  std::string fingerprint_;
+
+  std::unique_ptr<HloModule> unoptimized_hlo_module_;
+};
+
 
 inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
 {
