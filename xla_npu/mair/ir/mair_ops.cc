@@ -6,7 +6,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 
 #define GET_OP_CLASSES
-#include "ir/mair_ops.cc.inc"
+#include "xla/xla_npu/mair/ir/mair_ops.cc.inc"
 
 namespace mlir {
 namespace air {
@@ -14,7 +14,7 @@ namespace air {
 void AirDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "ir/mair_ops.cc.inc"
+#include "xla/xla_npu/mair/ir/mair_ops.cc.inc"
   >();
 }
 

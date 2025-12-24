@@ -26,6 +26,6 @@ class AirDialect : public Dialect {
 }  // end namespace mlir
 
 #define GET_OP_CLASSES
-#include "ir/mair_ops.h.inc"
+#include "xla/xla_npu/mair/ir/mair_ops.h.inc"
 
 #endif  //  MAIR_OPS_H_
