@@ -202,7 +202,9 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     graph_data->graph = std::make_shared<ge::Graph>("XLAGraph");
     graph_data->id = 0;
 
-    std::map<ge::AscendString, ge::AscendString> ge_options;
+    std::map<ge::AscendString, ge::AscendString> ge_options = {
+        {"ge.exec.deviceId", "0"}
+    };
     if (!ge_initialized) {    
         ge_initialized = true;    
         if (ge::GEInitialize(ge_options) != ge::SUCCESS) {
