@@ -11,6 +11,6 @@ cc_library(
         ":graph_data.h",
     ],
     deps = [
-        "//xla/xla_npu/third_party/stub:ge_runner",
+        "//xla/xla_npu/third_party/stub:ge_hdrs",
     ],
 )
