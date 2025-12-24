@@ -113,7 +113,7 @@ def Air_GraphOp : Air_Op<"graph"> {
 
   let description = [{
     The operations are topologically sorted in-order (no cycles are allowed in
-    the values). 
+    the values).
   }];
 
   let results = (outs
@@ -127,6 +127,59 @@ def Air_GraphOp : Air_Op<"graph"> {
   }];
 
   let hasCanonicalizer = 1;
+}
+
+
+//===--------------------------------------------------------------------------===//
+// HcomAllReduceOp
+//===--------------------------------------------------------------------------===//
+
+def Air_HcomAllReduceOp : Air_Op<"hcomallreduce", [Pure]>{
+    let summary = "HcomAllReduce operator.";
+    let description = "HcomAllReduce operator.";
+
+    let arguments = (ins
+        Air_Tensor:$x, // 当前仅支持对一个张量做allreduce
+        I32:$allreduce_type // 0: SUM, 1: MAX, 2: MIN, 3: PROD
+    );
+
+    let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// HcomAllGatherOp
+//===--------------------------------------------------------------------------===//
+
+def Air_HcomAllGatherOp : Air_Op<"hcomallgather", [Pure]>{
+    let summary = "HcomAllGather operator.";
+    let description = "HcomAllGather operator.";
+
+    let arguments = (ins
+        Air_Tensor:$x,
+        I64:$rank_size
+    );
+
+    let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// ConcatV2Op
+//===--------------------------------------------------------------------------===//
+def Air_ConcatV2Op : Air_Op<"ConcatV2", [Pure]> {
+    let summary = "Concatenates tensors along one dimension.";
+
+    let arguments = (ins
+    Arg<Variadic<TensorOf<[Air_BasicType]>>, [{List of `N` Tensors to concatenate. Their ranks and types must match,
+    and their sizes must match in all dimensions except `concat_dim`.}]>:$x,
+    Arg<Air_I32OrI64, [{0-D.  The dimension along which to concatenate.}]>:$concat_dim,
+    DefaultValuedAttr<I64Attr, "1">:$N
+    );
+
+    let results = (outs
+    Res<TensorOf<[Air_BasicType]>, [{A `Tensor` with the concatenation of values stacked along the
+    `concat_dim` dimension.  This tensor's shape matches that of `values` except
+    in `concat_dim` where it has the sum of the sizes.}]>:$y
+    );
 }
 
 #endif // MAIR_OPS

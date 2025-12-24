@@ -7,8 +7,8 @@ cc_binary(
         "stablehlo2ge.cpp",
     ],
     deps = [
-        "//xla/xla_npu/xla_npu/mair/ir:air_dialect",
-        "//xla/xla_npu/xla_npu/mair/transforms:mair_passes",
+        "//xla/xla_npu/mair/ir:air_dialect",
+        "//xla/xla_npu/mair/transforms:mair_passes",
         "@llvm-project//llvm:Core",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:Analysis",

@@ -19,7 +19,7 @@ gentbl_cc_library(
     tblgen = "@llvm-project//mlir:mlir-tblgen",
     td_file = "mair_passes.td",
     deps = [
-        "//xla/xla_npu/xla_npu/mair/ir:td_files",
+        "//xla/xla_npu/mair/ir:td_files",
         "@llvm-project//llvm:Core",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
@@ -33,7 +33,7 @@ cc_library(
     hdrs = ["mair_passes.h"],
     deps = [
         ":mair_passes_inc_gen",
-        "//xla/xla_npu/xla_npu/mair/ir:air_dialect",
+        "//xla/xla_npu/mair/ir:air_dialect",
         "@llvm-project//llvm:Core",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
