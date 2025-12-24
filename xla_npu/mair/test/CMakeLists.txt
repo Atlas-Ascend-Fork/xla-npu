@@ -9,4 +9,5 @@ target_link_libraries(test_mair_gen
         MLIRCAPIIR
         MLIRCAPIArith
         AirDialect
+        ConvertGraphdef
 )
