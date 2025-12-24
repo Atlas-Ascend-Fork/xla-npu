@@ -22,6 +22,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/ir)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/transforms)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/stablehlo)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/translations)
 
 # 查找 MLIR（会自动关联查找 LLVM，无需单独 find_package(LLVM)）
 find_package(MLIR REQUIRED CONFIG)
@@ -37,6 +38,7 @@ include(AddLLVM)
 add_subdirectory(ir)
 add_subdirectory(transforms)
 add_subdirectory(test)
+add_subdirectory(translations)
 
 # 添加 StableHLO目录
 set(STABLEHLO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/stablehlo")

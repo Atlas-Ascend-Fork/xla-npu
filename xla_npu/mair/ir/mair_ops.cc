@@ -18,5 +18,11 @@ void AirDialect::initialize() {
   >();
 }
 
+//===----------------------------------------------------------------------===//
+// GraphOp
+//===----------------------------------------------------------------------===//
+
+void GraphOp::getCanonicalizationPatterns(RewritePatternSet &results, MLIRContext *context) {}
+
 }  // namespace air
 }  // namespace mlir

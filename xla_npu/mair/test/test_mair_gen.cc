@@ -11,6 +11,8 @@
 #include "mlir-c/IR.h"
 
 #include "../ir/mair_ops.h"
+#include "../translations/export_graphdef.h"
+#include "../translations/status.h"
 
 //MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(mair, mair, mlir::mair::MairDialect)
 
@@ -25,7 +27,7 @@ void buildGeluModule(mlir::ModuleOp module, mlir::MLIRContext& context) {
     auto f32Type = mlir::Float32Type::get(&context);
     auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
     auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType}, {inputOutputTensorType});
-    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "gelu", funcType);
+    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
 
     // 创建函数体
     auto* block = func.addEntryBlock();
@@ -98,8 +100,12 @@ int main(int argc, char** argv) {
     auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
 
     buildGeluModule(module, context);
-
     std::cout << "Generated GELU MLIR:\n";
+    module.print(llvm::outs());
+    std::cout << std::endl;
+
+    Exporter::buildMlirAirGraphOp(module);
+    std::cout << "Convert to MLIR Air Grap:\n";
     module.print(llvm::outs());
     std::cout << std::endl;
 

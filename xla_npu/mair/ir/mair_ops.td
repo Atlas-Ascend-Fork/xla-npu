@@ -103,4 +103,30 @@ def Air_TanhOp : Air_Op<"tanh", [Pure]>{
     let results = (outs Air_Tensor);
 }
 
+//===----------------------------------------------------------------------===//
+// ascend graph op definitions
+//===----------------------------------------------------------------------===//
+def Air_GraphOp : Air_Op<"graph"> {
+  let summary = [{The `ascend.graph` operation contains a region with a
+    single block that lists the operations in a Ascend graph.}];
+
+
+  let description = [{
+    The operations are topologically sorted in-order (no cycles are allowed in
+    the values). 
+  }];
+
+  let results = (outs
+    Variadic<AnyType>:$results
+  );
+
+  let regions = (region SizedRegion<1>:$body);
+
+  let extraClassDeclaration = [{
+    Block &GetBody() { return getOperation()->getRegion(0).front(); }
+  }];
+
+  let hasCanonicalizer = 1;
+}
+
 #endif // MAIR_OPS
