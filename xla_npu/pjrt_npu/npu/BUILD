@@ -9,17 +9,25 @@ package(
 )
 
 cc_library(
-    name = "raw_buffer",
+    name = "npu_event",
+    hdrs = ["npu_event.h"],
+)
+
+cc_library(
+    name = "abstract_npu_buffer",
     srcs = [
+        "abstract_npu_buffer.cc",
         "raw_buffer.cc",
         "tracked_npu_device_buffer.cc",
     ],
     hdrs = [
+        "abstract_npu_buffer.h",
         "raw_buffer.h",
-        "npu_event.h",
         "tracked_npu_device_buffer.h",
     ],
     deps = [
+        ":npu_event",
+        "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
         "//xla/xla_npu/third_party/register:acl_interface",
         
         "//xla:future",
@@ -97,7 +105,7 @@ cc_library(
     srcs = ["npu_client.cc"],
     hdrs = ["npu_client.h"],
     deps = [
-        ":raw_buffer",
+        ":abstract_npu_buffer",
         ":npu_device",
         "//xla/xla_npu/pjrt_npu:host_memory_spaces",
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",

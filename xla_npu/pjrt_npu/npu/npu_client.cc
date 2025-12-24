@@ -1,21 +1,19 @@
 #include <map>
 #include <memory>
 #include <llvm/IR/DataLayout.h>
-
-#include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
-
-#include "xla/pjrt/thread_pool_async_work_runner.h"
-#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
-#include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
-#include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/pjrt/thread_pool_async_work_runner.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/threadpool.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
+#include "xla/pjrt/thread_pool_async_work_runner.h"
+
+#include "xla/xla_npu/pjrt_npu/npu/npu_client.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
+#include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 #include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
-
+#include "xla/xla_npu/pjrt_npu/npu/abstract_npu_buffer.h"
+#include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 namespace xla {
     
 // Returns the CPU devices from the given PjRtCpuDevices.
