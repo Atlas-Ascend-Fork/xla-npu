@@ -24,6 +24,7 @@
 
 #include "xla/xla_npu/pjrt_npu/pjrt_common.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
+#include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
@@ -43,6 +44,9 @@ public:
     PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
 
     ~PjRtNpuClient() override = default;
+
+    using CollectiveLaunchEvent = std::pair<tsl::AsyncValueRef<NpuEvent>,
+        tsl::CountDownAsyncValueRef<NpuEvent>>;
 
     int process_index() const override
     {
@@ -142,6 +146,9 @@ public:
     AsyncWorkRunner* async_work_runner() const override {
         return async_work_runner_.get();
     }
+
+    absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(
+        int num_replicas, int num_partitions) const override;
 
 private:
     friend class PjRtNpuExecutable;
@@ -278,11 +285,11 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
   //     absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> input_buffers)
   //     const;
 
-//   absl::StatusOr<Result> ExecuteHelper(
-//       absl::Span<PjRtBuffer* const> argument_handles, int replica,
-//       int partition, const RunId& run_id, const ExecuteOptions& options,
-//       PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
-//       bool fill_future, PjRtNpuDevice* device = nullptr) const;
+  absl::StatusOr<Result> ExecuteHelper(
+      absl::Span<PjRtBuffer* const> argument_handles, int replica,
+      int partition, const RunId& run_id, const ExecuteOptions& options,
+      PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
+      bool fill_future, PjRtNpuDevice* device = nullptr) const;
 
   PjRtNpuClient* client_;
 

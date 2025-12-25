@@ -69,7 +69,7 @@ namespace npu {
 
 absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     // std::unique_ptr<FunctionLibrary> function_library,
-    std::unique_ptr<BufferAssignment> assignment,
+    std::unique_ptr<NpuBufferAssignment> assignment,
     std::unique_ptr<HloModule> hlo_module,
     // ThunkSequence thunks,
     // std::vector<ConstantAllocation> constants,
@@ -120,7 +120,7 @@ NpuExecutable::NpuExecutable(
     std::unique_ptr<HloModule> hlo_module,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-    std::unique_ptr<BufferAssignment> assignment,
+    std::unique_ptr<NpuBufferAssignment> assignment,
     std::unique_ptr<GraphData> graph_data)
     // TargetMachineOptionsProto target_machine_options)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
@@ -128,9 +128,9 @@ NpuExecutable::NpuExecutable(
       assignment_(std::move(assignment)),
       graph_data_(std::move(graph_data)) {
       // target_machine_options_(std::move(target_machine_options)) {
-  if (assignment_ && has_module()) {
-    XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
-  }
+  // if (assignment_ && has_module()) {
+  //   XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
+  // }
 
   if (assignment_) {
     alloc_ptrs_.reserve(assignment_->Allocations().size());
@@ -154,67 +154,64 @@ NpuExecutable::~NpuExecutable() {
 
 static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(
     const BufferAllocation& allocation,
-    absl::Span<const ExecutionInput> arguments,
+    // absl::Span<const ExecutionInput> arguments,
     // absl::Span<const ConstantAllocation> constants,
     se::DeviceMemoryAllocator* memory_allocator, int device_ordinal) {
-  VLOG(3) << allocation.ToString();
-  if (allocation.is_entry_computation_parameter()) {
-    se::DeviceMemoryBase out = arguments[allocation.parameter_number()]
-                                   .Buffer(allocation.param_shape_index())
-                                   .AsDeviceMemoryBase();
-    CHECK_LE(allocation.size(), out.size())
-        << "Size mismatch on param " << allocation.parameter_number()
-        << " at shape index " << allocation.param_shape_index().ToString();
-    VLOG(3) << "allocation is a parameter";
-    return MaybeOwningDeviceMemory{out};
-  } else if (allocation.is_constant()) {
-    VLOG(3) << "allocation is a constant";
-    // if (allocation.index() < constants.size()) {
-    //   return MaybeOwningDeviceMemory(
-    //       constants[allocation.index()].AsDeviceMemoryBase());
+    VLOG(3) << allocation.ToString();
+    // if (allocation.is_entry_computation_parameter()) { // 用户输出参数内存分配,其生命周期由用户控制
+    //     se::DeviceMemoryBase out = arguments[allocation.parameter_number()]
+    //                                   .Buffer(allocation.param_shape_index())
+    //                                   .AsDeviceMemoryBase();
+    //     CHECK_LE(allocation.size(), out.size())
+    //         << "Size mismatch on param " << allocation.parameter_number()
+    //         << " at shape index " << allocation.param_shape_index().ToString();
+    //     VLOG(3) << "allocation is a parameter";
+    //     return MaybeOwningDeviceMemory{out};
+    // } else if (allocation.is_constant()) { // 常量内存分配
+    //     VLOG(3) << "allocation is a constant";
+    //     // if (allocation.index() < constants.size()) {
+    //     //   return MaybeOwningDeviceMemory(
+    //     //       constants[allocation.index()].AsDeviceMemoryBase());
+    //     // }
+    //     return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
+    // } else if (allocation.is_thread_local()) { //线程局部内存分配,通常由JIT内部管理
+    //     VLOG(3) << "buffer is thread-local";
+    //     return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
     // }
-    return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
-  } else if (allocation.is_thread_local()) {
-    VLOG(3) << "buffer is thread-local";
-    return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
-  }
 
-  int64_t buffer_size = allocation.size();
-  TF_ASSIGN_OR_RETURN(se::OwningDeviceMemory out,
-                      memory_allocator->Allocate(device_ordinal, buffer_size));
-  VLOG(3) << "buffer allocated " << buffer_size << " bytes [" << out->opaque()
-          << "]";
+    int64_t buffer_size = allocation.size();
+    TF_ASSIGN_OR_RETURN(se::OwningDeviceMemory out, // 普通内存分配,其生命周期由XLA管理
+                        memory_allocator->Allocate(device_ordinal, buffer_size));
+    VLOG(3) << "buffer allocated " << buffer_size << " bytes [" << out->opaque() << "]";
 
-  // Since the output buffer and all the temporary buffers were written into
-  // by the JITed code, memory sanitizer has no way of knowing their memory was
-  // initialized. Mark them initialized so that memory sanitizer doesn't flag
-  // loads from these buffers.
-  ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(out->opaque(), buffer_size);
-  return MaybeOwningDeviceMemory{std::move(out)};
+    // Since the output buffer and all the temporary buffers were written into
+    // by the JITed code, memory sanitizer has no way of knowing their memory was
+    // initialized. Mark them initialized so that memory sanitizer doesn't flag
+    // loads from these buffers.
+    ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(out->opaque(), buffer_size);
+    return MaybeOwningDeviceMemory{std::move(out)};
 }
 
-absl::StatusOr<std::vector<MaybeOwningDeviceMemory>>
-NpuExecutable::CreateBufferTable(se::DeviceMemoryAllocator* memory_allocator,
-                                 int device_ordinal,
-                                 absl::Span<ExecutionInput const> arguments) {
-  std::vector<MaybeOwningDeviceMemory> buffers(
-      assignment_->Allocations().size());
-  VLOG(3) << "Allocating " << assignment_->Allocations().size()
-          << " allocations for module " << module().name();
-  for (BufferAllocation::Index i = 0; i < assignment_->Allocations().size();
-       ++i) {
-    const BufferAllocation& allocation = assignment_->GetAllocation(i);
-    // TF_ASSIGN_OR_RETURN(buffers[i],
-    //                     MemoryForAllocation(allocation, arguments, constants_,
-    //                                         memory_allocator, device_ordinal));
-  }
+absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> NpuExecutable::CreateBufferTable(
+    se::DeviceMemoryAllocator* memory_allocator,
+    int device_ordinal,
+    absl::Span<ExecutionInput const> arguments)
+{
+    std::vector<MaybeOwningDeviceMemory> buffers(assignment_->Allocations().size());
+    VLOG(3) << "Allocating " << assignment_->Allocations().size()
+            << " allocations for module " << module().name();
+    // for (BufferAllocation::Index i = 0; i < assignment_->Allocations().size(); ++i) {
+    //     const BufferAllocation& allocation = assignment_->GetAllocation(i);
+    //     TF_ASSIGN_OR_RETURN(buffers[i], 
+    //         MemoryForAllocation(allocation, arguments, constants_, memory_allocator, device_ordinal));
+    // }
 
-  if (VLOG_IS_ON(3)) {
-    TF_ASSIGN_OR_RETURN(const BufferAllocation::Slice result_slice,
-                        assignment_->GetUniqueTopLevelOutputSlice());
-    VLOG(3) << "result index: " << result_slice.index();
-  }
-  return std::move(buffers);
+    // if (VLOG_IS_ON(3)) {
+    //     TF_ASSIGN_OR_RETURN(const BufferAllocation::Slice result_slice, assignment_->GetUniqueTopLevelOutputSlice());
+    //     VLOG(3) << "result index: " << result_slice.index();
+    // }
+
+    return std::move(buffers);
 }
 
 static int32_t GetDeviceOrdinal(const ExecutableRunOptions* run_options) {
@@ -299,100 +296,101 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::CreateResultShapedBuffer(
     const ServiceExecutableRunOptions* run_options,
     absl::Span<MaybeOwningDeviceMemory> buffers,
     absl::Span<ExecutionInput> arguments) {
-  se::Stream* stream = run_options->stream();
-  ExecutionOutput result(/*on_device_shape=*/result_shape(),
-                         run_options->allocator(),
-                         stream->parent()->device_ordinal());
-  const HloInputOutputAliasConfig& input_output_alias =
-      module().input_output_alias_config();
-  HloInstruction* root = hlo_module_->entry_computation()->root_instruction();
-  const Shape& root_shape = root->shape();
+  // se::Stream* stream = run_options->stream();
+  // ExecutionOutput result(/*on_device_shape=*/result_shape(),
+  //                        run_options->allocator(),
+  //                        stream->parent()->device_ordinal());
+  // const HloInputOutputAliasConfig& input_output_alias =
+  //     module().input_output_alias_config();
+  // HloInstruction* root = hlo_module_->entry_computation()->root_instruction();
+  // const Shape& root_shape = root->shape();
 
   // Move se::OwningDeviceMemory values which contain the array(s) of the result
   // into the respective location in ScopedShapedBuffer which is returned to the
   // caller.
-  for (auto& p : result.MutableResult()->buffers()) {
-    const ShapeIndex& index = p.first;
-    se::DeviceMemoryBase& result_buffer = p.second;
-    const HloValueSet& sources = this->GetRootValueSet().element(index);
+  // for (auto& p : result.MutableResult()->buffers()) {
+  //   const ShapeIndex& index = p.first;
+  //   se::DeviceMemoryBase& result_buffer = p.second;
+    // const HloValueSet& sources = this->GetRootValueSet().element(index);
     // The points to set is unambiguous so the set should be a
     // singleton.
-    CHECK_EQ(1, sources.values().size());
-    const HloValue* value_source = sources.values()[0];
-    HloInstruction* src = value_source->instruction();
+    // CHECK_EQ(1, sources.values().size());
+    // const HloValue* value_source = sources.values()[0];
+    // HloInstruction* src = value_source->instruction();
 
     // The source for this result buffer can be a nested buffer such as
     // a tuple element.
-    TF_ASSIGN_OR_RETURN(
-        const BufferAllocation::Slice slice,
-        this->assignment_->GetUniqueSlice(src, value_source->index()));
-    const BufferAllocation::Index buffer_index = slice.index();
+    // TF_ASSIGN_OR_RETURN(
+    //     const BufferAllocation::Slice slice,
+    //     this->assignment_->GetUniqueSlice(src, value_source->index()));
+    // const BufferAllocation::Index buffer_index = slice.index();
+    // const BufferAllocation::Index buffer_index = 1;
 
     // TODO(cheshire): duplication with other backends.
-    std::optional<HloInputOutputAliasConfig::Alias> alias =
-        input_output_alias.GetAliasedParameter(index);
-    if (alias) {
-      CHECK_LT(alias->parameter_number, arguments.size());
-      ExecutionInput& input = arguments[alias->parameter_number];
-      MaybeOwningDeviceMemory* maybe_owning_memory =
-          input.MutableBuffer(alias->parameter_index);
-      if (alias->must_alias() && !maybe_owning_memory->HasOwnership()) {
-        return InvalidArgument(
-            "An input was configured to be must-alias at "
-            "compile time but not donated at runtime: %s",
-            alias->ToString());
-      }
-      if (std::optional<se::OwningDeviceMemory> owning =
-              maybe_owning_memory->Release()) {
-        // If the caller passes the ownership of the device memory, reuse it
-        // as the output buffer. It is up to the caller whether or not to
-        // donate a buffer; the aliasing information describes which buffers
-        // may alias, not buffers that must alias.
-        se::DeviceMemoryBase argument_buffer = owning->Release();
-        *maybe_owning_memory = argument_buffer;
-        result_buffer = argument_buffer;
-        // The caller is giving us the
-        // input buffer, but in case of error of the execute call, we should
-        // not be releasing it as it contains valid data (for example, it is a
-        // parameter which the user wants us to alias, in a gradient update
-        // computation). So we store the index into the result in the aliased
-        // vactor, which will be fed to the ExecutionOutput, which will be
-        // using the indices to drop the addresses from its own
-        // ScopedShapedBuffer result, if the ExecutionOutput is not committed.
-        result.AddAliasedIndex(index);
-      } else {
-        VLOG(3) << "Using copy-protection: aliasing is specified, but the "
-                   "buffer is not donated; allocating a fresh buffer";
-        int64_t allocation_size =
-            ShapeUtil::ByteSizeOf(ShapeUtil::GetSubshape(root_shape, index));
-        TF_ASSIGN_OR_RETURN(
-            se::OwningDeviceMemory allocated_buffer,
-            run_options->allocator()->Allocate(
-                stream->parent()->device_ordinal(), allocation_size));
-        result_buffer = allocated_buffer.Release();
-        MaybeOwningDeviceMemory& registered_buffer = buffers[buffer_index];
-        CHECK_EQ(result_buffer.size(),
-                 registered_buffer.AsDeviceMemoryBase().size());
-        std::memcpy(/*dest=*/result_buffer.opaque(),
-                    /*src=*/registered_buffer.AsDeviceMemoryBase().opaque(),
-                    /*n=*/result_buffer.size());
-        registered_buffer = result_buffer;
-      }
-    }
+  //   std::optional<HloInputOutputAliasConfig::Alias> alias =
+  //       input_output_alias.GetAliasedParameter(index);
+  //   if (alias) {
+  //     CHECK_LT(alias->parameter_number, arguments.size());
+  //     ExecutionInput& input = arguments[alias->parameter_number];
+  //     MaybeOwningDeviceMemory* maybe_owning_memory =
+  //         input.MutableBuffer(alias->parameter_index);
+  //     if (alias->must_alias() && !maybe_owning_memory->HasOwnership()) {
+  //       return InvalidArgument(
+  //           "An input was configured to be must-alias at "
+  //           "compile time but not donated at runtime: %s",
+  //           alias->ToString());
+  //     }
+  //     if (std::optional<se::OwningDeviceMemory> owning =
+  //             maybe_owning_memory->Release()) {
+  //       // If the caller passes the ownership of the device memory, reuse it
+  //       // as the output buffer. It is up to the caller whether or not to
+  //       // donate a buffer; the aliasing information describes which buffers
+  //       // may alias, not buffers that must alias.
+  //       se::DeviceMemoryBase argument_buffer = owning->Release();
+  //       *maybe_owning_memory = argument_buffer;
+  //       result_buffer = argument_buffer;
+  //       // The caller is giving us the
+  //       // input buffer, but in case of error of the execute call, we should
+  //       // not be releasing it as it contains valid data (for example, it is a
+  //       // parameter which the user wants us to alias, in a gradient update
+  //       // computation). So we store the index into the result in the aliased
+  //       // vactor, which will be fed to the ExecutionOutput, which will be
+  //       // using the indices to drop the addresses from its own
+  //       // ScopedShapedBuffer result, if the ExecutionOutput is not committed.
+  //       result.AddAliasedIndex(index);
+  //     } else {
+  //       VLOG(3) << "Using copy-protection: aliasing is specified, but the "
+  //                  "buffer is not donated; allocating a fresh buffer";
+  //       int64_t allocation_size =
+  //           ShapeUtil::ByteSizeOf(ShapeUtil::GetSubshape(root_shape, index));
+  //       TF_ASSIGN_OR_RETURN(
+  //           se::OwningDeviceMemory allocated_buffer,
+  //           run_options->allocator()->Allocate(
+  //               stream->parent()->device_ordinal(), allocation_size));
+  //       result_buffer = allocated_buffer.Release();
+  //       MaybeOwningDeviceMemory& registered_buffer = buffers[buffer_index];
+  //       CHECK_EQ(result_buffer.size(),
+  //                registered_buffer.AsDeviceMemoryBase().size());
+  //       std::memcpy(/*dest=*/result_buffer.opaque(),
+  //                   /*src=*/registered_buffer.AsDeviceMemoryBase().opaque(),
+  //                   /*n=*/result_buffer.size());
+  //       registered_buffer = result_buffer;
+  //     }
+  //   }
 
-    if (result_buffer.is_null()) {
-      MaybeOwningDeviceMemory& buffer = buffers[buffer_index];
-      if (std::optional<se::OwningDeviceMemory> owned_buffer =
-              buffer.Release()) {
-        result_buffer = owned_buffer->Release();
-        buffer = result_buffer;
-      } else {
-        result_buffer = buffer.AsDeviceMemoryBase();
-        result.AddAliasedIndex(index);
-      }
-    }
-  }
-  return std::move(result);
+  //   if (result_buffer.is_null()) {
+  //     MaybeOwningDeviceMemory& buffer = buffers[buffer_index];
+  //     if (std::optional<se::OwningDeviceMemory> owned_buffer =
+  //             buffer.Release()) {
+  //       result_buffer = owned_buffer->Release();
+  //       buffer = result_buffer;
+  //     } else {
+  //       result_buffer = buffer.AsDeviceMemoryBase();
+  //       result.AddAliasedIndex(index);
+  //     }
+  //   }
+  // }
+  // return std::move(result);
 }
 
 absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
@@ -554,10 +552,10 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
   return ShapeUtil::ByteSizeOf(shape, sizeof(void*)) + metadata_size;
 }
 
-const InstructionValueSet& NpuExecutable::GetRootValueSet() const {
-  return assignment_->dataflow_analysis().GetInstructionValueSet(
-      module().entry_computation()->root_instruction());
-}
+// const InstructionValueSet& NpuExecutable::GetRootValueSet() const {
+//   return assignment_->dataflow_analysis().GetInstructionValueSet(
+//       module().entry_computation()->root_instruction());
+// }
 
 int64_t NpuExecutable::SizeOfGeneratedCodeInBytes() const {
   // TODO(ezhulenev): Delete this function, it's not really used anywhere.

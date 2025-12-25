@@ -111,6 +111,7 @@ cc_library(
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
         "//xla/xla_npu/third_party/register:acl_interface",
         "//xla/xla_npu/third_party/stub:ge_hdrs",
+        "//xla/xla_npu/pjrt_npu/npu/service:npu_buffer_assignment",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
         "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
 

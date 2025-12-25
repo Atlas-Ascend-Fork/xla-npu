@@ -1,5 +1,5 @@
-#ifndef NPU_ABSTRACT_CPU_BUFFER_H_
-#define NPU_ABSTRACT_CPU_BUFFER_H_
+#ifndef NPU_ABSTRACT_NPU_BUFFER_H_
+#define NPU_ABSTRACT_NPU_BUFFER_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -78,4 +78,4 @@ void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
 
 }  // namespace xla
 
-#endif  // XLA_PJRT_CPU_ABSTRACT_CPU_BUFFER_H_
+#endif  // NPU_ABSTRACT_NPU_BUFFER_H_
