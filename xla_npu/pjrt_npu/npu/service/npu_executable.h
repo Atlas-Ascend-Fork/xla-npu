@@ -30,6 +30,7 @@
 #include "xla/service/maybe_owning_device_memory.h"
 #include "xla/service/service_executable_run_options.h"
 // #include "xla/stream_executor/device_memory_allocator.h"
+#include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 
@@ -46,7 +47,7 @@ class NpuExecutable : public Executable {
   // Creates a NpuExecutable from a thunk sequence.
   static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(
       // std::unique_ptr<FunctionLibrary> function_library,
-      std::unique_ptr<BufferAssignment> assignment,
+      std::unique_ptr<NpuBufferAssignment> assignment,
       std::unique_ptr<HloModule> hlo_module,
       // ThunkSequence thunks,
       // std::vector<ConstantAllocation> constants,
@@ -121,7 +122,7 @@ class NpuExecutable : public Executable {
   bool has_xnn_fusions() const { return has_xnn_fusions_; }
   bool has_ynn_fusions() const { return has_ynn_fusions_; }
 
-  const BufferAssignment& buffer_assignment() const { return *assignment_; }
+  const NpuBufferAssignment& buffer_assignment() const { return *assignment_; }
   // absl::Span<const ConstantAllocation> constants() const { return constants_; }
 
   int64_t SizeOfGeneratedCodeInBytes() const override;
@@ -178,7 +179,7 @@ class NpuExecutable : public Executable {
 
   // Returns the instruction value set of the root instruction of the entry
   // computation. Uses dataflow analysis from buffer assignment.
-  const InstructionValueSet& GetRootValueSet() const;
+  // const InstructionValueSet& GetRootValueSet() const;
 
   // The FunctionLibrary containing compiled modules.
   // std::unique_ptr<FunctionLibrary> function_library_;
@@ -196,7 +197,7 @@ class NpuExecutable : public Executable {
   //     symbol_type_id_to_function_type_id_;
 
   // Buffer assignment for the buffers we need to allocate.
-  std::shared_ptr<BufferAssignment> assignment_;
+  std::shared_ptr<NpuBufferAssignment> assignment_;
   std::vector<const BufferAllocation*> alloc_ptrs_;
 
   // The LLVM IR, in string format, of the unoptimized module generated for this
@@ -239,7 +240,7 @@ class NpuExecutable : public Executable {
   NpuExecutable(std::unique_ptr<HloModule> hlo_module,
                 std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                 std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-                std::unique_ptr<BufferAssignment> assignment,
+                std::unique_ptr<NpuBufferAssignment> assignment,
                 std::unique_ptr<GraphData> graph_data);
                 // TargetMachineOptionsProto target_machine_options);
   NpuExecutable(const NpuExecutable&) = delete;

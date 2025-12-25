@@ -12,11 +12,22 @@ package(
 )
 
 cc_library(
+    name = "npu_buffer_assignment",
+    srcs = ["npu_buffer_assignment.cc"],
+    hdrs = ["npu_buffer_assignment.h"],
+    deps = [
+        "//xla/service:buffer_assignment",
+    ],
+)
+
+cc_library(
     name = "npu_executable",
     srcs = ["npu_executable.cc"],
     hdrs = ["npu_executable.h"],
     deps = [
+        ":npu_buffer_assignment",
         "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
+
         # ":cpu_runtime",
         # ":executable_proto_cc",
         "//xla:executable_run_options",

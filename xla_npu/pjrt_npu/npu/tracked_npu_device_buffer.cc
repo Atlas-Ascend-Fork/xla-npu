@@ -162,7 +162,7 @@ absl::Status NpuDeviceMemory::AllocateInto(
 }
 
 //===----------------------------------------------------------------------===//
-// TrackedCpuDeviceBuffer.
+// TrackedNpuDeviceBuffer.
 //===----------------------------------------------------------------------===//
 
 TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(
