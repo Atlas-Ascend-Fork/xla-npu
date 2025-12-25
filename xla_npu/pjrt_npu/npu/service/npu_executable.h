@@ -145,6 +145,9 @@ class NpuExecutable : public Executable {
   // const TargetMachineOptionsProto& target_machine_options() const {
   //   return target_machine_options_;
   // }
+  GraphData* GetGraphData() const {
+    return graph_data_.get();
+  }
 
  private:
   // Creates an array suitable for passing as the "buffer_table" argument to the

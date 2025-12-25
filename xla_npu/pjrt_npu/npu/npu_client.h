@@ -147,6 +147,19 @@ public:
         return async_work_runner_.get();
     }
 
+    // Returns a pair of async events:
+    // - async event that signals the completion of the last collective launch
+    // - count down event that must be signalled when each rank completes
+    //   a collective launch
+     CollectiveLaunchEvent GetLastCollectiveLaunchEvent(
+        size_t num_addressable_devices) {
+      tsl::CountDownAsyncValueRef<NpuEvent> count_down(num_addressable_devices);
+      absl::MutexLock lock(mu_);
+      auto last_launch = std::move(last_collective_launch_event_);
+      last_collective_launch_event_ = count_down.AsRef();
+      return std::make_pair(std::move(last_launch), std::move(count_down));
+    }
+
     absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(
         int num_replicas, int num_partitions) const override;
 
@@ -169,6 +182,21 @@ private:
     // Pointers to `owned_memory_spaces_`.
     std::vector<PjRtMemorySpace*> memory_spaces_;
     NpuTopologyDescription topology_;
+
+    // Launching collectives are prone to deadlock when we use fixed-sized
+    // threadpools since ExecuteHelper will block until all replicas reach the
+    // barrier. We ensure that
+    // 1. Threadpool size is at least as large as device_count so one collective
+    //    launch over all devices can succeed.
+    // 2. Gang-schedule each collective by conservatively ensuring a total order
+    //    of collectives and launching only one collective at a time to avoid
+    //    having no active threads to make progress
+    // TODO(zhangqiaorjc): Explore alternatives that allow multiple concurrent
+    // collectives.
+    mutable absl::Mutex mu_;
+    tsl::AsyncValueRef<NpuEvent> last_collective_launch_event_
+        ABSL_GUARDED_BY(mu_);
+
     // A cache for transpose plans. We use transposes to convert
     // (possibly strided) buffers provided to BufferFromHostBuffer into dense
     // major-to-minor layout.
@@ -253,7 +281,7 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
       absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
       const ExecuteOptions& options, std::optional<Future<>>& returned_future,
       bool fill_future) const override;
-
+  
   void Delete() override;
 
   bool IsDeleted() const override;
