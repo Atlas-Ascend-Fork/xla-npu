@@ -65,10 +65,19 @@ TensorDesc Operator::GetOutputDescByName(const char* name) const {
   return TensorDesc();
 }
 
-Operator& Operator::SetInput(
-    uint32_t dst_index,
-    const Operator& src_oprt,
-    uint32_t src_index) {
+Operator& Operator::SetInput(const char_t *dst_name, const Operator &src_oprt) {
+  return op;
+}
+
+Operator& Operator::SetInput(const char_t *dst_name, const Operator &src_oprt, const char_t *name) {
+  return op;
+}
+
+Operator& Operator::SetInput(const char_t *dst_name, const Operator &src_oprt, uint32_t index) {
+  return op;
+}
+
+Operator& Operator::SetInput(uint32_t dst_index, const Operator &src_oprt, uint32_t src_index) {
   return op;
 }
 

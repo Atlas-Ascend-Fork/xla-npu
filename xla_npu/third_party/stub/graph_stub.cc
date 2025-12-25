@@ -11,6 +11,10 @@ Graph::Graph(const char* name) {
 
 Graph graph("test");
 
+graphStatus Graph::AddOp(const ge::Operator &op) {
+  return 0;
+}
+
 Graph& Graph::SetInputs(const std::vector<Operator>& inputs) {
   return graph;
 }
@@ -86,5 +90,9 @@ graphStatus GNode::SetAttr(
     const AscendString& name,
     std::vector<std::vector<int64_t>>& attr_value) const {
   return 0;
+}
+
+std::vector<int64_t> Shape::GetDims() const {
+  return {};
 }
 } // namespace ge
