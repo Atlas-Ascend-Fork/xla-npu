@@ -14,6 +14,9 @@
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
+
+
 namespace xla {
     
 // Returns the CPU devices from the given PjRtCpuDevices.
@@ -188,6 +191,44 @@ PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
                           std::move(definition_event));
 }
 
+static void  TestGraph(ge::GraphPtr &graph) {
+    graph = std::make_shared<ge::Graph>("XLAGraph");
+
+    ge::TensorDesc desc(ge::Shape({10, 10}), ge::FORMAT_ND, ge::DT_FLOAT);
+    auto data0 = ge::OperatorFactory::CreateOperator("Data_0", "Data");
+    data0.SetAttr("index", 0);
+    data0.UpdateInputDesc("x", desc);
+    data0.UpdateOutputDesc("y", desc);
+
+    auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
+    data1.SetAttr("index", 1);
+    data1.UpdateInputDesc("x", desc);
+    data1.UpdateOutputDesc("y", desc);
+
+    auto add = ge::OperatorFactory::CreateOperator("add", "Add");
+    add.SetInput("x1", data0);
+    add.SetInput("x2", data1);
+
+    std::vector<ge::Operator> inputs{data0, data1};
+    std::vector<ge::Operator> outputs{add};
+
+    graph->SetInputs(inputs).SetOutputs(outputs);
+}
+
+static std::string DebugString(const ge::Shape &shape) {
+    std::stringstream ss;
+    auto dims = shape.GetDims();
+    if (dims.empty()) {
+        return "empty";
+    }
+    ss << "[";
+    size_t index = 0U;
+    for (; index < (dims.size() - 1U); index++) {
+    ss << dims[index] << ", ";
+    }
+    ss << dims[index] << "]";
+    return ss.str(); 
+}
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
 PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) { 
@@ -197,7 +238,7 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     std::cout << os.str() << std::endl;
 
     auto graph_data = std::make_unique<npu::GraphData>();
-    graph_data->graph = std::make_shared<ge::Graph>("XLAGraph");
+    TestGraph(graph_data->graph);
     graph_data->id = 0;
 
     std::map<ge::AscendString, ge::AscendString> ge_options = {
@@ -226,7 +267,9 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     if (summary ==  nullptr) {
         return absl::InternalError("Failed to GetCompiledGraphSummary.");
     }
-
+    std::vector<ge::Shape> output_ge_shapes;
+    summary->GetOutputShapes(output_ge_shapes);
+    std::cout << "GetCompiledGraphSummary finish, output shape is: " << DebugString(output_ge_shapes[0]) << std::endl;
 
     TF_ASSIGN_OR_RETURN(
       auto npu_executable,
