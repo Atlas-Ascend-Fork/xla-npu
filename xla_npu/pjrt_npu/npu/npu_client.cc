@@ -17,6 +17,7 @@
 #include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
 
@@ -523,74 +524,32 @@ PjRtNpuExecutable::Execute(
     absl::Span<const std::vector<PjRtBuffer*>> argument_handles,
     const ExecuteOptions& options,
     std::optional<std::vector<Future<>>>& returned_futures) const {
-    tsl::profiler::TraceMe trace_me("PjRtNpuExecutable::Execute");
-
     RunId run_id(options.launch_id);
-    if (device_assignment_ == nullptr) {
-        return InvalidArgument("Execute expects a non-null device_assignment");
-    }
-    const int num_addressable_devices = addressable_devices_.size();
+    std::cout << "Executing computation " << name() << std::endl;
 
-    if (argument_handles.size() != num_addressable_devices) {
-        return InvalidArgument(
-            "Attempted to execute with %d argument lists when local device "
-            "count is %d (total replica count: %d, partition count: %d)",
-            argument_handles.size(), num_addressable_devices, num_replicas(),
-            num_partitions());
-    }
-
-    VLOG(1) << "Executing computation " << name()
-            << "; num_replicas=" << num_replicas()
-            << " num_partitions=" << num_partitions()
-            << " num_addressable_devices=" << num_addressable_devices;
-
-    std::vector<std::vector<std::unique_ptr<PjRtBuffer>>> wrapped_results(num_addressable_devices);
+    // only one device
+    std::vector<std::vector<std::unique_ptr<PjRtBuffer>>> wrapped_results(1);
     if (returned_futures.has_value()) {
-        returned_futures->resize(num_addressable_devices);
-    }
-    if (num_addressable_devices == 1) {
-        // Fast-path if there is only one device — run the computation on the
-        // current thread.
-        const int replica = addressable_device_logical_ids_[0].replica;
-        const int partition = addressable_device_logical_ids_[0].partition;
-
-        // Dump once before running, in case there's a crash.
-        // MaybeDumpHloSnapshot(npu_executable_->module(), run_id, argument_handles[0], {});
-        if (unoptimized_hlo_module_ != nullptr) {
-            HloUnoptimizedSnapshot hlo_snapshot;
-            *hlo_snapshot.mutable_hlo_module() = unoptimized_hlo_module_->ToProto();
-            for (const auto& argument_handle : argument_handles) {
-                HloInputs hlo_inputs;
-                for (const auto& buffer : argument_handle) {
-                TF_ASSIGN_OR_RETURN(auto literal, buffer->ToLiteralSync());
-                *hlo_inputs.add_arguments() = literal->ToProto();
-                }
-                *hlo_snapshot.add_partitions() = std::move(hlo_inputs);
-            }
-
-            // DumpHloUnoptimizedSnapshotIfEnabled(
-            //     hlo_snapshot, npu_executable_->module().config().debug_options());
-        }
-        auto statusor = ExecuteHelper(
-            argument_handles[0], replica, partition, run_id, options,
-            /*last_collective_launch_event=*/{}, returned_futures.has_value());
-
-        if (!statusor.ok()) {
-            return std::move(statusor).status();
-        }
-
-        wrapped_results[0] = std::move(statusor->buffers);
-        if (returned_futures.has_value()) {
-            (*returned_futures)[0] = std::move(*statusor->future);
-        }
-
-        // MaybeDumpHloSnapshot(npu_executable_->module(), run_id, argument_handles[0], wrapped_results[0]);
-    } else {
-        // TODO: not support now
-        return absl::InternalError("Not support for more than 1 device.");
+        returned_futures->resize(1);
     }
 
-    VLOG(1) << "Replicated execution complete.";
+    // Fast-path if there is only one device — run the computation on the
+    // current thread.
+    const int replica = 1;
+    const int partition = 1;
+
+    auto statusor = ExecuteHelper(
+        argument_handles[0], replica, partition, run_id, options,
+        /*last_collective_launch_event=*/{}, returned_futures.has_value());
+
+    if (!statusor.ok()) {
+      return std::move(statusor).status();
+    }
+
+    wrapped_results[0] = std::move(statusor->buffers);
+    if (returned_futures.has_value()) {
+      (*returned_futures)[0] = std::move(*statusor->future);
+    }
 
     return wrapped_results;
 }
@@ -600,7 +559,7 @@ PjRtNpuExecutable::ExecuteSharded(
     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
     bool fill_future) const {
-    return absl::UnimplementedError("PjRtNpuExecutable::ExecutePortable is not supported.");
+    return absl::UnimplementedError("PjRtNpuExecutable::ExecuteSharded is not supported.");
 }
 
 absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>>
@@ -608,20 +567,7 @@ PjRtNpuExecutable::ExecutePortable(
     absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
     const ExecuteOptions& options, std::optional<Future<>>& returned_future,
     bool fill_future) const {
-    return absl::UnimplementedError("PjRtNpuExecutable::ExecutePortable is not supported."); 
-}
-
-void PjRtNpuExecutable::Delete() {}
-
-bool PjRtNpuExecutable::IsDeleted() const { return false; }
-
-absl::StatusOr<std::string> PjRtNpuExecutable::SerializeExecutable() const {
-    return absl::UnimplementedError("PjRtNpuExecutable::SerializeExecutable is not supported."); 
-}
-
-absl::StatusOr<CompiledMemoryStats> PjRtNpuExecutable::GetCompiledMemoryStats()
-    const {
-    return absl::UnimplementedError("PjRtNpuExecutable::GetCompiledMemoryStats is not supported."); 
+    return absl::UnimplementedError("PjRtNpuExecutable::ExecutePortable is not supported.");
 }
 
 absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
@@ -629,38 +575,100 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     const RunId& run_id, const ExecuteOptions& options,
     PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
     bool fill_future, PjRtNpuDevice* device) const {
-    tsl::profiler::TraceMe traceme([&]() {
-        return tsl::profiler::TraceMeEncode("PjRtNpuExecutable::ExecuteHelper",
-            {
-                {"run_id", run_id.ToInt()},
-                {"replica", replica},
-                {"partition", partition},
-            });
-    });
-
     std::shared_ptr<DeviceAssignment> device_assignment;
     if (device == nullptr) {
-        CHECK(device_assignment_ != nullptr);
-        const int64_t device_id = (*device_assignment_)(replica, partition);
+        // only device 0
+        const int64_t device_id = 0;
         PjRtGlobalDeviceId global_device_id(device_id);
         TF_ASSIGN_OR_RETURN(PjRtDevice * pjrt_device,
                             client_->LookupDevice(global_device_id));
         device = tsl::down_cast<PjRtNpuDevice*>(pjrt_device);
-        device_assignment = device_assignment_;
-    } else {
-        CHECK(device_assignment_ == nullptr);
-        CHECK_EQ(replica, 0);
-        CHECK_EQ(partition, 0);
-        CHECK(addressable_devices_.empty());
-        device_assignment = std::make_shared<DeviceAssignment>(1, 1);
-        (*device_assignment)(0, 0) = device->id();
     }
+
     CHECK_EQ(device->process_index(), client_->process_index());
+
+    // Handle inputs.
+    // `execute_event` indicates whether npu computation is complete and whether
+    // there was an error.
     auto execute_event = tsl::MakeConstructedAsyncValueRef<NpuEvent>();
+    // Asynchronously call needed
+    // MarkEventReadyOnExit ready_on_exit(execute_event);
+    auto execute_usage_event = tsl::MakeRef<NpuTrackedDeviceEvent>(execute_event);
 
-    /* 初始化 */
+    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4>
+        tracked_buffers;
+    tracked_buffers.reserve(argument_handles.size());
+    
+    // To avoid clobbering inputs, we must ensure that
+    //   `extra_deps` = inputs' definition events + donated inputs' usage events.
+    // This also ensures that the returned `execute_event` dominates all inputs'
+    // events, and thus output buffer only need to contain `execute_event` as the
+    // single definition event.
+    std::vector<tsl::RCReference<tsl::AsyncValue>> input_deps;
+    input_deps.reserve(argument_handles.size());
 
+    for (int i = 0; i < argument_handles.size(); ++i) {
+        PjRtBuffer* handle = argument_handles[i];
+        auto* npu_buffer = tsl::down_cast<CommonPjRtBuffer*>(handle);
+        if (npu_buffer->device() != device) {
+            return InvalidArgument(
+                "Buffer passed to Execute() as argument %d to replica %d is on "
+                "device %s, but replica is assigned to device %s.",
+                i, replica, npu_buffer->device()->DebugString(),
+                device->DebugString());
+        }
+
+        TrackedNpuDeviceBuffer* tracked_buffer;
+        auto get_buffer = [&](int i) -> absl::Status {
+            CommonPjRtBuffer::ScopedHold usage_transaction =
+            npu_buffer->GetBufferWithHold(CommonPjRtBuffer::ScopedHold::kUsage);
+            if (!usage_transaction.ok()) {
+                return InvalidArgument(
+                    "Invalid buffer passed: buffer has been deleted or donated.");
+            }
+            tracked_buffer = tensorflow::down_cast<TrackedNpuDeviceBuffer*>(
+                usage_transaction.buffer());
+            usage_transaction.ConvertUsageHold(execute_usage_event);
+            tracked_buffers.emplace_back(/*can_donate=*/false, tracked_buffer);
+            
+            return absl::OkStatus();
+        };
+        
+        TF_RETURN_IF_ERROR(get_buffer(i));
+
+        // Definition events are never modified after buffer construction. If they
+        // are available and have no error, they can be skipped in input deps.
+        // In contrast, already known errors in the input are taken as deps so that
+        // they can poison output buffers.
+        const auto& definition_event = tracked_buffer->definition_event();
+        if (!definition_event.IsAvailable() || definition_event.IsError()) {
+            input_deps.push_back(definition_event.CopyRCRef());
+        }
+    }
+
+    for (auto& tracked_buffer: tracked_buffers) {
+        std::cout << "argument handle buffer addr=" << tracked_buffer.second->buffer().get().untyped_data() << ", size="<< tracked_buffer.second->buffer().get().size_bytes() << std::endl;
+    }
+
+    if (!input_deps.empty()) {
+        std::cout << "input is not ready" << std::endl;
+    }
+
+    // transfer to ge tensor
     auto npu_executable = tsl::down_pointer_cast<npu::NpuExecutable>(npu_executable_);
+    std::vector<ge::Tensor> inputs;
+    for (int i = 0; i < tracked_buffers.size(); i++) {
+        ge::TensorDesc desc;
+        // desc.SetDataType(npu_executable->GetGraphData().input_dtypes[i]);
+        auto input_shape = ge::Shape(npu_executable->GetGraphData()->inputs_shape[i]);
+        desc.SetShape(input_shape);
+        ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
+        std::cout << "input tensor " << i << " data addr=" << (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data() << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
+        inputs.emplace_back(input);
+    }
+
+    // prepare output buffer
+    /* 初始化 */
     // `buffer_alloc` and `buffer_alloc_and_copy` are used to do real memory allocation and copy work.
     BufferAlloc buffer_alloc;
     // BufferAllocAndCopy buffer_alloc_and_copy;
@@ -692,6 +700,19 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     res.push_back(std::move(output_buffer));
 
     return Result({/*future=*/std::nullopt, std::move(res)});
+}
+
+void PjRtNpuExecutable::Delete() {}
+
+bool PjRtNpuExecutable::IsDeleted() const { return false; }
+
+absl::StatusOr<std::string> PjRtNpuExecutable::SerializeExecutable() const {
+    return absl::UnimplementedError("PjRtNpuExecutable::SerializeExecutable is not supported."); 
+}
+
+absl::StatusOr<CompiledMemoryStats> PjRtNpuExecutable::GetCompiledMemoryStats()
+    const {
+    return absl::UnimplementedError("PjRtNpuExecutable::GetCompiledMemoryStats is not supported."); 
 }
 
 }  // namespace xla
