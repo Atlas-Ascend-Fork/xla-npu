@@ -1,7 +1,3 @@
-
-  
-  
-  
 #ifndef NPU_CLIENT_H_
 #define NPU_CLIENT_H_
 
@@ -28,6 +24,7 @@
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
+#include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
 
@@ -55,7 +52,6 @@ public:
 
     int device_count() const override
     {
-        npu::AclGetErrMsg(); // only for debug
         return devices_.size();
     }
 
@@ -98,7 +94,7 @@ public:
     {
         return &topology_;
     }
-    
+
     absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
         const XlaComputation& computation, CompileOptions options) override;
 
@@ -162,6 +158,15 @@ public:
 
     absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(
         int num_replicas, int num_partitions) const override;
+
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
+  CompileInternal(
+      const XlaComputation& computation,
+      const std::vector<const Shape*>& argument_layout_pointers,
+      LayoutCanonicalizationCallback layout_canonicalization_callback,
+      CompileOptions options,
+      std::unique_ptr<npu::GraphData> graph_data,
+      const AotCompilationOptions* absl_nullable aot_options = nullptr);
 
 private:
     friend class PjRtNpuExecutable;
@@ -228,37 +233,51 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
   PjRtNpuClient* client() const override { return client_; }
 
   absl::string_view name() const override {
+    std::cout<< "npu executable name: " << std::endl;
     return npu_executable_->shared_module()->name();
   }
 
-  int num_replicas() const override { return num_replicas_; }
+  int num_replicas() const override {
+    std::cout<< "npu executable num_replicas: "<< std::endl;
+    return num_replicas_;
+  }
 
-  int num_partitions() const override { return num_partitions_; }
+  int num_partitions() const override {
+    std::cout<< "npu executable num_partitions: "<< std::endl;
+    return num_partitions_;
+  }
 
   int64_t SizeOfGeneratedCodeInBytes() const override {
+    std::cout<< "npu executable SizeOfGeneratedCodeInBytes: "<< std::endl;
     return npu_executable_->SizeOfGeneratedCodeInBytes();
   }
 
   const DeviceAssignment& device_assignment() const override {
+    std::cout<< "npu executable device_assignment: " << std::endl;
     return *device_assignment_;
   }
 
   absl::Span<const LogicalDeviceIds> addressable_device_logical_ids()
       const override {
+    std::cout<< "npu executable addressable_device_logical_ids: " << std::endl;
     return addressable_device_logical_ids_;
   }
 
   absl::Span<PjRtDevice* const> addressable_devices() const override {
+    std::cout<< "npu executable addressable_devices: " << std::endl;
     return addressable_devices_;
   }
 
   absl::StatusOr<std::vector<std::shared_ptr<HloModule>>> GetHloModules()
       const override {
-    return Unimplemented("GetHloModules is not supported.");
+    std::cout<< "npu executable GetHloModules: " << std::endl;
+    return std::vector<std::shared_ptr<HloModule>>{
+      npu_executable_->shared_module()};
   }
 
   absl::StatusOr<std::vector<std::vector<absl::string_view>>>
   GetOutputMemoryKinds() const override {
+    std::cout<< "npu executable GetOutputMemoryKinds: " << std::endl;
     return Unimplemented("GetOutputMemoryKinds is not supported.");
   }
 
