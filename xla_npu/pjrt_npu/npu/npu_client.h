@@ -253,7 +253,7 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
   }
 
   const DeviceAssignment& device_assignment() const override {
-    std::cout<< "npu executable device_assignment: " << std::endl;
+    std::cout<< "device_assignment: " << std::endl;
     return *device_assignment_;
   }
 
