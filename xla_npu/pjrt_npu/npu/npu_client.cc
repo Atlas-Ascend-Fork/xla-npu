@@ -404,88 +404,37 @@ PjRtNpuClient::CompileInternal(
         layout_canonicalization_callback);
   }
 
-  int num_replicas;
-  int num_partitions;
-  std::shared_ptr<DeviceAssignment> device_assignment;
-  TF_RETURN_IF_ERROR(ParseDeviceAssignmentCompileOptions(
-      options.compile_portable_executable, &options.executable_build_options,
-      [this](int num_replicas, int num_partitions) {
-        return this->GetDefaultDeviceAssignment(num_replicas, num_partitions);
-      },
-      &num_replicas, &num_partitions, &device_assignment));
+    // int num_replicas;
+    // int num_partitions;
+    // std::shared_ptr<DeviceAssignment> device_assignment;
+    // TF_RETURN_IF_ERROR(ParseDeviceAssignmentCompileOptions(
+    //     options.compile_portable_executable, &options.executable_build_options,
+    //     [this](int num_replicas, int num_partitions) {
+    //         return this->GetDefaultDeviceAssignment(num_replicas, num_partitions);
+    //     },
+    //     &num_replicas, &num_partitions, &device_assignment));
 
-  /**
-  if (collectives_ == nullptr && device_assignment) {
-    for (int replica = 0; replica < device_assignment->replica_count();
-         ++replica) {
-      for (int computation = 0;
-           computation < device_assignment->computation_count();
-           ++computation) {
-        PjRtGlobalDeviceId id((*device_assignment)(replica, computation));
-        if (UnpackCpuProcessIndex(id) != process_index()) {
-          // TODO(phawkins): improve this error message when we're ready to
-          // publicize that multiprocess collectives exist.
-          return InvalidArgument(
-              "Multiprocess computations aren't implemented on the CPU "
-              "backend.");
-        }
-      }
-    }
-  }*/
+    ExecutableBuildOptions& build_options = options.executable_build_options;
 
-  ExecutableBuildOptions& build_options = options.executable_build_options;
-  std::vector<PjRtLoadedExecutable::LogicalDeviceIds>
-      addressable_device_logical_ids;
-  std::vector<PjRtDevice*> addressable_devices;
-  if (device_assignment != nullptr) {
-    addressable_device_logical_ids.reserve(num_replicas * num_partitions);
-    addressable_devices.reserve(num_replicas * num_partitions);
-    for (int replica = 0; replica < num_replicas; ++replica) {
-      for (int partition = 0; partition < num_partitions; ++partition) {
-        PjRtGlobalDeviceId device_id((*device_assignment)(replica, partition));
-        // if (UnpackCpuProcessIndex(device_id) != process_index()) {
-        //   VLOG(3) << "Non-local device: " << device_id;
-        //   continue;
-        // }
-        TF_ASSIGN_OR_RETURN(PjRtDevice * device, LookupDevice(device_id));
-        PjRtLoadedExecutable::LogicalDeviceIds logica_device_ids;
-        logica_device_ids.replica = replica;
-        logica_device_ids.partition = partition;
-        addressable_device_logical_ids.push_back(std::move(logica_device_ids));
-        addressable_devices.push_back(device);
-      }
-    }
-    if (!addressable_devices.empty() && build_options.device_ordinal() < 0) {
-      build_options.set_device_ordinal(
-          addressable_devices.front()->local_hardware_id().value());
-    }
-  }
+    TF_ASSIGN_OR_RETURN(ProgramShape program_shape, computation.GetProgramShape());
 
-  TF_ASSIGN_OR_RETURN(ProgramShape program_shape,
-                      computation.GetProgramShape());
+    //   std::unique_ptr<Executable> cpu_executable;
+    ExecutionOptions execution_options =
+        CreateExecutionOptions(build_options, &program_shape);
 
-  std::unique_ptr<Executable> cpu_executable;
-  ExecutionOptions execution_options =
-      CreateExecutionOptions(build_options, &program_shape);
+    // Unoptimized HloModuleConfig.
+    TF_ASSIGN_OR_RETURN(
+        std::unique_ptr<HloModuleConfig> hlo_module_config,
+        CreateModuleConfig(program_shape, argument_layout_pointers,
+                            &execution_options, execution_options.num_replicas(),
+                            1,
+                            aot_options));
 
-  // Unoptimized HloModuleConfig.
-  TF_ASSIGN_OR_RETURN(
-      std::unique_ptr<HloModuleConfig> hlo_module_config,
-      CreateModuleConfig(program_shape, argument_layout_pointers,
-                         &execution_options, execution_options.num_replicas(),
-                         1,
-                         aot_options));
-
-  // Apply the user-provided callback to customize the HloModuleConfig.
-  // if (customize_hlo_module_config_) {
-  //   customize_hlo_module_config_(*hlo_module_config);
-  // }
-
-  // Unoptimized HloModule.
-  const xla::HloModuleProto& hlo_module_proto = computation.proto();
-  TF_ASSIGN_OR_RETURN(
-      std::unique_ptr<HloModule> hlo_module,
-      xla::HloModule::CreateFromProto(hlo_module_proto, *hlo_module_config));
+    // Unoptimized HloModule.
+    const xla::HloModuleProto& hlo_module_proto = computation.proto();
+    TF_ASSIGN_OR_RETURN(
+        std::unique_ptr<HloModule> hlo_module,
+        xla::HloModule::CreateFromProto(hlo_module_proto, *hlo_module_config));
 
   // if (aot_options) {
   //   TF_ASSIGN_OR_RETURN(cpu_executable,
@@ -526,33 +475,71 @@ PjRtNpuClient::CompileInternal(
   //       HloModule::CreateFromProto(computation.proto(),
   //                                  cpu_executable->module().config()));
   // }
-  TF_ASSIGN_OR_RETURN(
-          auto npu_executable,
-          npu::NpuExecutable::Create(nullptr, std::move(hlo_module), nullptr, nullptr, std::move(graph_data)));
 
-  absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices;
-  auto executable = std::make_unique<PjRtNpuExecutable>(
-        num_replicas, num_partitions, device_assignment,
-        options.parameter_is_tupled_arguments, std::move(input_options),
-        std::move(npu_executable), std::move(result_buffer_indices),
-        std::move(addressable_device_logical_ids), std::move(addressable_devices),
-        this, nullptr);
-  return std::unique_ptr<PjRtLoadedExecutable>(std::move(executable));
+    // Create device assignment(Do not delete!!! step into PjRtNpuExecutable::Execute requires it)
+    int num_replicas = 1;
+    int num_partitions = 1;
+    TF_ASSIGN_OR_RETURN(auto default_device_assignment, GetDefaultDeviceAssignment(num_replicas, num_partitions));
+    auto device_assignment = std::make_shared<DeviceAssignment>(default_device_assignment);
+    std::vector<PjRtLoadedExecutable::LogicalDeviceIds> addressable_device_logical_ids;
+    std::vector<PjRtDevice*> addressable_devices;
+    if (device_assignment != nullptr) {
+        addressable_device_logical_ids.reserve(num_replicas * num_partitions);
+        addressable_devices.reserve(num_replicas * num_partitions);
+        for (int replica = 0; replica < num_replicas; ++replica) {
+            for (int partition = 0; partition < num_partitions; ++partition) {
+                PjRtGlobalDeviceId device_id((*device_assignment)(replica, partition));
+                // if (UnpackCpuProcessIndex(device_id) != process_index()) {
+                //   VLOG(3) << "Non-local device: " << device_id;
+                //   continue;
+                // }
+                TF_ASSIGN_OR_RETURN(PjRtDevice * device, LookupDevice(device_id));
+                PjRtLoadedExecutable::LogicalDeviceIds logica_device_ids;
+                logica_device_ids.replica = replica;
+                logica_device_ids.partition = partition;
+                addressable_device_logical_ids.push_back(std::move(logica_device_ids));
+                addressable_devices.push_back(device);
+            }
+        }
+        if (!addressable_devices.empty() && build_options.device_ordinal() < 0) {
+            build_options.set_device_ordinal(addressable_devices.front()->local_hardware_id().value());
+        }
+    }
+    // create buffer assignment(Do not delete!!! alloc output buffer depends on it)
+    auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
+    auto output_shape = graph_data->outputs_shape.back();
+    auto output_type = graph_data->output_dtypes.back();
+    int64_t size = output_shape.GetShapeSize() * GetSizeByDataType(output_type);
+    buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
+
+    TF_ASSIGN_OR_RETURN(
+            auto npu_executable,
+            npu::NpuExecutable::Create(std::move(buffer_assignment), std::move(hlo_module), nullptr, nullptr, std::move(graph_data)));
+
+    absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices;
+    auto executable = std::make_unique<PjRtNpuExecutable>(
+            num_replicas, num_partitions, device_assignment,
+            options.parameter_is_tupled_arguments, std::move(input_options),
+            std::move(npu_executable), std::move(result_buffer_indices),
+            std::move(addressable_device_logical_ids), std::move(addressable_devices),
+            this, nullptr);
+
+    return std::unique_ptr<PjRtLoadedExecutable>(std::move(executable));
 }
 
 absl::StatusOr<DeviceAssignment> PjRtNpuClient::GetDefaultDeviceAssignment(
     int num_replicas, int num_partitions) const {
-  if (num_partitions * num_replicas <= addressable_devices().size()) {
-    xla::DeviceAssignment assignment(num_replicas, num_partitions);
-    for (int i = 0; i < num_replicas; ++i) {
-      for (int j = 0; j < num_partitions; ++j) {
-        assignment(i, j) = addressable_devices().at(i * num_partitions + j)->id();
-      }
+    if (num_partitions * num_replicas <= addressable_devices().size()) {
+        xla::DeviceAssignment assignment(num_replicas, num_partitions);
+        for (int i = 0; i < num_replicas; ++i) {
+            for (int j = 0; j < num_partitions; ++j) {
+                assignment(i, j) = addressable_devices().at(i * num_partitions + j)->id();
+            }
+        }
+        return assignment;
     }
-    return assignment;
-  }
-  std::cout << "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: " << num_replicas << ", num_partitions: " << num_partitions << std::endl;
-  return computation_placer_->AssignDevices(num_replicas, num_partitions);
+    std::cout << "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: " << num_replicas << ", num_partitions: " << num_partitions << std::endl;
+    return computation_placer_->AssignDevices(num_replicas, num_partitions);
 }
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
@@ -594,9 +581,12 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     if (summary ==  nullptr) {
         return absl::InternalError("Failed to GetCompiledGraphSummary.");
     }
-    std::vector<ge::Shape> output_ge_shapes;
-    summary->GetOutputShapes(output_ge_shapes);
-    std::cout << "GetCompiledGraphSummary finish, output shape is: " << DebugString(output_ge_shapes[0]) << std::endl;
+    summary->GetOutputShapes(graph_data->outputs_shape);
+    summary->GetOutputDtypes(graph_data->output_dtypes);
+    std::cout << "GetCompiledGraphSummary finish,  "
+        << " output shape is: " << DebugString(graph_data->outputs_shape[0])
+        << " output dtype is: " << graph_data->output_dtypes[0]
+        << std::endl;
 
     //构建hlo modules,通过JAX的校验
     //TF_RETURN_IF_ERROR(pjrt::MaybeDumpCompileInputs(options, module, topology_));
@@ -809,7 +799,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     for (int i = 0; i < tracked_buffers.size(); i++) {
         ge::TensorDesc desc;
         // desc.SetDataType(npu_executable->GetGraphData().input_dtypes[i]);
-        auto input_shape = ge::Shape(npu_executable->GetGraphData()->inputs_shape[i]);
+        auto input_shape = npu_executable->GetGraphData()->inputs_shape[i];
         desc.SetShape(input_shape);
         ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
         std::cout << "input tensor " << i << " data addr=" << (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data() << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
