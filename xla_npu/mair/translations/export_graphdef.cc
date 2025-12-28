@@ -1,5 +1,7 @@
 #include "./export_graphdef.h"
 #include "./status.h"
+#include "./convert_type.h"
+#include "./convert_tensor.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,25 +16,6 @@
 
 #include <utility>
 #include <map>
-
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Casting.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Attributes.h"               // from @llvm-project
-#include "mlir/IR/Builders.h"                 // from @llvm-project
-#include "mlir/IR/BuiltinOps.h"               // from @llvm-project
-#include "mlir/IR/Location.h"                // from @llvm-project
-#include "mlir/IR/Operation.h"               // from @llvm-project
-#include "mlir/IR/Types.h"                   // from @llvm-project
-#include "mlir/Pass/Pass.h"                  // from @llvm-project
-#include "mlir/Pass/PassManager.h"           // from @llvm-project
-#include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
-#include "mlir/Support/LogicalResult.h"      // from @llvm-project
-
 namespace mlir::air {
 using llvm::dyn_cast;
 using llvm::isa;
@@ -41,121 +24,326 @@ using mlir::Dialect;
 using mlir::Operation;
 using mlir::Value;
 
-constexpr char kEntryFuncAttr[] = "tf.entry_function";
+const std::unordered_map<std::string, std::vector<std::string>> Exporter::inputNameMap = {
+    {"Add", {"x1", "x2"}},
+    {"Mul", {"x1", "x2"}},
+    {"Tanh", {"x"}},
+    {"BroadcastTo", {"x", "shape"}},
+};
 
-Status Exporter::buildMlirAirGraphOp(mlir::ModuleOp module) {
-    mlir::StringAttr entry_func_id = mlir::StringAttr::get(module.getContext(), "main");
+
+Status Exporter::Convert(mlir::ModuleOp module, std::unique_ptr<ge::Graph> &graphPtr,
+                        std::vector<ge::TensorDesc> &outputTensorDesc,
+                        std::map<std::int64_t, std::int64_t> &inputOutputMap) {
+
     std::optional<mlir::func::FuncOp> entry_func;
+    // ===================================================
+    // rebuild air graph
+    // ===================================================
+    mlir::StringAttr entry_func_id = mlir::StringAttr::get(module.getContext(), "main");
 
     for (auto function : module.getOps<mlir::func::FuncOp>()) {
-      if (function.isExternal()) {
-        //LOG(DEBUG) << "External functions not supported" << std::endl;
-        return Status::OK();
-      }
-      if (function.getName() == entry_func_id) {
-        entry_func.emplace(function);
-      }
+        if (function.isExternal()) {
+            log("External functions not supported");
+            return Status::OK();
+        }
+        if (function.getName() == entry_func_id) {
+            entry_func.emplace(function);
+        }
     }
   
     if (!entry_func.has_value()) {
-    //    LOG(DEBUG) << "entry function `main` must be present" << std::endl;
-      return Status::OK();
-    }
-
-    mlir::func::FuncOp function = entry_func.value();
-
-    // ==========================================
-    // mlir part
-    // construct graph
-    auto loc = function.getLoc();
-    mlir::Block &body = function.front();
-    // Find region of interest and ReturnOp.
-    auto copy_range = body.without_terminator();
-    if (copy_range.begin() != copy_range.end() && std::next(copy_range.begin()) == copy_range.end() &&
-        isa<GraphOp>(*copy_range.begin())) {
-      // Already a graph.
-      return Status::OK();
-    }
-  
-    // check return op
-    auto return_op = dyn_cast<mlir::func::ReturnOp>(body.getTerminator());
-    if (!return_op) {
-      //LOG(DEBUG) << "Expect function to end with return\n" << std::endl;
-      return Status::OK();
-    }
-  
-    // Build GraphOp.
-    mlir::OpBuilder builder(&body, body.begin());
-    auto graph_op = GraphOp::create(builder, loc, function.getFunctionType().getResult(0));
-    graph_op.getBody().push_back(new mlir::Block);
-    builder.setInsertionPointToEnd(&graph_op.getBody().back());
-  
-    // copy body
-    graph_op.getBody().front().getOperations().splice(graph_op.getBody().front().begin(), body.getOperations(),
-                                                   copy_range.begin(), copy_range.end());
-  
-    // renumber op
-    for (auto item : llvm::enumerate(graph_op.getResults())) {
-      return_op.setOperand(item.index(), item.value());
-    }
-  
-    //LOG(DEBUG) << "mlir graph building finished" << std::endl;
-
-    // Extract input & output names if set.
-    llvm::SmallVector<llvm::StringRef, 2> input_names;
-    llvm::SmallVector<llvm::StringRef, 2> output_names;
-    auto dict_attr = function->getAttrOfType<mlir::DictionaryAttr>(kEntryFuncAttr);
-    if (dict_attr) {
-    //   if (!dict_attr.get("inputs").isa<mlir::StringAttr>()) ;//LOG(ERROR) << "inputs missing in entry function attribute\n";
-    //   if (!dict_attr.get("outputs").isa<mlir::StringAttr>())
-    //     ;
-        //LOG(ERROR) << "outputs missing in entry function attribute\n";
-      mlir::dyn_cast<mlir::StringAttr>(dict_attr.get("inputs")).getValue().split(input_names, ',', /*MaxSplit=*/-1,
-                                                                        /*KeepEmpty=*/false);
-      mlir::dyn_cast<mlir::StringAttr>(dict_attr.get("outputs")).getValue().split(output_names, ',', /*MaxSplit=*/-1,
-                                                                         /*KeepEmpty=*/false);
-    }
-
-    // Set input and output names and increment the use counter for them to help
-    // generate unique names.
-    if (!output_names.empty()) {
-      const int num_data_results = graph_op.getNumResults();
-      const int output_names_size = output_names.size();
-      if (!(output_names_size == num_data_results)) {
-        //LOG(ERROR) << "output_name err\n";
+        log("entry function `main` must be present");
         return Status::OK();
-        // << "output names (" << output_names.size()
-        // << ") != terminator operands (" << num_data_results << ")";
-      }
-      llvm::DenseMap<Operation *, llvm::StringRef> output_op_to_name;
-      llvm::StringMap<Operation *> name_to_op;
-      for (const auto &it : llvm::enumerate(graph_op.getBody().back())) {
-        // Skip control rets.
-        const int index = it.index();
-        if (index >= num_data_results) break;
-        // TODO(jpienaar): If there is a result index specified, ensure only one
-        // and that it matches the result index of the op.
-        std::string name(output_names[index]);
-        assert(!name.empty() && "expected non-empty name");
-      }
     }
-  
-    mlir::Block &block = function.front();
-  
-    if (!input_names.empty()) {
-      if (!(input_names.size() == block.getNumArguments())) {
-        //LOG(ERROR) << "input_name err\n";
-      }
-      for (const auto &it : llvm::enumerate(function.getArguments())) {
-        // TODO(lyandy): Update when changing feed/fetch import.
-        std::string name(input_names[it.index()]);
-        assert(!name.empty() && "expected non-empty name");
-      }
+
+
+    // =========================================================
+    // start to build ge graph
+    // =========================================================
+    mlir::func::FuncOp function = entry_func.value();
+    mlir::Block& entryBlock = function.getBody().front();
+
+    // ==================================
+    // build input arguments
+    // ==================================
+        
+    for (auto arg : entryBlock.getArguments()) {
+        std::string mlirSymbol = "%arg" + std::to_string(arg.getArgNumber());
+        std::string realSymbol = "input_" + std::to_string(inputInfos.size());
+        log("Add arguments:" + mlirSymbol + " ; parse to :" + realSymbol);
+        
+        // 获取参数类型和形状
+        mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(arg.getType());
+
+        ge::DataType dtype;
+        ConvertToDataType(arg_type.getElementType(), &dtype);
+
+        auto shape = ge::Shape();
+        ConvertToShape(arg_type, &shape);
+
+        auto format = ge::FORMAT_ND;
+        ge::TensorDesc data_desc(shape, format, dtype);
+
+        log("Gen ArgumentNode Data:[" + realSymbol + "] InputDesc/OutputDesc[" + mlir::debugString(arg_type) +"]");
+        auto data = ge::OperatorFactory::CreateOperator(realSymbol, "Data");
+        data.UpdateInputDesc("x", data_desc);
+        data.UpdateOutputDesc(realSymbol.c_str(), data_desc);
+        // ge::Operator data;
+        
+        
+        // // 记录入参信息
+        inputInfos.push_back({mlirSymbol, realSymbol, data, data_desc});
+        
+        // 建立映射
+        symbolMap[mlirSymbol] = {
+            .orgSymbol = mlirSymbol,
+            .realSymbol = realSymbol,
+            .geOp = data,
+            .tensorDesc = data_desc
+        };
+        
+        llvm::errs() << "入参: MLIR符号=" << mlirSymbol 
+                    << ", 真实符号=" << realSymbol << "\n";
     }
+
+    std::vector<ge::Operator> inputs;
+    for (const auto& inputInfo : inputInfos) {
+        inputs.emplace_back(inputInfo.geOp);
+    }
+
+
+    graphPtr->SetInputs(inputs);
+
+
+
+    // ==================================
+    // build ge oprators
+    // ==================================
+    // 算子计数器（用于生成唯一符号）
+    int opCounter = 0;
+
+    for (mlir::Operation& op : entryBlock.getOperations()) {
+        log("--Start to deal with the op:" + op.getName().getStringRef().str());
+        // ReturnOp
+        if (mlir::isa<mlir::func::ReturnOp>(op)) {
+            SymbolInfo symbolInfo = processReturnOp(op);
+            std::vector<ge::Operator> outputs{symbolInfo.geOp};
+            graphPtr->SetOutputs(outputs);
+            log("设置图输出为: " +symbolInfo.realSymbol);
+            continue;
+        }
+        
+        // 处理普通操作
+        processOperation(op, opCounter);
+        log("--This op end.");
+        opCounter++;
+    }
+
 
     return Status::OK();
 }
 
 
+Exporter::SymbolInfo Exporter::processReturnOp(mlir::Operation& returnOp) {
+    mlir::func::ReturnOp returnOpCast = mlir::cast<mlir::func::ReturnOp>(returnOp);
+    
+    mlir::Value returnValue = returnOpCast.getOperand(0);
+    log("returnOp operand:" + mlir::debugString(returnValue));
+    std::string mlirSymbol = getMlirSymbol(returnValue);
+    
+    // 查找真实输出符号
+    auto it = symbolMap.find(mlirSymbol);
+    
+    const SymbolInfo& symbolInfo = it->second;
+    llvm::errs() << "图输出: MLIR符号=" << mlirSymbol << "\n";
+    
+    return symbolInfo;
+}
+
+bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter) {
+    // 1. 获取操作名（去掉"mair."前缀）
+    std::string opName = mlirOp.getName().getStringRef().str();
+    if (opName.find("mair.") != 0) {
+        llvm::errs() << "警告: 跳过非mair操作: " << opName << "\n";
+        return true;
+    }
+    
+    std::string opType = opName.substr(5);  // 去掉"mair."
+    
+    llvm::errs() << "处理操作: " << opName << " -> " << opType 
+                << " (序号=" << opCounter << ")\n";
+    
+    // 2. 创建目标操作
+    ge::Operator geOp = ge::OperatorFactory::CreateOperator(opType, opType);
+    // ge::Operator geOp;
+    
+    // 3. 处理输入
+    if (!processOperationInputs(mlirOp, geOp, opType)) {
+        return false;
+    }
+    
+    // 4. 处理输出
+    if (!processOperationOutputs(mlirOp, geOp, opCounter)) {
+        return false;
+    }
+    
+    // // 5. 添加到图----可能不需要
+    // if (!graph.add(geOp)) {
+    //     llvm::errs() << "错误：添加操作到图失败\n";
+    //     return false;
+    // }
+    return true;
+}
+bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType) {
+    unsigned numOperands = mlirOp.getNumOperands();
+    
+    for (unsigned i = 0; i < numOperands; i++) {
+        mlir::Value operand = mlirOp.getOperand(i);
+        log("trans the input: " + mlir::debugString(operand));
+        
+        // 获取MLIR符号
+        std::string mlirSymbol = getMlirSymbol(operand);
+        if (mlirSymbol.empty()) {
+            llvm::errs() << "错误：无法获取操作数符号\n";
+            return false;
+        }
+        
+        // 查找真实符号
+        auto it = symbolMap.find(mlirSymbol);
+        if (it == symbolMap.end()) {
+            llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
+            return false;
+        }
+        
+        std::string realSymbol = it->second.realSymbol;
+        // 获取参数类型和形状
+        mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(operand.getType());
+        ge::DataType dtype;
+        ConvertToDataType(arg_type.getElementType(), &dtype);
+        auto shape = ge::Shape();
+        ConvertToShape(arg_type, &shape);
+        auto format = ge::FORMAT_ND;
+        ge::TensorDesc data_desc(shape, format, dtype);
+
+        // 获取输入符号
+        std::string_view inputName= getGeOpInputName(opType, i);
+
+        // 设置输入描述
+        geOp.SetInput(realSymbol.c_str(), it->second.geOp);
+        geOp.UpdateInputDesc(realSymbol.c_str(), data_desc);
+        
+        
+        llvm::errs() << "  输入[" << i << "]: MLIR符号=" << mlirSymbol 
+                    << ", 真实符号=" << realSymbol << ", inputName=" << inputName << "\n";
+    }
+    
+    return true;
+}
+
+// 处理操作输出
+bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter) {
+    unsigned numResults = mlirOp.getNumResults();
+    
+    for (unsigned i = 0; i < numResults; i++) {
+        mlir::Value result = mlirOp.getResult(i);
+        
+        // 获取MLIR符号
+        std::string mlirSymbol = getMlirSymbol(result);
+        if (mlirSymbol.empty()) {
+            llvm::errs() << "错误：无法获取结果符号\n";
+            return false;
+        }
+        
+        // 生成唯一输出符号
+        std::string realSymbol = generateOutputSymbol(opCounter, i);
+        
+        // 获取参数类型和形状
+        mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(result.getType());
+        ge::DataType dtype;
+        ConvertToDataType(arg_type.getElementType(), &dtype);
+        auto shape = ge::Shape();
+        ConvertToShape(arg_type, &shape);
+        auto format = ge::FORMAT_ND;
+        ge::TensorDesc data_desc(shape, format, dtype);
+        // 设置输出描述
+        geOp.UpdateOutputDesc(realSymbol.c_str(), data_desc);
+        
+        
+        // 建立映射
+        symbolMap[mlirSymbol] = {
+            .orgSymbol = mlirSymbol,
+            .realSymbol = realSymbol,
+            .geOp = geOp,
+            .tensorDesc = data_desc
+        };
+        
+        llvm::errs() << "  输出[" << i << "]: MLIR符号=" << mlirSymbol 
+                    << ", 真实符号=" << realSymbol << "\n";
+    }
+    
+    return true;
+}
+
+std::string Exporter::getMlirSymbol(mlir::Value value) {
+    if (auto blockArg = mlir::dyn_cast<mlir::BlockArgument>(value)) { // input
+        return "%arg" + std::to_string(blockArg.getArgNumber());
+    } else if (auto opResult = mlir::dyn_cast<mlir::OpResult>(value)) { // output
+        mlir::Operation* definingOp = opResult.getDefiningOp();
+        if (!definingOp) {
+            return "";
+        }
+        
+        // 查找结果在操作中的索引
+        unsigned resultIndex = opResult.getResultNumber();
+        // 尝试获取标准格式的符号
+        if (definingOp->getNumResults() == 1) {
+            return "%" + std::to_string(getOperationNumber(definingOp));
+        } else {
+            return "%" + std::to_string(getOperationNumber(definingOp)) 
+                   + "." + std::to_string(resultIndex);
+        }
+    }
+    return "";
+}
+
+// 获取操作序号（用于生成符号）
+int Exporter::getOperationNumber(mlir::Operation* op) {
+    // 简单实现：遍历块计数
+    mlir::Block* block = op->getBlock();
+    int counter = 0;
+    
+    for (mlir::Operation& blockOp : *block) {
+        if (&blockOp == op) {
+            return counter;
+        }
+        
+        // 跳过返回操作
+        if (!mlir::isa<mlir::func::ReturnOp>(blockOp)) {
+            counter++;
+        }
+    }
+    
+    return -1;
+}
+
+// 生成输出符号
+std::string Exporter::generateOutputSymbol(int opIndex, int outputIndex) {
+    return "op_" + std::to_string(opIndex) + "_out_" + std::to_string(outputIndex);
+}
+
+std::string_view Exporter::getGeOpInputName(const std::string& opName, int index) {
+    auto it = inputNameMap.find(opName);
+    if (it == inputNameMap.end()) {
+        return nullptr;  
+    }
+
+    const std::vector<std::string>& inputNames = it->second;
+    if (inputNames.size() >= index+1) {
+        return inputNames[index]; 
+    }
+
+    return nullptr;
+}
 
 } // namespace mlir::air

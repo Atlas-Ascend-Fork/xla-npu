@@ -12,7 +12,7 @@ include "mair_ops_base.td"
 // ConstantOp
 //===--------------------------------------------------------------------------===//
 
-def Air_ConstantOp : Air_Op<"constant", [
+def Air_ConstantOp : Air_Op<"Const", [
     ConstantLike,
     Pure
     ]>{
@@ -34,7 +34,7 @@ def Air_ConstantOp : Air_Op<"constant", [
 // AddOp
 //===--------------------------------------------------------------------------===//
 
-def Air_AddOp : Air_Op<"add",[
+def Air_AddOp : Air_Op<"Add",[
     Pure, 
     SameOperandsAndResultType
     ]>{
@@ -56,7 +56,7 @@ def Air_AddOp : Air_Op<"add",[
 // BroadcastOp
 //===--------------------------------------------------------------------------===//
 
-def Air_BroadcastOp : Air_Op<"broadcast", [Pure]>{
+def Air_BroadcastOp : Air_Op<"BroadcastTo", [Pure]>{
     let summary = "broadcast to a tensor type.";
     let description = "broadcast to a tensor type.";
 
@@ -73,7 +73,7 @@ def Air_BroadcastOp : Air_Op<"broadcast", [Pure]>{
 // MultiplyOp
 //===--------------------------------------------------------------------------===//
 
-def Air_MulOp : Air_Op<"mul", [Pure]>{
+def Air_MulOp : Air_Op<"Mul", [Pure]>{
     let summary = "Returns x * y element-wise.";
     let description = [{
         Returns x * y element-wise. 
@@ -92,7 +92,7 @@ def Air_MulOp : Air_Op<"mul", [Pure]>{
 // TanhOp
 //===--------------------------------------------------------------------------===//
 
-def Air_TanhOp : Air_Op<"tanh", [Pure]>{
+def Air_TanhOp : Air_Op<"Tanh", [Pure]>{
     let summary = "Tanh operator.";
     let description = "Tanh operator.";
 

@@ -104,9 +104,14 @@ int main(int argc, char** argv) {
     module.print(llvm::outs());
     std::cout << std::endl;
 
-    Exporter::buildMlirAirGraphOp(module);
-    std::cout << "Convert to MLIR Air Grap:\n";
-    module.print(llvm::outs());
+    std::unique_ptr<ge::Graph> graphPtr = std::make_unique<ge::Graph>();
+    std::vector<ge::TensorDesc> outputTensorDesc;
+    std::map<std::int64_t, std::int64_t> inputOutputMap;
+    Exporter exporter;
+    exporter.Convert(module, graphPtr, outputTensorDesc, inputOutputMap);
+
+    std::cout << "Convert to GE Grap:\n";
+    // module.print(llvm::outs());
     std::cout << std::endl;
 
     return 0;
