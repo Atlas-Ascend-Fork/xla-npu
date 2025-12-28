@@ -44,6 +44,7 @@ TensorDesc::TensorDesc(const TensorDesc& desc) {}
 TensorDesc::TensorDesc(TensorDesc&& desc) {}
 TensorDesc::TensorDesc(Shape shape, Format format, DataType dt) {}
 void TensorDesc::SetShape(const Shape &shape) {}
+TensorDesc &TensorDesc::operator=(TensorDesc &&desc){return * this;}
 void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len) {}
 Shape::Shape(const std::vector<int64_t>& dims) {}
 int64_t Shape::GetShapeSize() const {
@@ -51,6 +52,7 @@ int64_t Shape::GetShapeSize() const {
 }
 Tensor::Tensor() {}
 Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) {}
+Shape::Shape() {}
 
 std::vector<GNode> Graph::GetDirectNode() const {
   return {};

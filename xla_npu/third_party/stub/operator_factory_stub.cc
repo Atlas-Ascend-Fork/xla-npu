@@ -7,6 +7,10 @@ Operator OperatorFactory::CreateOperator(
   return Operator();
 }
 
+Operator OperatorFactory::CreateOperator(const std::string &operator_name, const std::string &operator_type) {
+  return Operator();
+}
+
 OperatorCreatorRegister::OperatorCreatorRegister(
     const char* operator_type,
     const OpCreatorV2& op_creator) {}
