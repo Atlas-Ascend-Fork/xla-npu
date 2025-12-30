@@ -57,7 +57,8 @@ try:
     print(f"input array: {x}")
 
     # Compiles the operation using XLA, calling Mock_Compile()
-    y = jax.jit(lambda x: 2*x + x)(x)
+    # y = jax.jit(lambda x: 2*x + x)(x)
+    y = jax.jit(lambda x: jax.nn.gelu(x))(x)
     print(f"output array: {y.block_until_ready()}")
 
     # Triggers execution
