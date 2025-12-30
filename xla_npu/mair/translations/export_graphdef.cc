@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <iomanip>
 
 #include "../ir/mair_ops.h"
 // #include "utils/utils.h"
@@ -68,7 +69,7 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     for (int i = 0; i < entryBlock.getNumArguments(); i++) {
         mlir::BlockArgument arg = entryBlock.getArgument(i);
         std::string mlirSymbol = "%arg" + std::to_string(arg.getArgNumber());
-        std::string realSymbol = "input_" + std::to_string(inputInfos.size());
+        std::string realSymbol = "Data_" + std::to_string(i);
         log("Add arguments:" + mlirSymbol + " ; parse to :" + realSymbol);
         
         // 获取参数类型和形状
@@ -90,8 +91,6 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
         data.SetAttr("index", i);
         data.UpdateInputDesc("x", data_desc);
         data.UpdateOutputDesc("y", data_desc);
-        // ge::Operator data;
-        
         
         // // 记录入参信息
         inputInfos.push_back({mlirSymbol, data, data_desc});
@@ -117,9 +116,6 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     for (const auto& inputOp : inputs) {
         log("--Input operator name=[" + std::string(getOpName(inputOp)) + "]");
     }
-    graphPtr->SetInputs(inputs);
-    log("Finished get arguments of the function. Start to gen operators.");
-
 
     // ==================================
     // build ge oprators
@@ -148,12 +144,18 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
         log("--Output operator name=[" + std::string(getOpName(outputOp)) + "]");
     }
     
-    graphPtr->SetOutputs(outputs);
+    graphPtr->SetInputs(inputs).SetOutputs(outputs);
 
     log("============Finish All Operator");
 
     std::vector<GNode> nodes = graphPtr->GetAllNodes();
     log("============Get All GNodes size:" + std::to_string(nodes.size()));
+    for (size_t i = 0; i < nodes.size(); i++) {
+        ge::AscendString nodeName;
+        nodes.at(i).GetName(nodeName);
+        llvm::errs() << "Nodes [" << i << "] name[" << nodeName.GetString()<<"]\n";
+    }
+    
 
     return Status::OK();
 }
@@ -204,6 +206,8 @@ bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter, ge::Grap
     if (!processOperationInputs(mlirOp, geOp, opType)) {
         return false;
     }
+    // geOp.SetInput("x1",symbolMap.find("%arg0")->second.geOp);
+    // geOp.SetInput("x2",symbolMap.find("%arg1")->second.geOp);
 
     llvm::errs() << "Input number of this op is " << geOp.GetInputsSize() << "\n";
     
@@ -239,14 +243,6 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
         
         log("Find input :");
         printSymbolInfo(it->second);
-        // 获取参数类型和形状
-        // mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(operand.getType());
-        // ge::DataType dtype;
-        // ConvertToDataType(arg_type.getElementType(), &dtype);
-        // auto shape = ge::Shape();
-        // ConvertToShape(arg_type, &shape);
-        // auto format = ge::FORMAT_ND;
-        // ge::TensorDesc data_desc(shape, format, dtype);
 
         // 获取输入符号
         const std::string* inputName= getGeOpInputName(opType, i);
@@ -254,9 +250,6 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
         ge::Operator inputOp = it->second.geOp;
         // 设置输入描述
         geOp.SetInput(inputName->c_str(), inputOp);
-        // if (!geOp.UpdateInputDesc(inputName->c_str(), data_desc)) {
-        //     log("!!Fail to update InputDesc.");
-        // }
         
         llvm::errs() << "  Set opInput[" << i << "]: origin=" << mlirSymbol 
                     << ", inputName=[" << *inputName << "] opName=[" << getOpName(inputOp) <<"]\n";

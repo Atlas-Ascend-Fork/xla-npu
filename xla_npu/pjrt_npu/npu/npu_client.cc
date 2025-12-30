@@ -352,23 +352,23 @@ PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
 static void  TestGraph(ge::GraphPtr &graph) {
     graph = std::make_shared<ge::Graph>("XLAGraph");
 
-    ge::TensorDesc desc(ge::Shape({3}), ge::FORMAT_ND, ge::DT_FLOAT);
-    auto data0 = ge::OperatorFactory::CreateOperator("Data_0", "Data");
-    data0.SetAttr("index", 0);
-    data0.UpdateInputDesc("x", desc);
-    data0.UpdateOutputDesc("y", desc);
+    // ge::TensorDesc desc(ge::Shape({3}), ge::FORMAT_ND, ge::DT_FLOAT);
+    // auto data0 = ge::OperatorFactory::CreateOperator("Data_0", "Data");
+    // data0.SetAttr("index", 0);
+    // data0.UpdateInputDesc("x", desc);
+    // data0.UpdateOutputDesc("y", desc);
 
-    // auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
-    // data1.SetAttr("index", 1);
-    // data1.UpdateInputDesc("x", desc);
-    // data1.UpdateOutputDesc("y", desc);
+    // // auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
+    // // data1.SetAttr("index", 1);
+    // // data1.UpdateInputDesc("x", desc);
+    // // data1.UpdateOutputDesc("y", desc);
 
-    auto add = ge::OperatorFactory::CreateOperator("add", "Add");
-    add.SetInput("x1", data0);
-    add.SetInput("x2", data0);
+    // auto add = ge::OperatorFactory::CreateOperator("add", "Add");
+    // add.SetInput("x1", data0);
+    // add.SetInput("x2", data0);
 
-    std::vector<ge::Operator> inputs{data0};
-    std::vector<ge::Operator> outputs{add};
+    // std::vector<ge::Operator> inputs{data0};
+    // std::vector<ge::Operator> outputs{add};
 
     graph->SetInputs(inputs).SetOutputs(outputs);
     // auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
@@ -545,7 +545,9 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     std::cout << "hlo graph: " << os.str() << std::endl;
 
     auto graph_data = GraphData();
-    TestGraph(graph_data.graph);
+    graph_data.graph = std::make_shared<ge::Graph>("XLAGraph");
+    mlir::air::GraphGenTester::Convert(module, graph_data.graph);
+    // TestGraph(graph_data.graph);
     graph_data.id = 0;
     graph_data.inputs_shape.push_back(ge::Shape({3}));
 
