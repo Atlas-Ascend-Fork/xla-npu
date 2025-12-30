@@ -10,6 +10,7 @@ Graph::Graph(const char* name) {
 }
 
 Graph graph("test");
+GNode gnode;
 
 graphStatus Graph::AddOp(const ge::Operator &op) {
   return 0;
@@ -27,6 +28,18 @@ Graph& Graph::SetOutputs(
     const std::vector<std::pair<Operator, std::vector<size_t>>>&
         output_indexs) {
   return graph;
+}
+
+graphStatus Graph::GetAllOpName(std::vector<AscendString> &names) const{
+  return 0;
+}
+
+std::vector<GNode> Graph::GetAllNodes() const {
+  return {};
+};
+
+GNode AddNodeByOp(const Operator &op) {
+  return gnode;
 }
 AscendString::AscendString(const char* name) {}
 bool AscendString::operator<(const AscendString& d) const {
@@ -59,6 +72,9 @@ int64_t Shape::GetShapeSize() const {
 }
 Tensor::Tensor() {}
 Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) {}
+Tensor::Tensor(const TensorDesc &tensor_desc) {}
+graphStatus Tensor::SetData(const uint8_t *data, size_t size) {return 0;}
+graphStatus Tensor::SetData(const char_t *data) {return 0;}
 const uint8_t* Tensor::GetData() const {
   return nullptr;
 }

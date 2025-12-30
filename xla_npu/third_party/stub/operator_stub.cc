@@ -164,9 +164,12 @@ Operator& Operator::AddControlInput(const Operator& src_oprt) {
 }
 
 
-graphStatus Operator::GetName(AscendString &name) const{
+graphStatus Operator::GetName(AscendString &name) const {
   name = "test name";
   return GRAPH_SUCCESS;
 }
+
+size_t Operator::GetInputsSize() const {return 1;}
+size_t Operator::GetOutputsSize() const {return 1;}
 
 } // namespace ge

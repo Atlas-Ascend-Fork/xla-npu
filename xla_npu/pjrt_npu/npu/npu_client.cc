@@ -24,6 +24,8 @@
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/mair/test/test_mair_gen.h"
+
 
 namespace xla {
 
@@ -369,6 +371,8 @@ static void  TestGraph(ge::GraphPtr &graph) {
     std::vector<ge::Operator> outputs{add};
 
     graph->SetInputs(inputs).SetOutputs(outputs);
+    // auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
+    // mlir::air::GraphGenTester::Convert(module, graph);
 }
 
 static std::string DebugString(const ge::Shape &shape) {

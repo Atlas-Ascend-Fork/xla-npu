@@ -114,6 +114,7 @@ cc_library(
         "//xla/xla_npu/pjrt_npu/npu/service:npu_buffer_assignment",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
         "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
+        "//xla/xla_npu/mair/test:test_mair_gen_lib",
 
         "//xla:array",
         "//xla:debug_options_flags",

@@ -11,8 +11,18 @@ package(
 
 cc_binary(
     name = "test_mair_gen",
+    deps = [
+        "//xla/xla_npu/mair/test:test_mair_gen_lib",
+    ],
+)
+
+cc_library(
+    name = "test_mair_gen_lib",
     srcs = [
         "test_mair_gen.cc",
+    ],
+    hdrs = [
+        "test_mair_gen.h",
     ],
     deps = [
         "//xla/xla_npu/mair/ir:air_dialect",
