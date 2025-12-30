@@ -26,6 +26,7 @@ private:
     static void buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
     static void buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
     static void buildAddMulModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
+    static void buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
 
 };
 

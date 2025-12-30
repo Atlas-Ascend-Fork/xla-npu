@@ -1,4 +1,5 @@
 #include "./test_mair_gen.h"
+#include "./test_mair_gen.h"
 
 //MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(mair, mair, mlir::mair::MairDialect)
 
@@ -151,6 +152,32 @@ void GraphGenTester::buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& c
     return;
 }
 
+void GraphGenTester::buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
+    // 输入输出shape
+    std::cout << "Start build add mlir" << std::endl;
+    // 创建函数： 接受tensor输入， 返回tensor
+    auto f32Type = mlir::Float32Type::get(&context);
+    auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
+    auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType}, {inputOutputTensorType});
+    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
+
+    // 创建函数体
+    auto* block = func.addEntryBlock();
+    mlir::OpBuilder builder(block, block->begin());
+    auto loc = mlir::UnknownLoc::get(&context);
+
+    // 获取输入参数x: tensor<10x20xf32>
+    auto x1 = block->getArgument(0);
+
+    // 返回结果
+    mlir::func::ReturnOp::create(builder, loc, x1);
+
+    // 添加函数到模块
+    module.getBody()->push_back(func);
+
+    return;
+}
+
 Status GraphGenTester::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     Exporter exporter;
     return exporter.Convert(module, graphPtr);
@@ -163,9 +190,10 @@ mlir::ModuleOp GraphGenTester::BuildMAIRGeluModul() {
 
     auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
 
-    buildAddModule(module, context);
+    // buildAddModule(module, context);
     // buildAddMulModule(module, context);
-    // buildGeluModule(module, context);
+    // buildAEmptyModule(module, context);
+    buildGeluModule(module, context);
     
     std::cout << "Generated MLIR:\n";
     module.print(llvm::outs());
