@@ -6,6 +6,9 @@ import warnings
 import traceback
 import sys
 
+import logging
+logging.basicConfig(level=logging.DEBUG)  # 把jax日志输出到 stderr
+
 # Note: No need for ctypes.CDLL() anymore, JAX loads the library automatically with the correct ENV var
 # 1. Define the platform name and library path
 PLATFORM_NAME = 'npu' # Use a simple name without underscores for safety
@@ -46,12 +49,16 @@ try:
     # f_jitted()
 
     # Creates a JAX array, calling Mock_Buffer_FromHost()
-    x = jnp.array([8.0, 2.0, 3.0])
-    print(f"Created JAX array on device: {x.devices()}")
-    print(x)
+    # x = jnp.array([8.0, 2.0, 3.0])
+    # print(f"Created JAX array on device: {x.devices()}")
+    # print(x)
+
+    x = np.array([8.0, 2.0, 3.0])
+    print(f"input array: {x}")
 
     # Compiles the operation using XLA, calling Mock_Compile()
-    # y = jax.jit(lambda x: x * 2)(x)
+    y = jax.jit(lambda x: 2*x + x)(x)
+    print(f"output array: {y.block_until_ready()}")
 
     # Triggers execution
     # print(f"Computed result: {y.block_until_ready()}")
