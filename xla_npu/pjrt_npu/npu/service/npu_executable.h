@@ -36,7 +36,6 @@
 
 
 namespace xla {
-namespace npu {
 
 // CPU-targeting implementation of the XLA Executable interface.
 //
@@ -53,7 +52,7 @@ class NpuExecutable : public Executable {
       // std::vector<ConstantAllocation> constants,
       std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
       std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-      std::unique_ptr<GraphData> graph_data);
+      const GraphData& graph_data);
       // TargetMachineOptionsProto target_machine_options);
 
   ~NpuExecutable() override;
@@ -105,6 +104,8 @@ class NpuExecutable : public Executable {
   //   return it->second;
   // }
 
+  GraphData GetGraphData() const { return graph_data_; }
+
   // This should be called after set_ir_module_string.
   const std::string& ir_module_string() const { return ir_module_string_; }
 
@@ -145,9 +146,6 @@ class NpuExecutable : public Executable {
   // const TargetMachineOptionsProto& target_machine_options() const {
   //   return target_machine_options_;
   // }
-  GraphData* GetGraphData() const {
-    return graph_data_.get();
-  }
 
  private:
   // Creates an array suitable for passing as the "buffer_table" argument to the
@@ -238,19 +236,18 @@ class NpuExecutable : public Executable {
   // Entry function name for the computation.
   std::string entry_function_name_;
 
-  std::unique_ptr<GraphData> graph_data_;
+  GraphData graph_data_;
 
   NpuExecutable(std::unique_ptr<HloModule> hlo_module,
                 std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                 std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
                 std::unique_ptr<NpuBufferAssignment> assignment,
-                std::unique_ptr<GraphData> graph_data);
+                const GraphData& graph_data);
                 // TargetMachineOptionsProto target_machine_options);
   NpuExecutable(const NpuExecutable&) = delete;
   NpuExecutable& operator=(const NpuExecutable&) = delete;
 };
 
-}  // namespace npu
 }  // namespace xla
 
 #endif  // XLA_SERVICE_NPU_NPU_EXECUTABLE_H_

@@ -24,12 +24,12 @@ import jax.lib.xla_client
 print(f"JAX Rerunning client discovery for platform: {PLATFORM_NAME}")
 
 # Debug: Test npu device memory malloc
-np_arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32, copy=True, order='K')
-print("src date: ", np_arr)
-npu_device = jax.devices("npu")[0]
-npu_arr = jax.device_put(np_arr, device=npu_device) # call PJRT_Client_BufferFromHostBuffer from xla
-cpu_arr = jax.device_get(npu_arr) # call PJRT_Buffer_ToHostBuffer from xla
-print("dst data: ", cpu_arr)
+# np_arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32, copy=True, order='K')
+# print("src date: ", np_arr)
+# npu_device = jax.devices("npu")[0]
+# npu_arr = jax.device_put(np_arr, device=npu_device) # call PJRT_Client_BufferFromHostBuffer from xla
+# cpu_arr = jax.device_get(npu_arr) # call PJRT_Buffer_ToHostBuffer from xla
+# print("dst data: ", cpu_arr)
 
 # --- Run a simple JAX program ---
 try:
@@ -39,15 +39,22 @@ try:
     print(f"Devices type: {type(jax.devices())}")
     print(f"Devices available: {jax.devices()}")
 
+    # def f():
+    #     x = jnp.array([1, 2, 3])
+    #     return x + x
+    # f_jitted = jax.jit(f)
+    # f_jitted()
+
     # Creates a JAX array, calling Mock_Buffer_FromHost()
-    x = jnp.array([1.0, 2.0, 3.0])
+    x = jnp.array([8.0, 2.0, 3.0])
     print(f"Created JAX array on device: {x.devices()}")
+    print(x)
 
     # Compiles the operation using XLA, calling Mock_Compile()
-    y = jax.jit(lambda x: x * 2)(x)
+    # y = jax.jit(lambda x: x * 2)(x)
 
     # Triggers execution
-    print(f"Computed result: {y.block_until_ready()}")
+    # print(f"Computed result: {y.block_until_ready()}")
 
 except RuntimeError as e:
     traceback.print_exc()

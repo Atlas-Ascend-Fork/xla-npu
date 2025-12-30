@@ -19,6 +19,8 @@ LOAD_FUNCTION(aclrtSetDevice)
 LOAD_FUNCTION(aclrtMalloc)
 LOAD_FUNCTION(aclrtFree)
 LOAD_FUNCTION(aclrtMemcpy)
+LOAD_FUNCTION(aclrtMallocHost)
+LOAD_FUNCTION(aclrtFreeHost)
 
 const char *AclGetErrMsg()
 {
@@ -108,6 +110,32 @@ aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, a
     }
     if (func != nullptr) {
         return func(dst, destMax, src, count, kind);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
+}
+
+aclError AclrtMallocHost(void **hostPtr, size_t size)
+{
+    typedef aclError (*aclrtMallocHostFunc)(void **hostPtr, size_t size);
+    static aclrtMallocHostFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtMallocHostFunc)GET_FUNC(aclrtMallocHost);
+    }
+    if (func != nullptr) {
+        return func(hostPtr, size);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
+}
+
+aclError AclrtFreeHost(void *hostPtr)
+{
+    typedef aclError (*aclrtFreeHostFunc)(void *hostPtr);
+    static aclrtFreeHostFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtFreeHostFunc)GET_FUNC(aclrtFreeHost);
+    }
+    if (func != nullptr) {
+        return func(hostPtr);
     }
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }

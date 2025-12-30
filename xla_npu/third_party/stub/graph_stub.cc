@@ -44,7 +44,14 @@ TensorDesc::TensorDesc(const TensorDesc& desc) {}
 TensorDesc::TensorDesc(TensorDesc&& desc) {}
 TensorDesc::TensorDesc(Shape shape, Format format, DataType dt) {}
 void TensorDesc::SetShape(const Shape &shape) {}
-TensorDesc &TensorDesc::operator=(TensorDesc &&desc){return * this;}
+void TensorDesc::SetPlacement(Placement placement) {};
+void TensorDesc::SetFormat(Format format) {};
+void TensorDesc::SetOriginFormat(Format origin_format) {};
+void TensorDesc::SetOriginShape(const Shape &origin_shape) {};
+void TensorDesc::SetDataType(DataType dt) {};
+Shape TensorDesc::GetShape() const {
+  return {};
+}
 void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len) {}
 Shape::Shape(const std::vector<int64_t>& dims) {}
 int64_t Shape::GetShapeSize() const {
@@ -52,7 +59,27 @@ int64_t Shape::GetShapeSize() const {
 }
 Tensor::Tensor() {}
 Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) {}
-Shape::Shape() {}
+const uint8_t* Tensor::GetData() const {
+  return nullptr;
+}
+uint8_t* Tensor::GetData() {
+  return nullptr;
+}
+size_t Tensor::GetSize() const {
+  return 0;
+}
+TensorDesc Tensor::GetTensorDesc() const {
+  return {};
+}
+graphStatus Tensor::ResetData(uint8_t *data, size_t size, const Tensor::DeleteFunc &deleter_func) {
+  return 0;
+}
+graphStatus Tensor::SetShapeDimNum(const size_t dim_num) {
+  return 0;
+}
+graphStatus Tensor::SetShapeDim(const size_t idx, const int64_t dim_value) {
+  return 0;
+}
 
 std::vector<GNode> Graph::GetDirectNode() const {
   return {};
