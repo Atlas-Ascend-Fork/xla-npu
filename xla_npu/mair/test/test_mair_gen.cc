@@ -1,25 +1,11 @@
-#include <iostream>
-#include <vector>
-
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/CAPI/Registration.h"
-
-#include "mlir-c/IR.h"
-
-#include "../ir/mair_ops.h"
-#include "../translations/export_graphdef.h"
-#include "../translations/status.h"
+#include "./test_mair_gen.h"
 
 //MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(mair, mair, mlir::mair::MairDialect)
 
 using namespace mlir;
 using namespace mlir::air;
 
-void buildGeluModule(mlir::ModuleOp module, mlir::MLIRContext& context) {
+void GraphGenTester::buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
     // 输入输出shape
     std::vector<int> broadcastTensorShape{10, 20};
 
@@ -38,9 +24,7 @@ void buildGeluModule(mlir::ModuleOp module, mlir::MLIRContext& context) {
     auto scalarType = mlir::RankedTensorType::get({}, f32Type);
 
     // 后续broadcast操作的目标shape
-    auto broadcastShapeTensorType = mlir::RankedTensorType::get({2}, mlir::IntegerType::get(&context, 32));
-    auto broadcastShapeElements = mlir::DenseElementsAttr::get(broadcastShapeTensorType, llvm::ArrayRef<int>(broadcastTensorShape));
-    auto broadcastShapeValue = ConstantOp::create(builder, loc, broadcastShapeTensorType, broadcastShapeElements).getResult();
+    auto broadcastShapeValue = func.getArgument(0);
 
     // 获取输入参数x: tensor<10x20xf32>
     auto x = block->getArgument(0);
@@ -92,25 +76,113 @@ void buildGeluModule(mlir::ModuleOp module, mlir::MLIRContext& context) {
     return;
 }
 
-int main(int argc, char** argv) {
-    mlir::MLIRContext context;
+void GraphGenTester::buildAddMulModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
+    std::cout << "Start build addNul mlir" << std::endl;
+    // 输入输出shape
+    std::vector<int> broadcastTensorShape{10, 20};
+
+    // 创建函数： 接受tensor输入， 返回tensor
+    auto f32Type = mlir::Float32Type::get(&context);
+    auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
+    auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType, inputOutputTensorType}, {inputOutputTensorType});
+    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
+
+    // 创建函数体
+    auto* block = func.addEntryBlock();
+    mlir::OpBuilder builder(block, block->begin());
+    auto loc = mlir::UnknownLoc::get(&context);
+
+    // 标量类型
+    auto scalarType = mlir::RankedTensorType::get({}, f32Type);
+
+    // 后续broadcast操作的目标shape
+    auto broadcastShapeValue = func.getArgument(0);
+
+    // 获取输入参数x: tensor<10x20xf32>
+    auto x1 = block->getArgument(0);
+    auto x2 = block->getArgument(1);
+
+    // add
+    auto add = AddOp::create(builder, loc, inputOutputTensorType, x1, x2);
+
+    // a_scalar = 0.044715
+    auto a_scalar = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(0.044715f));
+    auto a_scalar_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, a_scalar, broadcastShapeValue);
+
+    // x3_mul_scalar = x3 * 0.044715
+    auto result = MulOp::create(builder, loc, inputOutputTensorType, a_scalar_tensor.getResult(), add.getResult());
+
+    // 返回结果
+    mlir::func::ReturnOp::create(builder, loc, result.getResult());
+
+    // 添加函数到模块
+    module.getBody()->push_back(func);
+
+    return;
+}
+
+void GraphGenTester::buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
+    // 输入输出shape
+    std::cout << "Start build add mlir" << std::endl;
+    // 创建函数： 接受tensor输入， 返回tensor
+    auto f32Type = mlir::Float32Type::get(&context);
+    auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
+    auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType, inputOutputTensorType}, {inputOutputTensorType});
+    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
+
+    // 创建函数体
+    auto* block = func.addEntryBlock();
+    mlir::OpBuilder builder(block, block->begin());
+    auto loc = mlir::UnknownLoc::get(&context);
+
+    // 获取输入参数x: tensor<10x20xf32>
+    auto x1 = block->getArgument(0);
+    auto x2 = block->getArgument(1);
+
+    // add
+    auto result = AddOp::create(builder, loc, inputOutputTensorType, x1, x2);
+
+    // 返回结果
+    mlir::func::ReturnOp::create(builder, loc, result.getResult());
+
+    // 添加函数到模块
+    module.getBody()->push_back(func);
+
+    return;
+}
+
+Status GraphGenTester::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
+    Exporter exporter;
+    return exporter.Convert(module, graphPtr);
+}
+
+mlir::ModuleOp GraphGenTester::BuildMAIRGeluModul() {
+    static mlir::MLIRContext context;
     context.getOrLoadDialect<mlir::func::FuncDialect>();
     context.getOrLoadDialect<mlir::air::AirDialect>();
 
     auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
 
-    buildGeluModule(module, context);
-    std::cout << "Generated GELU MLIR:\n";
+    buildAddModule(module, context);
+    // buildAddMulModule(module, context);
+    // buildGeluModule(module, context);
+    
+    std::cout << "Generated MLIR:\n";
     module.print(llvm::outs());
     std::cout << std::endl;
+    return module;
+}
 
-    std::unique_ptr<ge::Graph> graphPtr = std::make_unique<ge::Graph>();
-    std::vector<ge::TensorDesc> outputTensorDesc;
-    std::map<std::int64_t, std::int64_t> inputOutputMap;
-    Exporter exporter;
-    exporter.Convert(module, graphPtr, outputTensorDesc, inputOutputMap);
+int main(int argc, char** argv) {
+    auto module = GraphGenTester::BuildMAIRGeluModul();
 
-    std::cout << "Convert to GE Grap:\n";
+    ge::GraphPtr graphPtr = std::make_shared<ge::Graph>("XLAGraph");;
+    if (!module) {
+        log("null module.");
+    }
+    
+    GraphGenTester::Convert(module, graphPtr);
+    std::cout << "Finished convert to GE Grap:\n";
     // module.print(llvm::outs());
     std::cout << std::endl;
 

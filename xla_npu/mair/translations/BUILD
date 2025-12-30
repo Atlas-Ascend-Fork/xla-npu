@@ -31,6 +31,5 @@ cc_library(
         "@llvm-project//mlir:FuncDialect",
         "//xla/xla_npu/third_party/stub:ge_hdrs",
         "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/pjrt_npu/npu:npu_client",
     ],
 )

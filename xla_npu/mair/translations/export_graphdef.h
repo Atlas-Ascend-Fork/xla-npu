@@ -42,16 +42,13 @@ namespace mlir::air {
 class Exporter {
 public:
     
-    Status Convert(mlir::ModuleOp module, std::unique_ptr<ge::Graph> &graph,
-                        std::vector<ge::TensorDesc> &outputTensorDesc,
-                        std::map<std::int64_t, std::int64_t> &inputOutputMap);
+    Status Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr);
     explicit Exporter() {}
 
 
 private:
     struct SymbolInfo {
         std::string orgSymbol;  // 原始符号，如"%arg0"
-        std::string realSymbol;  // 真实符号，如"input_0", "op_1_out_0"
         ge::Operator geOp; // 对应的算子
         ge::TensorDesc tensorDesc;
     };
@@ -59,15 +56,19 @@ private:
     static const std::unordered_map<std::string, std::vector<std::string>> inputNameMap;
 
     SymbolInfo processReturnOp(mlir::Operation& returnOp);
-    bool processOperation(mlir::Operation& mlirOp, int opCounter);
+    bool processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr &graphPtr);
     bool processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
-    bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter);
+    bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter, std::string opType);
 
     std::string getMlirSymbol(mlir::Value value);
     int getOperationNumber(mlir::Operation* op);
     std::string generateOutputSymbol(int opIndex, int outputIndex);
 
-    std::string_view getGeOpInputName(const std::string& opName, int index);
+    const std::string* getGeOpInputName(const std::string& opName, int index);
+
+    float extractFloatValueSimple(mlir::Attribute valueAttr);
+    void printSymbolInfo(const SymbolInfo& symbolInfo);
+    const char * getOpName(const ge::Operator& geOp);
 
     std::unordered_map<std::string, SymbolInfo> symbolMap;
     std::vector<SymbolInfo> inputInfos;
