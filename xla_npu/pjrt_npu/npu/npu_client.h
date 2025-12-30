@@ -21,10 +21,10 @@
 #include "xla/xla_npu/pjrt_npu/pjrt_common.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 #include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
-#include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
-#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
+#include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
+#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
 
@@ -59,6 +59,7 @@ public:
     {
         return addressable_devices_.size();
     }
+
     absl::Span<PjRtDevice* const> devices() const override
     {
         return devices_;
@@ -68,22 +69,17 @@ public:
     {
         return addressable_devices_;
     }
-    absl::StatusOr<PjRtDevice*> LookupDevice(PjRtGlobalDeviceId global_device_id) const override;
-
-    absl::StatusOr<PjRtDevice*> LookupAddressableDevice(PjRtLocalDeviceId local_device_id) const override;
-
-    absl::Span<PjRtMemorySpace* const> memory_spaces() const override;
-
+    
     PjRtPlatformId platform_id() const override
     {
         return tsl::Fingerprint64(NpuName());
     }
-
+    
     absl::string_view platform_name() const override
     {
         return NpuName();
     }
-
+    
     absl::string_view platform_version() const override
     {
         return NpuName();
@@ -95,82 +91,89 @@ public:
         return &topology_;
     }
 
-    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
-        const XlaComputation& computation, CompileOptions options) override;
-
-    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
-        mlir::ModuleOp module, CompileOptions options) override;
-
-
-    // Computes the memory requirements for storing shape on memory_space.
-    absl::StatusOr<int64_t> GetOnDeviceBytesCount(
-      PjRtMemorySpace* memory_space, const xla::Shape& shape) const override;
-
-    // Allocates a raw buffer of a particular size after an optional
-    // allocate_after. Backends may support retrying allocation on oom which
-    // can be controlled via retry_on_oom.
-    absl::StatusOr<tsl::RCReference<CommonPjRtRawBuffer>>
-      AllocateRawBuffer(PjRtMemorySpace* memory_space, size_t on_device_bytes_count,
-                  bool retry_on_oom,
-                  tsl::AsyncValueRef<bool> allocate_after) override;
-
-    absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> LinearizeHostBufferInto(
-      const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
-      std::optional<absl::Span<int64_t const>> byte_strides,
-      HostBufferSemantics host_buffer_semantics,
-      absl::AnyInvocable<void() &&> on_done_with_host_buffer,
-      const xla::Shape& device_shape,
-      tsl::RCReference<CommonPjRtRawBuffer> raw_buffer) override;
-
-    // Defines a pjrt buffer from a shape, raw_buffer and definition events.
-    absl::StatusOr<std::unique_ptr<PjRtBuffer>> DefineBuffer(
-      const Shape& on_device_shape,
-      tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
-      absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4>
-          definition_device_events,
-      bool raw_buffer_is_mutable) override;
-
-    absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>,
-                             tsl::RCReference<PjRtDeviceEvent>>>
-    CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
-                            absl::string_view debug_info) override;
+    AsyncWorkRunner* async_work_runner() const override {
+        return async_work_runner_.get();
+    }
 
     tsl::thread::ThreadPool* pjrt_client_thread_pool() const {
         return pjrt_client_thread_pool_.get();
     }
 
-    AsyncWorkRunner* async_work_runner() const override {
-        return async_work_runner_.get();
+    ge::Session* GetGlobalGeSession() const {
+        return global_ge_session_.get();
     }
 
     // Returns a pair of async events:
     // - async event that signals the completion of the last collective launch
     // - count down event that must be signalled when each rank completes
     //   a collective launch
-     CollectiveLaunchEvent GetLastCollectiveLaunchEvent(
-        size_t num_addressable_devices) {
-      tsl::CountDownAsyncValueRef<NpuEvent> count_down(num_addressable_devices);
-      absl::MutexLock lock(mu_);
-      auto last_launch = std::move(last_collective_launch_event_);
-      last_collective_launch_event_ = count_down.AsRef();
-      return std::make_pair(std::move(last_launch), std::move(count_down));
+     CollectiveLaunchEvent GetLastCollectiveLaunchEvent(size_t num_addressable_devices) {
+        tsl::CountDownAsyncValueRef<NpuEvent> count_down(num_addressable_devices);
+        absl::MutexLock lock(mu_);
+        auto last_launch = std::move(last_collective_launch_event_);
+        last_collective_launch_event_ = count_down.AsRef();
+        return std::make_pair(std::move(last_launch), std::move(count_down));
     }
+    
+    absl::StatusOr<PjRtDevice*> LookupDevice(PjRtGlobalDeviceId global_device_id) const override;
+
+    absl::StatusOr<PjRtDevice*> LookupAddressableDevice(PjRtLocalDeviceId local_device_id) const override;
+
+    absl::Span<PjRtMemorySpace* const> memory_spaces() const override;
+
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        const XlaComputation& computation, CompileOptions options) override;
+
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
+        mlir::ModuleOp module, CompileOptions options) override;
+
+    // Computes the memory requirements for storing shape on memory_space.
+    absl::StatusOr<int64_t> GetOnDeviceBytesCount(
+        PjRtMemorySpace* memory_space, const xla::Shape& shape) const override;
+
+    // Allocates a raw buffer of a particular size after an optional
+    // allocate_after. Backends may support retrying allocation on oom which
+    // can be controlled via retry_on_oom.
+    absl::StatusOr<tsl::RCReference<CommonPjRtRawBuffer>> AllocateRawBuffer(
+        PjRtMemorySpace* memory_space, size_t on_device_bytes_count,
+        bool retry_on_oom,
+        tsl::AsyncValueRef<bool> allocate_after) override;
+
+    absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> LinearizeHostBufferInto(
+        const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
+        std::optional<absl::Span<int64_t const>> byte_strides,
+        HostBufferSemantics host_buffer_semantics,
+        absl::AnyInvocable<void() &&> on_done_with_host_buffer,
+        const xla::Shape& device_shape,
+        tsl::RCReference<CommonPjRtRawBuffer> raw_buffer) override;
+
+    // Defines a pjrt buffer from a shape, raw_buffer and definition events.
+    absl::StatusOr<std::unique_ptr<PjRtBuffer>> DefineBuffer(
+        const Shape& on_device_shape,
+        tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
+        absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4> definition_device_events,
+        bool raw_buffer_is_mutable) override;
+
+    absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>,
+                             tsl::RCReference<PjRtDeviceEvent>>>
+    CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
+        absl::string_view debug_info) override;
 
     absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(
         int num_replicas, int num_partitions) const override;
 
-    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
-  CompileInternal(
-      const XlaComputation& computation,
-      const std::vector<const Shape*>& argument_layout_pointers,
-      LayoutCanonicalizationCallback layout_canonicalization_callback,
-      CompileOptions options,
-      std::unique_ptr<npu::GraphData> graph_data,
-      const AotCompilationOptions* absl_nullable aot_options = nullptr);
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileInternal(
+        const XlaComputation& computation,
+        const std::vector<const Shape*>& argument_layout_pointers,
+        LayoutCanonicalizationCallback layout_canonicalization_callback,
+        CompileOptions options,
+        const GraphData& graph_data,
+        const AotCompilationOptions* absl_nullable aot_options = nullptr);
 
 private:
     friend class PjRtNpuExecutable;
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
+
     int process_index_;
     // Includes all devices, including non-addressable devices.
     std::vector<std::unique_ptr<PjRtNpuDevice>> owned_devices_;
@@ -212,8 +215,8 @@ private:
     std::unique_ptr<tsl::thread::ThreadPool> pjrt_client_thread_pool_;
     std::unique_ptr<AsyncWorkRunner> async_work_runner_;
 
-    bool ge_initialized = false;
-    std::unique_ptr<ge::Session> global_ge_session = nullptr;
+    bool ge_initialized_ = false;
+    std::unique_ptr<ge::Session> global_ge_session_ = nullptr;
 };
 
 class PjRtNpuExecutable final : public PjRtLoadedExecutable {

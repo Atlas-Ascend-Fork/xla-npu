@@ -23,7 +23,7 @@
 #include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
-
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
 
@@ -80,17 +80,17 @@ static tsl::ThreadOptions GetThreadOptions() {
 static absl::StatusOr<BufferInfo> MemoryForAllocation(
     const BufferAllocation& allocation,
     // absl::Span<const cpu::ConstantAllocation> constants,
-    // absl::Span<std::pair<bool, TrackedCpuDeviceBuffer*> const> arguments,
+    absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> arguments,
     BufferAlloc& buffer_alloc)
     // BufferAllocAndCopy& buffer_alloc_and_copy,
     // const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table)
 {
     BufferInfo buffer_info;
-    // if (allocation.is_entry_computation_parameter()) {
-    //     bool can_donate = false;
-    //     TrackedCpuDeviceBuffer* arg = nullptr;
-    //     size_t buffer_size;
-    //     tsl::AsyncValuePtr<CpuDeviceMemory> out;
+    if (allocation.is_entry_computation_parameter()) {
+        bool can_donate = false;
+        TrackedNpuDeviceBuffer* arg = nullptr;
+        size_t buffer_size;
+        tsl::AsyncValuePtr<NpuDeviceMemory> out;
     //     if (tuple_index_table) {
     //     if (allocation.param_shape_index().empty()) {
     //         out = tuple_index_table.AsPtr();
@@ -112,36 +112,36 @@ static absl::StatusOr<BufferInfo> MemoryForAllocation(
     //         allocation.parameter_number(),
     //         " at shape index:", allocation.param_shape_index().ToString()));
     //     } else {
-    //     std::tie(can_donate, arg) = arguments[allocation.parameter_number()];
-    //     out = arg->buffer().AsPtr();
-    //     buffer_size = arg->BufferSize();
-    //     }
-    //     CHECK_EQ(allocation.size(), buffer_size)
-    //         << "Size mismatch on param " << allocation.parameter_number()
-    //         << " at shape index " << allocation.param_shape_index().ToString();
+        std::tie(can_donate, arg) = arguments[allocation.parameter_number()];
+        out = arg->buffer().AsPtr();
+        buffer_size = arg->BufferSize();
+            // }
+        CHECK_EQ(allocation.size(), buffer_size)
+            << "Size mismatch on param " << allocation.parameter_number()
+            << " at shape index " << allocation.param_shape_index().ToString();
 
-    //     // If we don't own the buffer, we can't overwrite it or donate it. For
-    //     // example we might be pointing to a buffer owned by the client whose
-    //     // lifetime will not extend past the lifetime of the donated input buffer.
-    //     if ((!can_donate || (arg && !arg->owns_buffers())) &&
-    //         !allocation.is_readonly()) {
-    //     auto copy = CpuDeviceMemory::CreateDelayedMemory();
+        // // If we don't own the buffer, we can't overwrite it or donate it. For
+        // // example we might be pointing to a buffer owned by the client whose
+        // // lifetime will not extend past the lifetime of the donated input buffer.
+        // if ((!can_donate || (arg && !arg->owns_buffers())) &&
+        //     !allocation.is_readonly()) {
+        // auto copy = CpuDeviceMemory::CreateDelayedMemory();
 
-    //     buffer_alloc_and_copy.src_buffers.push_back(out.CopyRef());
-    //     buffer_alloc_and_copy.dst_buffers.push_back(copy);
-    //     buffer_alloc_and_copy.allocation_sizes.push_back(allocation.size());
+        // buffer_alloc_and_copy.src_buffers.push_back(out.CopyRef());
+        // buffer_alloc_and_copy.dst_buffers.push_back(copy);
+        // buffer_alloc_and_copy.allocation_sizes.push_back(allocation.size());
 
-    //     buffer_info.buffer = std::move(copy);
-    //     buffer_info.owns_buffer = true;
-    //     buffer_info.buffer_size = allocation.size();
-    //     return buffer_info;
-    //     }
+        // buffer_info.buffer = std::move(copy);
+        // buffer_info.owns_buffer = true;
+        // buffer_info.buffer_size = allocation.size();
+        // return buffer_info;
+        // }
 
-    //     buffer_info.buffer = out.CopyRef();
-    //     buffer_info.owns_buffer = !arg || arg->owns_buffers();
-    //     buffer_info.buffer_size = buffer_size;
-    //     return buffer_info;
-
+        buffer_info.buffer = out.CopyRef();
+        buffer_info.owns_buffer = true;
+        buffer_info.buffer_size = buffer_size;
+        return buffer_info;
+    }
     // } else if (allocation.is_constant() && allocation.index() < constants.size()) {
     //     se::DeviceAddressBase constant = constants[allocation.index()].AsDeviceMemoryBase();
     //     buffer_info.buffer = CpuDeviceMemory::CreateConstantMemory(constant.opaque(), constant.size());
@@ -171,7 +171,7 @@ static absl::StatusOr<BufferInfo> MemoryForAllocation(
 static absl::StatusOr<std::vector<BufferInfo>> CreateBufferTable(
     const NpuBufferAssignment& assignment,
     // absl::Span<const cpu::ConstantAllocation> constants,
-    // absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> arguments,
+    absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> arguments,
     BufferAlloc& buffer_alloc)
     // BufferAllocAndCopy& buffer_alloc_and_copy,
     // const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table)
@@ -179,7 +179,7 @@ static absl::StatusOr<std::vector<BufferInfo>> CreateBufferTable(
     std::vector<BufferInfo> buffer_table(assignment.Allocations().size());
     for (BufferAllocation::Index i = 0; i < buffer_table.size(); ++i) {
         const BufferAllocation& allocation = assignment.GetAllocation(i);
-        TF_ASSIGN_OR_RETURN(buffer_table[i], MemoryForAllocation(allocation, buffer_alloc));
+        TF_ASSIGN_OR_RETURN(buffer_table[i], MemoryForAllocation(allocation, arguments, buffer_alloc));
             // MemoryForAllocation(allocation, constants, arguments, buffer_alloc,
             //     buffer_alloc_and_copy, tuple_index_table));
     }
@@ -350,22 +350,22 @@ PjRtNpuClient::CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
 static void  TestGraph(ge::GraphPtr &graph) {
     graph = std::make_shared<ge::Graph>("XLAGraph");
 
-    ge::TensorDesc desc(ge::Shape({10, 10}), ge::FORMAT_ND, ge::DT_FLOAT);
+    ge::TensorDesc desc(ge::Shape({3}), ge::FORMAT_ND, ge::DT_FLOAT);
     auto data0 = ge::OperatorFactory::CreateOperator("Data_0", "Data");
     data0.SetAttr("index", 0);
     data0.UpdateInputDesc("x", desc);
     data0.UpdateOutputDesc("y", desc);
 
-    auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
-    data1.SetAttr("index", 1);
-    data1.UpdateInputDesc("x", desc);
-    data1.UpdateOutputDesc("y", desc);
+    // auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
+    // data1.SetAttr("index", 1);
+    // data1.UpdateInputDesc("x", desc);
+    // data1.UpdateOutputDesc("y", desc);
 
     auto add = ge::OperatorFactory::CreateOperator("add", "Add");
     add.SetInput("x1", data0);
-    add.SetInput("x2", data1);
+    add.SetInput("x2", data0);
 
-    std::vector<ge::Operator> inputs{data0, data1};
+    std::vector<ge::Operator> inputs{data0};
     std::vector<ge::Operator> outputs{add};
 
     graph->SetInputs(inputs).SetOutputs(outputs);
@@ -392,7 +392,7 @@ PjRtNpuClient::CompileInternal(
     const std::vector<const Shape*>& argument_layout_pointers,
     LayoutCanonicalizationCallback layout_canonicalization_callback,
     CompileOptions options,
-    std::unique_ptr<npu::GraphData> graph_data,
+    const GraphData& graph_data,
     const AotCompilationOptions* absl_nullable aot_options) {
 
   auto input_options = options;
@@ -462,19 +462,6 @@ PjRtNpuClient::CompileInternal(
   //     FindResultBufferAllocationIndex(cpu_executable_ptr->buffer_assignment(),
   //                                     cpu_executable->module()));
   //
-  // std::unique_ptr<HloModule> unoptimized_hlo_module = nullptr;
-  //
-  // const bool xla_dump_hlo_unoptimized_snapshots =
-  //     options.executable_build_options.has_debug_options() &&
-  //     options.executable_build_options.debug_options()
-  //         .xla_dump_hlo_unoptimized_snapshots();
-  //
-  // if (xla_dump_hlo_unoptimized_snapshots) {
-  //   TF_ASSIGN_OR_RETURN(
-  //       unoptimized_hlo_module,
-  //       HloModule::CreateFromProto(computation.proto(),
-  //                                  cpu_executable->module().config()));
-  // }
 
     // Create device assignment(Do not delete!!! step into PjRtNpuExecutable::Execute requires it)
     int num_replicas = 1;
@@ -507,16 +494,18 @@ PjRtNpuClient::CompileInternal(
     }
     // create buffer assignment(Do not delete!!! alloc output buffer depends on it)
     auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
-    auto output_shape = graph_data->outputs_shape.back();
-    auto output_type = graph_data->output_dtypes.back();
+    auto output_shape = graph_data.outputs_shape.back();
+    auto output_type = graph_data.output_dtypes.back();
     int64_t size = output_shape.GetShapeSize() * GetSizeByDataType(output_type);
-    buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
+    auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
+    allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
 
     TF_ASSIGN_OR_RETURN(
             auto npu_executable,
-            npu::NpuExecutable::Create(std::move(buffer_assignment), std::move(hlo_module), nullptr, nullptr, std::move(graph_data)));
+            NpuExecutable::Create(std::move(buffer_assignment), std::move(hlo_module), nullptr, nullptr, graph_data));
 
     absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices;
+    result_buffer_indices.push_back(0);
     auto executable = std::make_unique<PjRtNpuExecutable>(
             num_replicas, num_partitions, device_assignment,
             options.parameter_is_tupled_arguments, std::move(input_options),
@@ -538,7 +527,8 @@ absl::StatusOr<DeviceAssignment> PjRtNpuClient::GetDefaultDeviceAssignment(
         }
         return assignment;
     }
-    std::cout << "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: " << num_replicas << ", num_partitions: " << num_partitions << std::endl;
+    std::cout << "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: " << num_replicas
+        << ", num_partitions: " << num_partitions << std::endl;
     return computation_placer_->AssignDevices(num_replicas, num_partitions);
 }
 
@@ -548,44 +538,50 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     std::string result;
     llvm::raw_string_ostream os(result);
     module.print(os);
-    std::cout << os.str() << std::endl;
+    std::cout << "hlo graph: " << os.str() << std::endl;
 
-    auto graph_data = std::make_unique<npu::GraphData>();
-    TestGraph(graph_data->graph);
-    graph_data->id = 0;
+    auto graph_data = GraphData();
+    TestGraph(graph_data.graph);
+    graph_data.id = 0;
+    graph_data.inputs_shape.push_back(ge::Shape({3}));
 
     std::map<ge::AscendString, ge::AscendString> ge_options = {
-        {"ge.exec.deviceId", "0"}
+        {"ge.exec.deviceId", "0"},
+        {"ge.exec.enableDump", "1"},
+        {"ge.exec.dumpPath", "/tmp/data_dump"},
+        {"ge.exec.dumpMode", "all"}
     };
 
-    if (!ge_initialized) {    
-        ge_initialized = true;    
+    if (!ge_initialized_) {    
+        ge_initialized_ = true;    
         if (ge::GEInitialize(ge_options) != ge::SUCCESS) {
             return absl::InternalError("Failed to initialize GE.");
         } else {
             (void)ge_options.emplace(ge::AscendString("ge.session_device_id"), ge::AscendString("0"));
-            global_ge_session = std::make_unique<ge::Session>(ge_options);
-            if (global_ge_session == nullptr) {
+            global_ge_session_ = std::make_unique<ge::Session>(ge_options);
+            if (global_ge_session_ == nullptr) {
                 return absl::InternalError("Failed to create GE session.");
             }
         }
     }
 
-    if (global_ge_session->AddGraph(graph_data->id, *graph_data->graph, ge_options) != ge::SUCCESS) {
+    if (global_ge_session_->AddGraph(graph_data.id, *graph_data.graph, ge_options) != ge::SUCCESS) {
         return absl::InternalError("Failed to AddGraph.");
     }
-    if (global_ge_session->CompileGraph(graph_data->id) != ge::SUCCESS) {
-        return absl::InternalError("Failed to CompileGraph.");
-    }
-    std::shared_ptr<ge::CompiledGraphSummary> summary = global_ge_session->GetCompiledGraphSummary(graph_data->id);
-    if (summary ==  nullptr) {
-        return absl::InternalError("Failed to GetCompiledGraphSummary.");
-    }
-    summary->GetOutputShapes(graph_data->outputs_shape);
-    summary->GetOutputDtypes(graph_data->output_dtypes);
-    std::cout << "GetCompiledGraphSummary finish,  "
-        << " output shape is: " << DebugString(graph_data->outputs_shape[0])
-        << " output dtype is: " << graph_data->output_dtypes[0]
+    // if (global_ge_session_->CompileGraph(graph_data.id) != ge::SUCCESS) {
+    //     return absl::InternalError("Failed to CompileGraph.");
+    // }
+    // std::shared_ptr<ge::CompiledGraphSummary> summary = global_ge_session_->GetCompiledGraphSummary(graph_data.id);
+    // if (summary ==  nullptr) {
+    //     return absl::InternalError("Failed to GetCompiledGraphSummary.");
+    // }
+    // summary->GetOutputShapes(graph_data.outputs_shape);
+    // summary->GetOutputDtypes(graph_data.output_dtypes);
+    graph_data.outputs_shape.push_back(ge::Shape({3}));
+    graph_data.output_dtypes.push_back(ge::DT_FLOAT);
+    std::cout << "GetCompiledGraphSummary finish,"
+        << " output shape is: " << DebugString(graph_data.outputs_shape[0])
+        << " output dtype is: " << graph_data.output_dtypes[0]
         << std::endl;
 
     //构建hlo modules,通过JAX的校验
@@ -626,7 +622,7 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
                          &LayoutUtil::GetWithDefaultLayout,
                          options.executable_build_options));
   return CompileInternal(xla_computation, arg_layouts_and_pointers.second,
-                         layout_callback, options, std::move(graph_data));
+                         layout_callback, options, graph_data);
 
 }
 
@@ -674,11 +670,8 @@ PjRtNpuExecutable::Execute(
 
     // Fast-path if there is only one device — run the computation on the
     // current thread.
-    const int replica = 1;
-    const int partition = 1;
-
     auto statusor = ExecuteHelper(
-        argument_handles[0], replica, partition, run_id, options,
+        argument_handles[0], num_replicas_, num_partitions_, run_id, options,
         /*last_collective_launch_event=*/{}, returned_futures.has_value());
 
     if (!statusor.ok()) {
@@ -734,8 +727,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // MarkEventReadyOnExit ready_on_exit(execute_event);
     auto execute_usage_event = tsl::MakeRef<NpuTrackedDeviceEvent>(execute_event);
 
-    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4>
-        tracked_buffers;
+    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> tracked_buffers;
     tracked_buffers.reserve(argument_handles.size());
     
     // To avoid clobbering inputs, we must ensure that
@@ -786,44 +778,91 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     }
 
     for (auto& tracked_buffer: tracked_buffers) {
-        std::cout << "argument handle buffer addr=" << tracked_buffer.second->buffer().get().untyped_data() << ", size="<< tracked_buffer.second->buffer().get().size_bytes() << std::endl;
+        std::cout << "argument handle buffer addr=" << tracked_buffer.second->buffer().get().untyped_data()
+            << ", size="<< tracked_buffer.second->buffer().get().size_bytes() << std::endl;
     }
 
     if (!input_deps.empty()) {
         std::cout << "input is not ready" << std::endl;
     }
 
+    auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);
+    ge::Session* ge_session = client_->GetGlobalGeSession();
+    const GraphData& graph_data = npu_executable->GetGraphData();
+
     // transfer to ge tensor
-    auto npu_executable = tsl::down_pointer_cast<npu::NpuExecutable>(npu_executable_);
     std::vector<ge::Tensor> inputs;
     for (int i = 0; i < tracked_buffers.size(); i++) {
         ge::TensorDesc desc;
-        // desc.SetDataType(npu_executable->GetGraphData().input_dtypes[i]);
-        auto input_shape = npu_executable->GetGraphData()->inputs_shape[i];
-        desc.SetShape(input_shape);
-        ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
-        std::cout << "input tensor " << i << " data addr=" << (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data() << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
+        desc.SetOriginFormat(ge::FORMAT_ND);
+        desc.SetOriginShape(graph_data.inputs_shape[i]);
+        // desc.SetShape(graph_data.inputs_shape[i]);
+        desc.SetPlacement(ge::Placement::kPlacementDevice);
+        desc.SetFormat(ge::FORMAT_ND);
+        desc.SetDataType(ge::DataType::DT_FLOAT);
+        ge::Tensor input;
+        const static ge::Tensor::DeleteFunc kDoNothing = [](uint8_t* data) {};
+        input.ResetData(
+            (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(),
+            tracked_buffers[i].second->buffer().get().size_bytes(),
+            kDoNothing);
+        input.SetShapeDimNum(1);
+        input.SetShapeDim(0, 3);
+
+        // ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
+        std::cout << "input tensor " << i << " data addr=" << tracked_buffers[i].second->buffer().get().untyped_data()
+            << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
         inputs.emplace_back(input);
     }
 
-    // prepare output buffer
-    /* 初始化 */
+    /* 运行GE图,使用上面准备好的输出内存,参考cpu的用法使用result_buffers_info */
+    std::vector<ge::Tensor> outputs;
+    ge::Status ge_status = ge_session->RunGraph(graph_data.id, inputs, outputs);
+    if (ge_status != ge::SUCCESS) {
+        return absl::InternalError(
+            absl::StrCat("run graph id ", graph_data.id, " failed, ge status is ", ge_status));
+    }
+
+    /* debug */
+    auto data_ptr = outputs[0].GetData();
+    auto data_size = outputs[0].GetSize();
+    auto dataDesc = outputs[0].GetTensorDesc();
+    auto dataShape = dataDesc.GetShape();
+    auto dataShapeSize = dataShape.GetShapeSize();
+    std::cout << " output shape is: " << DebugString(dataShape) << std::endl;
+    std::cout << " output shapeSize is: " << dataShapeSize << std::endl;
+
+    /* prepare output buffer */ 
     // `buffer_alloc` and `buffer_alloc_and_copy` are used to do real memory allocation and copy work.
-    BufferAlloc buffer_alloc;
+    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> output_tracked_buffers;
+    output_tracked_buffers.reserve(outputs.size());
+    void* output_memory_ptr = NULL;
+    auto acl_ret = npu::AclrtMallocHost(&output_memory_ptr, data_size);
+    if (acl_ret != ACL_SUCCESS) {
+        return absl::InternalError(absl::StrCat("malloc host memory failed, error code: ", acl_ret));
+    }
+    memcpy(output_memory_ptr, data_ptr, data_size);
+    auto deleter = [output_memory_ptr]() {
+        npu::AclrtFreeHost(output_memory_ptr);
+    };
+    tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory = NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, data_size, deleter);
+    auto output_tracked_buffer = TrackedNpuDeviceBuffer(
+        /*owns_buffers=*/true, std::move(output_device_memory), data_size,
+        absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4>{tsl::AsyncValueRef<NpuEvent>()});
+    output_tracked_buffers.emplace_back(/*can_donate=*/false, &output_tracked_buffer);
+        
+    BufferAlloc buffer_alloc; // not used
     // BufferAllocAndCopy buffer_alloc_and_copy;
+   
     TF_ASSIGN_OR_RETURN(std::vector<BufferInfo> buffer_table,
-        CreateBufferTable(npu_executable->buffer_assignment(), // cpu中使用的DelayedMemory,未实际在这里申请内存,只是准备好了内存信息
-            // npu_executable->constants(),
-            // tracked_buffers,
-            buffer_alloc));
+        CreateBufferTable(npu_executable->buffer_assignment(), /* npu_executable->constants(), */ output_tracked_buffers, buffer_alloc));
             // buffer_alloc_and_copy,
             // tuple_index_table));
     auto result_buffers_info = CreateResultBufferInfo(result_buffer_indices_, buffer_table);
 
-    /* 运行GE图,使用上面准备好的输出内存,参考cpu的用法使用result_buffers_info */
-
     // Create output buffers.
-    const Shape& result_shape = npu_executable_->result_shape();
+    // const Shape& result_shape = npu_executable_->result_shape();
+    const Shape& result_shape = ShapeUtil::MakeShape(F32, {3});
     std::vector<std::unique_ptr<PjRtBuffer>> res;
     auto* memory_space = *device->default_memory_space();
     CHECK_EQ(result_buffers_info.size(), 1);
@@ -837,6 +876,20 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
         result_shape, std::move(tracked_device_buffer),
         *device->default_memory_space());
     res.push_back(std::move(output_buffer));
+
+    if (fill_future) {
+        auto [promise, future] = Future<>::MakePromise();
+        promise.Set(absl::OkStatus());
+        // execute_event.AndThen([promise = std::move(promise),
+        //                     event = execute_event.CopyRef()]() mutable {
+        // if (auto* error = event.GetErrorIfPresent()) {
+        //     promise.Set(Internal("Compute error: %s", error->message()));
+        // } else {
+        //     promise.Set(absl::OkStatus());
+        // }
+        // });
+        return Result({std::move(future), /*buffers=*/std::move(res)});
+    }
 
     return Result({/*future=*/std::nullopt, std::move(res)});
 }

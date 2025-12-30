@@ -65,7 +65,6 @@
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace xla {
-namespace npu {
 
 absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     // std::unique_ptr<FunctionLibrary> function_library,
@@ -75,7 +74,7 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     // std::vector<ConstantAllocation> constants,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-    std::unique_ptr<GraphData> graph_data) {
+    const GraphData& graph_data) {
     // TargetMachineOptionsProto target_machine_options) {
   // VLOG(2) << "Create NpuExecutable from a thunk sequence; module="
   //         << hlo_module->name() << ", constants=" << constants.size();
@@ -83,7 +82,7 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
   std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
       std::move(hlo_module), std::move(hlo_profile_printer_data),
       std::move(hlo_profile_index_map), std::move(assignment),
-      std::move(graph_data)));
+      graph_data));
       // std::move(target_machine_options)));
   // executable->function_library_ = std::move(function_library);
 
@@ -121,12 +120,12 @@ NpuExecutable::NpuExecutable(
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
     std::unique_ptr<NpuBufferAssignment> assignment,
-    std::unique_ptr<GraphData> graph_data)
+    const GraphData& graph_data)
     // TargetMachineOptionsProto target_machine_options)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
                  std::move(hlo_profile_index_map)),
       assignment_(std::move(assignment)),
-      graph_data_(std::move(graph_data)) {
+      graph_data_(graph_data) {
       // target_machine_options_(std::move(target_machine_options)) {
   // if (assignment_ && has_module()) {
   //   XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
@@ -147,9 +146,9 @@ NpuExecutable::NpuExecutable(
 }
 
 NpuExecutable::~NpuExecutable() {
-  if (has_module()) {
-    XlaDebugInfoManager::Get()->UnregisterModule(module().unique_id());
-  }
+  // if (has_module()) {
+  //   XlaDebugInfoManager::Get()->UnregisterModule(module().unique_id());
+  // }
 }
 
 static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(
@@ -569,5 +568,4 @@ void NpuExecutable::Finalize() {
   assignment_->Finalize();
 }
 
-}  // namespace npu
 }  // namespace xla

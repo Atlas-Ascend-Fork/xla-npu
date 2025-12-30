@@ -98,6 +98,7 @@ public:
 
   ~NpuDeviceMemoryForeign() final {
     if (on_delete_callback_) {
+      std::cout << "need call delete function for " << (uint64_t)base_ << ", which size is " << size_bytes_ << std::endl;
       std::move(on_delete_callback_)();
     }
   }
@@ -281,23 +282,24 @@ void TrackedNpuDeviceBuffer::Delete(PjRtMemorySpace* memory_space) {
 }
 
 Future<> TrackedNpuDeviceBuffer::GetReadyFuture(PjRtMemorySpace* memory_space) {
-  auto [promise, future] = Future<>::MakePromise();
+    auto [promise, future] = Future<>::MakePromise();
+    promise.Set();
 
-  tensorflow::down_cast<CommonPjRtClient*>(memory_space->client())
-      ->TrackFuture(memory_space, "BufferDefinitionEvent", future);
+    // tensorflow::down_cast<CommonPjRtClient*>(memory_space->client())
+    //     ->TrackFuture(memory_space, "BufferDefinitionEvent", future);
 
-  definition_event().AndThen([definition_event = definition_event().AsPtr(),
-                              promise = std::move(promise)]() mutable {
-    if (definition_event.IsError()) {
-      const absl::Status& s = definition_event.GetError();
-      promise.Set(tsl::errors::CreateWithUpdatedMessage(
-          s, absl::StrCat("Buffer Definition Event: ", s.message())));
-    } else {
-      promise.Set();
-    }
-  });
+    // definition_event().AndThen([definition_event = definition_event().AsPtr(),
+    //                             promise = std::move(promise)]() mutable {
+    //   if (definition_event.IsError()) {
+    //     const absl::Status& s = definition_event.GetError();
+    //     promise.Set(tsl::errors::CreateWithUpdatedMessage(
+    //         s, absl::StrCat("Buffer Definition Event: ", s.message())));
+    //   } else {
+    //     promise.Set();
+    //   }
+    // });
 
-  return future;
+    return future;
 }
 
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
