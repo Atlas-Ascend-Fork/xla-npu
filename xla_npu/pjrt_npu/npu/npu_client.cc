@@ -724,7 +724,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // there was an error.
     auto execute_event = tsl::MakeConstructedAsyncValueRef<NpuEvent>();
     // Asynchronously call needed
-    // MarkEventReadyOnExit ready_on_exit(execute_event);
+    MarkEventReadyOnExit ready_on_exit(execute_event);
     auto execute_usage_event = tsl::MakeRef<NpuTrackedDeviceEvent>(execute_event);
 
     absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> tracked_buffers;
