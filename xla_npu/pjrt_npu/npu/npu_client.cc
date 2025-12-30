@@ -25,6 +25,7 @@
 #include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/mair/test/test_mair_gen.h"
+#include "xla/xla_npu/mair/stablehlo2mair_converter.h"
 
 
 namespace xla {
@@ -358,11 +359,6 @@ static void  TestGraph(ge::GraphPtr &graph) {
     // data0.UpdateInputDesc("x", desc);
     // data0.UpdateOutputDesc("y", desc);
 
-    // // auto data1 = ge::OperatorFactory::CreateOperator("Data_1", "Data");
-    // // data1.SetAttr("index", 1);
-    // // data1.UpdateInputDesc("x", desc);
-    // // data1.UpdateOutputDesc("y", desc);
-
     // auto add = ge::OperatorFactory::CreateOperator("add", "Add");
     // add.SetInput("x1", data0);
     // add.SetInput("x2", data0);
@@ -370,9 +366,9 @@ static void  TestGraph(ge::GraphPtr &graph) {
     // std::vector<ge::Operator> inputs{data0};
     // std::vector<ge::Operator> outputs{add};
 
-    graph->SetInputs(inputs).SetOutputs(outputs);
-    // auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
-    // mlir::air::GraphGenTester::Convert(module, graph);
+    // graph->SetInputs(inputs).SetOutputs(outputs);
+    auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
+    mlir::air::GraphGenTester::Convert(module, graph);
 }
 
 static std::string DebugString(const ge::Shape &shape) {
@@ -542,11 +538,19 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     std::string result;
     llvm::raw_string_ostream os(result);
     module.print(os);
-    std::cout << "hlo graph: " << os.str() << std::endl;
+    std::cout << "stablehlo module: " << os.str() << std::endl;
+
+    mlir::ModuleOp mair_module = module.clone();
+    xla::mair::Stablehlo2MairConverter(mair_module);
+
+    std::string mair_result;
+    llvm::raw_string_ostream mair_os(mair_result);
+    mair_module.print(mair_os);
+    std::cout << "mair module: " << mair_os.str() << std::endl;
 
     auto graph_data = GraphData();
     graph_data.graph = std::make_shared<ge::Graph>("XLAGraph");
-    mlir::air::GraphGenTester::Convert(module, graph_data.graph);
+    mlir::air::GraphGenTester::Convert(mair_module, graph_data.graph);
     // TestGraph(graph_data.graph);
     graph_data.id = 0;
     graph_data.inputs_shape.push_back(ge::Shape({3}));

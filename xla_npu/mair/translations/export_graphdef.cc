@@ -278,34 +278,61 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             return false;
         }
         
-        if (opType == "Const")
-        {
-            mlir::Attribute valueAttr = mlirOp.getAttr("value");
-            float constData = extractFloatValueSimple(valueAttr);
-            llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << " ; constData = " << constData << "\n";
+        // if (opType == "Const")
+        // {
+        //     mlir::Attribute valueAttr = mlirOp.getAttr("value");
+        //     float constData = extractFloatValueSimple(valueAttr);
+        //     llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << " ; constData = " << constData << "\n";
 
-                    // 获取参数类型和形状
-            mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(result.getType());
-            ge::DataType dtype;
-            ConvertToDataType(arg_type.getElementType(), &dtype);
-            auto shape = ge::Shape();
-            ConvertToShape(arg_type, &shape);
-            auto format = ge::FORMAT_ND;
-            ge::TensorDesc data_desc(shape, format, dtype);
+        //             // 获取参数类型和形状
+        //     mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(result.getType());
+        //     ge::DataType dtype;
+        //     ConvertToDataType(arg_type.getElementType(), &dtype);
+        //     auto shape = ge::Shape();
+        //     ConvertToShape(arg_type, &shape);
+        //     auto format = ge::FORMAT_ND;
+        //     ge::TensorDesc data_desc(shape, format, dtype);
 
-            uint32_t len = shape.GetShapeSize() * sizeof(float);
-            ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&constData), len);
-            // if (!valueTensor.SetData(reinterpret_cast<uint8_t*>(&constData), len))
-            // {
-            //     log("Fail to Set the const out put value!!");
-            // }
-            geOp.SetAttr("value", valueTensor);
+        //     uint32_t len = shape.GetShapeSize() * sizeof(float);
+        //     ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&constData), len);
+        //     // if (!valueTensor.SetData(reinterpret_cast<uint8_t*>(&constData), len))
+        //     // {
+        //     //     log("Fail to Set the const out put value!!");
+        //     // }
+        //     geOp.SetAttr("value", valueTensor);
             
-            log("Set the const out put value " + std::to_string(constData));
+        //     log("Set the const out put value " + std::to_string(constData));
+        // }
+
+        if (opType == "Const") {
+            // TODO
+            mlir::Attribute valueAttr = mlirOp.getAttr("value");
+            llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << "\n";
+
+            if (auto denseAttr = mlir::dyn_cast<mlir::DenseElementsAttr>(valueAttr)) {
+                if (denseAttr.isSplat() && denseAttr.getElementType().isF32()) {
+                    auto v = denseAttr.getSplatValue<float>();
+                    auto shape = ge::Shape();
+                    ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_FLOAT);
+                    uint32_t len = shape.GetShapeSize() * sizeof(float);
+                    len = 4;
+                    std::cout << "Const float len: " << len << std::endl;
+                    ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
+                    geOp.SetAttr("value", valueTensor);
+                }
+                // 如果是f64，转换为float
+                if (denseAttr.isSplat() && denseAttr.getElementType().isInteger(64)) {
+                    auto v = denseAttr.getSplatValue<int64_t>();
+                    auto shape = ge::Shape({1,});
+                    ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_INT64);
+                    uint32_t len = shape.GetShapeSize() * sizeof(int64_t);
+                    std::cout << "Const int64 len: " << len << std::endl;
+                    ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
+                    geOp.SetAttr("value", valueTensor);
+                }
+            }
         }
-        
-        
-        
+
         // 建立映射
         symbolMap[mlirSymbol] = {
             .orgSymbol = mlirSymbol,
@@ -313,8 +340,7 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             // .tensorDesc = data_desc
         };
         
-        llvm::errs() << "  输出[" << i << "]: MLIR符号=" << mlirSymbol 
-                    << "\n";
+        llvm::errs() << "  输出[" << i << "]: MLIR符号=" << mlirSymbol << "\n";
     }
     
     return true;

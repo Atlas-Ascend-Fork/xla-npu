@@ -1,3 +1,6 @@
+#ifndef TEST_MAIR_GEN_H_
+#define TEST_MAIR_GEN_H_
+
 #include <iostream>
 #include <vector>
 
@@ -32,4 +35,4 @@ private:
 
 }
 
-
+#endif  //TEST_MAIR_GEN_H_

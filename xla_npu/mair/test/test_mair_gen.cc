@@ -8,11 +8,11 @@ using namespace mlir::air;
 
 void GraphGenTester::buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
     // 输入输出shape
-    std::vector<int> broadcastTensorShape{10, 20};
+    std::vector<int> broadcastTensorShape{3};
 
     // 创建函数： 接受tensor输入， 返回tensor
     auto f32Type = mlir::Float32Type::get(&context);
-    auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
+    auto inputOutputTensorType = mlir::RankedTensorType::get({3}, f32Type);
     auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType}, {inputOutputTensorType});
     auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
 
@@ -25,7 +25,20 @@ void GraphGenTester::buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& 
     auto scalarType = mlir::RankedTensorType::get({}, f32Type);
 
     // 后续broadcast操作的目标shape
-    auto broadcastShapeValue = func.getArgument(0);
+    // auto broadcastShapeValue = func.getArgument(0);
+
+    auto i32Type = builder.getI32Type();
+
+    mlir::RankedTensorType shapeTensorType = mlir::RankedTensorType::get(
+        {1},
+        i32Type
+    );
+
+    std::vector<int32_t> shapeValue{3};
+
+    auto shapeAttr = mlir::DenseIntElementsAttr::get(shapeTensorType, shapeValue);
+
+    mlir::Value broadcastShapeValue = ConstantOp::create(builder, loc, shapeTensorType, shapeAttr).getResult();
 
     // 获取输入参数x: tensor<10x20xf32>
     auto x = block->getArgument(0);
