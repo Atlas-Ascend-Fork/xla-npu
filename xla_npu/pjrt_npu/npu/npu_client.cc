@@ -367,8 +367,8 @@ static void  TestGraph(ge::GraphPtr &graph) {
     // std::vector<ge::Operator> outputs{add};
 
     // graph->SetInputs(inputs).SetOutputs(outputs);
-    auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
-    mlir::air::GraphGenTester::Convert(module, graph);
+    // auto module = mlir::air::GraphGenTester::BuildMAIRGeluModul();
+    // mlir::air::GraphGenTester::Convert(module, graph);
 }
 
 static std::string DebugString(const ge::Shape &shape) {

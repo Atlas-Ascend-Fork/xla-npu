@@ -24,12 +24,12 @@ class GraphGenTester {
 public:
     
     static Status Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr);
-    static mlir::ModuleOp BuildMAIRGeluModul();
-private:
+
     static void buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
     static void buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
     static void buildAddMulModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
     static void buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
+    static void buildConstModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
 
 };
 
