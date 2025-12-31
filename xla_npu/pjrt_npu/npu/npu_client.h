@@ -167,7 +167,7 @@ public:
         const std::vector<const Shape*>& argument_layout_pointers,
         LayoutCanonicalizationCallback layout_canonicalization_callback,
         CompileOptions options,
-        const GraphData& graph_data,
+        GraphData& graph_data,
         const AotCompilationOptions* absl_nullable aot_options = nullptr);
 
 private:
