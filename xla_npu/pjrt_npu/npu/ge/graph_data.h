@@ -23,11 +23,12 @@ public:
     ~GraphData() = default;
     uint32_t id = 0U;
     ge::GraphPtr graph = nullptr;
-    std::map<ge::AscendString, ge::AscendString> compile_options;
-    std::map<ge::AscendString, ge::AscendString> load_options;
-    std::vector<Placement> input_placements;
-    std::vector<ge::Shape> inputs_shape;
-    std::vector<ge::Shape> outputs_shape;
+    // std::map<ge::AscendString, ge::AscendString> compile_options;
+    // std::map<ge::AscendString, ge::AscendString> load_options;
+    // std::vector<Placement> input_placements;
+    std::vector<ge::Shape> inputs_shapes;
+    std::vector<ge::DataType> input_dtypes;
+    std::vector<ge::Shape> outputs_shapes;
     std::vector<ge::DataType> output_dtypes;
     std::shared_ptr<ge::CompiledGraphSummary> summary = nullptr;
 };

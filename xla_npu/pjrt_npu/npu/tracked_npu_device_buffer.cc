@@ -98,7 +98,8 @@ public:
 
   ~NpuDeviceMemoryForeign() final {
     if (on_delete_callback_) {
-      std::cout << "need call delete function for " << (uint64_t)base_ << ", which size is " << size_bytes_ << std::endl;
+      std::cout << "need call delete function for " << std::showbase << std::hex
+        << (uint64_t)base_ << ", which size is " << size_bytes_ << std::endl;
       std::move(on_delete_callback_)();
     }
   }
