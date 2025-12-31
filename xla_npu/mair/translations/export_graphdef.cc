@@ -33,6 +33,54 @@ const std::unordered_map<std::string, std::vector<std::string>> Exporter::inputN
     {"BroadcastTo", {"x", "shape"}},
 };
 
+const std::map<ge::DataType, std::string> DataTypeNames = {
+  {ge::DataType::DT_FLOAT          , "DT_FLOAT         "},       // float type
+  {ge::DataType::DT_FLOAT16        , "DT_FLOAT16       "},       // fp16 type
+  {ge::DataType::DT_INT8           , "DT_INT8          "},       // int8 type
+  {ge::DataType::DT_INT32          , "DT_INT32         "},       // int32 type
+  {ge::DataType::DT_UINT8          , "DT_UINT8         "},       // uint8 type
+                                                                  // reserved
+  {ge::DataType::DT_INT16          , "DT_INT16         "},       // int16 type
+  {ge::DataType::DT_UINT16         , "DT_UINT16        "},       // uint16 type
+  {ge::DataType::DT_UINT32         , "DT_UINT32        "},        // unsigned int32
+  {ge::DataType::DT_INT64          , "DT_INT64         "},         // int64 type
+  {ge::DataType::DT_UINT64         , "DT_UINT64        "},        // unsigned int64
+  {ge::DataType::DT_DOUBLE         , "DT_DOUBLE        "},        // double type
+  {ge::DataType::DT_BOOL           , "DT_BOOL          "},        // bool type
+  {ge::DataType::DT_STRING         , "DT_STRING        "},        // string type
+  {ge::DataType::DT_DUAL_SUB_INT8  , "DT_DUAL_SUB_INT8 "},        // dual output int8 type
+  {ge::DataType::DT_DUAL_SUB_UINT8 , "DT_DUAL_SUB_UINT8"},        // dual output uint8 type
+  {ge::DataType::DT_COMPLEX64      , "DT_COMPLEX64     "},        // complex64 type
+  {ge::DataType::DT_COMPLEX128     , "DT_COMPLEX128    "},        // complex128 type
+  {ge::DataType::DT_QINT8          , "DT_QINT8         "},        // qint8 type
+  {ge::DataType::DT_QINT16         , "DT_QINT16        "},        // qint16 type
+  {ge::DataType::DT_QINT32         , "DT_QINT32        "},        // qint32 type
+  {ge::DataType::DT_QUINT8         , "DT_QUINT8        "},        // quint8 type
+  {ge::DataType::DT_QUINT16        , "DT_QUINT16       "},        // quint16 type
+  {ge::DataType::DT_RESOURCE       , "DT_RESOURCE      "},        // resource type
+  {ge::DataType::DT_STRING_REF     , "DT_STRING_REF    "},        // string ref type
+  {ge::DataType::DT_DUAL           , "DT_DUAL          "},        // dual output type
+  {ge::DataType::DT_VARIANT        , "DT_VARIANT       "},        // dt_variant type
+  {ge::DataType::DT_BF16           , "DT_BF16          "},        // bf16 type
+  {ge::DataType::DT_UNDEFINED      , "DT_UNDEFINED     "},        // Used to indicate a DataType field has not been set.
+  {ge::DataType::DT_INT4           , "DT_INT4          "},        // int4 type
+  {ge::DataType::DT_UINT1          , "DT_UINT1         "},        // uint1 type
+  {ge::DataType::DT_INT2           , "DT_INT2          "},        // int2 type
+  {ge::DataType::DT_UINT2          , "DT_UINT2         "},        // uint2 type
+  {ge::DataType::DT_COMPLEX32      , "DT_COMPLEX32     "},        // complex32 type
+  {ge::DataType::DT_HIFLOAT8       , "DT_HIFLOAT8      "},        // hifloat8 type
+  {ge::DataType::DT_FLOAT8_E5M2    , "DT_FLOAT8_E5M2   "},        // float8_e5m2 type
+  {ge::DataType::DT_FLOAT8_E4M3FN  , "DT_FLOAT8_E4M3FN "},        // float8_e4m3fn type
+  {ge::DataType::DT_FLOAT8_E8M0    , "DT_FLOAT8_E8M0   "},        // float8_e8m0 type
+  {ge::DataType::DT_FLOAT6_E3M2    , "DT_FLOAT6_E3M2   "},        // float6_e3m2 type
+  {ge::DataType::DT_FLOAT6_E2M3    , "DT_FLOAT6_E2M3   "},        // float6_e2m3 type
+  {ge::DataType::DT_FLOAT4_E2M1    , "DT_FLOAT4_E2M1   "},        // float4_e2m1 type
+  {ge::DataType::DT_FLOAT4_E1M2    , "DT_FLOAT4_E1M2   "},        // float4_e1m2 type
+  {ge::DataType::DT_MAX            , "DT_MAX           "}        // Mark the boundaries of data types
+};
+
+
+
 
 Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     log("Start to covert module to ge graph.");
@@ -308,29 +356,55 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             // TODO
             mlir::Attribute valueAttr = mlirOp.getAttr("value");
             llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << "\n";
+            if (auto denseAttr = mlir::dyn_cast<mlir::ElementsAttr>(valueAttr)) {
+                ge::Tensor valueTensor;
+                if(!ConvertToTensor(denseAttr, &valueTensor).ok()) {
+                    llvm::errs() << "Fail to convert to tensor!!  \n";
+                }
+                ge::TensorDesc desc = valueTensor.GetTensorDesc();
+                ge::DataType dt = desc.GetDataType();
+                ge::Shape shape = desc.GetShape();
+                std::vector<int64_t> dims =  shape.GetDims();
 
-            if (auto denseAttr = mlir::dyn_cast<mlir::DenseElementsAttr>(valueAttr)) {
-                if (denseAttr.isSplat() && denseAttr.getElementType().isF32()) {
-                    auto v = denseAttr.getSplatValue<float>();
-                    auto shape = ge::Shape();
-                    ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_FLOAT);
-                    uint32_t len = shape.GetShapeSize() * sizeof(float);
-                    len = 4;
-                    std::cout << "Const float len: " << len << std::endl;
-                    ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
-                    geOp.SetAttr("value", valueTensor);
+                std::ostringstream oss;
+                oss << "Const ge tensor : "
+                    << "DataType:[" << DataTypeNames.find(dt)->second << "]; Shape dims=[";
+                for(auto dim : dims) {
+                    oss << dim << ",";
                 }
-                // 如果是f64，转换为float
-                if (denseAttr.isSplat() && denseAttr.getElementType().isInteger(64)) {
-                    auto v = denseAttr.getSplatValue<int64_t>();
-                    auto shape = ge::Shape({1,});
-                    ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_INT64);
-                    uint32_t len = shape.GetShapeSize() * sizeof(int64_t);
-                    std::cout << "Const int64 len: " << len << std::endl;
-                    ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
-                    geOp.SetAttr("value", valueTensor);
-                }
+                oss << "]";
+                llvm::errs() << oss.str() << "\n";
+
+                geOp.SetAttr("value", valueTensor);
+
+            } else {
+                llvm::errs() << "Failed Const operatro. Not ElementsAttr \n";
             }
+
+            
+
+            // if (auto denseAttr = mlir::dyn_cast<mlir::DenseElementsAttr>(valueAttr)) {
+            //     if (denseAttr.isSplat() && denseAttr.getElementType().isF32()) {
+            //         auto v = denseAttr.getSplatValue<float>();
+            //         auto shape = ge::Shape();
+            //         ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_FLOAT);
+            //         uint32_t len = shape.GetShapeSize() * sizeof(float);
+            //         len = 4;
+            //         std::cout << "Const float len: " << len << std::endl;
+            //         ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
+            //         geOp.SetAttr("value", valueTensor);
+            //     }
+            //     // 如果是f64，转换为float
+            //     if (denseAttr.isSplat() && denseAttr.getElementType().isInteger(64)) {
+            //         auto v = denseAttr.getSplatValue<int64_t>();
+            //         auto shape = ge::Shape({1,});
+            //         ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_INT64);
+            //         uint32_t len = shape.GetShapeSize() * sizeof(int64_t);
+            //         std::cout << "Const int64 len: " << len << std::endl;
+            //         ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
+            //         geOp.SetAttr("value", valueTensor);
+            //     }
+            // }
         }
 
         // 建立映射

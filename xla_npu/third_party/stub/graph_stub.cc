@@ -65,6 +65,7 @@ void TensorDesc::SetDataType(DataType dt) {};
 Shape TensorDesc::GetShape() const {
   return {};
 }
+DataType TensorDesc::GetDataType() const {return {};}
 TensorDesc &TensorDesc::operator=(TensorDesc &&desc){};
 void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len) {}
 Shape::Shape(const std::vector<int64_t>& dims) {}
@@ -76,6 +77,7 @@ Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) 
 Tensor::Tensor(const TensorDesc &tensor_desc) {}
 graphStatus Tensor::SetData(const uint8_t *data, size_t size) {return 0;}
 graphStatus Tensor::SetData(const char_t *data) {return 0;}
+graphStatus Tensor::SetTensorDesc(const TensorDesc &tensor_desc) {return 0;}
 const uint8_t* Tensor::GetData() const {
   return nullptr;
 }

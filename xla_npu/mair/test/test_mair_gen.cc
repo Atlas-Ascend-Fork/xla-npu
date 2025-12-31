@@ -167,7 +167,7 @@ void GraphGenTester::buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& c
 
 void GraphGenTester::buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
     // 输入输出shape
-    std::cout << "Start build add mlir" << std::endl;
+    std::cout << "Start build empty mlir" << std::endl;
     // 创建函数： 接受tensor输入， 返回tensor
     auto f32Type = mlir::Float32Type::get(&context);
     auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
@@ -191,31 +191,115 @@ void GraphGenTester::buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext
     return;
 }
 
+void GraphGenTester::buildConstModule(mlir::ModuleOp& module, mlir::MLIRContext& context) {
+    // 输入输出shape
+    std::cout << "Start build Const mlir" << std::endl;
+    // 创建函数： 接受tensor输入， 返回tensor
+    // 1. 浮点类型
+    auto f32Type = mlir::Float32Type::get(&context);
+    auto f64Type = mlir::Float64Type::get(&context);
+    
+    // 2. 有符号整数类型（默认）
+    auto i8Type = mlir::IntegerType::get(&context, 8);      // 有符号 i8
+    auto i16Type = mlir::IntegerType::get(&context, 16);    // 有符号 i16  
+    auto i32Type = mlir::IntegerType::get(&context, 32);    // 有符号 i32
+    auto i64Type = mlir::IntegerType::get(&context, 64);    // 有符号 i64
+    
+    // 3. 无符号整数类型（需要指定符号属性）
+    auto ui8Type = mlir::IntegerType::get(&context, 8, mlir::IntegerType::Unsigned);
+    auto ui16Type = mlir::IntegerType::get(&context, 16, mlir::IntegerType::Unsigned);
+    auto ui32Type = mlir::IntegerType::get(&context, 32, mlir::IntegerType::Unsigned);
+    auto ui64Type = mlir::IntegerType::get(&context, 64, mlir::IntegerType::Unsigned);
+    
+    // 4. 创建标量张量类型（0维）
+    auto _0scalarF32Type  = mlir::RankedTensorType::get({}, f32Type);
+    auto _0scalarF64Type  = mlir::RankedTensorType::get({}, f64Type);
+    auto _0scalarI8Type   = mlir::RankedTensorType::get({}, i8Type);
+    auto _0scalarUI8Type  = mlir::RankedTensorType::get({}, ui8Type);
+    auto _0scalarI16Type  = mlir::RankedTensorType::get({}, i16Type);
+    auto _0scalarUI16Type = mlir::RankedTensorType::get({}, ui16Type);
+    auto _0scalarI32Type  = mlir::RankedTensorType::get({}, i32Type);
+    auto _0scalarUI32Type = mlir::RankedTensorType::get({}, ui32Type);
+    auto _0scalarI64Type  = mlir::RankedTensorType::get({}, i64Type);
+    auto _0scalarU642Type = mlir::RankedTensorType::get({}, ui64Type);
+
+    auto _1scalarF32Type = mlir::RankedTensorType::get({1}, f32Type);
+    auto _1scalarF64Type = mlir::RankedTensorType::get({1}, f64Type);
+    auto _1scalarI8Type = mlir::RankedTensorType::get({1}, i8Type);
+    auto _1scalarUI8Type = mlir::RankedTensorType::get({1}, ui8Type);
+    auto _1scalarI16Type = mlir::RankedTensorType::get({1}, i16Type);
+    auto _1scalarUI16Type = mlir::RankedTensorType::get({1}, ui16Type);
+    auto _1scalarI32Type = mlir::RankedTensorType::get({1}, i32Type);
+    auto _1scalarUI32Type = mlir::RankedTensorType::get({1}, ui32Type);
+    auto _1scalarI64Type = mlir::RankedTensorType::get({1}, i64Type);
+    auto _1scalarU642Type = mlir::RankedTensorType::get({1}, ui64Type);
+
+    auto inputOutputTensorType = mlir::RankedTensorType::get({10}, f32Type);
+    auto funcType = mlir::FunctionType::get(&context, {inputOutputTensorType}, {inputOutputTensorType});
+    auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context), "main", funcType);
+
+    // 创建函数体
+    auto* block = func.addEntryBlock();
+    mlir::OpBuilder builder(block, block->begin());
+    auto loc = mlir::UnknownLoc::get(&context);
+
+    // 获取输入参数x: tensor<10x20xf32>
+    auto x1 = block->getArgument(0);
+
+    // 标量
+    auto _0_const_scalarF32Type  = ConstantOp::create(builder, loc, _0scalarF32Type , mlir::DenseElementsAttr::get(_0scalarF32Type, llvm::ArrayRef<float>{static_cast<float>(0.044715f)}));
+    auto _0_const_scalarF64Type  = ConstantOp::create(builder, loc, _0scalarF64Type , mlir::DenseElementsAttr::get(_0scalarF64Type, llvm::ArrayRef<float>{static_cast<double>(0.044715)}));
+    auto _0_const_scalarI8Type   = ConstantOp::create(builder, loc, _0scalarI8Type  , mlir::DenseElementsAttr::get(_0scalarI8Type, llvm::ArrayRef<float>{static_cast<int8_t>(42)}));
+    auto _0_const_scalarI16Type  = ConstantOp::create(builder, loc, _0scalarI16Type , mlir::DenseElementsAttr::get(_0scalarI16Type, llvm::ArrayRef<float>{static_cast<int16_t>(42)}));
+    auto _0_const_scalarI32Type  = ConstantOp::create(builder, loc, _0scalarI32Type , mlir::DenseElementsAttr::get(_0scalarI32Type, llvm::ArrayRef<float>{static_cast<int32_t>(42)}));
+    auto _0_const_scalarI64Type  = ConstantOp::create(builder, loc, _0scalarI64Type , mlir::DenseElementsAttr::get(_0scalarI64Type, llvm::ArrayRef<float>{static_cast<int64_t>(42)}));
+    auto _0_const_scalarUI8Type  = ConstantOp::create(builder, loc, _0scalarUI8Type , mlir::DenseElementsAttr::get(_0scalarUI8Type, llvm::ArrayRef<float>{static_cast<uint8_t>(42)}));
+    auto _0_const_scalarUI16Type = ConstantOp::create(builder, loc, _0scalarUI16Type, mlir::DenseElementsAttr::get(_0scalarUI16Type, llvm::ArrayRef<float>{static_cast<uint16_t>(42)}));
+    auto _0_const_scalarUI32Type = ConstantOp::create(builder, loc, _0scalarUI32Type, mlir::DenseElementsAttr::get(_0scalarUI32Type, llvm::ArrayRef<float>{static_cast<uint32_t>(42)}));
+    auto _0_const_scalarU642Type = ConstantOp::create(builder, loc, _0scalarU642Type, mlir::DenseElementsAttr::get(_0scalarU642Type, llvm::ArrayRef<float>{static_cast<uint64_t>(42)}));
+
+    auto _1_const_scalarF32Type  = ConstantOp::create(builder, loc, _1scalarF32Type , mlir::DenseElementsAttr::get(_1scalarF32Type, llvm::ArrayRef<float>{static_cast<float>(0.044715f)}));
+    auto _1_const_scalarF64Type  = ConstantOp::create(builder, loc, _1scalarF64Type , mlir::DenseElementsAttr::get(_1scalarF64Type, llvm::ArrayRef<float>{static_cast<double>(0.044715)}));
+    auto _1_const_scalarI8Type   = ConstantOp::create(builder, loc, _1scalarI8Type  , mlir::DenseElementsAttr::get(_1scalarI8Type, llvm::ArrayRef<float>{static_cast<int8_t>(42)}));
+    auto _1_const_scalarI16Type  = ConstantOp::create(builder, loc, _1scalarI16Type , mlir::DenseElementsAttr::get(_1scalarI16Type, llvm::ArrayRef<float>{static_cast<int16_t>(42)}));
+    auto _1_const_scalarI32Type  = ConstantOp::create(builder, loc, _1scalarI32Type , mlir::DenseElementsAttr::get(_1scalarI32Type, llvm::ArrayRef<float>{static_cast<int32_t>(42)}));
+    auto _1_const_scalarI64Type  = ConstantOp::create(builder, loc, _1scalarI64Type , mlir::DenseElementsAttr::get(_1scalarI64Type, llvm::ArrayRef<float>{static_cast<int64_t>(42)}));
+    auto _1_const_scalarUI8Type  = ConstantOp::create(builder, loc, _1scalarUI8Type , mlir::DenseElementsAttr::get(_1scalarUI8Type, llvm::ArrayRef<float>{static_cast<uint8_t>(42)}));
+    auto _1_const_scalarUI16Type = ConstantOp::create(builder, loc, _1scalarUI16Type, mlir::DenseElementsAttr::get(_1scalarUI16Type, llvm::ArrayRef<float>{static_cast<uint16_t>(42)}));
+    auto _1_const_scalarUI32Type = ConstantOp::create(builder, loc, _1scalarUI32Type, mlir::DenseElementsAttr::get(_1scalarUI32Type, llvm::ArrayRef<float>{static_cast<uint32_t>(42)}));
+    auto _1_const_scalarU642Type = ConstantOp::create(builder, loc, _1scalarU642Type, mlir::DenseElementsAttr::get(_1scalarU642Type, llvm::ArrayRef<float>{static_cast<uint64_t>(42)}));
+
+    // 返回结果
+    mlir::func::ReturnOp::create(builder, loc, x1);
+
+    // 添加函数到模块
+    module.getBody()->push_back(func);
+
+    return;
+}
+
 Status GraphGenTester::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     Exporter exporter;
     return exporter.Convert(module, graphPtr);
 }
 
-mlir::ModuleOp GraphGenTester::BuildMAIRGeluModul() {
+int main(int argc, char** argv) {
     static mlir::MLIRContext context;
     context.getOrLoadDialect<mlir::func::FuncDialect>();
     context.getOrLoadDialect<mlir::air::AirDialect>();
 
     auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
 
-    // buildAddModule(module, context);
-    // buildAddMulModule(module, context);
-    // buildAEmptyModule(module, context);
-    buildGeluModule(module, context);
+    // GraphGenTester::buildAddModule(module, context);
+    // GraphGenTester::buildAddMulModule(module, context);
+    // GraphGenTester::buildAEmptyModule(module, context);
+    // GraphGenTester::buildGeluModule(module, context);
+    GraphGenTester::buildConstModule(module, context);
     
     std::cout << "Generated MLIR:\n";
     module.print(llvm::outs());
     std::cout << std::endl;
-    return module;
-}
 
-int main(int argc, char** argv) {
-    auto module = GraphGenTester::BuildMAIRGeluModul();
 
     ge::GraphPtr graphPtr = std::make_shared<ge::Graph>("XLAGraph");;
     if (!module) {
