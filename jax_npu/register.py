@@ -1,13 +1,18 @@
 import os
+# os.environ['TC_CPP_MIN_LOG_LEVEL'] = '0'
+# os.environ['TF_CPP_MAX_VLOG_LEVEL'] = '99'  # 全局VLOG级别设为99
+# os.environ['TF_CPP_VMODULE'] = '*=99'      # 所有文件VLOG级别设为99
+os.environ['XLA_FLAGS'] = '--xla_dump_to=./xla_dump'      # 设置xla dump目录
+
 import numpy as np
 import jax
 import jax.numpy as jnp
 import warnings
 import traceback
 import sys
-
 import logging
-logging.basicConfig(level=logging.DEBUG)  # 把jax日志输出到 stderr
+
+# logging.basicConfig(level=logging.DEBUG)  # 把jax日志输出到 stderr
 
 # Note: No need for ctypes.CDLL() anymore, JAX loads the library automatically with the correct ENV var
 # 1. Define the platform name and library path
@@ -36,8 +41,6 @@ print(f"JAX Rerunning client discovery for platform: {PLATFORM_NAME}")
 
 # --- Run a simple JAX program ---
 try:
-    # This should now print 'JAX Default Backend: mock_hw'
-    # and trigger Mock_Client_Create() in your C++ code
     print(f"\nJAX Default Backend: {jax.default_backend()}")
     print(f"Devices type: {type(jax.devices())}")
     print(f"Devices available: {jax.devices()}")
@@ -54,12 +57,14 @@ try:
     # print(x)
 
     x = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
+    # x = np.array([1.0, 2.0, 3.0, 4.0])
     print(f"input array: {x}")
 
-    # Compiles the operation using XLA, calling Mock_Compile()
-    # y = jax.jit(lambda x: 2*x + x)(x)
-    y = jax.jit(lambda x: jax.nn.gelu(x))(x)
-    print(f"output array: {y.block_until_ready()}")
+    # func = jax.jit(lambda x: jax.nn.gelu(x))
+    func = jax.jit(lambda x: 2*x + 1)
+    y = func(x)
+    result = y.block_until_ready()
+    print(f"output array: {result}")
 
     # Triggers execution
     # print(f"Computed result: {y.block_until_ready()}")

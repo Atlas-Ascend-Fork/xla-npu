@@ -1,3 +1,5 @@
+#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
+
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -12,7 +14,6 @@
 #include "xla/pjrt/host_memory_spaces.h"
 #include "xla/pjrt/pjrt_client.h"
 
-#include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 
 namespace xla {
 

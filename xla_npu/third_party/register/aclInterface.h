@@ -5,9 +5,6 @@
 
 namespace npu {
 
-/**
-  This API is used to get error msg
-  */
 const char *AclGetErrMsg();
 aclError AclInit(const char *configPath);
 aclError AclrtGetDeviceCount(uint32_t *count);

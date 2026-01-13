@@ -1,6 +1,6 @@
-#include "xla/service/buffer_assignment.h"
+#include "xla/xla_npu/pjrt_npu/service/npu_buffer_assignment.h"
 
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
+#include "xla/service/buffer_assignment.h"
 
 namespace xla {
 

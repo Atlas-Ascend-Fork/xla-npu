@@ -1,5 +1,5 @@
-#ifndef XLA_SERVICE_NPU_NPU_EXECUTABLE_H_
-#define XLA_SERVICE_NPU_NPU_EXECUTABLE_H_
+#ifndef SERVICE_NPU_EXECUTABLE_H_
+#define SERVICE_NPU_EXECUTABLE_H_
 
 #include <cstdint>
 #include <memory>
@@ -30,8 +30,7 @@
 #include "xla/service/maybe_owning_device_memory.h"
 #include "xla/service/service_executable_run_options.h"
 // #include "xla/stream_executor/device_memory_allocator.h"
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
+#include "xla/xla_npu/pjrt_npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 
 
@@ -42,24 +41,23 @@ namespace xla {
 // Wraps a JIT-ed object that can be executed "on device". We JIT for the host
 // architecture, so JIT-ed code and host code share the same ABI.
 class NpuExecutable : public Executable {
- public:
-  // Creates a NpuExecutable from a thunk sequence.
-  static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(
-      // std::unique_ptr<FunctionLibrary> function_library,
-      std::unique_ptr<NpuBufferAssignment> assignment,
-      std::unique_ptr<HloModule> hlo_module,
-      // ThunkSequence thunks,
-      // std::vector<ConstantAllocation> constants,
-      std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-      std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-      const GraphData& graph_data);
-      // TargetMachineOptionsProto target_machine_options);
+  public:
+    // Creates a NpuExecutable from a thunk sequence.
+    static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(
+        // std::unique_ptr<FunctionLibrary> function_library,
+        std::unique_ptr<BufferAssignment> assignment,
+        std::unique_ptr<HloModule> hlo_module,
+        // ThunkSequence thunks,
+        // std::vector<ConstantAllocation> constants,
+        std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
+        std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map);
+        // TargetMachineOptionsProto target_machine_options);
 
-  ~NpuExecutable() override;
+    ~NpuExecutable() override;
 
-  absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStream(
-      const ServiceExecutableRunOptions* run_options,
-      std::vector<ExecutionInput> arguments) override;
+    absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStream(
+        const ServiceExecutableRunOptions* run_options,
+        std::vector<ExecutionInput> arguments) override;
 
   // Calls emitted thunk sequence with the given arguments using the supplied
   // buffers.
@@ -104,8 +102,6 @@ class NpuExecutable : public Executable {
   //   return it->second;
   // }
 
-  GraphData GetGraphData() const { return graph_data_; }
-
   // This should be called after set_ir_module_string.
   const std::string& ir_module_string() const { return ir_module_string_; }
 
@@ -123,7 +119,7 @@ class NpuExecutable : public Executable {
   bool has_xnn_fusions() const { return has_xnn_fusions_; }
   bool has_ynn_fusions() const { return has_ynn_fusions_; }
 
-  const NpuBufferAssignment& buffer_assignment() const { return *assignment_; }
+  const BufferAssignment& buffer_assignment() const { return *assignment_; }
   // absl::Span<const ConstantAllocation> constants() const { return constants_; }
 
   int64_t SizeOfGeneratedCodeInBytes() const override;
@@ -198,7 +194,7 @@ class NpuExecutable : public Executable {
   //     symbol_type_id_to_function_type_id_;
 
   // Buffer assignment for the buffers we need to allocate.
-  std::shared_ptr<NpuBufferAssignment> assignment_;
+  std::shared_ptr<BufferAssignment> assignment_;
   std::vector<const BufferAllocation*> alloc_ptrs_;
 
   // The LLVM IR, in string format, of the unoptimized module generated for this
@@ -236,13 +232,10 @@ class NpuExecutable : public Executable {
   // Entry function name for the computation.
   std::string entry_function_name_;
 
-  GraphData graph_data_;
-
   NpuExecutable(std::unique_ptr<HloModule> hlo_module,
                 std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                 std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-                std::unique_ptr<NpuBufferAssignment> assignment,
-                const GraphData& graph_data);
+                std::unique_ptr<BufferAssignment> assignment);
                 // TargetMachineOptionsProto target_machine_options);
   NpuExecutable(const NpuExecutable&) = delete;
   NpuExecutable& operator=(const NpuExecutable&) = delete;
@@ -250,4 +243,4 @@ class NpuExecutable : public Executable {
 
 }  // namespace xla
 
-#endif  // XLA_SERVICE_NPU_NPU_EXECUTABLE_H_
+#endif  // SERVICE_NPU_EXECUTABLE_H_

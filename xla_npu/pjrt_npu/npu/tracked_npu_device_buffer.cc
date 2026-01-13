@@ -1,7 +1,8 @@
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+
 #include "xla/pjrt/common_pjrt_client.h"
-#include "raw_buffer.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_raw_buffer.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
 // Returns an AsyncValueRef<CpuEvent> that will be ready after all the async

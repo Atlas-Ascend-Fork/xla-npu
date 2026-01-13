@@ -1,5 +1,5 @@
-#ifndef PJRT_NPU_PJRT_COMMON_H_
-#define PJRT_NPU_PJRT_COMMON_H_
+#ifndef PJRT_NPU_NPU_COMMON_H_
+#define PJRT_NPU_NPU_COMMON_H_
 
 #include "xla/pjrt/pjrt_common.h"
 
@@ -13,4 +13,4 @@ inline const char* NpuName()
 }
 
 }
-#endif  //PJRT_NPU_PJRT_COMMON_H_
+#endif  //PJRT_NPU_NPU_COMMON_H_

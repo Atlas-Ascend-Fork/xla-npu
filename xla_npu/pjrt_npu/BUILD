@@ -1,8 +1,4 @@
 load("//xla/tsl:tsl.bzl", "internal_visibility")
-load(
-    "//xla/tsl/platform:build_config.bzl",
-    "tf_proto_library",
-)
 load("//xla/tsl/platform:rules_cc.bzl", "cc_library")
 
 package(
@@ -15,15 +11,18 @@ cc_library(
     name = "npu_tool",
     hdrs = ["npu_tool.h"],
     deps = [
-        "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
+        "//xla/hlo/ir:hlo",
+        "@llvm-project//mlir:IR",
+
+        # "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
         
-        "//xla:shape_util",
+        # "//xla:shape_util",
     ],
 )
 
 cc_library(
-    name = "pjrt_common",
-    hdrs = ["pjrt_common.h"],
+    name = "npu_common",
+    hdrs = ["npu_common.h"],
     deps = [
         "//xla/pjrt/proto:pjrt_value_type_proto_cc",
         "//xla/tsl/lib/gtl:int_type",

@@ -1,10 +1,8 @@
-load("//xla:xla.default.bzl", "xla_cc_test")
-load("//xla/tsl/platform:build_config.bzl", "tf_proto_library")
 load("//xla/tsl/platform:rules_cc.bzl", "cc_library")
 
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
-    default_visibility = ["//visibility:public"],
+    default_visibility = ["//xla:internal"],
     licenses = ["notice"],
 )
 
@@ -15,7 +13,7 @@ cc_library(
     deps = [
         "//xla/pjrt:pjrt_common",
         "//xla/pjrt:pjrt_device_description",
-        "//xla/xla_npu/pjrt_npu:pjrt_common",
+        "//xla/xla_npu/pjrt_npu:npu_common",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",

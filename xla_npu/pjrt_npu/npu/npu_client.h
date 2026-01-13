@@ -18,9 +18,9 @@
 #include "xla/pjrt/common_pjrt_client.h"
 #include "tsl/platform/fingerprint.h"
 
-#include "xla/xla_npu/pjrt_npu/pjrt_common.h"
+#include "xla/xla_npu/pjrt_npu/npu_common.h"
+#include "xla/xla_npu/pjrt_npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
@@ -167,7 +167,6 @@ public:
         const std::vector<const Shape*>& argument_layout_pointers,
         LayoutCanonicalizationCallback layout_canonicalization_callback,
         CompileOptions options,
-        GraphData& graph_data,
         const AotCompilationOptions* absl_nullable aot_options = nullptr);
 
 private:
