@@ -46,9 +46,9 @@
 
 #include "xla/xla_npu/pjrt_npu/npu/abstract_npu_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_event.h"
-#include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
+#include "xla/xla_npu/pjrt_npu/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
+#include "xla/xla_npu/pjrt_npu/service/npu_executable.h"
 
 namespace xla {
 namespace {

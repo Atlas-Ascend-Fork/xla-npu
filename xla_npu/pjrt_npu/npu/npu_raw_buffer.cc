@@ -1,3 +1,5 @@
+#include "xla/xla_npu/pjrt_npu/npu/npu_raw_buffer.h"
+
 #include "absl/algorithm/container.h"
 #include "absl/base/casts.h"
 #include "absl/container/inlined_vector.h"
@@ -31,7 +33,6 @@
 #include "tsl/profiler/lib/connected_traceme.h"
 #include "tsl/profiler/lib/traceme.h"
 
-#include "raw_buffer.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {

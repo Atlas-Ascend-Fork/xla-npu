@@ -15,8 +15,7 @@ public:
 
     const BufferAllocation& GetAllocation(BufferAllocation::Index index) const;
 
-    BufferAllocation* NewEmptyAllocation(
-        int64_t size, LogicalBuffer::Color color);
+    BufferAllocation* NewEmptyAllocation(int64_t size, LogicalBuffer::Color color);
 
     void Finalize();
 

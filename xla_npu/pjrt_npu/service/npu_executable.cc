@@ -1,4 +1,4 @@
-#include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
+#include "xla/xla_npu/pjrt_npu/service/npu_executable.h"
 
 #include <stdint.h>
 
@@ -68,21 +68,19 @@ namespace xla {
 
 absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     // std::unique_ptr<FunctionLibrary> function_library,
-    std::unique_ptr<NpuBufferAssignment> assignment,
+    std::unique_ptr<BufferAssignment> assignment,
     std::unique_ptr<HloModule> hlo_module,
     // ThunkSequence thunks,
     // std::vector<ConstantAllocation> constants,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-    std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-    const GraphData& graph_data) {
+    std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map) {
     // TargetMachineOptionsProto target_machine_options) {
   // VLOG(2) << "Create NpuExecutable from a thunk sequence; module="
   //         << hlo_module->name() << ", constants=" << constants.size();
 
   std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
       std::move(hlo_module), std::move(hlo_profile_printer_data),
-      std::move(hlo_profile_index_map), std::move(assignment),
-      graph_data));
+      std::move(hlo_profile_index_map), std::move(assignment)));
       // std::move(target_machine_options)));
   // executable->function_library_ = std::move(function_library);
 
@@ -119,13 +117,11 @@ NpuExecutable::NpuExecutable(
     std::unique_ptr<HloModule> hlo_module,
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-    std::unique_ptr<NpuBufferAssignment> assignment,
-    const GraphData& graph_data)
+    std::unique_ptr<BufferAssignment> assignment)
     // TargetMachineOptionsProto target_machine_options)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
                  std::move(hlo_profile_index_map)),
-      assignment_(std::move(assignment)),
-      graph_data_(graph_data) {
+      assignment_(std::move(assignment)) {
       // target_machine_options_(std::move(target_machine_options)) {
   // if (assignment_ && has_module()) {
   //   XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
@@ -538,17 +534,18 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
 //   return std::move(result);
 // }
 
-/*static*/ int64_t NpuExecutable::ShapeSizeBytes(const Shape& shape) {
-  // On the cpu, opaques are pointers.
-  if (shape.IsOpaque()) {
-    return sizeof(void*);
-  }
-  if (shape.is_static() || shape.IsTuple()) {
-    return ShapeUtil::ByteSizeOf(shape, sizeof(void*));
-  }
-  // Each dynamic dimension size is represented as a S32.
-  int64_t metadata_size = sizeof(int32_t) * shape.dimensions().size();
-  return ShapeUtil::ByteSizeOf(shape, sizeof(void*)) + metadata_size;
+/*static*/ int64_t NpuExecutable::ShapeSizeBytes(const Shape& shape)
+{
+    // On the cpu, opaques are pointers.
+    if (shape.IsOpaque()) {
+      return sizeof(void*);
+    }
+    if (shape.is_static() || shape.IsTuple()) {
+      return ShapeUtil::ByteSizeOf(shape, sizeof(void*));
+    }
+    // Each dynamic dimension size is represented as a S32.
+    int64_t metadata_size = sizeof(int32_t) * shape.dimensions().size();
+    return ShapeUtil::ByteSizeOf(shape, sizeof(void*)) + metadata_size;
 }
 
 // const InstructionValueSet& NpuExecutable::GetRootValueSet() const {

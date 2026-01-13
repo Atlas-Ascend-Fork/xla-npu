@@ -1,6 +1,6 @@
-#include "tsl/platform/fingerprint.h"
-
 #include "host_memory_spaces.h"
+
+#include "tsl/platform/fingerprint.h"
 
 namespace xla {
 

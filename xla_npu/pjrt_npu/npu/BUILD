@@ -17,17 +17,17 @@ cc_library(
     name = "abstract_npu_buffer",
     srcs = [
         "abstract_npu_buffer.cc",
-        "raw_buffer.cc",
+        "npu_raw_buffer.cc",
         "tracked_npu_device_buffer.cc",
     ],
     hdrs = [
         "abstract_npu_buffer.h",
-        "raw_buffer.h",
+        "npu_raw_buffer.h",
         "tracked_npu_device_buffer.h",
     ],
     deps = [
         ":npu_event",
-        "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
+        "//xla/xla_npu/pjrt_npu/service:npu_executable",
         "//xla/xla_npu/third_party/register:acl_interface",
         
         "//xla:future",
@@ -77,8 +77,8 @@ cc_library(
     srcs = ["npu_device.cc"],
     hdrs = ["npu_device.h"],
     deps = [
+        "//xla/xla_npu/pjrt_npu:npu_common",
         "//xla/xla_npu/pjrt_npu/plugin:npu_device_description",
-        "//xla/xla_npu/pjrt_npu:pjrt_common",
 
         "//xla:future",
         "//xla:literal",
@@ -112,11 +112,14 @@ cc_library(
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
         "//xla/xla_npu/third_party/register:acl_interface",
         "//xla/xla_npu/third_party/stub:ge_hdrs",
-        "//xla/xla_npu/pjrt_npu/npu/service:npu_buffer_assignment",
-        "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
+        "//xla/xla_npu/pjrt_npu/service:npu_buffer_assignment",
+        "//xla/xla_npu/pjrt_npu/service:npu_executable",
+        "//xla/xla_npu/pjrt_npu/service:npu_compiler",
         "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
         "//xla/xla_npu/mair/test:test_mair_gen_lib",
         "//xla/xla_npu/mair:stablehlo2mair",
+
+        "//xla/service/cpu:cpu_compiler",
 
         "//xla:array",
         "//xla:debug_options_flags",

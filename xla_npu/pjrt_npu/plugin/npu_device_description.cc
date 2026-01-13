@@ -1,8 +1,9 @@
+#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 
-#include "xla/xla_npu/pjrt_npu/pjrt_common.h"
-#include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
+#include "xla/xla_npu/pjrt_npu/npu_common.h"
 
 namespace xla {
 NpuDeviceDescription::NpuDeviceDescription(int process_id, int local_device_id)

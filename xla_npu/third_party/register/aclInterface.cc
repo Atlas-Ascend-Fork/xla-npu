@@ -1,14 +1,13 @@
-#include "functionLoader.h"
 #include "aclInterface.h"
+
+#include "functionLoader.h"
 
 namespace npu {
 
 #undef LOAD_FUNCTION
-#define LOAD_FUNCTION(funcName) \
-  REGISTER_FUNCTION(libascendcl, funcName)
+#define LOAD_FUNCTION(funcName) REGISTER_FUNCTION(libascendcl, funcName)
 #undef GET_FUNC
-#define GET_FUNC(funcName)              \
-  GET_FUNCTION(libascendcl, funcName)
+#define GET_FUNC(funcName) GET_FUNCTION(libascendcl, funcName)
 
 REGISTER_LIBRARY(libascendcl)
 LOAD_FUNCTION(aclGetRecentErrMsg)
@@ -24,10 +23,10 @@ LOAD_FUNCTION(aclrtFreeHost)
 
 const char *AclGetErrMsg()
 {
-    typedef const char *(*aclGetErrMsg)();
-    static aclGetErrMsg func = nullptr;
+    typedef const char *(*aclGetErrMsgFunc)();
+    static aclGetErrMsgFunc func = nullptr;
     if (func == nullptr) {
-        func = (aclGetErrMsg)GET_FUNC(aclGetRecentErrMsg);
+        func = (aclGetErrMsgFunc)GET_FUNC(aclGetRecentErrMsg);
     }
     if (func != nullptr) {
         return func();
@@ -37,42 +36,54 @@ const char *AclGetErrMsg()
 
 aclError AclInit(const char *configPath)
 {
-    typedef aclError (*AclInit)(const char*);
-    static AclInit func = nullptr;
+    typedef aclError (*AclInitFunc)(const char*);
+    static AclInitFunc func = nullptr;
     if (func == nullptr) {
-        func = (AclInit) GET_FUNC(aclInit);
+        func = (AclInitFunc) GET_FUNC(aclInit);
     }
-    return func(configPath);
+    if (func != nullptr) {
+        return func(configPath);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
 aclError AclrtGetDeviceCount(uint32_t *count) 
 {
-    typedef aclError (*AclrtGetDeviceCount)(uint32_t*);
-    static AclrtGetDeviceCount func = nullptr;
+    typedef aclError (*AclrtGetDeviceCountFunc)(uint32_t*);
+    static AclrtGetDeviceCountFunc func = nullptr;
     if (func == nullptr) {
-        func = (AclrtGetDeviceCount) GET_FUNC(aclrtGetDeviceCount);
+        func = (AclrtGetDeviceCountFunc) GET_FUNC(aclrtGetDeviceCount);
     }
-    return func(count);
+    if (func != nullptr) {
+        return func(count);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
 aclError AclrtGetDevice(uint32_t *device_id)
 {
-    typedef aclError (*AclrtGetDevice)(uint32_t*);
-    static AclrtGetDevice func = nullptr;
+    typedef aclError (*AclrtGetDeviceFunc)(uint32_t*);
+    static AclrtGetDeviceFunc func = nullptr;
     if (func == nullptr) {
-        func = (AclrtGetDevice) GET_FUNC(aclrtGetDevice);
+        func = (AclrtGetDeviceFunc) GET_FUNC(aclrtGetDevice);
     }
-    return func(device_id);
+    if (func != nullptr) {
+        return func(device_id);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
 aclError AclrtSetDevice(uint32_t device_id)
 {
-    typedef aclError (*AclrtSetDevice)(uint32_t);
-    static AclrtSetDevice func = nullptr;
+    typedef aclError (*AclrtSetDeviceFunc)(uint32_t);
+    static AclrtSetDeviceFunc func = nullptr;
     if (func == nullptr) {
-        func = (AclrtSetDevice) GET_FUNC(aclrtSetDevice);
+        func = (AclrtSetDeviceFunc) GET_FUNC(aclrtSetDevice);
     }
-    return func(device_id);
+    if (func != nullptr) {
+        return func(device_id);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
 aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy)
