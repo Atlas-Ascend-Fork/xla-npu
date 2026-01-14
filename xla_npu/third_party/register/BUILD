@@ -32,3 +32,13 @@ cc_library(
         "//xla/xla_npu/third_party/aclnn:aclnn_hdrs",
     ],
 )
+
+cc_library(
+    name = "aclnnop_interface",
+    srcs = ["aclnnopInterface.cc"],
+    hdrs = ["aclnnopInterface.h"],
+    deps = [
+        ":functionLoader",
+        "//xla/xla_npu/third_party/aclnn:aclnn_hdrs",
+    ],
+)
