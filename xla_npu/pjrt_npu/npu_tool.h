@@ -2,14 +2,25 @@
 #define PJRT_NPU_NPU_TOOL_H_
 
 #include "mlir/IR/BuiltinOps.h"
+#include "xla/shape.h"
+#include "xla/shape_util.h"
+#include "xla/xla_data.pb.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_print_options.h"
 
-// #include "xla/shape.h"
-// #include "xla/shape_util.h"
-// #include "xla/xla_data.pb.h"
+#include "xla/xla_npu/third_party/register/aclnnInterface.h"
 
-// #include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#define CHECK_RET(cond, return_expr) \
+  do {                               \
+    if (!(cond)) {                   \
+      return_expr;                   \
+    }                                \
+  } while (0)
+
+#define LOG_PRINT(message, ...)     \
+  do {                              \
+    printf(message, ##__VA_ARGS__); \
+  } while (0)
 
 namespace xla {
 
@@ -71,10 +82,6 @@ public:
         std::cout << "========================================" << std::endl;
     }
 
-    static void PrintDebugLog(const std::string& logStr) {
-        std::cout << "DEBUG: " << logStr << std::endl;
-    }
-
     static void PrintModuleOp(mlir::ModuleOp module, const std::string& title) {
         std::cout << "========================================" << std::endl;
         std::string result;
@@ -85,29 +92,67 @@ public:
         std::cout << "========================================" << std::endl;
     }
 
-    // static std::string GetShapeString(const ge::Shape &shape) {
-    //     std::stringstream ss;
-    //     auto dims = shape.GetDims();
-    //     if (dims.empty()) {
-    //         return "empty";
-    //     }
-    //     ss << "[";
-    //     size_t index = 0U;
-    //     for (; index < (dims.size() - 1U); index++) {
-    //     ss << dims[index] << ", ";
-    //     }
-    //     ss << dims[index] << "]";
-        
-    //     return ss.str(); 
-    // }
+    static void PrintDebugLog(const std::string& logStr) {
+        std::cout << "DEBUG: " << logStr << std::endl;
+    }
 
-    // static ge::DataType ConvertXlaType2GeType(const PrimitiveType& type)
-    // {
-    //     switch (type) {
-    //         default:
-    //             return ge::DataType::DT_FLOAT;
-    //     };
-    // }
+    static std::string GetShapeString(const std::vector<int64_t>& shape) {
+        if (shape.empty()) {
+            return "empty";
+        }
+        
+        std::stringstream ss;
+        ss << "[";
+        for (const auto& shape_dim : shape) {
+            ss << shape_dim<< ", ";
+        }
+        ss << "]";
+        
+        return ss.str(); 
+    }
+
+    static std::vector<int64_t> ConvertXlaShape2VectorShape(const Shape& xla_data_shape) {
+        std::vector<int64_t> vector_shape;
+        for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
+            const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
+            vector_shape.emplace_back(xla_data_shape_dim);
+        }
+
+        std::cout << "convert xla shape to shape vector,"
+            << " input xla shape is " << xla_data_shape
+            << ", output ge shape is " << GetShapeString(vector_shape)
+            << std::endl;
+
+        return vector_shape;
+    }
+
+    static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {
+        switch (type) {
+            default:
+                return aclDataType::ACL_FLOAT;
+        };
+    }
+
+    static aclTensor* CreateAclTensorPtr(
+        const Shape& xla_data_shape,
+        const PrimitiveType& xla_data_type,
+        void* device_addr) {
+        const auto& data_shape = ConvertXlaShape2VectorShape(xla_data_shape);
+        const auto& data_type = ConvertXlaType2AclDataType(xla_data_type);
+
+        // 计算连续tensor的strides
+        std::vector<int64_t> strides(data_shape.size(), 1);
+        for (int64_t i = data_shape.size() - 2; i >= 0; i--) {
+            strides[i] = data_shape[i + 1] * strides[i + 1];
+        }
+
+        // 调用aclCreateTensor接口创建aclTensor
+        auto tensor = npu::AclCreateTensor(
+            data_shape.data(), data_shape.size(), data_type, strides.data(), 0,
+            aclFormat::ACL_FORMAT_ND, data_shape.data(), data_shape.size(), device_addr);
+
+        return tensor;
+    }
 
     // static PrimitiveType ConvertGeType2XlaType(const ge::DataType& type)
     // {
@@ -115,24 +160,6 @@ public:
     //         default:
     //             return PrimitiveType::F32;
     //     };
-    // }
-
-    // static ge::Shape ConvertXlaShape2GeShape(const Shape& xla_data_shape)
-    // {
-    //     std::vector<int64_t> ge_shape_vector;
-    //     for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
-    //         const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
-    //         ge_shape_vector.emplace_back(xla_data_shape_dim);
-    //         // ge_data_shape.SetDim(i, xla_data_shape_dim);
-    //     }
-
-    //     ge::Shape ge_data_shape(ge_shape_vector);
-    //     std::cout << "convert xla shape to ge shape,"
-    //         << " input xla shape is " << xla_data_shape
-    //         << ", output ge shape is " << GetShapeString(ge_data_shape)
-    //         << std::endl;
-
-    //     return ge_data_shape;
     // }
 
     // static Shape ConvertGeShape2XlaShape(const ge::Shape& ge_data_shape, const ge::DataType& ge_data_type)

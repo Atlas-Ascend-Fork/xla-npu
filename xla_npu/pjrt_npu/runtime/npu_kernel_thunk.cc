@@ -42,7 +42,9 @@
 
 #include "xla/xla_npu/pjrt_npu/npu_tool.h"
 #include "xla/xla_npu/pjrt_npu/runtime/npu_thunk.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"
+#include "xla/xla_npu/third_party/register/aclnnopInterface.h"
 
 namespace xla {
 namespace internal {
@@ -152,63 +154,97 @@ template <int64_t num_arguments, int64_t num_results>
 ABSL_ATTRIBUTE_ALWAYS_INLINE tsl::AsyncValueRef<NpuThunk::ExecuteEvent>
 NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams& params)
 {
-    std::cout << absl::StreamFormat(
-          "Launch host kernel %s with %d arguments and %d results: #workgroups=%v",
-          kernel_name_, arguments_buffers_.size(), results_buffers_.size(),
-          num_workgroups_) << std::endl;
+    NpuTool::PrintDebugLog(absl::StrFormat(
+        "Launch host kernel %s with %d arguments and %d results: #workgroups=%v",
+        kernel_name_, arguments_buffers_.size(), results_buffers_.size(),
+        num_workgroups_));
 
-    alignas(64) KernelArgs kernel_args = kernel_args_;
-    XLA_CPU_KernelArg* kernel_args_ptr = kernel_args.data();
-
+    // TODO 实现npu allocation
     const cpu::BufferAllocations* allocations = params.buffer_allocations;
-
-    for (const BufferAllocation::Slice& buffer : arguments_buffers_) {
-        if constexpr (ShouldCheckBufferSlices()) {
-            TF_ASSIGN_OR_RETURN(auto mem, allocations->GetDeviceAddress(buffer));
-            kernel_args_ptr++->data = mem.opaque();
-        } else {
-            auto mem = allocations->GetDeviceAddressUnchecked(buffer);
-            kernel_args_ptr++->data = mem.opaque();
-        }
-    }
-
-    for (const BufferAllocation::Slice& buffer : results_buffers_) {
-        if constexpr (ShouldCheckBufferSlices()) {
-            TF_ASSIGN_OR_RETURN(auto mem, allocations->GetDeviceAddress(buffer));
-            kernel_args_ptr++->data = mem.opaque();
-        } else {
-            auto mem = allocations->GetDeviceAddressUnchecked(buffer);
-            kernel_args_ptr++->data = mem.opaque();
-        }
-    }
-
-    if (ABSL_PREDICT_FALSE(VLOG_IS_ON(3))) {
-        VlogKernelArgs(arguments_buffers_, results_buffers_, kernel_args);
-    }
-
-    // Сheck that all resolved buffers are properly aligned, and that invariant
-    // property holds.
-    if constexpr (ShouldCheckBufferSlices()) {
-        // TODO(abanas): Check also for overlapping buffers.
-        TF_RETURN_IF_ERROR(CheckBufferAlignment(info(), min_alignment_.value_or(0), kernel_args));
-        TF_RETURN_IF_ERROR(CheckInvariantBuffersMemory(kernel_args));
-    }
-
     const auto& input_param_shapes = info().input_param_shapes;
     const auto& output_param_shapes = info().output_param_shapes;
 
     switch (info().op_code) {
-      case HloOpcode::kBroadcast:
-        if (input_param_shapes.size() > 1 || output_param_shapes.size() > 1) {
-            return OkExecuteEvent();
-        }
-        std::vector<int64_t> viewDims = {2, 4};
-        std::vector<int64_t> stride = {4, 1}; // 第1维步长4，第2维步长1
-        std::vector<int64_t> storageDims = {2, 4};
-        auto tensor = npu::AclCreateTensor(
-            viewDims.data(), 2, ACL_FLOAT16, stride.data(), 0, ACL_FORMAT_ND, storageDims.data(), 2, nullptr);
+        case HloOpcode::kBroadcast:
+            if (input_param_shapes.size() > 1 || output_param_shapes.size() > 1) {
+                NpuTool::PrintDebugLog(
+                    absl::StrFormat("input shape size %d or output shape size %d error",
+                    input_param_shapes.size(),
+                    output_param_shapes.size()
+                ));
+                return OkExecuteEvent();
+            }
+
+            const auto& input_param_shape = input_param_shapes.front();
+            TF_ASSIGN_OR_RETURN(auto input_param_mem, allocations->GetDeviceAddress(arguments_buffers_.front()));
+            void* input_param_device_addr = input_param_mem.opaque();
+            auto input_tensor_ptr = NpuTool::CreateAclTensorPtr(
+                input_param_shape, input_param_shape.element_type(), input_param_device_addr);
+
+            const auto& output_param_shape = output_param_shapes.front();
+            TF_ASSIGN_OR_RETURN(auto output_param_mem, allocations->GetDeviceAddress(results_buffers_.front()));
+            void* output_param_device_addr = output_param_mem.opaque();
+            auto output_tensor_ptr = NpuTool::CreateAclTensorPtr(
+                output_param_shape, input_param_shape.element_type(), output_param_device_addr);
+
+			std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(output_param_shape);
+            aclIntArray* output_param_size = npu::AclCreateIntArray(
+				output_param_size_data.data(), output_param_size_data.size());
+            uint64_t workspaceSize = 0;
+            aclOpExecutor* executor;
+            // 调用aclnnExpand第一段接口
+            aclnnStatus ret = 0;
+            ret = npu::AclnnExpandGetWorkspaceSize(
+				input_tensor_ptr, output_param_size, output_tensor_ptr, &workspaceSize, &executor);
+            CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnExpandGetWorkspaceSize failed. ERROR: %d\n", ret); return OkExecuteEvent());
+            // 根据第一段接口计算出的workspaceSize申请device内存
+            void* workspaceAddr = nullptr;
+            if (workspaceSize > 0) {
+                ret = npu::AclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
+                CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret); return OkExecuteEvent());
+            }
+            aclrtStream stream; // TODO 执行thunk前创建
+            // 调用aclnnExpand第二段接口
+            ret = npu::AclnnExpand(workspaceAddr, workspaceSize, executor, stream);
+            CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnExpand failed. ERROR: %d\n", ret); return OkExecuteEvent());
     }
 
+    // alignas(64) KernelArgs kernel_args = kernel_args_;
+    // XLA_CPU_KernelArg* kernel_args_ptr = kernel_args.data();
+
+    // const cpu::BufferAllocations* allocations = params.buffer_allocations;
+
+    // for (const BufferAllocation::Slice& buffer : arguments_buffers_) {
+    //     if constexpr (ShouldCheckBufferSlices()) {
+    //         TF_ASSIGN_OR_RETURN(auto mem, allocations->GetDeviceAddress(buffer));
+    //         kernel_args_ptr++->data = mem.opaque();
+    //     } else {
+    //         auto mem = allocations->GetDeviceAddressUnchecked(buffer);
+    //         kernel_args_ptr++->data = mem.opaque();
+    //     }
+    // }
+
+    // for (const BufferAllocation::Slice& buffer : results_buffers_) {
+    //     if constexpr (ShouldCheckBufferSlices()) {
+    //         TF_ASSIGN_OR_RETURN(auto mem, allocations->GetDeviceAddress(buffer));
+    //         kernel_args_ptr++->data = mem.opaque();
+    //     } else {
+    //         auto mem = allocations->GetDeviceAddressUnchecked(buffer);
+    //         kernel_args_ptr++->data = mem.opaque();
+    //     }
+    // }
+
+    // if (ABSL_PREDICT_FALSE(VLOG_IS_ON(3))) {
+    //     VlogKernelArgs(arguments_buffers_, results_buffers_, kernel_args);
+    // }
+
+    // // Сheck that all resolved buffers are properly aligned, and that invariant
+    // // property holds.
+    // if constexpr (ShouldCheckBufferSlices()) {
+    //     // TODO(abanas): Check also for overlapping buffers.
+    //     TF_RETURN_IF_ERROR(CheckBufferAlignment(info(), min_alignment_.value_or(0), kernel_args));
+    //     TF_RETURN_IF_ERROR(CheckInvariantBuffersMemory(kernel_args));
+    // }
     
     // // TODO(ezhulenev): Kernel ptr should be loaded as a part of NpuThunk
     // // initialization stage.

@@ -11,12 +11,11 @@ cc_library(
     name = "npu_tool",
     hdrs = ["npu_tool.h"],
     deps = [
+        "//xla/xla_npu/third_party/register:aclnn_interface",
+
+        "//xla:shape_util",
         "//xla/hlo/ir:hlo",
         "@llvm-project//mlir:IR",
-
-        # "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
-        
-        # "//xla:shape_util",
     ],
 )
 

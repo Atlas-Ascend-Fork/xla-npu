@@ -55,7 +55,9 @@ cc_library(
     deps = [
         ":npu_thunk",
         "//xla/xla_npu/pjrt_npu:npu_tool",
+        "//xla/xla_npu/third_party/register:acl_interface",
         "//xla/xla_npu/third_party/register:aclnn_interface",
+        "//xla/xla_npu/third_party/register:aclnnop_interface",
 
         "//xla/backends/cpu/runtime:buffer_allocations",
         "//xla/backends/cpu/runtime:function_library",

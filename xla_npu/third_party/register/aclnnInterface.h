@@ -6,9 +6,11 @@
 namespace npu {
 
 aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-                          const int64_t *stride, int64_t offset, aclFormat format,
-                          const int64_t *storageDims, uint64_t storageDimsNum,
-                          void *tensorData);
+    const int64_t *stride, int64_t offset, aclFormat format,
+    const int64_t *storageDims, uint64_t storageDimsNum,
+    void *tensorData);
+
+aclIntArray *AclCreateIntArray(const int64_t *value, uint64_t size);
 
 } // namespace npu
 
