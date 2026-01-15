@@ -10,6 +10,7 @@ aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDat
     const int64_t *storageDims, uint64_t storageDimsNum,
     void *tensorData);
 
+aclScalar *AclCreateScalar(void *value, aclDataType dataType);
 aclIntArray *AclCreateIntArray(const int64_t *value, uint64_t size);
 
 } // namespace npu
