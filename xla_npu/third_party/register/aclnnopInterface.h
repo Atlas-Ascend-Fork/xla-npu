@@ -8,8 +8,11 @@ namespace npu {
 aclnnStatus AclnnExpandGetWorkspaceSize(
     const aclTensor* self, const aclIntArray* size, aclTensor* out,
     uint64_t* workspaceSize, aclOpExecutor** executor);
-
 aclnnStatus AclnnExpand(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+
+aclnnStatus AclnnAddGetWorkspaceSize(const aclTensor* self, const aclTensor* other, const aclScalar* alpha,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+aclnnStatus AclnnAdd(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
 
 } // namespace npu
 

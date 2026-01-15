@@ -9,6 +9,7 @@ namespace npu {
 
 REGISTER_LIBRARY(libnnopbase)
 LOAD_FUNCTION_NNOPBASE(aclCreateTensor)
+LOAD_FUNCTION_NNOPBASE(aclCreateScalar)
 LOAD_FUNCTION_NNOPBASE(aclCreateIntArray)
 
 aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
@@ -26,6 +27,19 @@ aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDat
     }
     if (func != nullptr) {
         return func(viewDims, viewDimsNum, dataType, stride, offset, format, storageDims, storageDimsNum, tensorData);
+    }
+    return nullptr;
+}
+
+aclScalar *AclCreateScalar(void *value, aclDataType dataType)
+{
+    typedef aclScalar* (*aclCreateScalarFunc)(void *value, aclDataType dataType);
+    static aclCreateScalarFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclCreateScalarFunc)GET_FUNC_NNOPBASE(aclCreateScalar);
+    }
+    if (func != nullptr) {
+        return func(value, dataType);
     }
     return nullptr;
 }

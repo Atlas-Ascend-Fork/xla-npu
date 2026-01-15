@@ -10,6 +10,7 @@ cc_library(
     hdrs = [
         "aclnn_util.h",
         "aclnn_expand.h",
+        "aclnn_add.h"
     ],
     deps = [
         "//xla/xla_npu/third_party/aclnn:aclnn_hdrs",

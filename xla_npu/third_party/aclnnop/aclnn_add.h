@@ -12,7 +12,7 @@
 #ifndef OP_API_INC_ADD_H_
 #define OP_API_INC_ADD_H_
 
-#include "aclnn/aclnn_base.h"
+#include "xla/xla_npu/third_party/aclnn/aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus
