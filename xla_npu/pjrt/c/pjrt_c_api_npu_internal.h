@@ -9,4 +9,4 @@ const PJRT_Api* GetNpuPjrtApi();
 
 }  // namespace npu_plugin
 }  // namespace pjrt
-#endif  //PJRT_C_PJRT_C_API_NPU_INTERNAL_H_
+#endif  // PJRT_C_PJRT_C_API_NPU_INTERNAL_H_

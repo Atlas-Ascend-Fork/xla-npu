@@ -16,10 +16,10 @@ namespace xla {
 
 // A storage (or an alias) for constant allocations data.
 struct NpuConstantAllocation {
-  se::DeviceMemoryBase AsDeviceMemoryBase() const;
+    se::DeviceMemoryBase AsDeviceMemoryBase() const;
 
-  BufferAllocation::Index index = -1;
-  std::variant<std::monostate, std::unique_ptr<Literal>, absl::Span<const uint8_t>> data;
+    BufferAllocation::Index index = -1;
+    std::variant<std::monostate, std::unique_ptr<Literal>, absl::Span<const uint8_t>> data;
 };
 
 // Creates a vector of constant allocations from the given buffer assignment.

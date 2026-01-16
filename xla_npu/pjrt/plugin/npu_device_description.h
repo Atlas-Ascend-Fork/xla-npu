@@ -10,25 +10,16 @@
 
 namespace xla {
 class NpuDeviceDescription final : public PjRtDeviceDescription {
-public:
+   public:
     explicit NpuDeviceDescription(int process_id, int local_device_id);
 
     ~NpuDeviceDescription() override = default;
 
-    int id() const override
-    {
-        return id_.value();
-    }
+    int id() const override { return id_.value(); }
 
-    int process_index() const override
-    {
-        return process_index_;
-    }
+    int process_index() const override { return process_index_; }
 
-    int local_hardware_id() const
-    {
-        return local_hardware_id_;
-    }
+    int local_hardware_id() const { return local_hardware_id_; }
 
     absl::string_view device_kind() const override;
 
@@ -36,12 +27,9 @@ public:
 
     absl::string_view ToString() const override;
 
-    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override
-    {
-        return attributes_;
-    }
+    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override { return attributes_; }
 
-private:
+   private:
     PjRtGlobalDeviceId id_;
     int process_index_;
     int local_hardware_id_;
@@ -50,4 +38,4 @@ private:
     absl::flat_hash_map<std::string, PjRtDeviceAttribute> attributes_ = {};
 };
 }  // namespace xla
-#endif  //PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
+#endif  // PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_

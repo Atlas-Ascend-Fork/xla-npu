@@ -2,16 +2,15 @@
 #define SERVICE_NPU_BUFFER_ASSIGNMENT_H_
 
 #include <vector>
+
 #include "xla/service/buffer_assignment.h"
 
 namespace xla {
 
 class NpuBufferAssignment {
-public:
+   public:
     // Returns the vector containing all buffer allocations in this assignment.
-    const std::vector<BufferAllocation>& Allocations() const {
-        return allocations_;
-    }
+    const std::vector<BufferAllocation>& Allocations() const { return allocations_; }
 
     const BufferAllocation& GetAllocation(BufferAllocation::Index index) const;
 
@@ -19,7 +18,7 @@ public:
 
     void Finalize();
 
-private:
+   private:
     // The vector of buffer allocations. Indexed by BufferAllocation::Index.
     std::vector<BufferAllocation> allocations_;
 };

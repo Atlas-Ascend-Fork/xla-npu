@@ -22,14 +22,13 @@
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/tsl/lib/strings/proto_serialization.h"
-
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology.h"
 
 namespace xla {
 
-absl::StatusOr<Layout> NpuTopologyDescription::GetDefaultLayout(
-    PrimitiveType element_type, absl::Span<const int64_t> dims) const {
+absl::StatusOr<Layout> NpuTopologyDescription::GetDefaultLayout(PrimitiveType element_type,
+                                                                absl::Span<const int64_t> dims) const {
     Shape shape = ShapeUtil::MakeShape(element_type, dims);
     return LayoutUtil::GetWithDefaultLayout(shape).layout();
 }
@@ -42,14 +41,12 @@ absl::StatusOr<std::string> NpuTopologyDescription::Serialize() const {
     return result;
 }
 
-absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>>
-NpuTopologyDescription::LogicalDeviceOfDefaultTypeForId(
+absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>> NpuTopologyDescription::LogicalDeviceOfDefaultTypeForId(
     xla::PjRtGlobalDeviceId device_id) const {
     return std::make_pair(PjRtDeviceDimensions{0, 0, device_id.value()}, 0);
 }
 
-std::vector<std::unique_ptr<const PjRtDeviceDescription>>
-NpuTopologyDescription::DeviceDescriptions() const {
+std::vector<std::unique_ptr<const PjRtDeviceDescription>> NpuTopologyDescription::DeviceDescriptions() const {
     std::vector<std::unique_ptr<const PjRtDeviceDescription>> devices;
     devices.reserve(npu_topology_.number_of_devices());
     for (const NpuTopology::NpuDevice& device : npu_topology_.devices()) {

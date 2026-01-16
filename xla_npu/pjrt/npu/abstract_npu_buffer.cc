@@ -35,6 +35,9 @@
 #include "xla/shape_tree.h"
 #include "xla/shape_util.h"
 // #include "xla/stream_executor/device_address.h"
+#include "tsl/platform/casts.h"
+#include "tsl/profiler/lib/connected_traceme.h"
+#include "tsl/profiler/lib/traceme.h"
 #include "xla/tsl/concurrency/async_value.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/tsl/concurrency/ref_count.h"
@@ -42,10 +45,6 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-#include "tsl/platform/casts.h"
-#include "tsl/profiler/lib/connected_traceme.h"
-#include "tsl/profiler/lib/traceme.h"
-
 #include "xla/xla_npu/pjrt/npu/npu_event.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/pjrt/npu/tracked_npu_device_buffer.h"
@@ -58,32 +57,26 @@ constexpr size_t kSmallDataTransferByteSize = 102400;  // 100 KiB
 
 // Unpacks and copies the packed data at `input` into the literal at the given
 // ShapeIndex.
-void UnpackIntNToLiteral(PrimitiveType input_element_type,
-                         const NpuDeviceMemory& input,
-                         MutableLiteralBase* literal,
+void UnpackIntNToLiteral(PrimitiveType input_element_type, const NpuDeviceMemory& input, MutableLiteralBase* literal,
                          const ShapeIndex& shape_index) {
-    absl::Span<const char> input_span{
-        static_cast<const char*>(input.untyped_data()), input.size_bytes()};
-    size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(
-        ShapeUtil::GetSubshape(literal->shape(), shape_index)));
-    absl::Span<char> output_span{
-        static_cast<char*>(literal->untyped_data(shape_index)), output_size};
+    absl::Span<const char> input_span{static_cast<const char*>(input.untyped_data()), input.size_bytes()};
+    size_t output_size =
+        static_cast<size_t>(ShapeUtil::ByteSizeOf(ShapeUtil::GetSubshape(literal->shape(), shape_index)));
+    absl::Span<char> output_span{static_cast<char*>(literal->untyped_data(shape_index)), output_size};
     primitive_util::UnpackIntN(input_element_type, input_span, output_span);
 }
 
 }  //  namespace
 
-void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
-                void* data, int64_t size) {
+void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal, void* data, int64_t size) {
     if (primitive_util::IsSubByteNonPredType(element_type)) {
-      const int bit_width = primitive_util::BitWidth(element_type);
-      absl::Span<const char> src_data_span(
-          static_cast<const char*>(literal.untyped_data()), literal.size_bytes());
-      absl::Span<char> dst_data_span(static_cast<char*>(data), size);
-      PackIntN(bit_width, src_data_span, dst_data_span);
+        const int bit_width = primitive_util::BitWidth(element_type);
+        absl::Span<const char> src_data_span(static_cast<const char*>(literal.untyped_data()), literal.size_bytes());
+        absl::Span<char> dst_data_span(static_cast<char*>(data), size);
+        PackIntN(bit_width, src_data_span, dst_data_span);
     } else {
-      CHECK_EQ(literal.size_bytes(), size);
-      std::memcpy(data, literal.untyped_data(), size);
+        CHECK_EQ(literal.size_bytes(), size);
+        std::memcpy(data, literal.untyped_data(), size);
     }
 }
 
@@ -91,11 +84,11 @@ void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
     const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
     std::optional<absl::Span<int64_t const>> byte_strides, const Shape& shape) {
     if (byte_strides && !HasMajorToMinorLayout(type, dims, *byte_strides)) {
-      return false;
+        return false;
     }
     // Packed arrays are unpacked on host and packed on device.
     if (primitive_util::IsSubByteNonPredType(type)) {
-      return false;
+        return false;
     }
 
     // If the input buffer has a default layout and is sufficiently aligned, we

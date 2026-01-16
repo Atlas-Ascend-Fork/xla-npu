@@ -14,4 +14,4 @@ const PJRT_Api* GetPjrtApi();
 }
 #endif
 
-#endif //PJRT_C_PJRT_C_API_NPU_H_
+#endif  // PJRT_C_PJRT_C_API_NPU_H_
