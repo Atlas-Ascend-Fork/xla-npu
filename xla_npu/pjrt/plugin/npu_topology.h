@@ -12,7 +12,7 @@
 
 namespace xla {
 class NpuTopology {
-public:
+   public:
     struct NpuDevice {
         int process_id;
         int local_device_id;
@@ -23,19 +23,16 @@ public:
     };
 
     explicit NpuTopology(std::vector<NpuDevice> npu_devices, std::vector<std::string> machine_attributes)
-        : npu_devices_(std::move(npu_devices)),
-          machine_attributes_(std::move(machine_attributes)) {}
+        : npu_devices_(std::move(npu_devices)), machine_attributes_(std::move(machine_attributes)) {}
 
     int number_of_devices() const { return npu_devices_.size(); }
     absl::Span<const NpuDevice> devices() const { return npu_devices_; }
-    absl::Span<const std::string> machine_attributes() const {
-        return machine_attributes_;
-    }
+    absl::Span<const std::string> machine_attributes() const { return machine_attributes_; }
 
     // static std::unique_ptr<const NpuTopology> FromProto(const CpuTopologyProto& proto);
     // CpuTopologyProto ToProto() const;
 
-private:
+   private:
     const std::vector<NpuDevice> npu_devices_;
     const std::vector<std::string> machine_attributes_;
 };

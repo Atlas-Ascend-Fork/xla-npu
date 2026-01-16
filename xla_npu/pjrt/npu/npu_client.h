@@ -11,20 +11,19 @@
 #include "xla/literal.h"
 // #include "xla/pjrt/cpu/cpu_async_execution_tracker.h"
 // #include "xla/pjrt/cpu/execution_stream_event_map.h"
+#include "tsl/platform/fingerprint.h"
+#include "xla/pjrt/common_pjrt_client.h"
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
 #include "xla/pjrt/transpose.h"
-#include "xla/pjrt/common_pjrt_client.h"
-#include "tsl/platform/fingerprint.h"
-
-#include "xla/xla_npu/service/npu_buffer_assignment.h"
-#include "xla/xla_npu/pjrt/npu_pjrt_common.h"
 #include "xla/xla_npu/pjrt/npu/npu_device.h"
 #include "xla/xla_npu/pjrt/npu/tracked_npu_device_buffer.h"
+#include "xla/xla_npu/pjrt/npu_pjrt_common.h"
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology_description.h"
+#include "xla/xla_npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
@@ -35,57 +34,35 @@ inline const char* DataLayout() {
 }
 
 class PjRtNpuClient final : public CommonPjRtClient {
-public:
+   public:
     PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
 
     ~PjRtNpuClient() override = default;
 
     using CollectiveLaunchEvent = std::pair<tsl::AsyncValueRef<NpuEvent>, tsl::CountDownAsyncValueRef<NpuEvent>>;
 
-    int process_index() const override {
-        return process_index_;
-    }
+    int process_index() const override { return process_index_; }
 
-    int device_count() const override {
-        return devices_.size();
-    }
+    int device_count() const override { return devices_.size(); }
 
-    int addressable_device_count() const override {
-        return addressable_devices_.size();
-    }
+    int addressable_device_count() const override { return addressable_devices_.size(); }
 
-    absl::Span<PjRtDevice* const> devices() const override {
-        return devices_;
-    }
+    absl::Span<PjRtDevice* const> devices() const override { return devices_; }
 
-    absl::Span<PjRtDevice* const> addressable_devices() const override {
-        return addressable_devices_;
-    }
-    
-    PjRtPlatformId platform_id() const override {
-        return tsl::Fingerprint64(NpuName());
-    }
-    
-    absl::string_view platform_name() const override {
-        return NpuName();
-    }
-    
-    absl::string_view platform_version() const override {
-        return NpuName();
-    }
+    absl::Span<PjRtDevice* const> addressable_devices() const override { return addressable_devices_; }
+
+    PjRtPlatformId platform_id() const override { return tsl::Fingerprint64(NpuName()); }
+
+    absl::string_view platform_name() const override { return NpuName(); }
+
+    absl::string_view platform_version() const override { return NpuName(); }
 
     // Gets the pointer to the topology description held by the client.
-    absl::StatusOr<const PjRtTopologyDescription*> GetTopologyDescription() const override {
-        return &topology_;
-    }
+    absl::StatusOr<const PjRtTopologyDescription*> GetTopologyDescription() const override { return &topology_; }
 
-    AsyncWorkRunner* async_work_runner() const override {
-        return async_work_runner_.get();
-    }
+    AsyncWorkRunner* async_work_runner() const override { return async_work_runner_.get(); }
 
-    tsl::thread::ThreadPool* pjrt_client_thread_pool() const {
-        return pjrt_client_thread_pool_.get();
-    }
+    tsl::thread::ThreadPool* pjrt_client_thread_pool() const { return pjrt_client_thread_pool_.get(); }
 
     // // Returns a pair of async events:
     // // - async event that signals the completion of the last collective launch
@@ -98,72 +75,60 @@ public:
     //     last_collective_launch_event_ = count_down.AsRef();
     //     return std::make_pair(std::move(last_launch), std::move(count_down));
     // }
-    
+
     absl::StatusOr<PjRtDevice*> LookupDevice(PjRtGlobalDeviceId global_device_id) const override;
 
     absl::StatusOr<PjRtDevice*> LookupAddressableDevice(PjRtLocalDeviceId local_device_id) const override;
 
     absl::Span<PjRtMemorySpace* const> memory_spaces() const override;
 
-    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
-        const XlaComputation& computation, CompileOptions options) override;
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(const XlaComputation& computation,
+                                                                         CompileOptions options) override;
 
-    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(
-        mlir::ModuleOp module, CompileOptions options) override;
+    absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileAndLoad(mlir::ModuleOp module,
+                                                                         CompileOptions options) override;
 
     // Computes the memory requirements for storing shape on memory_space.
-    absl::StatusOr<int64_t> GetOnDeviceBytesCount(
-        PjRtMemorySpace* memory_space, const xla::Shape& shape) const override;
+    absl::StatusOr<int64_t> GetOnDeviceBytesCount(PjRtMemorySpace* memory_space,
+                                                  const xla::Shape& shape) const override;
 
     // Allocates a raw buffer of a particular size after an optional
     // allocate_after. Backends may support retrying allocation on oom which
     // can be controlled via retry_on_oom.
     absl::StatusOr<tsl::RCReference<CommonPjRtRawBuffer>> AllocateRawBuffer(
-        PjRtMemorySpace* memory_space, size_t on_device_bytes_count,
-        bool retry_on_oom,
+        PjRtMemorySpace* memory_space, size_t on_device_bytes_count, bool retry_on_oom,
         tsl::AsyncValueRef<bool> allocate_after) override;
 
     absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> LinearizeHostBufferInto(
         const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
-        std::optional<absl::Span<int64_t const>> byte_strides,
-        HostBufferSemantics host_buffer_semantics,
-        absl::AnyInvocable<void() &&> on_done_with_host_buffer,
-        const xla::Shape& device_shape,
+        std::optional<absl::Span<int64_t const>> byte_strides, HostBufferSemantics host_buffer_semantics,
+        absl::AnyInvocable<void() &&> on_done_with_host_buffer, const xla::Shape& device_shape,
         tsl::RCReference<CommonPjRtRawBuffer> raw_buffer) override;
 
     // Defines a pjrt buffer from a shape, raw_buffer and definition events.
     absl::StatusOr<std::unique_ptr<PjRtBuffer>> DefineBuffer(
-        const Shape& on_device_shape,
-        tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
+        const Shape& on_device_shape, tsl::RCReference<CommonPjRtRawBuffer> raw_buffer,
         absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4> definition_device_events,
         bool raw_buffer_is_mutable) override;
 
-    absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>,
-                             tsl::RCReference<PjRtDeviceEvent>>>
-    CreateLinkedEventPromise(PjRtMemorySpace* memory_space,
-        absl::string_view debug_info) override;
+    absl::StatusOr<std::pair<tsl::RCReference<PjRtDeviceEventPromise>, tsl::RCReference<PjRtDeviceEvent>>>
+    CreateLinkedEventPromise(PjRtMemorySpace* memory_space, absl::string_view debug_info) override;
 
-    absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(
-        int num_replicas, int num_partitions) const override;
+    absl::StatusOr<DeviceAssignment> GetDefaultDeviceAssignment(int num_replicas, int num_partitions) const override;
 
-private:
+   private:
     friend class PjRtNpuExecutable;
     friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options);
 
-    PjRtNpuClient(
-        int process_index,
-        std::vector<std::unique_ptr<PjRtNpuDevice>> devices,
-        std::shared_ptr<NpuDeviceMemory::Allocator> allocator,
-        // std::shared_ptr<cpu::CpuCollectives> collectives,
-        size_t num_threads,
-        bool asynchronous,
-        std::function<void(HloModuleConfig&)> customize_hlo_module_config);
+    PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices,
+                  std::shared_ptr<NpuDeviceMemory::Allocator> allocator,
+                  // std::shared_ptr<cpu::CpuCollectives> collectives,
+                  size_t num_threads, bool asynchronous,
+                  std::function<void(HloModuleConfig&)> customize_hlo_module_config);
 
     absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>> CompileInternal(
-        const XlaComputation& computation,
-        const std::vector<const Shape*>& argument_layout_pointers,
-        LayoutCanonicalizationCallback layout_canonicalization_callback,
-        CompileOptions options,
+        const XlaComputation& computation, const std::vector<const Shape*>& argument_layout_pointers,
+        LayoutCanonicalizationCallback layout_canonicalization_callback, CompileOptions options,
         const AotCompilationOptions* absl_nullable aot_options = nullptr);
 
     NpuDeviceMemory::Allocator* allocator() const { return allocator_.get(); }
@@ -233,48 +198,34 @@ private:
 };
 
 class PjRtNpuExecutable final : public PjRtLoadedExecutable {
-public:
-    PjRtNpuExecutable(
-        int num_replicas, int num_partitions,
-        std::shared_ptr<DeviceAssignment> device_assignment,
-        bool parameter_is_tupled_arguments, CompileOptions compile_options,
-        std::unique_ptr<Executable> npu_executable,
-        absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices,
-        std::vector<LogicalDeviceIds> addressable_device_logical_ids,
-        std::vector<PjRtDevice*> addressable_devices, PjRtNpuClient* client,
-        std::unique_ptr<HloModule> unoptimized_hlo_module);
+   public:
+    PjRtNpuExecutable(int num_replicas, int num_partitions, std::shared_ptr<DeviceAssignment> device_assignment,
+                      bool parameter_is_tupled_arguments, CompileOptions compile_options,
+                      std::unique_ptr<Executable> npu_executable,
+                      absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices,
+                      std::vector<LogicalDeviceIds> addressable_device_logical_ids,
+                      std::vector<PjRtDevice*> addressable_devices, PjRtNpuClient* client,
+                      std::unique_ptr<HloModule> unoptimized_hlo_module);
 
     ~PjRtNpuExecutable() override = default;
 
     PjRtNpuClient* client() const override { return client_; }
 
-    absl::string_view name() const override {
-        return npu_executable_->shared_module()->name();
-    }
+    absl::string_view name() const override { return npu_executable_->shared_module()->name(); }
 
-    int num_replicas() const override {
-        return num_replicas_;
-    }
+    int num_replicas() const override { return num_replicas_; }
 
-    int num_partitions() const override {
-        return num_partitions_;
-    }
+    int num_partitions() const override { return num_partitions_; }
 
-    int64_t SizeOfGeneratedCodeInBytes() const override {
-        return npu_executable_->SizeOfGeneratedCodeInBytes();
-    }
+    int64_t SizeOfGeneratedCodeInBytes() const override { return npu_executable_->SizeOfGeneratedCodeInBytes(); }
 
-    const DeviceAssignment& device_assignment() const override {
-        return *device_assignment_;
-    }
+    const DeviceAssignment& device_assignment() const override { return *device_assignment_; }
 
     absl::Span<const LogicalDeviceIds> addressable_device_logical_ids() const override {
         return addressable_device_logical_ids_;
     }
 
-    absl::Span<PjRtDevice* const> addressable_devices() const override {
-        return addressable_devices_;
-    }
+    absl::Span<PjRtDevice* const> addressable_devices() const override { return addressable_devices_; }
 
     absl::StatusOr<std::vector<std::shared_ptr<HloModule>>> GetHloModules() const override {
         return std::vector<std::shared_ptr<HloModule>>{npu_executable_->shared_module()};
@@ -288,22 +239,19 @@ public:
 
     using PjRtLoadedExecutable::Execute;
     absl::StatusOr<std::vector<std::vector<std::unique_ptr<PjRtBuffer>>>> Execute(
-        absl::Span<const std::vector<PjRtBuffer*>> argument_handles,
-        const ExecuteOptions& options,
+        absl::Span<const std::vector<PjRtBuffer*>> argument_handles, const ExecuteOptions& options,
         std::optional<std::vector<Future<>>>& returned_futures) const override;
 
     using PjRtLoadedExecutable::ExecuteSharded;
     absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecuteSharded(
-        absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
-        const ExecuteOptions& options, std::optional<Future<>>& returned_future,
-        bool fill_future) const override;
+        absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device, const ExecuteOptions& options,
+        std::optional<Future<>>& returned_future, bool fill_future) const override;
 
     using PjRtLoadedExecutable::ExecutePortable;
     absl::StatusOr<std::vector<std::unique_ptr<PjRtBuffer>>> ExecutePortable(
-        absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
-        const ExecuteOptions& options, std::optional<Future<>>& returned_future,
-        bool fill_future) const override;
-    
+        absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device, const ExecuteOptions& options,
+        std::optional<Future<>>& returned_future, bool fill_future) const override;
+
     void Delete() override;
 
     bool IsDeleted() const override;
@@ -312,19 +260,13 @@ public:
 
     std::shared_ptr<Executable> npu_executable() const { return npu_executable_; }
 
-    absl::StatusOr<std::optional<std::string>> Fingerprint() const {
-        return fingerprint_;
-    }
+    absl::StatusOr<std::optional<std::string>> Fingerprint() const { return fingerprint_; }
 
-    absl::StatusOr<std::string> FingerprintExecutable() const override {
-        return fingerprint_;
-    }
+    absl::StatusOr<std::string> FingerprintExecutable() const override { return fingerprint_; }
 
-    absl::StatusOr<CompileOptions> GetCompileOptions() const override {
-        return compile_options_;
-    }
+    absl::StatusOr<CompileOptions> GetCompileOptions() const override { return compile_options_; }
 
-private:
+   private:
     friend class PjRtNpuClient;
 
     // absl::Status SetUpDonation(bool tuple_inputs);
@@ -335,11 +277,10 @@ private:
     //     absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> input_buffers)
     //     const;
 
-    absl::StatusOr<Result> ExecuteHelper(
-        absl::Span<PjRtBuffer* const> argument_handles, int replica,
-        int partition, const RunId& run_id, const ExecuteOptions& options,
-        PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
-        bool fill_future, PjRtNpuDevice* device = nullptr) const;
+    absl::StatusOr<Result> ExecuteHelper(absl::Span<PjRtBuffer* const> argument_handles, int replica, int partition,
+                                         const RunId& run_id, const ExecuteOptions& options,
+                                         PjRtNpuClient::CollectiveLaunchEvent last_collective_launch_event,
+                                         bool fill_future, PjRtNpuDevice* device = nullptr) const;
 
     PjRtNpuClient* client_;
 

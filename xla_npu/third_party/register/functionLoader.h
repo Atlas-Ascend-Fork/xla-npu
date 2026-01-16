@@ -2,8 +2,9 @@
 #define REGISTER_FUNCTIONLOADER_H_
 
 #include <dlfcn.h>
-#include <mutex>
+
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -14,7 +15,7 @@ namespace option {
   FunctionLoader is used to store function address in the process.
   */
 class FunctionLoader {
-public:
+   public:
     /**
         ctr
         */
@@ -31,21 +32,21 @@ public:
         get function address by function name.
         */
     void* Get(const std::string& name);
-private:
+
+   private:
     mutable std::mutex mu_;
     std::string fileName;
     int flags;
     void* handle = nullptr;
     mutable std::unordered_map<std::string, void*> registry;
-}; // class FunctionLoader
-
+};  // class FunctionLoader
 
 namespace register_function {
 /**
   this class is used to register
   */
 class FunctionRegister {
-public:
+   public:
     /**
         Singleton
         */
@@ -63,17 +64,17 @@ public:
         */
     void* Get(const std::string& soName, const std::string& funcName);
 
-private:
+   private:
     FunctionRegister() = default;
     mutable std::mutex mu_;
     mutable std::unordered_map<std::string, ::std::unique_ptr<FunctionLoader>> registry;
-}; // class FunctionRegister
+};  // class FunctionRegister
 
 /**
   FunctionRegisterBuilder is the helper of FunctionRegister.
   */
 class FunctionRegisterBuilder {
-public:
+   public:
     /**
         ctr
         */
@@ -82,24 +83,23 @@ public:
         ctr
         */
     FunctionRegisterBuilder(const std::string& soName, const std::string& funcName) noexcept;
-}; // class FunctionRegisterBuilder
+};  // class FunctionRegisterBuilder
 
-} // namespace register_function
+}  // namespace register_function
 
-#define REGISTER_LIBRARY(soName, ...)                                                \
-    auto library_##soName = ::std::unique_ptr<c10_npu::option::FunctionLoader>( \
-        new c10_npu::option::FunctionLoader(#soName, ##__VA_ARGS__));  \
-    static c10_npu::option::register_function::FunctionRegisterBuilder                             \
-        register_library_##soName(#soName, library_##soName);
+#define REGISTER_LIBRARY(soName, ...)                                                                     \
+    auto library_##soName = ::std::unique_ptr<c10_npu::option::FunctionLoader>(                           \
+        new c10_npu::option::FunctionLoader(#soName, ##__VA_ARGS__));                                     \
+    static c10_npu::option::register_function::FunctionRegisterBuilder register_library_##soName(#soName, \
+                                                                                                 library_##soName);
 
-#define REGISTER_FUNCTION(soName, funcName)                                     \
-    static c10_npu::option::register_function::FunctionRegisterBuilder                             \
-        register_function_##funcName(#soName, #funcName);
+#define REGISTER_FUNCTION(soName, funcName) \
+    static c10_npu::option::register_function::FunctionRegisterBuilder register_function_##funcName(#soName, #funcName);
 
-#define GET_FUNCTION(soName, funcName)                                              \
+#define GET_FUNCTION(soName, funcName) \
     c10_npu::option::register_function::FunctionRegister::GetInstance()->Get(#soName, #funcName);
 
-} // namespace option
-} // namespace c10_npu
+}  // namespace option
+}  // namespace c10_npu
 
-#endif //REGISTER_FUNCTIONLOADER_H_
+#endif  // REGISTER_FUNCTIONLOADER_H_

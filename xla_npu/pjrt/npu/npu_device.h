@@ -14,60 +14,41 @@
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
-
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 
 namespace xla {
 class PjRtNpuDevice final : public PjRtDevice {
-public:
+   public:
     explicit PjRtNpuDevice(int process_id, int local_device_id);
 
     ~PjRtNpuDevice() override = default;
 
-    const NpuDeviceDescription& description() const override
-    {
-        return description_;
-    }
+    const NpuDeviceDescription& description() const override { return description_; }
 
-    void SetClient(PjRtClient* client)
-    {
+    void SetClient(PjRtClient* client) {
         CHECK(client_ == nullptr);
         client_ = client;
     }
 
-    PjRtClient* client() const override
-    {
-        return client_;
-    }
+    PjRtClient* client() const override { return client_; }
 
-    bool IsAddressable() const override
-    {
-        return process_index() == client()->process_index();
-    }
+    bool IsAddressable() const override { return process_index() == client()->process_index(); }
 
-    PjRtLocalDeviceId local_device_id() const override
-    {
-        return PjRtLocalDeviceId(local_hardware_id().value());
-    }
+    PjRtLocalDeviceId local_device_id() const override { return PjRtLocalDeviceId(local_hardware_id().value()); }
 
-    PjRtLocalHardwareId local_hardware_id() const override
-    {
+    PjRtLocalHardwareId local_hardware_id() const override {
         return PjRtLocalHardwareId(description_.local_hardware_id());
     }
 
-    std::unique_ptr<ScopedAsyncTrackingEvent> CreateAsyncTrackingEvent(
-        absl::string_view description) const override
-    {
+    std::unique_ptr<ScopedAsyncTrackingEvent> CreateAsyncTrackingEvent(absl::string_view description) const override {
         return nullptr;
     }
 
-    absl::Status TransferToInfeed(const LiteralSlice& literal) override
-    {
+    absl::Status TransferToInfeed(const LiteralSlice& literal) override {
         return absl::UnimplementedError("TransferToInfeed is unimplemented");
     }
 
-    absl::Status TransferFromOutfeed(MutableBorrowingLiteral literal) override
-    {
+    absl::Status TransferFromOutfeed(MutableBorrowingLiteral literal) override {
         return absl::UnimplementedError("TransferFromOutfeed is unimplemented");
     }
 
@@ -81,10 +62,9 @@ public:
 
     absl::StatusOr<PjRtMemorySpace*> memory_space_by_kind_id(int id) const;
 
-    absl::StatusOr<bool> PoisonExecution(int32_t launch_id,
-                                        absl::Status error) override;
+    absl::StatusOr<bool> PoisonExecution(int32_t launch_id, absl::Status error) override;
 
-private:
+   private:
     PjRtClient* client_ = nullptr;
     NpuDeviceDescription description_;
     absl::InlinedVector<PjRtMemorySpace*, 1> memory_spaces_;
@@ -92,4 +72,4 @@ private:
 };
 
 }  // namespace xla
-#endif //PJRT_NPU_NPU_DEVICE_H_
+#endif  // PJRT_NPU_NPU_DEVICE_H_

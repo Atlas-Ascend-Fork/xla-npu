@@ -16,43 +16,34 @@
 
 namespace xla {
 
-PjRtNpuDevice::PjRtNpuDevice(int id, int process_id)
-    : description_(id, process_id)
-{
-}
+PjRtNpuDevice::PjRtNpuDevice(int id, int process_id) : description_(id, process_id) {}
 // max_inflight_computations_semaphore_(
 //     /*capacity=*/max_inflight_computations),
 // async_execution_tracker_(std::make_unique<CpuAsyncExecutionTracker>()),
 // stream_event_map_(std::make_unique<ExecutionStreamEventMap>()) {}
 
-void PjRtNpuDevice::AttachMemorySpace(PjRtMemorySpace* memory_space)
-{
+void PjRtNpuDevice::AttachMemorySpace(PjRtMemorySpace* memory_space) {
     CHECK(memory_space != nullptr);
-    CHECK(client_ == memory_space->client())
-        << absl::StrFormat("Could not attach a PjRtNpuDevice to a PjRtMemorySpace owned by a "
-                           "different client, the device's client: %s, the memory space's client: "
-                           "%s.",
-                           client_->platform_name(), memory_space->client()->platform_name());
+    CHECK(client_ == memory_space->client()) << absl::StrFormat(
+        "Could not attach a PjRtNpuDevice to a PjRtMemorySpace owned by a "
+        "different client, the device's client: %s, the memory space's client: "
+        "%s.",
+        client_->platform_name(), memory_space->client()->platform_name());
 
     memory_spaces_.push_back(memory_space);
     memory_spaces_by_id_.emplace(memory_space->kind_id(), memory_space);
 }
 
-absl::Span<PjRtMemorySpace* const> PjRtNpuDevice::memory_spaces() const
-{
-    return memory_spaces_;
-}
+absl::Span<PjRtMemorySpace* const> PjRtNpuDevice::memory_spaces() const { return memory_spaces_; }
 
-absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::default_memory_space() const
-{
+absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::default_memory_space() const {
     if (memory_spaces_.empty()) {
         return absl::FailedPreconditionError("PjRtNpuDevice::default_memory_space(): No memory space found.");
     }
     return memory_spaces_.front();
 }
 
-absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind(absl::string_view memory_space_kind) const
-{
+absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind(absl::string_view memory_space_kind) const {
     auto it = absl::c_find_if(memory_spaces_,
                               [memory_space_kind](PjRtMemorySpace* ms) { return ms->kind() == memory_space_kind; });
     if (it != memory_spaces_.end()) {
@@ -61,8 +52,7 @@ absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind(absl::strin
     return absl::InternalError(absl::StrCat("No memory space found (kind: ", memory_space_kind, ")"));
 }
 
-absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind_id(int id) const
-{
+absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind_id(int id) const {
     auto it = memory_spaces_by_id_.find(id);
     if (it == memory_spaces_by_id_.end()) {
         return absl::InternalError(absl::StrCat("No memory space found (kind_id: ", id, ")"));
@@ -70,9 +60,6 @@ absl::StatusOr<PjRtMemorySpace*> PjRtNpuDevice::memory_space_by_kind_id(int id) 
     return it->second;
 }
 
-absl::StatusOr<bool> PjRtNpuDevice::PoisonExecution(int32_t launch_id, absl::Status error)
-{
-    return false;
-}
+absl::StatusOr<bool> PjRtNpuDevice::PoisonExecution(int32_t launch_id, absl::Status error) { return false; }
 
 }  // namespace xla

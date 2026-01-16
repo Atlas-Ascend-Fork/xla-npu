@@ -21,29 +21,25 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-
 #include "xla/xla_npu/common/npu_tool.h"
 
 namespace xla {
 
 se::DeviceMemoryBase NpuConstantAllocation::AsDeviceMemoryBase() const {
-  if (auto* _ = std::get_if<std::monostate>(&data)) {
-    return se::DeviceMemoryBase();
-  }
+    if (auto* _ = std::get_if<std::monostate>(&data)) {
+        return se::DeviceMemoryBase();
+    }
 
-  if (auto* owned = std::get_if<std::unique_ptr<Literal>>(&data)) {
-    return se::DeviceMemoryBase((*owned)->untyped_data(),
-                                (*owned)->size_bytes());
-  }
+    if (auto* owned = std::get_if<std::unique_ptr<Literal>>(&data)) {
+        return se::DeviceMemoryBase((*owned)->untyped_data(), (*owned)->size_bytes());
+    }
 
-  auto* view = std::get_if<absl::Span<const uint8_t>>(&data);
-  return se::DeviceMemoryBase(
-      const_cast<void*>(reinterpret_cast<const void*>(view->data())),
-      view->size());
+    auto* view = std::get_if<absl::Span<const uint8_t>>(&data);
+    return se::DeviceMemoryBase(const_cast<void*>(reinterpret_cast<const void*>(view->data())), view->size());
 }
 
-static absl::StatusOr<NpuConstantAllocation> LiteralToConstantAllocation(
-    BufferAllocation::Index index, const Literal& literal) {
+static absl::StatusOr<NpuConstantAllocation> LiteralToConstantAllocation(BufferAllocation::Index index,
+                                                                         const Literal& literal) {
     // TODO(ezhulenev): This code is almost identical to code in XLA:GPU, we
     // should standardize it. See `xla/service/gpu/ir_emission_utils.cc`.
     PrimitiveType element_type = literal.shape().element_type();
@@ -73,13 +69,12 @@ static absl::StatusOr<NpuConstantAllocation> LiteralToConstantAllocation(
     // }
 
     // Create a constant allocation from the literal's untyped data.
-    return NpuConstantAllocation{
-        index, absl::Span<const uint8_t>(reinterpret_cast<const uint8_t*>(untyped_data), size_bytes)};
+    return NpuConstantAllocation{index,
+                                 absl::Span<const uint8_t>(reinterpret_cast<const uint8_t*>(untyped_data), size_bytes)};
 }
 
 // Creates a vector of constant allocations from the given buffer assignment.
-absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(
-    const BufferAssignment& assignment) {
+absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(const BufferAssignment& assignment) {
     std::vector<NpuConstantAllocation> constants;
 
     for (const BufferAllocation& allocation : assignment.Allocations()) {
@@ -101,13 +96,12 @@ absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(
             }
         }
         if (const_instr == nullptr) {
-          return absl::InternalError(
-              absl::StrCat("Could not find constant instruction defining buffer ", allocation.ToString()));
+            return absl::InternalError(
+                absl::StrCat("Could not find constant instruction defining buffer ", allocation.ToString()));
         }
 
-        NpuTool::PrintDebugLog(
-            "Create constant allocation for index %d from constant literal %s; shape=%s",
-            allocation.index(), const_instr->name(), const_instr->literal().shape().ToString());
+        NpuTool::PrintDebugLog("Create constant allocation for index %d from constant literal %s; shape=%s",
+                               allocation.index(), const_instr->name(), const_instr->literal().shape().ToString());
         TF_ASSIGN_OR_RETURN(constants.emplace_back(),
                             LiteralToConstantAllocation(allocation.index(), const_instr->literal()));
     }
@@ -115,4 +109,4 @@ absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(
     return constants;
 }
 
-}  // namespace xla::cpu
+}  // namespace xla

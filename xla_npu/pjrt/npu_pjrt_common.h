@@ -7,9 +7,7 @@ namespace xla {
 
 constexpr char kNpuPlatformName[] = "npu";
 
-inline const char* NpuName() {
-    return kNpuPlatformName;
-}
+inline const char* NpuName() { return kNpuPlatformName; }
 
-}
-#endif  //PJRT_NPU_PJRT_COMMON_H_
+}  // namespace xla
+#endif  // PJRT_NPU_PJRT_COMMON_H_

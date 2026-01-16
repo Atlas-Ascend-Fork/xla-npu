@@ -25,25 +25,22 @@
 namespace xla {
 
 class NpuTopologyDescription : public PjRtTopologyDescription {
-public:
+   public:
     // `npu_device_ids` is the list of logical device ids for the NPU devices and
     // will be used to initialize the NPU topology.
-    NpuTopologyDescription(const PjRtPlatformId platform_id,
-                            const absl::string_view platform_name,
-                            const absl::string_view platform_version,
-                            std::vector<NpuTopology::NpuDevice> npu_devices,
-                            absl::Span<const std::string> machine_attributes)
+    NpuTopologyDescription(const PjRtPlatformId platform_id, const absl::string_view platform_name,
+                           const absl::string_view platform_version, std::vector<NpuTopology::NpuDevice> npu_devices,
+                           absl::Span<const std::string> machine_attributes)
         : platform_id_(platform_id),
-        platform_name_(platform_name),
-        platform_version_(platform_version),
-        npu_topology_(std::move(npu_devices),
-            std::vector<std::string>(machine_attributes.begin(), machine_attributes.end())) {}
+          platform_name_(platform_name),
+          platform_version_(platform_version),
+          npu_topology_(std::move(npu_devices),
+                        std::vector<std::string>(machine_attributes.begin(), machine_attributes.end())) {}
 
     bool operator==(const NpuTopologyDescription& other) const {
-        return this->platform_id() == other.platform_id() &&
-            this->platform_name() == other.platform_name() &&
-            this->platform_version() == other.platform_version() &&
-            this->npu_topology().devices() == other.npu_topology().devices();
+        return this->platform_id() == other.platform_id() && this->platform_name() == other.platform_name() &&
+               this->platform_version() == other.platform_version() &&
+               this->npu_topology().devices() == other.npu_topology().devices();
     }
 
     PjRtPlatformId platform_id() const override { return platform_id_; }
@@ -70,24 +67,20 @@ public:
 
     absl::StatusOr<std::string> Serialize() const override;
 
-    absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>>
-    LogicalDeviceOfDefaultTypeForId(xla::PjRtGlobalDeviceId device_id) const override;
+    absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>> LogicalDeviceOfDefaultTypeForId(
+        xla::PjRtGlobalDeviceId device_id) const override;
 
     // Returns vendor specific attributes about the topology.
-    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override {
-        return attributes_;
-    }
+    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override { return attributes_; }
 
-    absl::StatusOr<Layout> GetDefaultLayout(
-        PrimitiveType element_type,
-        absl::Span<const int64_t> dims) const override;
+    absl::StatusOr<Layout> GetDefaultLayout(PrimitiveType element_type, absl::Span<const int64_t> dims) const override;
 
     // absl::StatusOr<xla::PjRtTopologyDescriptionProto> ToProto() const override;
 
     // static absl::StatusOr<std::unique_ptr<NpuTopologyDescription>> FromProto(
     //     const xla::PjRtTopologyDescriptionProto& proto);
 
-private:
+   private:
     const PjRtPlatformId platform_id_;
     const std::string platform_name_;
     const std::string platform_version_;

@@ -5,14 +5,13 @@
 
 namespace npu {
 
-aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-    const int64_t *stride, int64_t offset, aclFormat format,
-    const int64_t *storageDims, uint64_t storageDimsNum,
-    void *tensorData);
+aclTensor* AclCreateTensor(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType, const int64_t* stride,
+                           int64_t offset, aclFormat format, const int64_t* storageDims, uint64_t storageDimsNum,
+                           void* tensorData);
 
-aclScalar *AclCreateScalar(void *value, aclDataType dataType);
-aclIntArray *AclCreateIntArray(const int64_t *value, uint64_t size);
+aclScalar* AclCreateScalar(void* value, aclDataType dataType);
+aclIntArray* AclCreateIntArray(const int64_t* value, uint64_t size);
 
-} // namespace npu
+}  // namespace npu
 
-#endif // REGISTER_ACLNNINTERFACE_H_
+#endif  // REGISTER_ACLNNINTERFACE_H_

@@ -12,15 +12,12 @@ LOAD_FUNCTION_NNOPBASE(aclCreateTensor)
 LOAD_FUNCTION_NNOPBASE(aclCreateScalar)
 LOAD_FUNCTION_NNOPBASE(aclCreateIntArray)
 
-aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-    const int64_t *stride, int64_t offset, aclFormat format,
-    const int64_t *storageDims, uint64_t storageDimsNum,
-    void *tensorData)
-{
-    typedef aclTensor* (*aclCreateTensorFunc)(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-        const int64_t *stride, int64_t offset, aclFormat format,
-        const int64_t *storageDims, uint64_t storageDimsNum,
-        void *tensorData);
+aclTensor* AclCreateTensor(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType, const int64_t* stride,
+                           int64_t offset, aclFormat format, const int64_t* storageDims, uint64_t storageDimsNum,
+                           void* tensorData) {
+    typedef aclTensor* (*aclCreateTensorFunc)(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType,
+                                              const int64_t* stride, int64_t offset, aclFormat format,
+                                              const int64_t* storageDims, uint64_t storageDimsNum, void* tensorData);
     static aclCreateTensorFunc func = nullptr;
     if (func == nullptr) {
         func = (aclCreateTensorFunc)GET_FUNC_NNOPBASE(aclCreateTensor);
@@ -31,9 +28,8 @@ aclTensor *AclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDat
     return nullptr;
 }
 
-aclScalar *AclCreateScalar(void *value, aclDataType dataType)
-{
-    typedef aclScalar* (*aclCreateScalarFunc)(void *value, aclDataType dataType);
+aclScalar* AclCreateScalar(void* value, aclDataType dataType) {
+    typedef aclScalar* (*aclCreateScalarFunc)(void* value, aclDataType dataType);
     static aclCreateScalarFunc func = nullptr;
     if (func == nullptr) {
         func = (aclCreateScalarFunc)GET_FUNC_NNOPBASE(aclCreateScalar);
@@ -44,9 +40,8 @@ aclScalar *AclCreateScalar(void *value, aclDataType dataType)
     return nullptr;
 }
 
-aclIntArray *AclCreateIntArray(const int64_t *value, uint64_t size)
-{
-    typedef aclIntArray* (*aclCreateIntArrayFunc)(const int64_t *value, uint64_t size);
+aclIntArray* AclCreateIntArray(const int64_t* value, uint64_t size) {
+    typedef aclIntArray* (*aclCreateIntArrayFunc)(const int64_t* value, uint64_t size);
     static aclCreateIntArrayFunc func = nullptr;
     if (func == nullptr) {
         func = (aclCreateIntArrayFunc)GET_FUNC_NNOPBASE(aclCreateIntArray);
@@ -57,4 +52,4 @@ aclIntArray *AclCreateIntArray(const int64_t *value, uint64_t size)
     return nullptr;
 }
 
-} // namespace npu
+}  // namespace npu

@@ -15,13 +15,11 @@ LOAD_FUNCTION_OPAPI(aclnnAdd)
 
 static const aclnnStatus loadErrorCode = -1;
 
-aclnnStatus AclnnExpandGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* size, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor)
-{
-    typedef aclnnStatus (*aclnnExpandGetWorkspaceSizeFunc)(
-        const aclTensor* self, const aclIntArray* size, aclTensor* out,
-        uint64_t* workspaceSize, aclOpExecutor** executor);
+aclnnStatus AclnnExpandGetWorkspaceSize(const aclTensor* self, const aclIntArray* size, aclTensor* out,
+                                        uint64_t* workspaceSize, aclOpExecutor** executor) {
+    typedef aclnnStatus (*aclnnExpandGetWorkspaceSizeFunc)(const aclTensor* self, const aclIntArray* size,
+                                                           aclTensor* out, uint64_t* workspaceSize,
+                                                           aclOpExecutor** executor);
     static aclnnExpandGetWorkspaceSizeFunc func = nullptr;
     if (func == nullptr) {
         func = (aclnnExpandGetWorkspaceSizeFunc)GET_FUNC_OPAPI(aclnnExpandGetWorkspaceSize);
@@ -32,10 +30,9 @@ aclnnStatus AclnnExpandGetWorkspaceSize(
     return loadErrorCode;
 }
 
-aclnnStatus AclnnExpand(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream)
-{
-    typedef aclnnStatus (*aclnnExpandFunc)(
-        void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+aclnnStatus AclnnExpand(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream) {
+    typedef aclnnStatus (*aclnnExpandFunc)(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+                                           aclrtStream stream);
     static aclnnExpandFunc func = nullptr;
     if (func == nullptr) {
         func = (aclnnExpandFunc)GET_FUNC_OPAPI(aclnnExpand);
@@ -47,11 +44,10 @@ aclnnStatus AclnnExpand(void* workspace, uint64_t workspaceSize, aclOpExecutor* 
 }
 
 aclnnStatus AclnnAddGetWorkspaceSize(const aclTensor* self, const aclTensor* other, const aclScalar* alpha,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor)
-{
-    typedef aclnnStatus (*aclnnAddGetWorkspaceSizeFunc)(
-        const aclTensor* self, const aclTensor* other, const aclScalar* alpha,
-        aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+                                     aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor) {
+    typedef aclnnStatus (*aclnnAddGetWorkspaceSizeFunc)(const aclTensor* self, const aclTensor* other,
+                                                        const aclScalar* alpha, aclTensor* out, uint64_t* workspaceSize,
+                                                        aclOpExecutor** executor);
     static aclnnAddGetWorkspaceSizeFunc func = nullptr;
     if (func == nullptr) {
         func = (aclnnAddGetWorkspaceSizeFunc)GET_FUNC_OPAPI(aclnnAddGetWorkspaceSize);
@@ -62,10 +58,9 @@ aclnnStatus AclnnAddGetWorkspaceSize(const aclTensor* self, const aclTensor* oth
     return loadErrorCode;
 }
 
-aclnnStatus AclnnAdd(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream)
-{
-    typedef aclnnStatus (*aclnnAddFunc)(
-        void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+aclnnStatus AclnnAdd(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream) {
+    typedef aclnnStatus (*aclnnAddFunc)(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+                                        aclrtStream stream);
     static aclnnAddFunc func = nullptr;
     if (func == nullptr) {
         func = (aclnnAddFunc)GET_FUNC_OPAPI(aclnnAdd);
@@ -76,4 +71,4 @@ aclnnStatus AclnnAdd(void* workspace, uint64_t workspaceSize, aclOpExecutor* exe
     return loadErrorCode;
 }
 
-} // namespace npu
+}  // namespace npu

@@ -10,8 +10,7 @@ const BufferAllocation& NpuBufferAssignment::GetAllocation(BufferAllocation::Ind
     return allocations_[index];
 }
 
-BufferAllocation* NpuBufferAssignment::NewEmptyAllocation(
-    int64_t size, LogicalBuffer::Color color) {
+BufferAllocation* NpuBufferAssignment::NewEmptyAllocation(int64_t size, LogicalBuffer::Color color) {
     BufferAllocation::Index index = allocations_.size();
     allocations_.emplace_back(index, size, color);
     BufferAllocation* allocation = &allocations_.back();

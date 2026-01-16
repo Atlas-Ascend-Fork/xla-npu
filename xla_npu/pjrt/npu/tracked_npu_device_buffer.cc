@@ -1,7 +1,6 @@
 #include "xla/xla_npu/pjrt/npu/tracked_npu_device_buffer.h"
 
 #include "xla/pjrt/common_pjrt_client.h"
-
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
@@ -10,69 +9,64 @@ namespace xla {
 // Returns an AsyncValueRef<CpuEvent> that will be ready after all the async
 // values in `events` are ready. If errors occurs, one of the errors will be
 // propagated through the returned async value.
-tsl::AsyncValueRef<NpuEvent> AfterAll(
-    absl::Span<const tsl::AsyncValueRef<NpuEvent>> events) {
-  if (events.empty()) {
-    return tsl::MakeAvailableAsyncValueRef<NpuEvent>();
-  }
-  if (events.size() == 1) {
-    return events.front();
-  }
+tsl::AsyncValueRef<NpuEvent> AfterAll(absl::Span<const tsl::AsyncValueRef<NpuEvent>> events) {
+    if (events.empty()) {
+        return tsl::MakeAvailableAsyncValueRef<NpuEvent>();
+    }
+    if (events.size() == 1) {
+        return events.front();
+    }
 
-  tsl::CountDownAsyncValueRef<NpuEvent> after_all(events.size());
-  for (auto& event : events) {
-    event.AndThen([after_all](absl::Status status) mutable {
-      after_all.CountDown(std::move(status));
-    });
-  }
+    tsl::CountDownAsyncValueRef<NpuEvent> after_all(events.size());
+    for (auto& event : events) {
+        event.AndThen([after_all](absl::Status status) mutable { after_all.CountDown(std::move(status)); });
+    }
 
-  return std::move(after_all).AsRef();
+    return std::move(after_all).AsRef();
 }
 //===----------------------------------------------------------------------===//
 // Default CpuDeviceMemory::RawMemory allocator.
 //===----------------------------------------------------------------------===//
 
 class AlignedMemory final : public NpuDeviceMemory::RawMemory {
-public:
-  AlignedMemory(void* base, size_t size_bytes)
-      : base_(base), size_bytes_(size_bytes) {}
+   public:
+    AlignedMemory(void* base, size_t size_bytes) : base_(base), size_bytes_(size_bytes) {}
 
-  ~AlignedMemory() final {
-    //tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
-    std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
-    npu::AclrtFree(base_);
-  }
+    ~AlignedMemory() final {
+        // tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
+        std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
+        npu::AclrtFree(base_);
+    }
 
-  void* base() const final { return base_; }
-  size_t size_bytes() const final { return size_bytes_; }
+    void* base() const final { return base_; }
+    size_t size_bytes() const final { return size_bytes_; }
 
-private:
-  void* base_;
-  size_t size_bytes_;
+   private:
+    void* base_;
+    size_t size_bytes_;
 };
 
 class AlignedAllocator final : public NpuDeviceMemory::Allocator {
-public:
-  absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(
-      size_t size_bytes, size_t alignment) const final {
-    std::cout << "AlignedAllocator::Allocate size_bytes:" << size_bytes << std::endl;
-    void *base = nullptr;
-    aclError acl_malloc = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_malloc == ACL_SUCCESS) {
-      return std::make_unique<AlignedMemory>(base, size_bytes);
+   public:
+    absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(size_t size_bytes,
+                                                                         size_t alignment) const final {
+        std::cout << "AlignedAllocator::Allocate size_bytes:" << size_bytes << std::endl;
+        void* base = nullptr;
+        aclError acl_malloc = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+        if (acl_malloc == ACL_SUCCESS) {
+            return std::make_unique<AlignedMemory>(base, size_bytes);
+        }
+        return ResourceExhausted("Out of memory allocating %d bytes.", size_bytes);
     }
-    return ResourceExhausted("Out of memory allocating %d bytes.", size_bytes);
-  }
 };
 
 NpuDeviceMemory::Allocator& NpuDeviceMemory::DefaultAllocator() {
-  static absl::NoDestructor<AlignedAllocator> allocator;
-  return *allocator;
+    static absl::NoDestructor<AlignedAllocator> allocator;
+    return *allocator;
 }
 
-std::unique_ptr<NpuDeviceMemory::Allocator>
-NpuDeviceMemory::MakeDefaultAllocator() {
-  return std::make_unique<AlignedAllocator>();
+std::unique_ptr<NpuDeviceMemory::Allocator> NpuDeviceMemory::MakeDefaultAllocator() {
+    return std::make_unique<AlignedAllocator>();
 }
 
 //===----------------------------------------------------------------------===//
@@ -80,51 +74,46 @@ NpuDeviceMemory::MakeDefaultAllocator() {
 //===----------------------------------------------------------------------===//
 
 class NpuDeviceMemoryOwned final : public NpuDeviceMemory {
-public:
-  explicit NpuDeviceMemoryOwned(std::unique_ptr<RawMemory> mem)
-      : mem_(std::move(mem)) {}
+   public:
+    explicit NpuDeviceMemoryOwned(std::unique_ptr<RawMemory> mem) : mem_(std::move(mem)) {}
 
-  void* untyped_data() const final { return mem_->base(); }
-  size_t size_bytes() const final { return mem_->size_bytes(); }
+    void* untyped_data() const final { return mem_->base(); }
+    size_t size_bytes() const final { return mem_->size_bytes(); }
 
-private:
-  std::unique_ptr<RawMemory> mem_;
+   private:
+    std::unique_ptr<RawMemory> mem_;
 };
 
 class NpuDeviceMemoryForeign final : public NpuDeviceMemory {
-public:
-  NpuDeviceMemoryForeign(void* base, size_t size,
-                         absl::AnyInvocable<void() &&> on_delete_callback)
-      : base_(base),
-        size_bytes_(size),
-        on_delete_callback_(std::move(on_delete_callback)) {}
+   public:
+    NpuDeviceMemoryForeign(void* base, size_t size, absl::AnyInvocable<void() &&> on_delete_callback)
+        : base_(base), size_bytes_(size), on_delete_callback_(std::move(on_delete_callback)) {}
 
-  ~NpuDeviceMemoryForeign() final {
-    if (on_delete_callback_) {
-      std::cout << "need call delete function for " << std::showbase << std::hex
-        << (uint64_t)base_ << ", which size is " << size_bytes_ << std::endl;
-      std::move(on_delete_callback_)();
+    ~NpuDeviceMemoryForeign() final {
+        if (on_delete_callback_) {
+            std::cout << "need call delete function for " << std::showbase << std::hex << (uint64_t)base_
+                      << ", which size is " << size_bytes_ << std::endl;
+            std::move(on_delete_callback_)();
+        }
     }
-  }
-
-  void* untyped_data() const final { return base_; }
-  size_t size_bytes() const final { return size_bytes_; }
-
-private:
-  void* base_;
-  size_t size_bytes_;
-  absl::AnyInvocable<void() &&> on_delete_callback_;
-};
-
-class NpuDeviceMemoryConstant final : public NpuDeviceMemory {
-public:
-    NpuDeviceMemoryConstant(void* base, size_t size)
-        : base_(base), size_bytes_(size) {}
 
     void* untyped_data() const final { return base_; }
     size_t size_bytes() const final { return size_bytes_; }
 
-private:
+   private:
+    void* base_;
+    size_t size_bytes_;
+    absl::AnyInvocable<void() &&> on_delete_callback_;
+};
+
+class NpuDeviceMemoryConstant final : public NpuDeviceMemory {
+   public:
+    NpuDeviceMemoryConstant(void* base, size_t size) : base_(base), size_bytes_(size) {}
+
+    void* untyped_data() const final { return base_; }
+    size_t size_bytes() const final { return size_bytes_; }
+
+   private:
     void* base_;
     size_t size_bytes_;
 };
@@ -155,9 +144,8 @@ absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(si
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
 }
 
-absl::Status NpuDeviceMemory::AllocateInto(
-    size_t size_bytes, tsl::AsyncValuePtr<NpuDeviceMemory> delayed_memory,
-    const Allocator& allocator) {
+absl::Status NpuDeviceMemory::AllocateInto(size_t size_bytes, tsl::AsyncValuePtr<NpuDeviceMemory> delayed_memory,
+                                           const Allocator& allocator) {
     auto owned_memory = delayed_memory.DynCast<NpuDeviceMemoryOwned>();
     if (!owned_memory) {
         return Internal("Delayed memory is not a CpuDeviceMemoryOwned");
@@ -172,119 +160,102 @@ absl::Status NpuDeviceMemory::AllocateInto(
 // TrackedNpuDeviceBuffer.
 //===----------------------------------------------------------------------===//
 
-TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(
-    bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
-    absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events)
-    : TrackedNpuDeviceBuffer(owns_buffers, std::move(buffer),
-                             AfterAll(definition_events)) {}
+TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
+                                               absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events)
+    : TrackedNpuDeviceBuffer(owns_buffers, std::move(buffer), AfterAll(definition_events)) {}
 
-TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(
-    bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
-    size_t buffer_size,
-    absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events)
-    : TrackedNpuDeviceBuffer(owns_buffers, std::move(buffer), buffer_size,
-                             AfterAll(definition_events)) {}
+TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
+                                               size_t buffer_size,
+                                               absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events)
+    : TrackedNpuDeviceBuffer(owns_buffers, std::move(buffer), buffer_size, AfterAll(definition_events)) {}
 
-TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(
-    bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
-    tsl::AsyncValueRef<NpuEvent> definition_event)
-    : owns_buffers_(owns_buffers),
-      buffer_(std::move(buffer)),
-      definition_event_(std::move(definition_event)) {
-  DCHECK(definition_event_);
-  CHECK(buffer_.IsConcrete());
-  buffer_size_ = buffer_->size_bytes();
+TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
+                                               tsl::AsyncValueRef<NpuEvent> definition_event)
+    : owns_buffers_(owns_buffers), buffer_(std::move(buffer)), definition_event_(std::move(definition_event)) {
+    DCHECK(definition_event_);
+    CHECK(buffer_.IsConcrete());
+    buffer_size_ = buffer_->size_bytes();
 }
 
-TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(
-    bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
-    size_t buffer_size, tsl::AsyncValueRef<NpuEvent> definition_event)
+TrackedNpuDeviceBuffer::TrackedNpuDeviceBuffer(bool owns_buffers, tsl::AsyncValueRef<NpuDeviceMemory> buffer,
+                                               size_t buffer_size, tsl::AsyncValueRef<NpuEvent> definition_event)
     : owns_buffers_(owns_buffers),
       buffer_(std::move(buffer)),
       buffer_size_(buffer_size),
       definition_event_(std::move(definition_event)) {
-  DCHECK(definition_event_);
+    DCHECK(definition_event_);
 }
 
 TrackedNpuDeviceBuffer::~TrackedNpuDeviceBuffer() { ReleaseDeviceMemory(); }
 
 size_t TrackedNpuDeviceBuffer::BufferSize() { return buffer_size_; }
 
-void TrackedNpuDeviceBuffer::AddUsageEvents(
-    absl::Span<tsl::AsyncValueRef<NpuEvent>> events) {
-  // Periodically remove available usage events to prevent memory blowup.
-  if (usage_events_.size() >= 1024) {
-    int i = 0;
-    while (i < usage_events_.size()) {
-      auto& event = usage_events_[i];
-      if (event.IsAvailable()) {
-        using std::swap;
-        swap(event, usage_events_.back());
-        usage_events_.pop_back();
-        continue;
-      }
-      ++i;
+void TrackedNpuDeviceBuffer::AddUsageEvents(absl::Span<tsl::AsyncValueRef<NpuEvent>> events) {
+    // Periodically remove available usage events to prevent memory blowup.
+    if (usage_events_.size() >= 1024) {
+        int i = 0;
+        while (i < usage_events_.size()) {
+            auto& event = usage_events_[i];
+            if (event.IsAvailable()) {
+                using std::swap;
+                swap(event, usage_events_.back());
+                usage_events_.pop_back();
+                continue;
+            }
+            ++i;
+        }
     }
-  }
-  for (auto& ev : events) {
-    usage_events_.push_back(std::move(ev));
-  }
+    for (auto& ev : events) {
+        usage_events_.push_back(std::move(ev));
+    }
 }
 
-absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4>
-TrackedNpuDeviceBuffer::LockUseAndTransferUsageEvents() {
-  return std::move(usage_events_);
+absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> TrackedNpuDeviceBuffer::LockUseAndTransferUsageEvents() {
+    return std::move(usage_events_);
 }
 
 void TrackedNpuDeviceBuffer::ReleaseDeviceMemory() {
-  buffer_ = tsl::AsyncValueRef<NpuDeviceMemory>();
-  definition_event_.reset();
-  usage_events_.clear();
+    buffer_ = tsl::AsyncValueRef<NpuDeviceMemory>();
+    definition_event_.reset();
+    usage_events_.clear();
 }
 
-std::vector<tsl::RCReference<tsl::AsyncValue>>
-TrackedNpuDeviceBuffer::GetAsyncValueDefinitionEvents() {
-  std::vector<tsl::RCReference<tsl::AsyncValue>> result;
-  result.push_back(definition_event_.CopyRCRef());
-  return result;
+std::vector<tsl::RCReference<tsl::AsyncValue>> TrackedNpuDeviceBuffer::GetAsyncValueDefinitionEvents() {
+    std::vector<tsl::RCReference<tsl::AsyncValue>> result;
+    result.push_back(definition_event_.CopyRCRef());
+    return result;
 }
 
-tsl::RCReference<CommonPjRtRawBuffer> TrackedNpuDeviceBuffer::GetRawBuffer(
-    PjRtMemorySpace* memory_space) {
-  if (!buffer_) {
-    return tsl::RCReference<CommonPjRtRawBuffer>();
-  }
-  return tsl::MakeRef<NpuRawBuffer>(memory_space, buffer_);
+tsl::RCReference<CommonPjRtRawBuffer> TrackedNpuDeviceBuffer::GetRawBuffer(PjRtMemorySpace* memory_space) {
+    if (!buffer_) {
+        return tsl::RCReference<CommonPjRtRawBuffer>();
+    }
+    return tsl::MakeRef<NpuRawBuffer>(memory_space, buffer_);
 }
 
-void TrackedNpuDeviceBuffer::AddUsageEvent(
-    tsl::RCReference<PjRtDeviceEvent> event) {
-  if (event) {
-    auto cpu_event =
-        tensorflow::down_cast<NpuTrackedDeviceEvent*>(event.get())->event();
-    AddUsageEvents({&cpu_event, 1});
-  }
+void TrackedNpuDeviceBuffer::AddUsageEvent(tsl::RCReference<PjRtDeviceEvent> event) {
+    if (event) {
+        auto cpu_event = tensorflow::down_cast<NpuTrackedDeviceEvent*>(event.get())->event();
+        AddUsageEvents({&cpu_event, 1});
+    }
 }
 
 void TrackedNpuDeviceBuffer::Delete(PjRtMemorySpace* memory_space) {
-  std::unique_ptr<TrackedNpuDeviceBuffer> device_buffer(this);
-  // Now that all holds have completed and no more can be added, we can get
-  // the final set of usage events.
-  absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> usage_events =
-      device_buffer->LockUseAndTransferUsageEvents();
+    std::unique_ptr<TrackedNpuDeviceBuffer> device_buffer(this);
+    // Now that all holds have completed and no more can be added, we can get
+    // the final set of usage events.
+    absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> usage_events = device_buffer->LockUseAndTransferUsageEvents();
 
-  std::vector<tsl::AsyncValue*> event_avs;
-  event_avs.reserve(usage_events.size() + 1);
-  for (auto& event : usage_events) {
-    event_avs.push_back(event.GetAsyncValue());
-  }
+    std::vector<tsl::AsyncValue*> event_avs;
+    event_avs.reserve(usage_events.size() + 1);
+    for (auto& event : usage_events) {
+        event_avs.push_back(event.GetAsyncValue());
+    }
 
-  // We should also wait for the definition event.
-  event_avs.push_back(device_buffer->definition_event().GetAsyncValue());
+    // We should also wait for the definition event.
+    event_avs.push_back(device_buffer->definition_event().GetAsyncValue());
 
-  RunWhenReady(event_avs, [device_buffer = std::move(device_buffer)]() mutable {
-    device_buffer.reset();
-  });
+    RunWhenReady(event_avs, [device_buffer = std::move(device_buffer)]() mutable { device_buffer.reset(); });
 }
 
 Future<> TrackedNpuDeviceBuffer::GetReadyFuture(PjRtMemorySpace* memory_space) {
@@ -308,32 +279,30 @@ Future<> TrackedNpuDeviceBuffer::GetReadyFuture(PjRtMemorySpace* memory_space) {
     return future;
 }
 
-absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
-TrackedNpuDeviceBuffer::GetDefinitionEvent(PjRtMemorySpace* memory_space) {
-  if (!definition_event_) {
-    return absl::InternalError(
-        "GetDefinitionEvent only supported on CPU for buffers with "
-        "exactly 1 definition event.");
-  }
-  return tsl::MakeRef<NpuTrackedDeviceEvent>(definition_event_);
-}
-
-absl::Status TrackedNpuDeviceBuffer::BlockForOperationsToComplete(
+absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> TrackedNpuDeviceBuffer::GetDefinitionEvent(
     PjRtMemorySpace* memory_space) {
-  // Block the host until all usage events have completed. We do not return
-  // the error of a usage event because it does not matter if these usages
-  // failed.
-  for (const auto& av : usage_events_) {
-    BlockUntilReady(av.GetAsyncValue());
-  }
-
-  // Fetch the error from the definition event (if an error is present).
-  BlockUntilReady(definition_event_.GetAsyncValue());
-  if (auto* error = definition_event_.GetErrorIfPresent()) {
-    return absl::InternalError(
-        absl::StrFormat("Error Execute: %s", error->message()));
-  }
-  return absl::OkStatus();
+    if (!definition_event_) {
+        return absl::InternalError(
+            "GetDefinitionEvent only supported on CPU for buffers with "
+            "exactly 1 definition event.");
+    }
+    return tsl::MakeRef<NpuTrackedDeviceEvent>(definition_event_);
 }
 
+absl::Status TrackedNpuDeviceBuffer::BlockForOperationsToComplete(PjRtMemorySpace* memory_space) {
+    // Block the host until all usage events have completed. We do not return
+    // the error of a usage event because it does not matter if these usages
+    // failed.
+    for (const auto& av : usage_events_) {
+        BlockUntilReady(av.GetAsyncValue());
+    }
+
+    // Fetch the error from the definition event (if an error is present).
+    BlockUntilReady(definition_event_.GetAsyncValue());
+    if (auto* error = definition_event_.GetErrorIfPresent()) {
+        return absl::InternalError(absl::StrFormat("Error Execute: %s", error->message()));
+    }
+    return absl::OkStatus();
 }
+
+}  // namespace xla

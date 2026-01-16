@@ -31,7 +31,6 @@
 #include "xla/tsl/concurrency/ref_count.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-
 #include "xla/xla_npu/pjrt/npu/npu_event.h"
 #include "xla/xla_npu/pjrt/npu/tracked_npu_device_buffer.h"
 
@@ -43,9 +42,8 @@ namespace xla {
 // AsyncValueRef<NpuEvent> to be ready. This class could make such code more
 // robust by using setting the AsyncValue in the destructor.
 class MarkEventReadyOnExit {
-public:
-    explicit MarkEventReadyOnExit(tsl::AsyncValueRef<NpuEvent> event)
-        : event_(std::move(event)) {}
+   public:
+    explicit MarkEventReadyOnExit(tsl::AsyncValueRef<NpuEvent> event) : event_(std::move(event)) {}
 
     MarkEventReadyOnExit(const MarkEventReadyOnExit&) = delete;
     MarkEventReadyOnExit& operator=(const MarkEventReadyOnExit&) = delete;
@@ -53,28 +51,27 @@ public:
     MarkEventReadyOnExit& operator=(MarkEventReadyOnExit&&) noexcept = default;
 
     ~MarkEventReadyOnExit() {
-      if (event_) event_.SetStateConcrete();
+        if (event_) event_.SetStateConcrete();
     }
 
     tsl::AsyncValueRef<NpuEvent> Release() && { return std::move(event_); }
 
-private:
+   private:
     tsl::AsyncValueRef<NpuEvent> event_;
 };
 
 class AbstractNpuBuffer {
-public:
+   public:
     // A helper function to determine if a BufferFromHostBuffer call is eligible
     // for zero copy construction.
-    static bool BufferFromHostBufferSupportsZeroCopy(
-        const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
-        std::optional<absl::Span<int64_t const>> byte_strides,
-        const Shape& shape);
+    static bool BufferFromHostBufferSupportsZeroCopy(const void* data, PrimitiveType type,
+                                                     absl::Span<int64_t const> dims,
+                                                     std::optional<absl::Span<int64_t const>> byte_strides,
+                                                     const Shape& shape);
 };
 
 // Helper for copying into potentially sub-byte packed literals.
-void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
-    void* data, int64_t size);
+void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal, void* data, int64_t size);
 
 }  // namespace xla
 
