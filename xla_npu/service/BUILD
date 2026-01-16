@@ -94,9 +94,10 @@ cc_library(
     copts = tsl_copts(),
     local_defines = if_graph_api(["XLA_ONEDNN_USE_GRAPH_API=1"]) + if_ynnpack(["XLA_YNNPACK"]),
     deps = [
-        "//xla/xla_npu/backend:npu_thunk",
-        "//xla/xla_npu/backend:npu_kernel_thunk",
         "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/backend:npu_kernel_thunk",
+        "//xla/xla_npu/backend:npu_thunk",
+        "//xla/xla_npu/backend:npu_thunk_executor",
 
         "//xla/service/cpu:backend_config_proto_cc",
         "//xla/service/cpu:cpu_options",

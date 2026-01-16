@@ -8,6 +8,7 @@
 #include "tsl/profiler/lib/traceme.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/threadpool.h"
+#include "xla/pjrt/host_memory_spaces.h"
 #include "xla/pjrt/thread_pool_async_work_runner.h"
 #include "xla/pjrt/mlir_to_hlo.h"
 #include "xla/pjrt/utils.h"
@@ -23,14 +24,9 @@
 #include "xla/xla_npu/pjrt/npu/npu_device.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/pjrt/npu/abstract_npu_buffer.h"
+#include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_compiler.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/mair/stablehlo2mair_converter.h"
 
 namespace xla {
 
@@ -47,14 +43,12 @@ struct BufferAlloc {
 
     void Allocate(const NpuDeviceMemory::Allocator& allocator) {
         for (int i = 0; i < buffers.size(); ++i) {
-        auto status = NpuDeviceMemory::AllocateInto(
-            allocation_sizes[i], buffers[i].AsPtr(), allocator);
-        if (!status.ok()) {
-            buffers[i].SetError(status);
-            return;
-        }
-        ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(buffers[i]->untyped_data(),
-                                            allocation_sizes[i]);
+            auto status = NpuDeviceMemory::AllocateInto(allocation_sizes[i], buffers[i].AsPtr(), allocator);
+            if (!status.ok()) {
+                buffers[i].SetError(status);
+                return;
+            }
+            ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(buffers[i]->untyped_data(), allocation_sizes[i]);
         }
     }
 };
@@ -79,27 +73,14 @@ struct BufferAllocAndCopy {
     }
 };
 
-// Returns the NPU devices from the given PjRtNpuDevices.
-// Precondition: `devices` doesn't contain nullptr.
-static std::vector<NpuTopologyDescription::Device> GetDevices(absl::Span<const std::unique_ptr<PjRtNpuDevice>> devices)
-{
-    std::vector<NpuTopologyDescription::Device> npu_devices;
-    npu_devices.reserve(devices.size());
-    for (const auto& device : devices) {
-        npu_devices.push_back(
-            NpuTopologyDescription::Device{device->process_index(), device->local_hardware_id().value()});
-    }
-    return npu_devices;
-}
-
 static tsl::ThreadOptions GetThreadOptions() {
-  tsl::ThreadOptions thread_options;
-  // On Mac OS the default stack size is 512KiB, which is too small for some
-  // BLAS and LAPACK functions (https://github.com/google/jax/issues/20428).
-  // On Linux we also observed that 2MB wasn't enough to run some OpenBLAS
-  // functions.
-  thread_options.stack_size = 8 * 1024 * 1024;
-  return thread_options;
+    tsl::ThreadOptions thread_options;
+    // On Mac OS the default stack size is 512KiB, which is too small for some
+    // BLAS and LAPACK functions (https://github.com/google/jax/issues/20428).
+    // On Linux we also observed that 2MB wasn't enough to run some OpenBLAS
+    // functions.
+    thread_options.stack_size = 8 * 1024 * 1024;
+    return thread_options;
 }
 
 // The following few helpers are adapted from XLA:NPU to create a buffer table
@@ -110,8 +91,7 @@ static absl::StatusOr<BufferInfo> MemoryForAllocation(
     absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> arguments,
     BufferAlloc& buffer_alloc,
     BufferAllocAndCopy& buffer_alloc_and_copy,
-    const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table)
-{
+    const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table) {
     BufferInfo buffer_info;
     if (allocation.is_entry_computation_parameter()) {
         bool can_donate = false;
@@ -199,8 +179,7 @@ static absl::StatusOr<std::vector<BufferInfo>> CreateBufferTable(
     absl::Span<std::pair<bool, TrackedNpuDeviceBuffer*> const> arguments,
     BufferAlloc& buffer_alloc,
     BufferAllocAndCopy& buffer_alloc_and_copy,
-    const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table)
-{
+    const tsl::AsyncValueRef<NpuDeviceMemory>& tuple_index_table) {
     std::vector<BufferInfo> buffer_table(assignment.Allocations().size());
     for (BufferAllocation::Index i = 0; i < buffer_table.size(); ++i) {
         const BufferAllocation& allocation = assignment.GetAllocation(i);
@@ -213,8 +192,7 @@ static absl::StatusOr<std::vector<BufferInfo>> CreateBufferTable(
 
 static absl::InlinedVector<BufferInfo, 4> CreateResultBufferInfo(
     absl::Span<const BufferAllocation::Index> buffer_indices,
-    absl::Span<const BufferInfo> buffer_table)
-{
+    absl::Span<const BufferInfo> buffer_table) {
     absl::InlinedVector<BufferInfo, 4> output_buffer_info;
     output_buffer_info.reserve(buffer_indices.size());
     for (int i = 0; i < buffer_indices.size(); ++i) {
@@ -226,8 +204,7 @@ static absl::InlinedVector<BufferInfo, 4> CreateResultBufferInfo(
 // Find the root instruction of the entry computation.
 static const InstructionValueSet& GetRootValueSet(
     const BufferAssignment& assignment, const HloModule& module) {
-    return assignment.dataflow_analysis().GetInstructionValueSet(
-        module.entry_computation()->root_instruction());
+    return assignment.dataflow_analysis().GetInstructionValueSet(module.entry_computation()->root_instruction());
 }
 
 // Buffer table is indexed by buffer allocation indices. The output buffer is
@@ -332,22 +309,101 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
     return compiler.RunBackend(std::move(hlo_module), /*stream_exec=*/nullptr, compile_options);
 }
 
-PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
+// Returns the NPU devices from the given PjRtCpuDevices.
+// Precondition: `devices` doesn't contain nullptr.
+static std::vector<NpuTopology::NpuDevice> GetNpuDevices(
+    absl::Span<const std::unique_ptr<PjRtNpuDevice>> devices) {
+    std::vector<NpuTopology::NpuDevice> npu_devices;
+    npu_devices.reserve(devices.size());
+    for (const auto& device : devices) {
+        npu_devices.push_back(NpuTopology::NpuDevice{device->process_index(), device->local_hardware_id().value()});
+    }
+    return npu_devices;
+}
+
+absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options) {
+    NpuTool::PrintDebugLog("Start create npu client");
+
+    aclError aclStatus = npu::AclInit(nullptr);
+    if (aclStatus != ACL_SUCCESS) {
+        return absl::UnavailableError("ACL init failed.");
+    }
+    uint32_t real_device_count = -1;
+    aclStatus = npu::AclrtGetDeviceCount(&real_device_count);
+    if (aclStatus != ACL_SUCCESS) {
+        return absl::UnavailableError("ACL get device count failed.");
+    }
+    if (real_device_count <= 0) {
+        return absl::UnavailableError("Threre is no valid device.");
+    }
+    NpuTool::PrintDebugLog("Get npu device count %d", real_device_count);
+
+    // Need at least NpuDeviceCount threads to launch one collective.
+    int npu_device_count = options.npu_device_count;
+    size_t num_threads = std::max(DefaultThreadPoolSize(), npu_device_count);
+
+    std::vector<std::unique_ptr<PjRtNpuDevice>> devices;
+    for (int i = 0; i < std::min(npu_device_count, (int)real_device_count); ++i) {
+        aclStatus = npu::AclrtSetDevice(i);
+        if (aclStatus != ACL_SUCCESS) {
+            return absl::UnavailableError("ACL set device failed.");
+        }
+        auto device = std::make_unique<PjRtNpuDevice>(
+            options.process_id,
+            /*local_device_id=*/i);
+            // options.max_inflight_computations_per_device);
+        devices.push_back(std::move(device));
+    }
+
+    // std::unique_ptr<NpuDeviceMemory::Allocator> allocator =
+    //     options.allocator ? std::make_unique<CustomAllocator>(options.allocator)
+    //                         : NpuDeviceMemory::MakeDefaultAllocator();
+
+    std::unique_ptr<NpuDeviceMemory::Allocator> allocator = NpuDeviceMemory::MakeDefaultAllocator();
+
+    return std::unique_ptr<PjRtClient>(new PjRtNpuClient(
+        options.process_id,
+        std::move(devices),
+        std::move(allocator),
+        // std::move(options.collectives),
+        num_threads,
+        options.asynchronous,
+        std::move(options.customize_hlo_module_config)));
+}
+
+PjRtNpuClient::PjRtNpuClient(
+    int process_index,
+    std::vector<std::unique_ptr<PjRtNpuDevice>> devices,
+    std::shared_ptr<NpuDeviceMemory::Allocator> allocator,
+    // std::shared_ptr<cpu::CpuCollectives> collectives,
+    size_t num_threads,
+    bool asynchronous,
+    std::function<void(HloModuleConfig&)> customize_hlo_module_config)
     : process_index_(process_index),
       owned_devices_(std::move(devices)),
+      computation_placer_(std::make_unique<ComputationPlacer>()),
+      allocator_(std::move(allocator)),
+    //   last_collective_launch_event_(tsl::MakeAvailableAsyncValueRef<NpuEvent>()),
       transpose_cache_(1024),
-      topology_(platform_id(), platform_name(), platform_version(), GetDevices(devices)),
-      pjrt_client_thread_pool_(new tsl::thread::ThreadPool(
-        tsl::Env::Default(), GetThreadOptions(), "XLAPjRtNpuClient", 1)), //TODO 线程池大小
-      async_work_runner_(MakeThreadPoolAsyncWorkRunner(pjrt_client_thread_pool_.get()))
-{
+    //   collectives_(std::move(collectives)),
+      topology_(platform_id(), platform_name(), platform_version(),
+                GetNpuDevices(owned_devices_), std::vector<std::string>{}),
+      asynchronous_(asynchronous),
+      customize_hlo_module_config_(std::move(customize_hlo_module_config)),
+    //   eigen_intraop_pool_(new tsl::thread::ThreadPool(
+    //       tsl::Env::Default(), GetThreadOptions(), "XLAEigen",
+    //       std::min(num_threads, kMaxIntraOpThreads))),
+    //   eigen_intraop_device_(
+    //       new Eigen::ThreadPoolDevice(eigen_intraop_pool_->AsEigenThreadPool(), eigen_intraop_pool_->NumThreads())),
+      pjrt_client_thread_pool_(
+          new tsl::thread::ThreadPool(tsl::Env::Default(), GetThreadOptions(), "XLAPjRtNpuClient", num_threads)),
+      async_work_runner_(MakeThreadPoolAsyncWorkRunner(pjrt_client_thread_pool_.get())) {
     for (const std::unique_ptr<PjRtNpuDevice>& device : owned_devices_) {
         devices_.push_back(device.get());
         CHECK(id_to_device_.insert({device->global_device_id(), device.get()}).second)
             << "Duplicate device id: " << device->global_device_id();
 
         device->SetClient(this);
-        //TODO addressable_devices_与devices_的区别是什么
         if (device->IsAddressable()) {
             int idx = device->local_hardware_id().value();
             if (idx >= addressable_devices_.size()) {
@@ -357,7 +413,6 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
             addressable_devices_[idx] = device.get();
         }
     }
-
     for (int idx = 0; idx < addressable_devices_.size(); ++idx) {
         auto* const device = addressable_devices_[idx];
         CHECK(device != nullptr) << idx;
@@ -367,26 +422,24 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
         const int id = device->id();
 
         // The first attached memory space is returned as the default by
-        // PjRtCpuDevice, so attach the device memory space first.
-        auto npu_device_memory_space = std::make_unique<NpuDeviceMemorySpace>(id * 3, device);
+        // PjRtNpuDevice, so attach the device memory space first.
+        auto npu_device_memory_space = std::make_unique<NpuDeviceMemorySpace>(id * 3 + 0, device);
         npu_device->AttachMemorySpace(npu_device_memory_space.get());
         memory_spaces_.push_back(npu_device_memory_space.get());
         owned_memory_spaces_.push_back(std::move(npu_device_memory_space));
-        /****************************** TODO 内存管理
-                                auto pinned_memory_space =
-                                    std::make_unique<PinnedHostMemorySpace>(id * 3 + 1, device);
-                                cpu_device->AttachMemorySpace(pinned_memory_space.get());
-                                memory_spaces_.push_back(pinned_memory_space.get());
-                                owned_memory_spaces_.push_back(std::move(pinned_memory_space));
 
-                                auto unpinned_memory_space =
-                                    std::make_unique<UnpinnedHostMemorySpace>(id * 3 + 2, device);
-                                cpu_device->AttachMemorySpace(unpinned_memory_space.get());
-                                memory_spaces_.push_back(unpinned_memory_space.get());
-                                owned_memory_spaces_.push_back(std::move(unpinned_memory_space));
-                            }*/
+        auto pinned_memory_space = std::make_unique<PinnedHostMemorySpace>(id * 3 + 1, device);
+        npu_device->AttachMemorySpace(pinned_memory_space.get());
+        memory_spaces_.push_back(pinned_memory_space.get());
+        owned_memory_spaces_.push_back(std::move(pinned_memory_space));
+
+        auto unpinned_memory_space = std::make_unique<UnpinnedHostMemorySpace>(id * 3 + 2, device);
+        npu_device->AttachMemorySpace(unpinned_memory_space.get());
+        memory_spaces_.push_back(unpinned_memory_space.get());
+        owned_memory_spaces_.push_back(std::move(unpinned_memory_space));
     }
-    // VLOG(1) << "PjRtCpuClient created.";
+    
+    NpuTool::PrintDebugLog("PjRtNpuClient created.");
 }
 
 absl::StatusOr<PjRtDevice*> PjRtNpuClient::LookupDevice(PjRtGlobalDeviceId global_device_id) const
@@ -1206,124 +1259,6 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     }
 
     return Result({/*future=*/std::nullopt, std::move(res)});
-
-    // ge::Session* ge_session = client_->GetGlobalGeSession();
-    // const GraphData graph_data;
-
-    // // transfer to ge tensor
-    // std::vector<ge::Tensor> inputs;
-    // for (int i = 0; i < tracked_buffers.size(); ++i) {
-    //     ge::TensorDesc desc;
-    //     const ge::Shape& input_data_shape = graph_data.inputs_shapes[i];
-    //     desc.SetOriginShape(input_data_shape);
-    //     desc.SetOriginFormat(ge::FORMAT_ND);
-    //     // desc.SetShape(graph_data.inputs_shape[i]);
-    //     desc.SetPlacement(ge::Placement::kPlacementDevice);
-    //     desc.SetFormat(ge::FORMAT_ND);
-    //     desc.SetDataType(graph_data.input_dtypes[i]);
-    //     ge::Tensor input;
-    //     const static ge::Tensor::DeleteFunc kDoNothing = [](uint8_t* data) {};
-    //     input.ResetData(
-    //         (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(),
-    //         tracked_buffers[i].second->buffer().get().size_bytes(),
-    //         kDoNothing);
-
-    //     const auto& dimSize = input_data_shape.GetDims().size();
-    //     input.SetShapeDimNum(dimSize);
-    //     for (int j = 0; j < dimSize; ++j) {
-    //         input.SetShapeDim(j, input_data_shape.GetDim(j));
-    //     }
-
-    //     // ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
-    //     std::cout << "input tensor " << i << " data addr=" << tracked_buffers[i].second->buffer().get().untyped_data()
-    //         << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
-    //     inputs.emplace_back(input);
-    // }
-
-    // /* 运行GE图,使用上面准备好的输出内存,参考cpu的用法使用result_buffers_info */
-    // std::vector<ge::Tensor> outputs;
-    // ge::Status ge_status = ge_session->RunGraph(graph_data.id, inputs, outputs);
-    // if (ge_status != ge::SUCCESS) {
-    //     return absl::InternalError(
-    //         absl::StrCat("run graph id ", graph_data.id, " failed, ge status is ", ge_status));
-    // }
-
-    // /* debug */
-    // auto output_data_ptr = outputs[0].GetData();
-    // auto output_data_size = outputs[0].GetSize();
-    // auto output_data_desc = outputs[0].GetTensorDesc();
-    // auto output_data_shape = output_data_desc.GetShape();
-    // auto output_data_type = output_data_desc.GetDataType();
-
-    // // TODO: Use ge graph compile date to init buffer_assignment when compile and load
-    // auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
-    // int64_t size = output_data_shape.GetShapeSize() * GetSizeByDataType(output_data_type);
-    // auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
-    // allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
-
-    // /* prepare output buffer */ 
-    // // `buffer_alloc` and `buffer_alloc_and_copy` are used to do real memory allocation and copy work.
-    // absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> output_tracked_buffers;
-    // output_tracked_buffers.reserve(outputs.size());
-    // void* output_memory_ptr = NULL;
-    // auto acl_ret = npu::AclrtMallocHost(&output_memory_ptr, output_data_size);
-    // if (acl_ret != ACL_SUCCESS) {
-    //     return absl::InternalError(absl::StrCat("malloc host memory failed, error code: ", acl_ret));
-    // }
-    // acl_ret = npu::AclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr, output_data_size, ACL_MEMCPY_HOST_TO_HOST);
-    // if (acl_ret != ACL_SUCCESS) {
-    //     return absl::InternalError(absl::StrCat("memcpy from host to host failed, error code: ", acl_ret));
-    // }
-    // auto deleter = [output_memory_ptr]() {
-    //     npu::AclrtFreeHost(output_memory_ptr);
-    // };
-    // tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory = NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, output_data_size, deleter);
-    // auto output_tracked_buffer = TrackedNpuDeviceBuffer(
-    //     /*owns_buffers=*/true, std::move(output_device_memory), output_data_size,
-    //     absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4>{tsl::AsyncValueRef<NpuEvent>()});
-    // output_tracked_buffers.emplace_back(/*can_donate=*/false, &output_tracked_buffer);
-        
-    // BufferAlloc buffer_alloc; // not used
-    // // BufferAllocAndCopy buffer_alloc_and_copy;
-   
-    // TF_ASSIGN_OR_RETURN(std::vector<BufferInfo> buffer_table,
-    //     CreateBufferTable(*buffer_assignment, /* npu_executable->constants(), */ output_tracked_buffers, buffer_alloc));
-    //         // buffer_alloc_and_copy,
-    //         // tuple_index_table));
-    // auto result_buffers_info = CreateResultBufferInfo(result_buffer_indices_, buffer_table);
-
-    // // Create output buffers.
-    // // const Shape& result_shape = npu_executable_->result_shape();
-    // // const Shape& result_shape = NpuTool::ConvertGeShape2XlaShape(output_data_shape, output_data_type);
-    // std::vector<std::unique_ptr<PjRtBuffer>> res;
-    // // auto* memory_space = *device->default_memory_space();
-    // // CHECK_EQ(result_buffers_info.size(), 1);
-    // // // Program execution writes to output buffers so it's a definition event.
-    // // auto tracked_device_buffer = std::make_unique<TrackedNpuDeviceBuffer>(
-    // //     result_buffers_info[0].owns_buffer,
-    // //     std::move(result_buffers_info[0].buffer),
-    // //     result_buffers_info[0].buffer_size,
-    // //     /*definition_event=*/execute_event);
-    // // auto output_buffer = std::make_unique<CommonPjRtBufferImpl>(
-    // //     result_shape, std::move(tracked_device_buffer),
-    // //     *device->default_memory_space());
-    // // res.push_back(std::move(output_buffer));
-
-    // if (fill_future) {
-    //     auto [promise, future] = Future<>::MakePromise();
-    //     promise.Set(absl::OkStatus());
-    //     // execute_event.AndThen([promise = std::move(promise),
-    //     //                     event = execute_event.CopyRef()]() mutable {
-    //     // if (auto* error = event.GetErrorIfPresent()) {
-    //     //     promise.Set(Internal("Compute error: %s", error->message()));
-    //     // } else {
-    //     //     promise.Set(absl::OkStatus());
-    //     // }
-    //     // });
-    //     return Result({std::move(future), /*buffers=*/std::move(res)});
-    // }
-
-    // return Result({/*future=*/std::nullopt, std::move(res)});
 }
 
 void PjRtNpuExecutable::Delete() {}

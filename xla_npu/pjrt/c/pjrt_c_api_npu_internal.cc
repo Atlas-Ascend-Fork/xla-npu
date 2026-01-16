@@ -15,55 +15,33 @@
 #include "xla/pjrt/c/pjrt_c_api_phase_compile_internal.h"
 
 #include "xla/xla_npu/pjrt/npu/npu_client.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 
 namespace pjrt {
+
 namespace npu_plugin {
-PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args)
-{
-    std::cout << "NPU PJRT_CLIENT_CREATE" << std::endl;
-    int device_id = 0;
-    int process_index = 0;
-    std::vector<std::unique_ptr<xla::PjRtNpuDevice>> devices;
-    
-    aclError acl_init = npu::AclInit(nullptr);
-    if (acl_init != ACL_SUCCESS) {
-        return new PJRT_Error{absl::UnavailableError("ACL init failed.")};
-    }
-    uint32_t device_count = -1;
-    aclError acl_device_count = npu::AclrtGetDeviceCount(&device_count);
-    if (acl_device_count != ACL_SUCCESS) {
-        return new PJRT_Error{absl::UnavailableError("ACL get device count failed.")};
-    }
-    if (device_count <= 0) {
-        return new PJRT_Error{absl::UnavailableError("Threre is no valid device.")};
-    }
-    aclError acl_set_device = npu::AclrtSetDevice(device_id);
-    if (acl_set_device != ACL_SUCCESS) {
-        return new PJRT_Error{absl::UnavailableError("ACL set device failed.")};
-    }
-    
-    devices.push_back(std::make_unique<xla::PjRtNpuDevice>(process_index, device_id));
-    auto client = xla::GetPjRtNpuClient(process_index, std::move(devices));
-    args->client = CreateWrapperClient(std::move(client.value()));
+
+PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args) {
+    // 暂不使用外部传入参数
+    xla::NpuClientOptions options;
+    PJRT_ASSIGN_OR_RETURN(std::unique_ptr<xla::PjRtClient> client, xla::GetPjRtNpuClient(std::move(options)));
+    args->client = CreateWrapperClient(std::move(client));
     return nullptr;
 }
 
-PJRT_Error* PJRT_ExecuteContext_Create(PJRT_ExecuteContext_Create_Args* args)
-{
+PJRT_Error* PJRT_ExecuteContext_Create(PJRT_ExecuteContext_Create_Args* args) {
     PJRT_RETURN_IF_ERROR(ActualStructSizeIsGreaterOrEqual(
         "PJRT_ExecuteContext_Create_Args", PJRT_ExecuteContext_Create_Args_STRUCT_SIZE, args->struct_size));
     auto execute_context = std::make_unique<xla::ExecuteContext>();
     args->context = pjrt::CreateWrapperExecuteContext(std::move(execute_context));
     return nullptr;
 }
-PJRT_Error* PJRT_NpuDeviceTopology_Create(PJRT_TopologyDescription_Create_Args* args)
-{
+
+PJRT_Error* PJRT_NpuDeviceTopology_Create(PJRT_TopologyDescription_Create_Args* args) {
     return new PJRT_Error{absl::UnimplementedError("Topology not supported for CPU compilation.")};
 }
 
-const PJRT_Api* GetNpuPjrtApi()
-{
+const PJRT_Api* GetNpuPjrtApi() {
     static PJRT_Layouts_Extension layouts_extension = pjrt::CreateLayoutsExtension(nullptr);
 
     static PJRT_MemoryDescriptions_Extension memory_descriptions_extension =
@@ -82,5 +60,7 @@ const PJRT_Api* GetNpuPjrtApi()
 
     return &pjrt_api;
 }
+
 }  // namespace npu_plugin
+
 }  // namespace pjrt

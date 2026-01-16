@@ -27,6 +27,7 @@ cc_library(
     ],
     deps = [
         ":npu_event",
+        "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/service:npu_executable",
         "//xla/xla_npu/third_party/register:acl_interface",
         
@@ -111,14 +112,12 @@ cc_library(
         "//xla/xla_npu/backend:npu_buffer_allocations",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/pjrt:npu_host_memory_spaces",
+        "//xla/xla_npu/pjrt/plugin:npu_client_options",
         "//xla/xla_npu/pjrt/plugin:npu_topology_description",
         "//xla/xla_npu/service:npu_buffer_assignment",
         "//xla/xla_npu/service:npu_executable",
         "//xla/xla_npu/service:npu_compiler",
-        "//xla/xla_npu/mair/test:test_mair_gen_lib",
-        "//xla/xla_npu/mair:stablehlo2mair",
         "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/stub:ge_hdrs",
 
         "//xla:array",
         "//xla:debug_options_flags",

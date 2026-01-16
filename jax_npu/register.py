@@ -61,7 +61,7 @@ try:
     print(f"input array: {x}")
 
     # func = jax.jit(lambda x: jax.nn.gelu(x))
-    func = jax.jit(lambda x: 2*x + 1)
+    func = jax.jit(lambda x: x + 2)
     y = func(x)
     result = y.block_until_ready()
     print(f"output array: {result}")
