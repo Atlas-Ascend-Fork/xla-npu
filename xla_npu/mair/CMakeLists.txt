@@ -52,6 +52,7 @@ add_compiler_executeable(demo
         stablehlo2ge.cpp
         ir/mair_ops.cc
         transforms/mair_passes.cc
+        stablehlo2mair_converter.cpp
 
         DEPENDS
         MLIRmair_opsIncGen
