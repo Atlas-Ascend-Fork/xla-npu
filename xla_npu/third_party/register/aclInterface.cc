@@ -15,14 +15,15 @@ LOAD_FUNCTION(aclInit)
 LOAD_FUNCTION(aclrtGetDeviceCount)
 LOAD_FUNCTION(aclrtGetDevice)
 LOAD_FUNCTION(aclrtSetDevice)
+LOAD_FUNCTION(aclrtCreateStream)
+LOAD_FUNCTION(aclrtSynchronizeStream)
 LOAD_FUNCTION(aclrtMalloc)
 LOAD_FUNCTION(aclrtFree)
 LOAD_FUNCTION(aclrtMemcpy)
 LOAD_FUNCTION(aclrtMallocHost)
 LOAD_FUNCTION(aclrtFreeHost)
 
-const char *AclGetErrMsg()
-{
+const char *AclGetErrMsg() {
     typedef const char *(*aclGetErrMsgFunc)();
     static aclGetErrMsgFunc func = nullptr;
     if (func == nullptr) {
@@ -34,8 +35,7 @@ const char *AclGetErrMsg()
     return "";
 }
 
-aclError AclInit(const char *configPath)
-{
+aclError AclInit(const char *configPath) {
     typedef aclError (*AclInitFunc)(const char*);
     static AclInitFunc func = nullptr;
     if (func == nullptr) {
@@ -47,8 +47,7 @@ aclError AclInit(const char *configPath)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtGetDeviceCount(uint32_t *count) 
-{
+aclError AclrtGetDeviceCount(uint32_t *count) {
     typedef aclError (*AclrtGetDeviceCountFunc)(uint32_t*);
     static AclrtGetDeviceCountFunc func = nullptr;
     if (func == nullptr) {
@@ -60,8 +59,7 @@ aclError AclrtGetDeviceCount(uint32_t *count)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtGetDevice(uint32_t *device_id)
-{
+aclError AclrtGetDevice(uint32_t *device_id) {
     typedef aclError (*AclrtGetDeviceFunc)(uint32_t*);
     static AclrtGetDeviceFunc func = nullptr;
     if (func == nullptr) {
@@ -73,8 +71,7 @@ aclError AclrtGetDevice(uint32_t *device_id)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtSetDevice(uint32_t device_id)
-{
+aclError AclrtSetDevice(uint32_t device_id) {
     typedef aclError (*AclrtSetDeviceFunc)(uint32_t);
     static AclrtSetDeviceFunc func = nullptr;
     if (func == nullptr) {
@@ -86,8 +83,31 @@ aclError AclrtSetDevice(uint32_t device_id)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy)
-{
+aclError AclrtCreateStream(aclrtStream *stream) {
+    typedef aclError (*aclrtCreateStreamFunc)(aclrtStream*);
+    static aclrtCreateStreamFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtCreateStreamFunc) GET_FUNC(aclrtCreateStream);
+    }
+    if (func != nullptr) {
+        return func(stream);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
+}
+
+aclError AclrtSynchronizeStream(aclrtStream stream) {
+    typedef aclError (*aclrtSynchronizeStreamFunc)(aclrtStream);
+    static aclrtSynchronizeStreamFunc func = nullptr;
+    if (func == nullptr) {
+        func = (aclrtSynchronizeStreamFunc) GET_FUNC(aclrtSynchronizeStream);
+    }
+    if (func != nullptr) {
+        return func(stream);
+    }
+    return ACL_ERROR_RT_INTERNAL_ERROR;
+}
+
+aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy) {
     typedef aclError (*aclrtMallocFunc)(void **, size_t, aclrtMemMallocPolicy);
     static aclrtMallocFunc func = nullptr;
     if (func == nullptr) {
@@ -99,8 +119,7 @@ aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtFree(void *devPtr)
-{
+aclError AclrtFree(void *devPtr) {
     typedef aclError (*aclrtFreeFunc)(void *);
     static aclrtFreeFunc func = nullptr;
     if (func == nullptr) {
@@ -112,8 +131,7 @@ aclError AclrtFree(void *devPtr)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind)
-{
+aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind) {
     typedef aclError (*aclrtMemcpyFunc)(void *, size_t, const void *, size_t, aclrtMemcpyKind);
     static aclrtMemcpyFunc func = nullptr;
     if (func == nullptr) {
@@ -125,8 +143,7 @@ aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, a
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtMallocHost(void **hostPtr, size_t size)
-{
+aclError AclrtMallocHost(void **hostPtr, size_t size) {
     typedef aclError (*aclrtMallocHostFunc)(void **hostPtr, size_t size);
     static aclrtMallocHostFunc func = nullptr;
     if (func == nullptr) {
@@ -138,8 +155,7 @@ aclError AclrtMallocHost(void **hostPtr, size_t size)
     return ACL_ERROR_RT_INTERNAL_ERROR;
 }
 
-aclError AclrtFreeHost(void *hostPtr)
-{
+aclError AclrtFreeHost(void *hostPtr) {
     typedef aclError (*aclrtFreeHostFunc)(void *hostPtr);
     static aclrtFreeHostFunc func = nullptr;
     if (func == nullptr) {

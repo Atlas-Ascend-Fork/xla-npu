@@ -29,6 +29,8 @@ cc_library(
     srcs = ["npu_constant_allocation.cc"],
     hdrs = ["npu_constant_allocation.h"],
     deps = [
+        "//xla/xla_npu/common:npu_tool",
+
         "//xla:literal",
         "//xla:shape_util",
         "//xla:util",

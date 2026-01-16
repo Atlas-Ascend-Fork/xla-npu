@@ -1,6 +1,7 @@
 #ifndef COMMON_NPU_TOOL_H_
 #define COMMON_NPU_TOOL_H_
 
+#include "absl/strings/str_format.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
@@ -8,6 +9,7 @@
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_print_options.h"
 
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"
 
 #define CHECK_RET(cond, return_expr) \
@@ -93,7 +95,41 @@ public:
     }
 
     static void PrintDebugLog(const std::string& logStr) {
-        std::cout << "DEBUG: " << logStr << std::endl;
+        std::cout << "NPU.DEBUG: " << logStr << std::endl;
+    }
+
+    template <typename... Args>
+    static void PrintDebugLog(absl::FormatSpec<Args...> format, Args&&... args) {
+        std::string logStr = absl::StrFormat(format, std::forward<Args>(args)...);
+        PrintDebugLog(logStr);
+    }
+
+    template <typename printDataType>
+    static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr) {
+        PrintDebugLog(title);
+
+        std::vector<printDataType> resultData(size, 0);
+        aclError ret = npu::AclrtMemcpy(resultData.data(), resultData.size() * sizeof(resultData[0]), deviceAddr,
+                size * sizeof(resultData[0]), ACL_MEMCPY_DEVICE_TO_HOST);
+        
+        if (ret != ACL_SUCCESS) {
+            PrintDebugLog("    Copy result from device to host failed. ERROR: %d\n", ret);
+            return;
+        }
+        for (int64_t i = 0; i < size; i++) {
+            PrintDebugLog("    Value[%ld] on device is: %f\n", i, resultData[i]);
+        }
+    }
+
+    // 计算xla shape表示的元素个数
+    static int64_t GetXlaShapeSize(const Shape& xla_data_shape) {
+        int64_t size = 1;
+        for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
+            const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
+            size *= xla_data_shape_dim;
+        }
+
+        return size;
     }
 
     static std::string GetShapeString(const std::vector<int64_t>& shape) {
@@ -118,10 +154,10 @@ public:
             vector_shape.emplace_back(xla_data_shape_dim);
         }
 
-        std::cout << "convert xla shape to shape vector,"
-            << " input xla shape is " << xla_data_shape
-            << ", output ge shape is " << GetShapeString(vector_shape)
-            << std::endl;
+        // std::cout << "Convert xla shape to shape vector,"
+        //     << " input xla shape is " << xla_data_shape
+        //     << ", output vector shape is " << GetShapeString(vector_shape)
+        //     << std::endl;
 
         return vector_shape;
     }
@@ -153,29 +189,6 @@ public:
 
         return tensor;
     }
-
-    // static PrimitiveType ConvertGeType2XlaType(const ge::DataType& type)
-    // {
-    //     switch (type) {
-    //         default:
-    //             return PrimitiveType::F32;
-    //     };
-    // }
-
-    // static Shape ConvertGeShape2XlaShape(const ge::Shape& ge_data_shape, const ge::DataType& ge_data_type)
-    // {
-    //     const auto& xla_data_dims = ge_data_shape.GetDims();
-    //     const auto& xla_data_type = ConvertGeType2XlaType(ge_data_type);
-    //     const Shape& xla_data_shape = ShapeUtil::MakeShape(xla_data_type, xla_data_dims);
-
-    //     std::cout << "convert ge shape to xla shape,"
-    //         << " input ge shape is " << GetShapeString(ge_data_shape)
-    //         << " which type is " << xla_data_type
-    //         << ", output xla shape is " << xla_data_shape
-    //         << std::endl;
-
-    //     return xla_data_shape;
-    // }
 };
 
 }

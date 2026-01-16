@@ -1,5 +1,6 @@
-#ifndef NPU_TOPOLOGY_DESCRIPTION_H_
-#define NPU_TOPOLOGY_DESCRIPTION_H_
+#ifndef PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
+#define PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -17,87 +18,83 @@
 #include "xla/pjrt/pjrt_compiler.h"
 #include "xla/pjrt/pjrt_device_description.h"
 #include "xla/pjrt/pjrt_device_dimensions.h"
-// #include "xla/pjrt/plugin/xla_cpu/cpu_topology.h"
 // #include "xla/pjrt/pjrt/plugin/npu_device_description.h"
 
+#include "xla/xla_npu/pjrt/plugin/npu_topology.h"
+
 namespace xla {
+
 class NpuTopologyDescription : public PjRtTopologyDescription {
 public:
-    struct Device {
-        int process_id;
-        int local_device_id;
-
-        bool operator==(const Device& other) const
-        {
-            return process_id == other.process_id && local_device_id == other.local_device_id;
-        }
-    };
-    NpuTopologyDescription(const PjRtPlatformId platform_id, const absl::string_view platform_name,
-                           const absl::string_view platform_version, std::vector<Device> devices)
+    // `npu_device_ids` is the list of logical device ids for the NPU devices and
+    // will be used to initialize the NPU topology.
+    NpuTopologyDescription(const PjRtPlatformId platform_id,
+                            const absl::string_view platform_name,
+                            const absl::string_view platform_version,
+                            std::vector<NpuTopology::NpuDevice> npu_devices,
+                            absl::Span<const std::string> machine_attributes)
         : platform_id_(platform_id),
-          platform_name_(platform_name),
-          platform_version_(platform_version),
-          devices_(std::move(devices))
-    {
+        platform_name_(platform_name),
+        platform_version_(platform_version),
+        npu_topology_(std::move(npu_devices),
+            std::vector<std::string>(machine_attributes.begin(), machine_attributes.end())) {}
+
+    bool operator==(const NpuTopologyDescription& other) const {
+        return this->platform_id() == other.platform_id() &&
+            this->platform_name() == other.platform_name() &&
+            this->platform_version() == other.platform_version() &&
+            this->npu_topology().devices() == other.npu_topology().devices();
     }
 
-    ~NpuTopologyDescription() override = default;
+    PjRtPlatformId platform_id() const override { return platform_id_; }
 
-    bool operator==(const NpuTopologyDescription& other) const
-    {
-        return this->platform_id() == other.platform_id() && this->platform_name() == other.platform_name() &&
-               this->platform_version() == other.platform_version();
-    }
+    absl::string_view platform_name() const override { return platform_name_; }
 
-    PjRtPlatformId platform_id() const override
-    {
-        return platform_id_;
-    }
-
-    absl::string_view platform_name() const override
-    {
-        return platform_name_;
-    }
-
-    absl::string_view platform_version() const override
-    {
-        return platform_version_;
-    }
+    absl::string_view platform_version() const override { return platform_version_; }
 
     std::vector<std::unique_ptr<const PjRtDeviceDescription>> DeviceDescriptions() const override;
 
-    absl::StatusOr<std::string> Serialize() const override
-    {
-        return absl::UnimplementedError("Serialize is unsupported.");
-    }
+    const NpuTopology& npu_topology() const { return npu_topology_; }
+    const NpuTopology* npu_topology_ptr() const { return &npu_topology_; }
+
+    // No subslice is supported.
+    bool is_subslice_topology() const override { return false; }
+
+    absl::StatusOr<int> ProcessCount() const override { return 1; }
+
+    absl::StatusOr<int> ChipsPerProcess() const override { return npu_topology_.number_of_devices(); }
+
+    absl::StatusOr<int> LogicalDeviceCountOfDefaultTypePerChip() const override { return 1; }
+
+    absl::StatusOr<int> CoreCountOfDefaultTypePerChip() const override { return 1; }
+
+    absl::StatusOr<std::string> Serialize() const override;
+
+    absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>>
+    LogicalDeviceOfDefaultTypeForId(xla::PjRtGlobalDeviceId device_id) const override;
 
     // Returns vendor specific attributes about the topology.
-    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override
-    {
+    const absl::flat_hash_map<std::string, PjRtDeviceAttribute>& Attributes() const override {
         return attributes_;
     }
 
     absl::StatusOr<Layout> GetDefaultLayout(
         PrimitiveType element_type,
-        absl::Span<const int64_t> dims) const override {
-        Shape shape = ShapeUtil::MakeShape(element_type, dims);
-        Layout layout = LayoutUtil::GetWithDefaultLayout(shape).layout();
-        // `GetWithDefaultLayout` returns a padded layout for sub-byte types since the
-        // notion of "default" is context dependent and in this case means the default
-        // for literals for historical reasons. Because of this, we need to manually
-        // populate the `element_size_in_bits` for sub-byte types here.
-        if (primitive_util::IsSubByteNonPredType(element_type)) {
-            layout.set_element_size_in_bits(primitive_util::BitWidth(element_type));
-        }
-        return layout;
-    }
+        absl::Span<const int64_t> dims) const override;
+
+    // absl::StatusOr<xla::PjRtTopologyDescriptionProto> ToProto() const override;
+
+    // static absl::StatusOr<std::unique_ptr<NpuTopologyDescription>> FromProto(
+    //     const xla::PjRtTopologyDescriptionProto& proto);
 
 private:
     const PjRtPlatformId platform_id_;
     const std::string platform_name_;
     const std::string platform_version_;
-    std::vector<Device> devices_;
-    absl::flat_hash_map<std::string, PjRtDeviceAttribute> attributes_ = {};
+    const NpuTopology npu_topology_;
+    absl::flat_hash_map<std::string, xla::PjRtDeviceAttribute> attributes_;
 };
+
 }  // namespace xla
-#endif  //NPU_TOPOLOGY_DESCRIPTION_H_
+
+#endif  // PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_

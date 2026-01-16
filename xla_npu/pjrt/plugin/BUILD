@@ -7,10 +7,33 @@ package(
 )
 
 cc_library(
+    name = "npu_client_options",
+    hdrs = ["npu_client_options.h"],
+    deps = [
+        # ":cpu_memory",
+        # "//xla/backends/cpu/collectives:cpu_collectives",
+        "//xla/service:hlo_module_config",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "npu_topology",
+    srcs = ["npu_topology.cc"],
+    hdrs = ["npu_topology.h"],
+    deps = [
+        # ":cpu_topology_proto_cc",
+        "//xla/pjrt:pjrt_common",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "npu_device_description",
     srcs = ["npu_device_description.cc"],
     hdrs = ["npu_device_description.h"],
     deps = [
+        ":npu_topology",
         "//xla/xla_npu/pjrt:npu_pjrt_common",
 
         "//xla/pjrt:pjrt_common",
@@ -27,6 +50,7 @@ cc_library(
     hdrs = ["npu_topology_description.h"],
     deps = [
         ":npu_device_description",
+        ":npu_topology",
 
         "//xla:shape_util",
         "//xla/pjrt:pjrt_client",

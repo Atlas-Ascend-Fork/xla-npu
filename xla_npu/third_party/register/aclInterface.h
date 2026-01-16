@@ -10,6 +10,8 @@ aclError AclInit(const char *configPath);
 aclError AclrtGetDeviceCount(uint32_t *count);
 aclError AclrtGetDevice(uint32_t *device_id);
 aclError AclrtSetDevice(uint32_t device_id);
+aclError AclrtCreateStream(aclrtStream *stream);
+aclError AclrtSynchronizeStream(aclrtStream stream);
 aclError AclrtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy);
 aclError AclrtFree(void *devPtr);
 aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind);

@@ -66,6 +66,7 @@
 
 #include "xla/xla_npu/backend/npu_constant_allocation.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/npu_thunk_executor.h"
 
 namespace xla {
 
@@ -78,42 +79,42 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map) {
     // TargetMachineOptionsProto target_machine_options) {
-  // VLOG(2) << "Create NpuExecutable from a thunk sequence; module="
-  //         << hlo_module->name() << ", constants=" << constants.size();
+    // VLOG(2) << "Create NpuExecutable from a thunk sequence; module="
+    //         << hlo_module->name() << ", constants=" << constants.size();
 
-  std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
-      std::move(hlo_module), std::move(hlo_profile_printer_data),
-      std::move(hlo_profile_index_map), std::move(assignment)));
-      // std::move(target_machine_options)));
-  // executable->function_library_ = std::move(function_library);
+    std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
+        std::move(hlo_module), std::move(hlo_profile_printer_data),
+        std::move(hlo_profile_index_map), std::move(assignment)));
+        // std::move(target_machine_options)));
+    // executable->function_library_ = std::move(function_library);
 
-  // ThunkExecutor::Options thunk_executor_options;
-  // thunk_executor_options.is_nested_executor = false;
-  // TF_ASSIGN_OR_RETURN(
-  //     executable->thunks_,
-  //     ThunkExecutor::Create(std::move(thunks), thunk_executor_options));
+    NpuThunkExecutor::Options thunk_executor_options;
+    thunk_executor_options.is_nested_executor = false;
+    TF_ASSIGN_OR_RETURN(
+        executable->thunks_,
+        NpuThunkExecutor::Create(std::move(thunks), thunk_executor_options));
 
-  // // Find if the thunk sequence contains any XNN fusion thunks. If we do have
-  // // any, we will prepare the XNNPACK thread pool for them at run time.
-  // executable->thunks_->thunk_sequence().ForEach([&](const Thunk& thunk) {
-  //   executable->has_xnn_fusions_ |= thunk.kind() == Thunk::Kind::kXnnFusion;
-  // });
+    // // Find if the thunk sequence contains any XNN fusion thunks. If we do have
+    // // any, we will prepare the XNNPACK thread pool for them at run time.
+    // executable->thunks_->thunk_sequence().ForEach([&](const Thunk& thunk) {
+    //     executable->has_xnn_fusions_ |= thunk.kind() == Thunk::Kind::kXnnFusion;
+    // });
 
-  // // Find if the thunk sequence contains any YNN fusion thunks. If we do have
-  // // any, we will prepare the YNNPACK thread pool for them at run time.
-  // executable->thunks_->thunk_sequence().ForEach([&](const Thunk& thunk) {
-  //   executable->has_ynn_fusions_ |= thunk.kind() == Thunk::Kind::kYnnFusion;
-  // });
+    // // Find if the thunk sequence contains any YNN fusion thunks. If we do have
+    // // any, we will prepare the YNNPACK thread pool for them at run time.
+    // executable->thunks_->thunk_sequence().ForEach([&](const Thunk& thunk) {
+    //     executable->has_ynn_fusions_ |= thunk.kind() == Thunk::Kind::kYnnFusion;
+    // });
 
-  // // Re-index constants by their allocation index to allow efficient lookup.
-  // for (auto& constant : constants) {
-  //   if (executable->constants_.size() <= constant.index) {
-  //     executable->constants_.resize(constant.index + 1);
-  //   }
-  //   executable->constants_[constant.index] = std::move(constant);
-  // }
+    // Re-index constants by their allocation index to allow efficient lookup.
+    for (auto& constant : constants) {
+        if (executable->constants_.size() <= constant.index) {
+            executable->constants_.resize(constant.index + 1);
+        }
+        executable->constants_[constant.index] = std::move(constant);
+    }
 
-  return executable;
+    return executable;
 }
 
 NpuExecutable::NpuExecutable(
@@ -126,22 +127,22 @@ NpuExecutable::NpuExecutable(
                  std::move(hlo_profile_index_map)),
       assignment_(std::move(assignment)) {
       // target_machine_options_(std::move(target_machine_options)) {
-  // if (assignment_ && has_module()) {
-  //   XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
-  // }
+    // if (assignment_ && has_module()) {
+    //   XlaDebugInfoManager::Get()->RegisterModule(shared_module(), assignment_);
+    // }
 
-  if (assignment_) {
-    alloc_ptrs_.reserve(assignment_->Allocations().size());
-    for (const BufferAllocation& alloc : assignment_->Allocations()) {
-      alloc_ptrs_.push_back(&alloc);
+    if (assignment_) {
+        alloc_ptrs_.reserve(assignment_->Allocations().size());
+        for (const BufferAllocation& alloc : assignment_->Allocations()) {
+            alloc_ptrs_.push_back(&alloc);
+        }
     }
-  }
 
-  // Once we compiled HLO module to CPU executable, we don't need to keep the
-  // HLO module metadata around.
-  if (has_module()) {
-    *shared_module()->metadata() = HloModuleMetadata(tsl::Env::Default());
-  }
+    // Once we compiled HLO module to NPU executable, we don't need to keep the
+    // HLO module metadata around.
+    if (has_module()) {
+        *shared_module()->metadata() = HloModuleMetadata(tsl::Env::Default());
+    }
 }
 
 NpuExecutable::~NpuExecutable() {

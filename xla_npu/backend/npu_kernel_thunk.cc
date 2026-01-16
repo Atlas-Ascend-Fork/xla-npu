@@ -118,153 +118,195 @@ NpuKernelThunk<num_arguments, num_results>::NpuKernelThunk(
       num_workgroups_(num_workgroups),
       min_alignment_(min_alignment),
       call_once_(num_workgroups_ == NumWorkGroups()) {
-  // Resize storage for arguments and results buffers if it is dynamic.
-  if constexpr (IsDynamic(num_arguments)) {
-    arguments_buffers_.resize(arguments_buffers.size());
-  }
-  if constexpr (IsDynamic(num_results)) {
-    results_buffers_.resize(results_buffers.size());
-  }
+    // Resize storage for arguments and results buffers if it is dynamic.
+    if constexpr (IsDynamic(num_arguments)) {
+        arguments_buffers_.resize(arguments_buffers.size());
+    }
+    if constexpr (IsDynamic(num_results)) {
+        results_buffers_.resize(results_buffers.size());
+    }
 
-  // Copy buffers from the arguments and results.
-  for (size_t i = 0; i < arguments_buffers.size(); ++i) {
-    arguments_buffers_[i] = arguments_buffers[i];
-  }
-  for (size_t i = 0; i < results_buffers.size(); ++i) {
-    results_buffers_[i] = results_buffers[i];
-  }
+    // Copy buffers from the arguments and results.
+    for (size_t i = 0; i < arguments_buffers.size(); ++i) {
+        arguments_buffers_[i] = arguments_buffers[i];
+    }
+    for (size_t i = 0; i < results_buffers.size(); ++i) {
+        results_buffers_[i] = results_buffers[i];
+    }
 
-  // Resize storage for kernel arguments if it is dynamic.
-  if constexpr (IsDynamic(num_arguments) || IsDynamic(num_results)) {
-    kernel_args_.resize(num_kernel_args_);
-  }
+    // Resize storage for kernel arguments if it is dynamic.
+    if constexpr (IsDynamic(num_arguments) || IsDynamic(num_results)) {
+        kernel_args_.resize(num_kernel_args_);
+    }
 
-  // Initialize kernel arguments with null pointers and known buffer sizes.
-  // We'll use them as a template to resolve buffer addresses at run time.
-  for (size_t i = 0; i < arguments_buffers.size(); ++i) {
-    kernel_args_[i] = XLA_CPU_KernelArg{
-        nullptr, static_cast<size_t>(arguments_buffers_[i].size())};
-  }
-  for (size_t i = 0; i < results_buffers.size(); ++i) {
-    kernel_args_[arguments_buffers_.size() + i] = XLA_CPU_KernelArg{
-        nullptr, static_cast<size_t>(results_buffers_[i].size())};
-  }
+    // Initialize kernel arguments with null pointers and known buffer sizes.
+    // We'll use them as a template to resolve buffer addresses at run time.
+    for (size_t i = 0; i < arguments_buffers.size(); ++i) {
+        kernel_args_[i] = XLA_CPU_KernelArg{nullptr, static_cast<size_t>(arguments_buffers_[i].size())};
+    }
+    for (size_t i = 0; i < results_buffers.size(); ++i) {
+        kernel_args_[arguments_buffers_.size() + i] = XLA_CPU_KernelArg{
+            nullptr, static_cast<size_t>(results_buffers_[i].size())};
+    }
 }
 
 template <int64_t num_arguments, int64_t num_results>
 ABSL_ATTRIBUTE_ALWAYS_INLINE tsl::AsyncValueRef<NpuThunk::ExecuteEvent>
 NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams& params)
 {
-    NpuTool::PrintDebugLog(absl::StrFormat(
+    NpuTool::PrintDebugLog(
         "Launch host kernel %s with %d arguments and %d results: #workgroups=%v",
         kernel_name_, arguments_buffers_.size(), results_buffers_.size(),
-        num_workgroups_));
+        num_workgroups_);
 
+    aclnnStatus ret = 0;
 	aclrtStream stream; // TODO 执行thunk前创建
+    ret = npu::AclrtCreateStream(&stream);
+    CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclrtCreateStream failed. ERROR: %d\n", ret); return OkExecuteEvent());
 
     const NpuBufferAllocations* allocations = params.buffer_allocations;
     const auto& input_param_shapes = info().input_param_shapes;
     const auto& output_param_shapes = info().output_param_shapes;
 
     switch (info().op_code) {
-        case HloOpcode::kBroadcast:
-		{
-            if (input_param_shapes.size() != 1 || output_param_shapes.size() != 1) {
-                NpuTool::PrintDebugLog(
-                    absl::StrFormat("Input shape size %d or output shape size %d error",
-                    input_param_shapes.size(),
-                    output_param_shapes.size()
-                ));
-                return OkExecuteEvent();
-            }
+    case HloOpcode::kBroadcast:
+    {
+        if (input_param_shapes.size() != 1 || output_param_shapes.size() != 1) {
+            NpuTool::PrintDebugLog(
+                "Input shape size %d or output shape size %d error",
+                input_param_shapes.size(),
+                output_param_shapes.size()
+            );
+            return OkExecuteEvent();
+        }
 
-            const auto& input_param_shape = input_param_shapes.front();
-            TF_ASSIGN_OR_RETURN(auto input_param_mem, allocations->GetDeviceAddress(arguments_buffers_.front()));
-            void* input_param_device_addr = input_param_mem.opaque();
-            auto input_tensor_ptr = NpuTool::CreateAclTensorPtr(
-                input_param_shape, input_param_shape.element_type(), input_param_device_addr);
+        const auto& input_param_shape = input_param_shapes.front();
+        TF_ASSIGN_OR_RETURN(auto input_param_mem, allocations->GetDeviceAddress(arguments_buffers_.front()));
+        void* input_param_device_addr = input_param_mem.opaque();
+        auto input_tensor_ptr = NpuTool::CreateAclTensorPtr(
+            input_param_shape, input_param_shape.element_type(), input_param_device_addr);
 
-            const auto& output_param_shape = output_param_shapes.front();
-            TF_ASSIGN_OR_RETURN(auto output_param_mem, allocations->GetDeviceAddress(results_buffers_.front()));
-            void* output_param_device_addr = output_param_mem.opaque();
-            auto output_tensor_ptr = NpuTool::CreateAclTensorPtr(
-                output_param_shape, output_param_shape.element_type(), output_param_device_addr);
+        const auto& output_param_shape = output_param_shapes.front();
+        TF_ASSIGN_OR_RETURN(auto output_param_mem, allocations->GetDeviceAddress(results_buffers_.front()));
+        void* output_param_device_addr = output_param_mem.opaque();
+        auto output_tensor_ptr = NpuTool::CreateAclTensorPtr(
+            output_param_shape, output_param_shape.element_type(), output_param_device_addr);
 
-			std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(output_param_shape);
-            aclIntArray* output_param_size = npu::AclCreateIntArray(
-				output_param_size_data.data(), output_param_size_data.size());
+        std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(output_param_shape);
+        aclIntArray* output_param_size = npu::AclCreateIntArray(
+            output_param_size_data.data(), output_param_size_data.size());
 
-            uint64_t workspaceSize = 0;
-            aclOpExecutor* executor;
-            // 调用aclnnExpand第一段接口
-            aclnnStatus ret = 0;
-            ret = npu::AclnnExpandGetWorkspaceSize(
-				input_tensor_ptr, output_param_size, output_tensor_ptr, &workspaceSize, &executor);
-            CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclnnExpandGetWorkspaceSize failed. ERROR: %d\n", ret); return OkExecuteEvent());
-            // 根据第一段接口计算出的workspaceSize申请device内存
-            void* workspaceAddr = nullptr;
-            if (workspaceSize > 0) {
-                ret = npu::AclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
-                CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("Allocate workspace failed. ERROR: %d\n", ret); return OkExecuteEvent());
-            }
-            // 调用aclnnExpand第二段接口
-            ret = npu::AclnnExpand(workspaceAddr, workspaceSize, executor, stream);
-            CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclnnExpand failed. ERROR: %d\n", ret); return OkExecuteEvent());
-			break;
+		// TODO: only for DEBUG
+        NpuTool::PrintDebugLog("Input 1st param allocation info: %v", arguments_buffers_.front().ToString());
+		NpuTool::PrintDebugLog("Input 1st param shape: %v", input_param_shape.ToString(true));
+        NpuTool::PrintDebugLog("Input 1st param device addr: %p", input_param_device_addr);
+        NpuTool::PrintNpuDeviceMemoryValue<float>("Input 1st param value on device:",
+            NpuTool::GetXlaShapeSize(input_param_shape), input_param_device_addr);
+
+        uint64_t workspaceSize = 0;
+        aclOpExecutor* executor;
+        // 调用aclnnExpand第一段接口
+        ret = npu::AclnnExpandGetWorkspaceSize(
+            input_tensor_ptr, output_param_size, output_tensor_ptr, &workspaceSize, &executor);
+        CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclnnExpandGetWorkspaceSize failed. ERROR: %d\n", ret); return OkExecuteEvent());
+        // 根据第一段接口计算出的workspaceSize申请device内存
+        void* workspaceAddr = nullptr;
+        if (workspaceSize > 0) {
+            ret = npu::AclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
+            CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("Allocate workspace failed. ERROR: %d\n", ret); return OkExecuteEvent());
+        }
+        // 调用aclnnExpand第二段接口
+        ret = npu::AclnnExpand(workspaceAddr, workspaceSize, executor, stream);
+        CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclnnExpand failed. ERROR: %d\n", ret); return OkExecuteEvent());
+
+		ret = npu::AclrtSynchronizeStream(stream);
+		CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclrtSynchronizeStream failed. ERROR: %d\n", ret); return OkExecuteEvent());
+
+        NpuTool::PrintDebugLog("Output 1st param allocation info: %v", results_buffers_.front().ToString());
+		NpuTool::PrintDebugLog("Output 1st param shape: %v", output_param_shape.ToString(true));
+        NpuTool::PrintDebugLog("Output 1st param device addr: %p", output_param_device_addr);
+		NpuTool::PrintNpuDeviceMemoryValue<float>("Output 1st param value on device:",
+            NpuTool::GetXlaShapeSize(output_param_shape), output_param_device_addr);
+
+        break;
+    }
+
+	case HloOpcode::kAdd:
+	{
+		if (input_param_shapes.size() != 2 || output_param_shapes.size() != 1) {
+			NpuTool::PrintDebugLog(
+				"Input shape size %d or output shape size %d error",
+				input_param_shapes.size(),
+				output_param_shapes.size()
+			);
+			return OkExecuteEvent();
 		}
 
-		case HloOpcode::kAdd:
-		{
-            if (input_param_shapes.size() != 2 || output_param_shapes.size() != 1) {
-                NpuTool::PrintDebugLog(
-                    absl::StrFormat("Input shape size %d or output shape size %d error",
-                    input_param_shapes.size(),
-                    output_param_shapes.size()
-                ));
-                return OkExecuteEvent();
-            }
-            const auto& input_left_param_shape = input_param_shapes[0];
-            TF_ASSIGN_OR_RETURN(auto input_left_param_mem, allocations->GetDeviceAddress(arguments_buffers_[0]));
-            void* input_left_param_device_addr = input_left_param_mem.opaque();
-            auto input_left_tensor_ptr = NpuTool::CreateAclTensorPtr(
-                input_left_param_shape, input_left_param_shape.element_type(), input_left_param_device_addr);
+		const auto& input_left_param_shape = input_param_shapes[0];
+		TF_ASSIGN_OR_RETURN(auto input_left_param_mem, allocations->GetDeviceAddress(arguments_buffers_[0]));
+		void* input_left_param_device_addr = input_left_param_mem.opaque();
+		auto input_left_tensor_ptr = NpuTool::CreateAclTensorPtr(
+			input_left_param_shape, input_left_param_shape.element_type(), input_left_param_device_addr);
 
-            const auto& input_right_param_shape = input_param_shapes[1];
-            TF_ASSIGN_OR_RETURN(auto input_right_param_mem, allocations->GetDeviceAddress(arguments_buffers_[1]));
-            void* input_right_param_device_addr = input_right_param_mem.opaque();
-            auto input_right_tensor_ptr = NpuTool::CreateAclTensorPtr(
-                input_right_param_shape, input_right_param_shape.element_type(), input_right_param_device_addr);
+		const auto& input_right_param_shape = input_param_shapes[1];
+		TF_ASSIGN_OR_RETURN(auto input_right_param_mem, allocations->GetDeviceAddress(arguments_buffers_[1]));
+		void* input_right_param_device_addr = input_right_param_mem.opaque();
+		auto input_right_tensor_ptr = NpuTool::CreateAclTensorPtr(
+			input_right_param_shape, input_right_param_shape.element_type(), input_right_param_device_addr);
 
-            const auto& output_param_shape = output_param_shapes.front();
-            TF_ASSIGN_OR_RETURN(auto output_param_mem, allocations->GetDeviceAddress(results_buffers_.front()));
-            void* output_param_device_addr = output_param_mem.opaque();
-            auto output_tensor_ptr = NpuTool::CreateAclTensorPtr(
-                output_param_shape, output_param_shape.element_type(), output_param_device_addr);
+		const auto& output_param_shape = output_param_shapes.front();
+		TF_ASSIGN_OR_RETURN(auto output_param_mem, allocations->GetDeviceAddress(results_buffers_.front()));
+		void* output_param_device_addr = output_param_mem.opaque();
+		auto output_tensor_ptr = NpuTool::CreateAclTensorPtr(
+			output_param_shape, output_param_shape.element_type(), output_param_device_addr);
 
-			float alphaValue = 1.0;
-			aclScalar* alpha = npu::AclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+		// TODO: only for DEBUG
+		NpuTool::PrintDebugLog("Input 1st param allocation info: %v", arguments_buffers_[0].ToString());
+		NpuTool::PrintDebugLog("Input 1st param shape: %v", input_left_param_shape.ToString(true));
+        NpuTool::PrintDebugLog("Input 1st param device addr: %p", input_left_param_device_addr);
+        NpuTool::PrintNpuDeviceMemoryValue<float>("Input 1st param value on device:",
+			NpuTool::GetXlaShapeSize(input_left_param_shape), input_left_param_device_addr);
 
-			uint64_t workspaceSize = 0;
-  			aclOpExecutor* executor;
-			// 调用aclnnAdd第一段接口
-			aclnnStatus ret = 0;
-			ret = npu::AclnnAddGetWorkspaceSize(
-				input_left_tensor_ptr, input_right_tensor_ptr, alpha, output_tensor_ptr, &workspaceSize, &executor);
-			CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnAddGetWorkspaceSize failed. ERROR: %d\n", ret); return OkExecuteEvent());
-			// 根据第一段接口计算出的workspaceSize申请device内存
-			void* workspaceAddr = nullptr;
-			if (workspaceSize > 0) {
-				ret = npu::AclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
-				CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret); return OkExecuteEvent());
-			}
-			// 调用aclnnAdd第二段接口
-			ret = npu::AclnnAdd(workspaceAddr, workspaceSize, executor, stream);
-			CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnAdd failed. ERROR: %d\n", ret); return OkExecuteEvent());
-			break;
+		NpuTool::PrintDebugLog("Input 2nd param allocation info: %v", arguments_buffers_[1].ToString());
+		NpuTool::PrintDebugLog("Input 2nd param shape: %v", input_right_param_shape.ToString(true));
+        NpuTool::PrintDebugLog("Input 2nd param device addr: %p", input_right_param_device_addr);
+        NpuTool::PrintNpuDeviceMemoryValue<float>("Input 2st param value on device:",
+			NpuTool::GetXlaShapeSize(input_right_param_shape), input_right_param_device_addr);
+
+		float alphaValue = 1.0;
+		aclScalar* alpha = npu::AclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+
+		uint64_t workspaceSize = 0;
+		aclOpExecutor* executor;
+		// 调用aclnnAdd第一段接口
+		ret = npu::AclnnAddGetWorkspaceSize(
+			input_left_tensor_ptr, input_right_tensor_ptr, alpha, output_tensor_ptr, &workspaceSize, &executor);
+		CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnAddGetWorkspaceSize failed. ERROR: %d\n", ret); return OkExecuteEvent());
+		// 根据第一段接口计算出的workspaceSize申请device内存
+		void* workspaceAddr = nullptr;
+		if (workspaceSize > 0) {
+			ret = npu::AclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
+			CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret); return OkExecuteEvent());
 		}
+		// 调用aclnnAdd第二段接口
+		ret = npu::AclnnAdd(workspaceAddr, workspaceSize, executor, stream);
+		CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnAdd failed. ERROR: %d\n", ret); return OkExecuteEvent());
 
-		default:
-			NpuTool::PrintDebugLog(absl::StrFormat("Op code %d not support now", info().op_code));
+		ret = npu::AclrtSynchronizeStream(stream);
+		CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("AclrtSynchronizeStream failed. ERROR: %d\n", ret); return OkExecuteEvent());
+
+		// TODO: only for DEBUG
+        NpuTool::PrintDebugLog("Output 1st param allocation info: %v", results_buffers_.front().ToString());
+		NpuTool::PrintDebugLog("Output 1st param shape: %v", output_param_shape.ToString(true));
+        NpuTool::PrintDebugLog("Output 1st param device addr: %p", output_param_device_addr);
+		NpuTool::PrintNpuDeviceMemoryValue<float>("Output 1st param value on device:",
+            NpuTool::GetXlaShapeSize(output_param_shape), output_param_device_addr);
+
+		break;
+	}
+
+	default:
+		NpuTool::PrintDebugLog("Op code %v not support now", info().op_code);
     }
 
     // alignas(64) KernelArgs kernel_args = kernel_args_;

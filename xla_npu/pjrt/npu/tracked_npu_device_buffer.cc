@@ -2,6 +2,7 @@
 
 #include "xla/pjrt/common_pjrt_client.h"
 
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
@@ -75,7 +76,7 @@ NpuDeviceMemory::MakeDefaultAllocator() {
 }
 
 //===----------------------------------------------------------------------===//
-// CpuDeviceMemory implementations.
+// NpuDeviceMemory implementations.
 //===----------------------------------------------------------------------===//
 
 class NpuDeviceMemoryOwned final : public NpuDeviceMemory {
@@ -117,52 +118,54 @@ private:
 
 class NpuDeviceMemoryConstant final : public NpuDeviceMemory {
 public:
-  NpuDeviceMemoryConstant(void* base, size_t size)
-      : base_(base), size_bytes_(size) {}
+    NpuDeviceMemoryConstant(void* base, size_t size)
+        : base_(base), size_bytes_(size) {}
 
-  void* untyped_data() const final { return base_; }
-  size_t size_bytes() const final { return size_bytes_; }
+    void* untyped_data() const final { return base_; }
+    size_t size_bytes() const final { return size_bytes_; }
 
 private:
-  void* base_;
-  size_t size_bytes_;
+    void* base_;
+    size_t size_bytes_;
 };
 tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateDelayedMemory() {
-  return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
+    return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
 }
 
 tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateForeignMemory(
     void* base, size_t size, absl::AnyInvocable<void() &&> on_delete_callback) {
-  return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryForeign>(
-      base, size, std::move(on_delete_callback));
+    return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryForeign>(base, size, std::move(on_delete_callback));
 }
 
-tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(
-    void* base, size_t size) {
-  return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryConstant>(base, size);
+tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* base, size_t size) {
+    NpuTool::PrintDebugLog("NpuDeviceMemory::CreateConstantMemory const addr %p, size_bytes %d", base, size);
+    TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size, 0));
+    aclError ret = npu::AclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
+    if (ret != ACL_SUCCESS) {
+        NpuTool::PrintDebugLog("    Copy result from device to host failed. ERROR: %d\n", ret);
+    }
+
+    return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryConstant>(mem->base(), mem->size_bytes());
 }
 
 // Allocates owning memory wrapped in an available `AsyncValueRef`.
-absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(
-    size_t size_bytes) {
-  std::cout << "NpuDeviceMemory::Allocate size_bytes:" << size_bytes << std::endl;
-  TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem,
-                      DefaultAllocator().Allocate(size_bytes, 0));
-  return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
+absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(size_t size_bytes) {
+    NpuTool::PrintDebugLog("NpuDeviceMemory::Allocate size_bytes %d", size_bytes);
+    TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size_bytes, 0));
+    return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
 }
 
 absl::Status NpuDeviceMemory::AllocateInto(
     size_t size_bytes, tsl::AsyncValuePtr<NpuDeviceMemory> delayed_memory,
     const Allocator& allocator) {
-  auto owned_memory = delayed_memory.DynCast<NpuDeviceMemoryOwned>();
-  if (!owned_memory) {
-    return Internal("Delayed memory is not a CpuDeviceMemoryOwned");
-  }
+    auto owned_memory = delayed_memory.DynCast<NpuDeviceMemoryOwned>();
+    if (!owned_memory) {
+        return Internal("Delayed memory is not a CpuDeviceMemoryOwned");
+    }
 
-  TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem,
-                      allocator.Allocate(size_bytes, 0));
-  owned_memory.emplace(std::move(mem));
-  return absl::OkStatus();
+    TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, allocator.Allocate(size_bytes, 0));
+    owned_memory.emplace(std::move(mem));
+    return absl::OkStatus();
 }
 
 //===----------------------------------------------------------------------===//
