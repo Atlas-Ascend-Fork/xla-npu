@@ -6,7 +6,7 @@
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
-// Returns an AsyncValueRef<CpuEvent> that will be ready after all the async
+// Returns an AsyncValueRef<NpuEvent> that will be ready after all the async
 // values in `events` are ready. If errors occurs, one of the errors will be
 // propagated through the returned async value.
 tsl::AsyncValueRef<NpuEvent> AfterAll(absl::Span<const tsl::AsyncValueRef<NpuEvent>> events) {
@@ -25,7 +25,7 @@ tsl::AsyncValueRef<NpuEvent> AfterAll(absl::Span<const tsl::AsyncValueRef<NpuEve
     return std::move(after_all).AsRef();
 }
 //===----------------------------------------------------------------------===//
-// Default CpuDeviceMemory::RawMemory allocator.
+// Default NpuDeviceMemory::RawMemory allocator.
 //===----------------------------------------------------------------------===//
 
 class AlignedMemory final : public NpuDeviceMemory::RawMemory {
@@ -34,7 +34,7 @@ class AlignedMemory final : public NpuDeviceMemory::RawMemory {
 
     ~AlignedMemory() final {
         // tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
-        std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
+        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Npu memory free, addr: %p, size: %d", base_, size_bytes_);
         npu::AclrtFree(base_);
     }
 
@@ -50,13 +50,15 @@ class AlignedAllocator final : public NpuDeviceMemory::Allocator {
    public:
     absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(size_t size_bytes,
                                                                          size_t alignment) const final {
-        std::cout << "AlignedAllocator::Allocate size_bytes:" << size_bytes << std::endl;
         void* base = nullptr;
-        aclError acl_malloc = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
-        if (acl_malloc == ACL_SUCCESS) {
-            return std::make_unique<AlignedMemory>(base, size_bytes);
+        aclError ret = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+        if (ret != ACL_SUCCESS) {
+            NpuTool::PrintNpuLog(NpuLogLevel::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
+            return Internal("Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
         }
-        return ResourceExhausted("Out of memory allocating %d bytes.", size_bytes);
+        
+        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Npu memory allocated, addr %p, size %d", base, size_bytes);
+        return std::make_unique<AlignedMemory>(base, size_bytes);
     }
 };
 
@@ -91,8 +93,8 @@ class NpuDeviceMemoryForeign final : public NpuDeviceMemory {
 
     ~NpuDeviceMemoryForeign() final {
         if (on_delete_callback_) {
-            std::cout << "need call delete function for " << std::showbase << std::hex << (uint64_t)base_
-                      << ", which size is " << size_bytes_ << std::endl;
+            NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Call delete function for %p, which size is %d", base_,
+                                 size_bytes_);
             std::move(on_delete_callback_)();
         }
     }
@@ -127,19 +129,19 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateForeignMemory(
 }
 
 tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* base, size_t size) {
-    NpuTool::PrintDebugLog("NpuDeviceMemory::CreateConstantMemory const addr %p, size_bytes %d", base, size);
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size, 0));
     aclError ret = npu::AclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (ret != ACL_SUCCESS) {
-        NpuTool::PrintDebugLog("    Copy result from device to host failed. ERROR: %d\n", ret);
+        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "    Copy result from device to host failed. ERROR: %d\n", ret);
+        // TODO 异常处理
     }
 
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Create const memory and move to npu, addr %p, size_bytes %d", base, size);
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryConstant>(mem->base(), mem->size_bytes());
 }
 
 // Allocates owning memory wrapped in an available `AsyncValueRef`.
 absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(size_t size_bytes) {
-    NpuTool::PrintDebugLog("NpuDeviceMemory::Allocate size_bytes %d", size_bytes);
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size_bytes, 0));
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
 }

@@ -32,6 +32,7 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
@@ -69,7 +70,6 @@ Future<> NpuTrackedDeviceEvent::GetReadyFuture() {
 
 /*static*/ absl::StatusOr<tsl::RCReference<NpuRawBuffer>> NpuRawBuffer::Allocate(PjRtMemorySpace* memory_space,
                                                                                  size_t size_bytes) {
-    std::cout << "NpuRawBuffer::Allocate" << std::endl;
     TF_ASSIGN_OR_RETURN(auto memory, NpuDeviceMemory::Allocate(size_bytes));
     return tsl::MakeRef<NpuRawBuffer>(memory_space, std::move(memory));
 }
@@ -103,6 +103,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawHostToDev
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
     }
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", src, dst,
+                         transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -114,6 +116,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawDeviceToH
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy D2H failed, error code: ", acl_ret));
     }
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from npu to cpu, src addr %p, dst addr %p, byte size %d", src, dst,
+                         transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -141,56 +145,58 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
     }
     auto dst_data_ptr = device_buffer->untyped_data();
     if (!has_default_layout || is_packed) {
-        // If the input array does not have a major-to-minor layout, transpose it
-        // into major-to-minor layout. Currently we choose to always do this
-        // synchronously.
-        // TODO(phawkins): consider performing the transpose asynchronously.
-        // TODO(phawkins): parallelize the transpose.
-        std::shared_ptr<TransposePlan> transpose;
-        {
-            absl::InlinedVector<int64_t, 4> permutation(dims.size());
-            absl::c_iota(permutation, 0);
-            TransposePlan::Options options;
-            options.elem_size_in_bytes = primitive_util::ByteWidth(type);
-            options.dims = dims;
-            options.permutation = permutation;
-            if (byte_strides) {
-                options.input_layout = TransposePlan::Striding{*byte_strides};
-            }
-            absl::MutexLock lock(*transpose_mu);
-            TF_ASSIGN_OR_RETURN(transpose, transpose_cache->GetOrCreate(options));
-        }
-        if (!is_packed) {
-            auto data_transposed = std::make_unique<char[]>(byte_size);
-            transpose->Execute(data, data_transposed.get());
-            auto acl_ret =
-                npu::AclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
-            if (acl_ret != ACL_SUCCESS) {
-                return absl::InternalError(
-                    absl::StrCat("AclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
-            }
-        } else {
-            // First transpose the unpacked data into a new temporary buffer, then
-            // pack the data.
-            // TODO(reedwm): Fuse the transpose and packing by having TransposePlan
-            // support packing.
-            auto data_transposed = std::make_unique<char[]>(byte_size);
-            transpose->Execute(data, data_transposed.get());
-            auto data_packed = std::make_unique<char[]>(dst_byte_size);
-            absl::Span<const char> src_data_span(data_transposed.get(), byte_size);
-            absl::Span<char> dst_data_span(data_packed.get(), dst_byte_size);
-            PackIntN(bit_width, src_data_span, dst_data_span);
-            auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size,
-                                            ACL_MEMCPY_HOST_TO_DEVICE);
-            if (acl_ret != ACL_SUCCESS) {
-                return absl::InternalError(
-                    absl::StrCat("AclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
-            }
-        }
-        if (on_done_with_host_buffer) {
-            std::move(on_done_with_host_buffer)();
-            on_done_with_host_buffer = nullptr;
-        }
+        return absl::UnimplementedError("NPU does not support no default layout or packed type");
+        // // If the input array does not have a major-to-minor layout, transpose it
+        // // into major-to-minor layout. Currently we choose to always do this
+        // // synchronously.
+        // // TODO(phawkins): consider performing the transpose asynchronously.
+        // // TODO(phawkins): parallelize the transpose.
+        // std::shared_ptr<TransposePlan> transpose;
+        // {
+        //     absl::InlinedVector<int64_t, 4> permutation(dims.size());
+        //     absl::c_iota(permutation, 0);
+        //     TransposePlan::Options options;
+        //     options.elem_size_in_bytes = primitive_util::ByteWidth(type);
+        //     options.dims = dims;
+        //     options.permutation = permutation;
+        //     if (byte_strides) {
+        //         options.input_layout = TransposePlan::Striding{*byte_strides};
+        //     }
+        //     absl::MutexLock lock(*transpose_mu);
+        //     TF_ASSIGN_OR_RETURN(transpose, transpose_cache->GetOrCreate(options));
+        // }
+        // if (!is_packed) {
+        //     auto data_transposed = std::make_unique<char[]>(byte_size);
+        //     transpose->Execute(data, data_transposed.get());
+        //     auto acl_ret =
+        //         npu::AclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size,
+        //         ACL_MEMCPY_HOST_TO_DEVICE);
+        //     if (acl_ret != ACL_SUCCESS) {
+        //         return absl::InternalError(
+        //             absl::StrCat("AclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
+        //     }
+        // } else {
+        //     // First transpose the unpacked data into a new temporary buffer, then
+        //     // pack the data.
+        //     // TODO(reedwm): Fuse the transpose and packing by having TransposePlan
+        //     // support packing.
+        //     auto data_transposed = std::make_unique<char[]>(byte_size);
+        //     transpose->Execute(data, data_transposed.get());
+        //     auto data_packed = std::make_unique<char[]>(dst_byte_size);
+        //     absl::Span<const char> src_data_span(data_transposed.get(), byte_size);
+        //     absl::Span<char> dst_data_span(data_packed.get(), dst_byte_size);
+        //     PackIntN(bit_width, src_data_span, dst_data_span);
+        //     auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size,
+        //                                     ACL_MEMCPY_HOST_TO_DEVICE);
+        //     if (acl_ret != ACL_SUCCESS) {
+        //         return absl::InternalError(
+        //             absl::StrCat("AclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
+        //     }
+        // }
+        // if (on_done_with_host_buffer) {
+        //     std::move(on_done_with_host_buffer)();
+        //     on_done_with_host_buffer = nullptr;
+        // }
     } else {
         // bool should_sync_copy =
         //     host_buffer_semantics ==
@@ -231,6 +237,9 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         //   });
         // return result;
     }
+
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", data,
+                         dst_data_ptr, byte_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 

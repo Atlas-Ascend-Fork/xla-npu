@@ -18,15 +18,37 @@
         }                            \
     } while (0)
 
-#define LOG_PRINT(message, ...)         \
-    do {                                \
-        printf(message, ##__VA_ARGS__); \
-    } while (0)
-
 namespace xla {
+
+enum class NpuLogLevel { DEBUG, INFO, WARN, ERROR };
 
 class NpuTool {
    public:
+    static void PrintNpuLog(NpuLogLevel logLevel, const std::string& logStr) {
+        std::string logLevelString;
+        switch (logLevel) {
+            case NpuLogLevel::DEBUG:
+                logLevelString = "DEBUG";
+                break;
+            case NpuLogLevel::INFO:
+                logLevelString = "INFO";
+                break;
+            case NpuLogLevel::WARN:
+                logLevelString = "WARN";
+                break;
+            case NpuLogLevel::ERROR:
+                logLevelString = "ERROR";
+        }
+
+        std::cout << "NPU." << logLevelString << ": " << logStr << std::endl;
+    }
+
+    template <typename... Args>
+    static void PrintNpuLog(NpuLogLevel logLevel, absl::FormatSpec<Args...> format, Args&&... args) {
+        std::string logStr = absl::StrFormat(format, std::forward<Args>(args)...);
+        PrintNpuLog(logLevel, logStr);
+    }
+
     static HloPrintOptions GetDetailedPrintOptions() {
         HloPrintOptions opts = HloPrintOptions::Default();
 
@@ -75,46 +97,37 @@ class NpuTool {
     }
 
     static void PrintHloModule(const HloModule* hlo_module, const std::string& title) {
-        std::cout << "========================================" << std::endl;
-        std::cout << "**** " << title << ": ****" << std::endl;
-        std::cout << std::endl;
+        PrintNpuLog(NpuLogLevel::DEBUG, "========================================");
+        PrintNpuLog(NpuLogLevel::DEBUG, "**** %s: ****", title);
         HloPrintOptions hloPrintOptions = GetDetailedPrintOptions();
-        std::cout << hlo_module->ToString(hloPrintOptions) << std::endl;
-        std::cout << "========================================" << std::endl;
+        PrintNpuLog(NpuLogLevel::DEBUG, hlo_module->ToString(hloPrintOptions));
+        PrintNpuLog(NpuLogLevel::DEBUG, "========================================");
     }
 
     static void PrintModuleOp(mlir::ModuleOp module, const std::string& title) {
-        std::cout << "========================================" << std::endl;
+        PrintNpuLog(NpuLogLevel::DEBUG, "========================================");
         std::string result;
         llvm::raw_string_ostream os(result);
         module.print(os);
-        std::cout << "**** " << title << ": ****" << std::endl;
-        std::cout << os.str() << std::endl;
-        std::cout << "========================================" << std::endl;
-    }
-
-    static void PrintDebugLog(const std::string& logStr) { std::cout << "NPU.DEBUG: " << logStr << std::endl; }
-
-    template <typename... Args>
-    static void PrintDebugLog(absl::FormatSpec<Args...> format, Args&&... args) {
-        std::string logStr = absl::StrFormat(format, std::forward<Args>(args)...);
-        PrintDebugLog(logStr);
+        PrintNpuLog(NpuLogLevel::DEBUG, "**** %s: ****", title);
+        PrintNpuLog(NpuLogLevel::DEBUG, os.str());
+        PrintNpuLog(NpuLogLevel::DEBUG, "========================================");
     }
 
     template <typename printDataType>
     static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr) {
-        PrintDebugLog(title);
+        PrintNpuLog(NpuLogLevel::DEBUG, title);
 
         std::vector<printDataType> resultData(size, 0);
         aclError ret = npu::AclrtMemcpy(resultData.data(), resultData.size() * sizeof(resultData[0]), deviceAddr,
                                         size * sizeof(resultData[0]), ACL_MEMCPY_DEVICE_TO_HOST);
 
         if (ret != ACL_SUCCESS) {
-            PrintDebugLog("    Copy result from device to host failed. ERROR: %d\n", ret);
+            PrintNpuLog(NpuLogLevel::DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
             return;
         }
         for (int64_t i = 0; i < size; i++) {
-            PrintDebugLog("    Value[%ld] on device is: %f\n", i, resultData[i]);
+            PrintNpuLog(NpuLogLevel::DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
         }
     }
 
