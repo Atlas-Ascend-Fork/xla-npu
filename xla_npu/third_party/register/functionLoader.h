@@ -8,8 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace c10_npu {
-namespace option {
+namespace npu {
 
 /**
   FunctionLoader is used to store function address in the process.
@@ -41,7 +40,6 @@ class FunctionLoader {
     mutable std::unordered_map<std::string, void*> registry;
 };  // class FunctionLoader
 
-namespace register_function {
 /**
   this class is used to register
   */
@@ -54,7 +52,7 @@ class FunctionRegister {
     /**
         this API is used to store FunctionLoader class
         */
-    void Register(const std::string& name, ::std::unique_ptr<FunctionLoader>& ptr);
+    void Register(const std::string& name, std::unique_ptr<FunctionLoader>& ptr);
     /**
         this API is used to associate library name and function name.
         */
@@ -67,7 +65,7 @@ class FunctionRegister {
    private:
     FunctionRegister() = default;
     mutable std::mutex mu_;
-    mutable std::unordered_map<std::string, ::std::unique_ptr<FunctionLoader>> registry;
+    mutable std::unordered_map<std::string, std::unique_ptr<FunctionLoader>> registry;
 };  // class FunctionRegister
 
 /**
@@ -78,28 +76,56 @@ class FunctionRegisterBuilder {
     /**
         ctr
         */
-    FunctionRegisterBuilder(const std::string& name, ::std::unique_ptr<FunctionLoader>& ptr) noexcept;
+    FunctionRegisterBuilder(const std::string& soName, std::unique_ptr<FunctionLoader>& libPtr) noexcept;
     /**
         ctr
         */
     FunctionRegisterBuilder(const std::string& soName, const std::string& funcName) noexcept;
 };  // class FunctionRegisterBuilder
 
-}  // namespace register_function
-
-#define REGISTER_LIBRARY(soName, ...)                                                                     \
-    auto library_##soName = ::std::unique_ptr<c10_npu::option::FunctionLoader>(                           \
-        new c10_npu::option::FunctionLoader(#soName, ##__VA_ARGS__));                                     \
-    static c10_npu::option::register_function::FunctionRegisterBuilder register_library_##soName(#soName, \
-                                                                                                 library_##soName);
+#define REGISTER_LIBRARY(soName, ...)                                                                              \
+    auto library_##soName = std::unique_ptr<npu::FunctionLoader>(new npu::FunctionLoader(#soName, ##__VA_ARGS__)); \
+    static npu::FunctionRegisterBuilder register_library_##soName(#soName, library_##soName);
 
 #define REGISTER_FUNCTION(soName, funcName) \
-    static c10_npu::option::register_function::FunctionRegisterBuilder register_function_##funcName(#soName, #funcName);
+    static npu::FunctionRegisterBuilder register_function_##funcName(#soName, #funcName);
 
-#define GET_FUNCTION(soName, funcName) \
-    c10_npu::option::register_function::FunctionRegister::GetInstance()->Get(#soName, #funcName);
+// 错误值获取模板：默认返回-1，可特化适配不同类型
+template <typename T>
+constexpr T GetDefaultError() {
+    // 对整数类型默认返回-1，其他类型返回默认构造值
+    if constexpr (std::is_integral_v<T>) {
+        return static_cast<T>(-1);
+    } else {
+        return T{};
+    }
+}
 
-}  // namespace option
-}  // namespace c10_npu
+// 去除传参列表中参数列表外的额外括号
+#define _REMOVE_PARENS(...) __VA_ARGS__
+#define STRIP_PARENS(x) _REMOVE_PARENS x
+
+// 声明待注册的函数(为了便于使用,同时自动完成了代码实现)
+// 参数说明：
+// soName: 库名（如libopapi）
+// ret: 返回值类型（如aclnnStatus）
+// name: 函数名（如AclnnExpandGetWorkspaceSize）
+// args_type: 类型+参数名列表（如const aclTensor* self, ...）
+// args_name: 仅参数名列表（如self, size, ...）
+#define DECLARE_ACL_FUNC(soName, ret, name, args_type, args_name)                                               \
+    inline ret name args_type {                                                                                 \
+        using FuncPtr = ret(*) args_type;                                                                       \
+        static FuncPtr cached_func = nullptr;                                                                   \
+        if (!cached_func) {                                                                                     \
+            cached_func = reinterpret_cast<FuncPtr>(npu::FunctionRegister::GetInstance()->Get(#soName, #name)); \
+        }                                                                                                       \
+        if (cached_func) {                                                                                      \
+            return cached_func(STRIP_PARENS(args_name));                                                        \
+        } else {                                                                                                \
+            return npu::GetDefaultError<ret>();                                                                 \
+        }                                                                                                       \
+    }
+
+}  // namespace npu
 
 #endif  // REGISTER_FUNCTIONLOADER_H_

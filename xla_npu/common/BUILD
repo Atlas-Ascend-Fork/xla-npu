@@ -8,15 +8,23 @@ package(
 )
 
 cc_library(
+    name = "npu_log",
+    hdrs = ["npu_log.h"],
+    deps = [
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "npu_tool",
     hdrs = ["npu_tool.h"],
     deps = [
+        ":npu_log",
         "//xla/xla_npu/third_party/register:acl_interface",
         "//xla/xla_npu/third_party/register:aclnn_interface",
 
         "//xla:shape_util",
         "//xla/hlo/ir:hlo",
-        "@com_google_absl//absl/strings:str_format",
         "@llvm-project//mlir:IR",
     ],
 )

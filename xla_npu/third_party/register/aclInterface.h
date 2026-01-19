@@ -2,21 +2,37 @@
 #define REGISTER_ACLINTERFACE_H_
 
 #include "xla/xla_npu/third_party/acl/acl.h"
+#include "xla/xla_npu/third_party/register/functionLoader.h"
+
+#define DECLARE_ACL_FUNC_IN_ASCENDCL(func_name, args_type, args_name) \
+    DECLARE_ACL_FUNC(libascendcl, aclError, func_name, args_type, args_name)
 
 namespace npu {
 
-const char* AclGetErrMsg();
-aclError AclInit(const char* configPath);
-aclError AclrtGetDeviceCount(uint32_t* count);
-aclError AclrtGetDevice(uint32_t* device_id);
-aclError AclrtSetDevice(uint32_t device_id);
-aclError AclrtCreateStream(aclrtStream* stream);
-aclError AclrtSynchronizeStream(aclrtStream stream);
-aclError AclrtMalloc(void** devPtr, size_t size, aclrtMemMallocPolicy policy);
-aclError AclrtFree(void* devPtr);
-aclError AclrtMemcpy(void* dst, size_t destMax, const void* src, size_t count, aclrtMemcpyKind kind);
-aclError AclrtMallocHost(void** hostPtr, size_t size);
-aclError AclrtFreeHost(void* hostPtr);
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclInit, (const char* configPath), (configPath))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDeviceCount, (uint32_t* count), (count))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDevice, (uint32_t* device_id), (device_id))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtSetDevice, (uint32_t device_id), (device_id))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtCreateStream, (aclrtStream * stream), (stream))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtSynchronizeStream, (aclrtStream stream), (stream))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMalloc, (void** devPtr, size_t size, aclrtMemMallocPolicy policy),
+                             (devPtr, size, policy))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtFree, (void* devPtr), (devPtr))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMemcpy,
+                             (void* dst, size_t destMax, const void* src, size_t count, aclrtMemcpyKind kind),
+                             (dst, destMax, src, count, kind))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMallocHost, (void** hostPtr, size_t size), (hostPtr, size))
+
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtFreeHost, (void* hostPtr), (hostPtr))
 
 }  // namespace npu
 

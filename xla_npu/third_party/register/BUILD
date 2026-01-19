@@ -10,6 +10,7 @@ cc_library(
     srcs = ["functionLoader.cc"],
     hdrs = ["functionLoader.h"],
     deps = [
+        "//xla/xla_npu/common:npu_log",
     ],
 )
 

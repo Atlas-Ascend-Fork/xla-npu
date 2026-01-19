@@ -34,8 +34,8 @@ class AlignedMemory final : public NpuDeviceMemory::RawMemory {
 
     ~AlignedMemory() final {
         // tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
-        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Npu memory free, addr: %p, size: %d", base_, size_bytes_);
-        npu::AclrtFree(base_);
+        NpuLog::Print(NpuLog::Level::DEBUG, "Npu memory free, addr: %p, size: %d", base_, size_bytes_);
+        npu::aclrtFree(base_);
     }
 
     void* base() const final { return base_; }
@@ -51,13 +51,13 @@ class AlignedAllocator final : public NpuDeviceMemory::Allocator {
     absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(size_t size_bytes,
                                                                          size_t alignment) const final {
         void* base = nullptr;
-        aclError ret = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+        aclError ret = npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
         if (ret != ACL_SUCCESS) {
-            NpuTool::PrintNpuLog(NpuLogLevel::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
+            NpuLog::Print(NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
             return Internal("Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
         }
-        
-        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Npu memory allocated, addr %p, size %d", base, size_bytes);
+
+        NpuLog::Print(NpuLog::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size_bytes);
         return std::make_unique<AlignedMemory>(base, size_bytes);
     }
 };
@@ -93,8 +93,7 @@ class NpuDeviceMemoryForeign final : public NpuDeviceMemory {
 
     ~NpuDeviceMemoryForeign() final {
         if (on_delete_callback_) {
-            NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Call delete function for %p, which size is %d", base_,
-                                 size_bytes_);
+            NpuLog::Print(NpuLog::Level::DEBUG, "Call delete function for %p, which size is %d", base_, size_bytes_);
             std::move(on_delete_callback_)();
         }
     }
@@ -130,13 +129,13 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateForeignMemory(
 
 tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* base, size_t size) {
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size, 0));
-    aclError ret = npu::AclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
+    aclError ret = npu::aclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (ret != ACL_SUCCESS) {
-        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "    Copy result from device to host failed. ERROR: %d\n", ret);
+        NpuLog::Print(NpuLog::Level::ERROR, "Copy result from device to host failed. ERROR: %d\n", ret);
         // TODO 异常处理
     }
 
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Create const memory and move to npu, addr %p, size_bytes %d", base, size);
+    NpuLog::Print(NpuLog::Level::DEBUG, "Create const memory and move to npu, addr %p, size_bytes %d", base, size);
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryConstant>(mem->base(), mem->size_bytes());
 }
 
