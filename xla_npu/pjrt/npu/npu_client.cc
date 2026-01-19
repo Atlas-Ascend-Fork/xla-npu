@@ -275,7 +275,7 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
         llvm_ir::ExtractXlaBackendExtraOptions(hlo_module->config().debug_options().xla_backend_extra_options());
     llvm_ir::LLVMCommandLineOptionsLock llvm_lock(llvm_options);
 
-    NpuTool::PrintDebugLog("run npu hlo pass");
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "run npu hlo pass");
     // Run Hlo Passes
     NpuCompiler compiler;
     if (!build_options.run_backend_only()) {
@@ -284,7 +284,7 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
     }
     NpuTool::PrintHloModule(hlo_module.get(), "xla hlo module after pass");
 
-    NpuTool::PrintDebugLog("run npu llvm compile");
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "run npu llvm compile");
     // Run backend.
     return compiler.RunBackend(std::move(hlo_module), /*stream_exec=*/nullptr, compile_options);
 }
@@ -301,7 +301,7 @@ static std::vector<NpuTopology::NpuDevice> GetNpuDevices(absl::Span<const std::u
 }
 
 absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options) {
-    NpuTool::PrintDebugLog("Start create npu client");
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Start create npu client");
 
     aclError aclStatus = npu::AclInit(nullptr);
     if (aclStatus != ACL_SUCCESS) {
@@ -315,7 +315,7 @@ absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions op
     if (real_device_count <= 0) {
         return absl::UnavailableError("Threre is no valid device.");
     }
-    NpuTool::PrintDebugLog("Get npu device count %d", real_device_count);
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Get npu device count %d", real_device_count);
 
     // Need at least NpuDeviceCount threads to launch one collective.
     int npu_device_count = options.npu_device_count;
@@ -411,7 +411,7 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
         owned_memory_spaces_.push_back(std::move(unpinned_memory_space));
     }
 
-    NpuTool::PrintDebugLog("PjRtNpuClient created.");
+    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "PjRtNpuClient created.");
 }
 
 absl::StatusOr<PjRtDevice*> PjRtNpuClient::LookupDevice(PjRtGlobalDeviceId global_device_id) const {
@@ -463,7 +463,6 @@ absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
     absl::InlinedVector<tsl::RCReference<PjRtDeviceEvent>, 4> definition_device_events, bool raw_buffer_is_mutable) {
     absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events;
     for (auto& ev : definition_device_events) {
-        std::cout << "PjRtNpuClient::DefineBuffer event: " << ev.get() << std::endl;
         definition_events.push_back(tsl::down_cast<NpuTrackedDeviceEvent*>(ev.get())->event());
     }
     return std::unique_ptr<PjRtBuffer>(std::make_unique<CommonPjRtBufferImpl>(
@@ -932,8 +931,9 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // }
 
     for (auto& tracked_buffer : tracked_buffers) {
-        std::cout << "argument handle buffer addr=" << tracked_buffer.second->buffer().get().untyped_data()
-                  << ", size=" << tracked_buffer.second->buffer().get().size_bytes() << std::endl;
+        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "show argument handle buffer, addr %p, size %d",
+                             tracked_buffer.second->buffer().get().untyped_data(),
+                             tracked_buffer.second->buffer().get().size_bytes());
     }
 
     auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);
