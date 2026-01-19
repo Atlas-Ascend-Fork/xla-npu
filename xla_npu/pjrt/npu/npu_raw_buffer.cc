@@ -99,12 +99,12 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawHostToDev
     const void* src, int64_t offset, int64_t transfer_size) {
     TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
     void* dst = static_cast<char*>(buffer_->untyped_data()) + offset;
-    auto acl_ret = npu::AclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_HOST_TO_DEVICE);
+    auto acl_ret = npu::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (acl_ret != ACL_SUCCESS) {
-        return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
+        return absl::InternalError(absl::StrCat("aclrtMemcpy H2D failed, error code: ", acl_ret));
     }
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", src, dst,
-                         transfer_size);
+    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", src, dst,
+                  transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -112,12 +112,12 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawDeviceToH
     void* dst, int64_t offset, int64_t transfer_size) {
     TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
     const void* src = static_cast<const char*>(buffer_->untyped_data()) + offset;
-    auto acl_ret = npu::AclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_DEVICE_TO_HOST);
+    auto acl_ret = npu::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_DEVICE_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {
-        return absl::InternalError(absl::StrCat("AclrtMemcpy D2H failed, error code: ", acl_ret));
+        return absl::InternalError(absl::StrCat("aclrtMemcpy D2H failed, error code: ", acl_ret));
     }
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from npu to cpu, src addr %p, dst addr %p, byte size %d", src, dst,
-                         transfer_size);
+    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from npu to cpu, src addr %p, dst addr %p, byte size %d", src, dst,
+                  transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -169,11 +169,11 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         //     auto data_transposed = std::make_unique<char[]>(byte_size);
         //     transpose->Execute(data, data_transposed.get());
         //     auto acl_ret =
-        //         npu::AclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size,
+        //         npu::aclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size,
         //         ACL_MEMCPY_HOST_TO_DEVICE);
         //     if (acl_ret != ACL_SUCCESS) {
         //         return absl::InternalError(
-        //             absl::StrCat("AclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
+        //             absl::StrCat("aclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
         //     }
         // } else {
         //     // First transpose the unpacked data into a new temporary buffer, then
@@ -186,11 +186,11 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         //     absl::Span<const char> src_data_span(data_transposed.get(), byte_size);
         //     absl::Span<char> dst_data_span(data_packed.get(), dst_byte_size);
         //     PackIntN(bit_width, src_data_span, dst_data_span);
-        //     auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size,
+        //     auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size,
         //                                     ACL_MEMCPY_HOST_TO_DEVICE);
         //     if (acl_ret != ACL_SUCCESS) {
         //         return absl::InternalError(
-        //             absl::StrCat("AclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
+        //             absl::StrCat("aclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
         //     }
         // }
         // if (on_done_with_host_buffer) {
@@ -203,9 +203,9 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         //         PjRtClient::HostBufferSemantics::kImmutableOnlyDuringCall ||
         //     (byte_size < kSmallDataTransferByteSize);
         // if (should_sync_copy) {
-        auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+        auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
         if (acl_ret != ACL_SUCCESS) {
-            return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
+            return absl::InternalError(absl::StrCat("aclrtMemcpy H2D failed, error code: ", acl_ret));
         }
         if (on_done_with_host_buffer) {
             std::move(on_done_with_host_buffer)();
@@ -222,14 +222,14 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         //                                on_done_with_host_buffer = std::move(
         //                                    on_done_with_host_buffer)]() mutable {
         //     tsl::profiler::TraceMe traceme("H2D Dispatch");
-        //     auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+        //     auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
         //     if (on_done_with_host_buffer) {
         //       std::move(on_done_with_host_buffer)();
         //       on_done_with_host_buffer = nullptr;
         //     }
         //     // Signal copy is complete.
         //     if (acl_ret != ACL_SUCCESS) {
-        //       copy_event.SetError(absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ",
+        //       copy_event.SetError(absl::InternalError(absl::StrCat("aclrtMemcpy H2D failed, error code: ",
         //       acl_ret)));
         //     } else {
         //       copy_event.SetStateConcrete();
@@ -238,8 +238,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         // return result;
     }
 
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", data,
-                         dst_data_ptr, byte_size);
+    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", data,
+                  dst_data_ptr, byte_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -264,7 +264,7 @@ void NpuRawBuffer::CopyToLiteralAsync(Promise<> promise, tsl::RCReference<PjRtDe
     void* dst_host_ptr = literal->untyped_data();
 
     // TODO: obtain device id from real device
-    aclError acl_ret = npu::AclrtSetDevice(0);
+    aclError acl_ret = npu::aclrtSetDevice(0);
     if (acl_ret != ACL_SUCCESS) {
         auto error = absl::InternalError(absl::StrCat("AclrtSetDevice set device 0 failed, error code: ", acl_ret));
         device_promise->SetError(error);
@@ -278,11 +278,11 @@ void NpuRawBuffer::CopyToLiteralAsync(Promise<> promise, tsl::RCReference<PjRtDe
         // First copy packed data from device to a temporary buffer
         auto temp_buffer = std::make_unique<char[]>(device_buffer_size);
 
-        acl_ret = npu::AclrtMemcpy(temp_buffer.get(), device_buffer_size, src_device_ptr, device_buffer_size,
+        acl_ret = npu::aclrtMemcpy(temp_buffer.get(), device_buffer_size, src_device_ptr, device_buffer_size,
                                    ACL_MEMCPY_DEVICE_TO_HOST);
         if (acl_ret != ACL_SUCCESS) {
             auto error = absl::InternalError(
-                absl::StrCat("AclrtMemcpy D2H failed in CopyToLiteralAsync for packed type, error code: ", acl_ret));
+                absl::StrCat("aclrtMemcpy D2H failed in CopyToLiteralAsync for packed type, error code: ", acl_ret));
             device_promise->SetError(error);
             promise.Set(error);
             return;
@@ -294,10 +294,10 @@ void NpuRawBuffer::CopyToLiteralAsync(Promise<> promise, tsl::RCReference<PjRtDe
         primitive_util::UnpackIntN(shape.element_type(), input_span, output_span);
     } else {
         // For normal types, direct copy from device to host
-        acl_ret = npu::AclrtMemcpy(dst_host_ptr, output_size, src_device_ptr, output_size, ACL_MEMCPY_DEVICE_TO_HOST);
+        acl_ret = npu::aclrtMemcpy(dst_host_ptr, output_size, src_device_ptr, output_size, ACL_MEMCPY_DEVICE_TO_HOST);
         if (acl_ret != ACL_SUCCESS) {
             auto error = absl::InternalError(
-                absl::StrCat("AclrtMemcpy D2H failed in CopyToLiteralAsync, error code: ", acl_ret));
+                absl::StrCat("aclrtMemcpy D2H failed in CopyToLiteralAsync, error code: ", acl_ret));
             device_promise->SetError(error);
             promise.Set(error);
             return;

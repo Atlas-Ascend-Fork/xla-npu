@@ -275,7 +275,7 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
         llvm_ir::ExtractXlaBackendExtraOptions(hlo_module->config().debug_options().xla_backend_extra_options());
     llvm_ir::LLVMCommandLineOptionsLock llvm_lock(llvm_options);
 
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "run npu hlo pass");
+    NpuLog::Print(NpuLog::Level::DEBUG, "run npu hlo pass");
     // Run Hlo Passes
     NpuCompiler compiler;
     if (!build_options.run_backend_only()) {
@@ -284,7 +284,7 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
     }
     NpuTool::PrintHloModule(hlo_module.get(), "xla hlo module after pass");
 
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "run npu llvm compile");
+    NpuLog::Print(NpuLog::Level::DEBUG, "run npu llvm compile");
     // Run backend.
     return compiler.RunBackend(std::move(hlo_module), /*stream_exec=*/nullptr, compile_options);
 }
@@ -301,21 +301,21 @@ static std::vector<NpuTopology::NpuDevice> GetNpuDevices(absl::Span<const std::u
 }
 
 absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options) {
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Start create npu client");
+    NpuLog::Print(NpuLog::Level::DEBUG, "Start create npu client");
 
-    aclError aclStatus = npu::AclInit(nullptr);
+    aclError aclStatus = npu::aclInit(nullptr);
     if (aclStatus != ACL_SUCCESS) {
         return absl::UnavailableError("ACL init failed.");
     }
     uint32_t real_device_count = -1;
-    aclStatus = npu::AclrtGetDeviceCount(&real_device_count);
+    aclStatus = npu::aclrtGetDeviceCount(&real_device_count);
     if (aclStatus != ACL_SUCCESS) {
         return absl::UnavailableError("ACL get device count failed.");
     }
     if (real_device_count <= 0) {
         return absl::UnavailableError("Threre is no valid device.");
     }
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "Get npu device count %d", real_device_count);
+    NpuLog::Print(NpuLog::Level::DEBUG, "Get npu device count %d", real_device_count);
 
     // Need at least NpuDeviceCount threads to launch one collective.
     int npu_device_count = options.npu_device_count;
@@ -323,7 +323,7 @@ absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions op
 
     std::vector<std::unique_ptr<PjRtNpuDevice>> devices;
     for (int i = 0; i < std::min(npu_device_count, (int)real_device_count); ++i) {
-        aclStatus = npu::AclrtSetDevice(i);
+        aclStatus = npu::aclrtSetDevice(i);
         if (aclStatus != ACL_SUCCESS) {
             return absl::UnavailableError("ACL set device failed.");
         }
@@ -411,7 +411,7 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
         owned_memory_spaces_.push_back(std::move(unpinned_memory_space));
     }
 
-    NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "PjRtNpuClient created.");
+    NpuLog::Print(NpuLog::Level::DEBUG, "PjRtNpuClient created.");
 }
 
 absl::StatusOr<PjRtDevice*> PjRtNpuClient::LookupDevice(PjRtGlobalDeviceId global_device_id) const {
@@ -931,9 +931,9 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // }
 
     for (auto& tracked_buffer : tracked_buffers) {
-        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG, "show argument handle buffer, addr %p, size %d",
-                             tracked_buffer.second->buffer().get().untyped_data(),
-                             tracked_buffer.second->buffer().get().size_bytes());
+        NpuLog::Print(NpuLog::Level::DEBUG, "show argument handle buffer, addr %p, size %d",
+                      tracked_buffer.second->buffer().get().untyped_data(),
+                      tracked_buffer.second->buffer().get().size_bytes());
     }
 
     auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);

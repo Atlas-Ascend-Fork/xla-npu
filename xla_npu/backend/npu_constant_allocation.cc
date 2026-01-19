@@ -100,9 +100,9 @@ absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(
                 absl::StrCat("Could not find constant instruction defining buffer ", allocation.ToString()));
         }
 
-        NpuTool::PrintNpuLog(NpuLogLevel::DEBUG,
-                             "Create constant allocation for index %d from constant literal %s; shape=%s",
-                             allocation.index(), const_instr->name(), const_instr->literal().shape().ToString());
+        NpuLog::Print(NpuLog::Level::DEBUG,
+                      "Create constant allocation for index %d from constant literal %s; shape=%s", allocation.index(),
+                      const_instr->name(), const_instr->literal().shape().ToString());
         TF_ASSIGN_OR_RETURN(constants.emplace_back(),
                             LiteralToConstantAllocation(allocation.index(), const_instr->literal()));
     }
