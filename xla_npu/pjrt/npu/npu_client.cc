@@ -1087,7 +1087,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
                 run_options.device_ordinal(),
             };
 
-            thunks_execute_event = npu_executable->thunks().Execute(execute_params);  // TODO 实现
+            thunks_execute_event = npu_executable->thunks().Execute(execute_params);
 
             tsl::profiler::TraceMe trace([&] {
                 return tsl::profiler::TraceMeEncode(

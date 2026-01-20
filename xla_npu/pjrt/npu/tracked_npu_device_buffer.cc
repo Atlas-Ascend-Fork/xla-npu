@@ -132,12 +132,15 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* 
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size, 0));
     aclError ret = npu::aclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Copy result from device to host failed. ERROR: %d\n", ret);
+        NpuLog::Print(NpuLog::Level::ERROR, "Copy result from device to host failed, error code: %d", ret);
         return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
     }
 
     // 原本cpu的常量内存分配逻辑是直接复用host上已有的常量内存地址,npu则不行,需要做一次h2d
-    NpuLog::Print(NpuLog::Level::DEBUG, "Create const memory and move to npu, addr %p, size_bytes %d", base, size);
+    NpuLog::Print(
+        NpuLog::Level::DEBUG,
+        "Create const memory and move to npu, cpu addr %p, cpu size bytes %d ---> npu addr %p, npu size bytes %d", base,
+        size, mem->base(), mem->size_bytes());
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
 }
 
@@ -151,7 +154,7 @@ absl::Status NpuDeviceMemory::AllocateInto(size_t size_bytes, tsl::AsyncValuePtr
                                            const Allocator& allocator) {
     auto owned_memory = delayed_memory.DynCast<NpuDeviceMemoryOwned>();
     if (!owned_memory) {
-        return Internal("Delayed memory is not a CpuDeviceMemoryOwned");
+        return Internal("Delayed memory is not a NpuDeviceMemoryOwned");
     }
 
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, allocator.Allocate(size_bytes, 0));

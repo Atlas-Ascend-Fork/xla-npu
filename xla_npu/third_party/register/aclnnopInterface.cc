@@ -11,6 +11,8 @@ REGISTER_FUNCTION(libopapi, aclnnAddGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnAdd)
 REGISTER_FUNCTION(libopapi, aclnnTanGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnTan)
+REGISTER_FUNCTION(libopapi, aclnnTanhGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnTanh)
 REGISTER_FUNCTION(libopapi, aclnnMulGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnMul)
 
