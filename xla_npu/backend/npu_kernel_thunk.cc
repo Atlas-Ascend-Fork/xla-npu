@@ -226,13 +226,14 @@ tsl::AsyncValueRef<NpuThunk::ExecuteEvent> NpuKernelThunk<num_arguments, num_res
     // 根据第一段接口计算出的workspaceSize申请device内存
     void* workspaceAddr = nullptr;
     if (workspaceSize > 0) {
+        NpuLog::Print(NpuLog::Level::DEBUG, "  Additional aclnn WorkspaceSize is %d, need to apply", workspaceSize);
         ret = npu::aclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
         if (ret != ACL_SUCCESS) {
             NpuLog::Print(NpuLog::Level::ERROR, "Allocate workspace failed. Error code: %d", ret);
             return AclErrorExecuteEvent(ret, "");
         }
     } else {
-        NpuLog::Print(NpuLog::Level::DEBUG, "  WorkspaceSize is 0, no need to apply");
+        NpuLog::Print(NpuLog::Level::DEBUG, "  Additional aclnn WorkspaceSize is 0, no need to apply");
     }
     // 调用aclnnExpand第二段接口
     ret = npu::aclnnExpand(workspaceAddr, workspaceSize, executor, stream);
@@ -307,7 +308,6 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             }
 
             exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnExpand);
-
             break;
         }
 
@@ -324,18 +324,18 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             }
 
             exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnAdd);
-
             break;
         }
 
         case HloOpcode::kTanh: {
-            ret = npu::aclnnTanGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector.back(), &workspaceSize,
-                                                &executor);
+            ret = npu::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector.back(), &workspaceSize,
+                                                 &executor);
             if (ret != ACL_SUCCESS) {
                 NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnTanGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
-            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnTan);
+
+            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnTanh);
             break;
         }
 
@@ -346,6 +346,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                 NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnMulGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
+
             exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnMul);
             break;
         }
