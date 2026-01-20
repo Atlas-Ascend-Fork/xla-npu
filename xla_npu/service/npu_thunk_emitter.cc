@@ -199,9 +199,16 @@ static NpuThunk::Info ThunkInfo(const HloInstruction* instruction) {
     std::vector<Shape> output_param_shapes;
     output_param_shapes.push_back(instruction->shape());
 
-    return NpuThunk::Info{instruction->opcode(),       input_param_shapes,
-                          output_param_shapes,         std::string(instruction->name()),
-                          std::string(module->name()), module->unique_id()};
+    HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
+    std::string hloInstrDesc = instruction->ToString(options);
+
+    return NpuThunk::Info{hloInstrDesc,
+                          instruction->opcode(),
+                          input_param_shapes,
+                          output_param_shapes,
+                          std::string(instruction->name()),
+                          std::string(module->name()),
+                          module->unique_id()};
 }
 
 absl::StatusOr<NpuThunkSequence> NpuThunkEmitter::EmitEntryComputation(const HloModule& module) {

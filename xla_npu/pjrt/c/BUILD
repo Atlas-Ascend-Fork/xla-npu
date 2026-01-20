@@ -1,24 +1,13 @@
 load(
-    "@local_config_rocm//rocm:build_defs.bzl",
-    "if_rocm_is_configured",
-)
-load(
     "//xla:xla.default.bzl",
     "xla_cc_binary",
-    "xla_cc_test",
 )
-load("//xla/tests:build_defs.bzl", "xla_test")
 load(
     "//xla/tsl:tsl.bzl",
-    "if_google",
     "if_macos",
     "internal_visibility",
 )
 load("//xla/tsl/platform:rules_cc.bzl", "cc_library")
-load(
-    "//xla/tsl/platform/default:cuda_build_defs.bzl",
-    "if_cuda_is_configured",
-)
 
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],

@@ -37,7 +37,7 @@ class PjRtNpuClient final : public CommonPjRtClient {
    public:
     PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
 
-    ~PjRtNpuClient() override = default;
+    ~PjRtNpuClient() override;
 
     using CollectiveLaunchEvent = std::pair<tsl::AsyncValueRef<NpuEvent>, tsl::CountDownAsyncValueRef<NpuEvent>>;
 

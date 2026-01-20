@@ -20,9 +20,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "aclnn/aclnn_base.h"
+#include "xla/xla_npu/third_party/aclnn/aclnn_base.h"
 #include "fast_vector.h"
-#include "graph/ascend_string.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 
 namespace op {
 

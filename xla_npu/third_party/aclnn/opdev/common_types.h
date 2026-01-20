@@ -18,19 +18,18 @@
 #define OP_API_COMMON_INC_OPDEV_COMMON_TYPES_H_
 
 #include <map>
-#include <securec.h>
-#include <unordered_set>
-#include <type_traits>
-
+// #include <securec.h>
 #include <complex>
+#include <type_traits>
+#include <unordered_set>
 
-#include "exe_graph/runtime/tensor.h"
+#include "bfloat16.h"
 #include "fast_vector.h"
 #include "fp16_t.h"
-#include "bfloat16.h"
 #include "object.h"
 #include "op_def.h"
-#include "graph/ascend_string.h"
+#include "xla/xla_npu/third_party/metadef/external/exe_graph/runtime/tensor.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 
 namespace op {
 constexpr uint64_t MAX_DIM_NUM = 25;
@@ -47,34 +46,34 @@ using TensorPlacement = gert::TensorPlacement;
 
 ge::AscendString ToString(op::DataType dataType);
 size_t TypeSize(DataType dataType);
-void ToContiguousStrides(const op::Shape &shape, op::Strides &strides);
-} // namespace op
+void ToContiguousStrides(const op::Shape& shape, op::Strides& strides);
+}  // namespace op
 
 namespace mem {
 class KernelGraph;
 }
 
 class aclStorage : public op::Object {
-public:
+   public:
     aclStorage() = default;
     ~aclStorage() override;
-    explicit aclStorage(void *addr);
+    explicit aclStorage(void* addr);
     explicit aclStorage(bool fromWorkspace);
-    aclStorage(void *addr, bool fromWorkspace);
-    void *GetAddr() const;
-    void SetAddr(void *addr);
+    aclStorage(void* addr, bool fromWorkspace);
+    void* GetAddr() const;
+    void SetAddr(void* addr);
     void SetWorkspaceOffset(uint64_t offset);
     uint64_t GetWorkspaceOffset() const;
     void SetFromWorkspace(bool fromWorkspace);
     bool IsFromWorkspace() const;
-    void SetExtend(void *extend);
-    void *GetExtend() const;
+    void SetExtend(void* extend);
+    void* GetExtend() const;
 
     void SetStorageOffset(int64_t offset);
     int64_t GetStorageOffset() const;
 
-private:
-    void *addr_{nullptr};
+   private:
+    void* addr_{nullptr};
     uint64_t workspaceOffset_{0};
     int64_t storageOffset_{0};
     bool fromWorkspace_{false};
@@ -86,30 +85,30 @@ private:
      * The only relation is Op1's output aclTensor's storage pointer is
      * as same as the storage pointer of input's aclTensor of op2.
      * We use this extend pointer to link them in KernelGraph. */
-    void *extend_{nullptr};
+    void* extend_{nullptr};
     uint8_t reserved_field_[8];
 };
 
-template<typename T>
+template <typename T>
 class aclArray : public op::Object {
-public:
+   public:
     ~aclArray() override;
 
-    T &operator[](uint64_t i);
+    T& operator[](uint64_t i);
 
-    const T &operator[](uint64_t i) const;
+    const T& operator[](uint64_t i) const;
 
     uint64_t Size() const;
 
-    const T *GetData() const;
+    const T* GetData() const;
 
     ge::AscendString ToString() const;
 
-protected:
-    aclArray(const T *value, uint64_t size);
+   protected:
+    aclArray(const T* value, uint64_t size);
 
-private:
-    T *value_{nullptr};
+   private:
+    T* value_{nullptr};
     uint64_t size_{0};
     uint8_t reserved_field_[8];
 };
@@ -117,16 +116,12 @@ private:
 #define ACL_ARRAY(Type, T)                                                              \
     class acl##Type##Array : public aclArray<T> {                                       \
         friend struct aclOpExecutor;                                                    \
-        friend acl##Type##Array *aclCreate##Type##Array(const T *value, uint64_t size); \
-        friend aclnnStatus aclDestroy##Type##Array(const acl##Type##Array *array);      \
+        friend acl##Type##Array* aclCreate##Type##Array(const T* value, uint64_t size); \
+        friend aclnnStatus aclDestroy##Type##Array(const acl##Type##Array* array);      \
                                                                                         \
-    private:                                                                            \
-        acl##Type##Array(const T *value, uint64_t size)                                 \
-            : aclArray<T>(value, size)                                                  \
-        {                                                                               \
-        }                                                                               \
-        ~acl##Type##Array() override                                                    \
-        {}                                                                              \
+       private:                                                                         \
+        acl##Type##Array(const T* value, uint64_t size) : aclArray<T>(value, size) {}   \
+        ~acl##Type##Array() override {}                                                 \
     }
 
 ACL_ARRAY(Bool, bool);
@@ -139,21 +134,20 @@ class aclTensor : public op::Object {
     friend class aclOpExecutor;
     friend mem::KernelGraph;
     friend class aclTensorList;
-    friend aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-                                      const int64_t *stride, int64_t offset, aclFormat format,
-                                      const int64_t *storageDims, uint64_t storageDimsNum,
-                                      void *tensorData);
-    friend aclnnStatus aclDestroyTensor(const aclTensor *tensor);
+    friend aclTensor* aclCreateTensor(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType,
+                                      const int64_t* stride, int64_t offset, aclFormat format,
+                                      const int64_t* storageDims, uint64_t storageDimsNum, void* tensorData);
+    friend aclnnStatus aclDestroyTensor(const aclTensor* tensor);
 
-public:
-    const op::Shape &GetStorageShape() const;
-    void SetStorageShape(const op::Shape &shape) const;
+   public:
+    const op::Shape& GetStorageShape() const;
+    void SetStorageShape(const op::Shape& shape) const;
 
-    const op::Shape &GetOriginalShape() const;
-    void SetOriginalShape(const op::Shape &shape) const;
+    const op::Shape& GetOriginalShape() const;
+    void SetOriginalShape(const op::Shape& shape) const;
 
-    const op::Shape &GetViewShape() const;
-    void SetViewShape(const op::Shape &shape);
+    const op::Shape& GetViewShape() const;
+    void SetViewShape(const op::Shape& shape);
 
     op::Format GetStorageFormat() const;
     void SetStorageFormat(op::Format format);
@@ -164,17 +158,17 @@ public:
     op::Format GetViewFormat() const;
     void SetViewFormat(op::Format format);
 
-    const op::Strides &GetViewStrides() const;
-    void SetViewStrides(const op::Strides &strides);
-    void SetViewStrides(op::Strides &&strides);
+    const op::Strides& GetViewStrides() const;
+    void SetViewStrides(const op::Strides& strides);
+    void SetViewStrides(op::Strides&& strides);
 
-    aclTensor &operator=(const aclTensor &other) = delete;
-    aclTensor &operator=(aclTensor &&other) = delete;
-    aclTensor(aclTensor &&other) = delete;
-    op::Tensor *GetTensor() const;
-    void *GetData() const;
-    void *GetStorageAddr() const;
-    const aclStorage *GetStorage() const;
+    aclTensor& operator=(const aclTensor& other) = delete;
+    aclTensor& operator=(aclTensor&& other) = delete;
+    aclTensor(aclTensor&& other) = delete;
+    op::Tensor* GetTensor() const;
+    void* GetData() const;
+    void* GetStorageAddr() const;
+    const aclStorage* GetStorage() const;
     int64_t Size() const;
     /**
      * Get the number of elements in this tensor
@@ -184,7 +178,7 @@ public:
     int64_t GetViewOffset() const;
     int64_t GetStorageOffset() const;
 
-    void SetStorageAddr(void *addr) const;
+    void SetStorageAddr(void* addr) const;
 
     void SetViewOffset(int64_t offset) const;
     void SetStorageOffset(int64_t offset);
@@ -192,8 +186,8 @@ public:
     void SetWorkspaceOffset(uint64_t offset) const;
     uint64_t GetWorkspaceOffset() const;
 
-    void SetExtend(void *extend) const;
-    void *GetExtend() const;
+    void SetExtend(void* extend) const;
+    void* GetExtend() const;
 
     op::TensorPlacement GetPlacement() const;
     bool IsEmpty() const;
@@ -202,48 +196,47 @@ public:
     void SetFromWorkspace(bool from_workspace) const;
     bool IsFromWorkspace() const;
 
-    template<typename T>
+    template <typename T>
     void SetData(int64_t index, const T value, op::DataType dataType);
-    template<typename T>
-    void SetData(const T *value, uint64_t size, op::DataType dataType);
+    template <typename T>
+    void SetData(const T* value, uint64_t size, op::DataType dataType);
     void SetDataType(op::DataType dataType);
-    void SetBoolData(const bool *value, uint64_t size, op::DataType dataType);
-    void SetIntData(const int64_t *value, uint64_t size, op::DataType dataType);
-    void SetFloatData(const float *value, uint64_t size, op::DataType dataType);
-    void SetFp16Data(const op::fp16_t *value, uint64_t size, op::DataType dataType);
-    void SetBf16Data(const op::bfloat16 *value, uint64_t size, op::DataType dataType);
-    void InitTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-                    const int64_t *stride, int64_t offset, aclFormat format,
-                    const int64_t *storageDims, uint64_t storageDimsNum,
-                    void *tensorDataAddr);
+    void SetBoolData(const bool* value, uint64_t size, op::DataType dataType);
+    void SetIntData(const int64_t* value, uint64_t size, op::DataType dataType);
+    void SetFloatData(const float* value, uint64_t size, op::DataType dataType);
+    void SetFp16Data(const op::fp16_t* value, uint64_t size, op::DataType dataType);
+    void SetBf16Data(const op::bfloat16* value, uint64_t size, op::DataType dataType);
+    void InitTensor(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType, const int64_t* stride,
+                    int64_t offset, aclFormat format, const int64_t* storageDims, uint64_t storageDimsNum,
+                    void* tensorDataAddr);
 
-private:
-    aclTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType, const int64_t *stride,
-              int64_t offset, const aclFormat format, const int64_t *storageDims, uint64_t storageDimsNum,
-              void *tensorDataAddr);
+   private:
+    aclTensor(const int64_t* viewDims, uint64_t viewDimsNum, aclDataType dataType, const int64_t* stride,
+              int64_t offset, const aclFormat format, const int64_t* storageDims, uint64_t storageDimsNum,
+              void* tensorDataAddr);
     aclTensor(op::DataType dataType, op::Format storageFormat, op::Format originFormat);
-    aclTensor(const op::Shape &shape, op::DataType dataType, op::Format format, void *tensorDataAddr);
-    aclTensor(const op::Shape &storageShape, const op::Shape &originShape, op::DataType dataType,
-              op::Format storageFormat, op::Format originFormat, void *tensorDataAddr);
-    aclTensor(const op::Shape &shape, op::DataType dataType, op::Format format);
-    aclTensor(const op::Shape &storageShape, const op::Shape &originShape, op::DataType dataType,
+    aclTensor(const op::Shape& shape, op::DataType dataType, op::Format format, void* tensorDataAddr);
+    aclTensor(const op::Shape& storageShape, const op::Shape& originShape, op::DataType dataType,
+              op::Format storageFormat, op::Format originFormat, void* tensorDataAddr);
+    aclTensor(const op::Shape& shape, op::DataType dataType, op::Format format);
+    aclTensor(const op::Shape& storageShape, const op::Shape& originShape, op::DataType dataType,
               op::Format storageFormat, op::Format originFormat);
-    aclTensor(const aclTensor &other, const op::Shape &shape, int64_t offset);
-    aclTensor(const aclIntArray *value, op::DataType dataType);
-    aclTensor(const aclBoolArray *value, op::DataType dataType);
-    aclTensor(const aclFloatArray *value, op::DataType dataType);
-    aclTensor(const aclFp16Array *value, op::DataType dataType);
-    aclTensor(const aclBf16Array *value, op::DataType dataType);
+    aclTensor(const aclTensor& other, const op::Shape& shape, int64_t offset);
+    aclTensor(const aclIntArray* value, op::DataType dataType);
+    aclTensor(const aclBoolArray* value, op::DataType dataType);
+    aclTensor(const aclFloatArray* value, op::DataType dataType);
+    aclTensor(const aclFp16Array* value, op::DataType dataType);
+    aclTensor(const aclBf16Array* value, op::DataType dataType);
     ~aclTensor() override;
-    template<typename T>
-    aclTensor(const T *value, uint64_t size, op::DataType dataType);
-    aclTensor(const aclScalar *value, op::DataType dataType);
+    template <typename T>
+    aclTensor(const T* value, uint64_t size, op::DataType dataType);
+    aclTensor(const aclScalar* value, op::DataType dataType);
     bool IsView() const;
     void SetView(bool is_view);
 
-private:
-    mutable op::Tensor *tensor_{nullptr};
-    mutable aclStorage *storage_{nullptr};
+   private:
+    mutable op::Tensor* tensor_{nullptr};
+    mutable aclStorage* storage_{nullptr};
     mutable int64_t viewOffset_{0};
     op::Strides viewStrides_{};
     op::Shape viewShape_{0};
@@ -254,28 +247,28 @@ private:
 
 struct aclTensorList : public op::Object {
     friend class aclOpExecutor;
-    friend aclTensorList *aclCreateTensorList(const aclTensor *const *value, uint64_t size);
-    friend aclnnStatus aclDestroyTensorList(const aclTensorList *array);
+    friend aclTensorList* aclCreateTensorList(const aclTensor* const* value, uint64_t size);
+    friend aclnnStatus aclDestroyTensorList(const aclTensorList* array);
 
-public:
-    aclTensor *&operator[](uint64_t i);
-    const aclTensor *operator[](uint64_t i) const;
+   public:
+    aclTensor*& operator[](uint64_t i);
+    const aclTensor* operator[](uint64_t i) const;
     uint64_t Size() const;
-    const aclTensor *const *GetData() const;
+    const aclTensor* const* GetData() const;
     ge::AscendString ToString() const;
 
-private:
-    aclTensor **tensors_{nullptr};
+   private:
+    aclTensor** tensors_{nullptr};
     uint64_t size_{0};
     uint8_t reserved_field_[8];
 
-private:
-    aclTensorList(const aclTensor *const *tensors, uint64_t size);
+   private:
+    aclTensorList(const aclTensor* const* tensors, uint64_t size);
     ~aclTensorList() override;
 };
 
 namespace op {
-template<typename T>
+template <typename T>
 class InputArg;
 }
 
@@ -283,9 +276,9 @@ class aclScalar : public op::Object {
     friend class aclOpExecutor;
     friend class aclScalarList;
 
-public:
-    aclScalar(const void *data, op::DataType dataType);
-    const void *GetData() const;
+   public:
+    aclScalar(const void* data, op::DataType dataType);
+    const void* GetData() const;
     uint64_t Size() const;
     op::DataType GetDataType() const;
     ~aclScalar() override {}
@@ -310,10 +303,10 @@ public:
      * @tparam to 目标数据类型
      * @return true:溢出, false:不溢出
      */
-    template<typename to>
+    template <typename to>
     bool CheckOverflows() const;
 
-private:
+   private:
     explicit aclScalar(int32_t value);
     explicit aclScalar(int64_t value);
     explicit aclScalar(int16_t value);
@@ -327,15 +320,12 @@ private:
     explicit aclScalar(op::fp16_t value);
     explicit aclScalar(op::bfloat16 value);
     explicit aclScalar(bool value);
-    template<typename T>
+    template <typename T>
     T To() const;
     ge::AscendString ToStr() const;
-    op::bfloat16 BFloat16() const
-    {
-        return op::bfloat16(v.ui16, op::bfloat16::from_bits());
-    }
+    op::bfloat16 BFloat16() const { return op::bfloat16(v.ui16, op::bfloat16::from_bits()); }
 
-private:
+   private:
     op::DataType dataType_;
     union v_t {
         float f;
@@ -356,23 +346,23 @@ private:
 
 struct aclScalarList : public op::Object {
     friend class aclOpExecutor;
-    friend aclScalarList *aclCreateScalarList(const aclScalar *const *value, uint64_t size);
-    friend aclnnStatus aclDestroyScalarList(const aclScalarList *array);
+    friend aclScalarList* aclCreateScalarList(const aclScalar* const* value, uint64_t size);
+    friend aclnnStatus aclDestroyScalarList(const aclScalarList* array);
 
-public:
-    aclScalar *&operator[](uint64_t i);
-    const aclScalar *operator[](uint64_t i) const;
+   public:
+    aclScalar*& operator[](uint64_t i);
+    const aclScalar* operator[](uint64_t i) const;
     uint64_t Size() const;
-    const aclScalar *const *GetData() const;
+    const aclScalar* const* GetData() const;
     ge::AscendString ToString() const;
 
-private:
-    aclScalar **scalars_{nullptr};
+   private:
+    aclScalar** scalars_{nullptr};
     uint64_t size_{0};
     uint8_t reserved_field_[16];
 
-private:
-    aclScalarList(const aclScalar *const *scalars, uint64_t size);
+   private:
+    aclScalarList(const aclScalar* const* scalars, uint64_t size);
     ~aclScalarList() override;
 };
 
@@ -398,5 +388,4 @@ ge::AscendString ToString(const aclScalarList& t);
 
 ge::AscendString ToString(aclDataType dataType);
 
-
-#endif // OP_API_COMMON_INC_OPDEV_COMMON_TYPES_H_
+#endif  // OP_API_COMMON_INC_OPDEV_COMMON_TYPES_H_

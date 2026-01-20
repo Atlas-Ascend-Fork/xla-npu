@@ -450,7 +450,7 @@ private:
             capacity_ = size_;
             allocated_storage_ = allocator_.allocate(capacity_);
             if (allocated_storage_ == nullptr) {
-                throw std::bad_alloc();
+                // throw std::bad_alloc();
             }
             return allocated_storage_;
         } else {
@@ -504,13 +504,13 @@ private:
     void CheckOutOfRange(const size_type index) const
     {
         if (index >= size_) {
-            throw std::out_of_range("Index out of range");
+            // throw std::out_of_range("Index out of range");
         }
     }
     static void AssertNonNeg(const difference_type value)
     {
         if (value < 0) {
-            throw std::range_error("The first iter is greater than the last");
+            // throw std::range_error("The first iter is greater than the last");
         }
     }
 
@@ -519,7 +519,7 @@ private:
         const auto new_cap = std::max(capacity_ * static_cast<size_type>(2), size_ + range_len);
         auto const new_storage = allocator_.allocate(new_cap);
         if (new_storage == nullptr) {
-            throw std::bad_alloc();
+            // throw std::bad_alloc();
         }
         auto const old_storage = GetPointer();
         auto new_ptr = new_storage;
