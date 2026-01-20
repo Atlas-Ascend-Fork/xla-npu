@@ -19,14 +19,15 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "xla/backends/cpu/runtime/kernel.h"
-#include "xla/backends/cpu/runtime/kernel_c_api.h"
+// #include "xla/backends/cpu/runtime/kernel.h"
+// #include "xla/backends/cpu/runtime/kernel_c_api.h"
 // #include "xla/backends/cpu/runtime/thunk.h"
 #include "xla/codegen/kernel_spec.h"
 #include "xla/runtime/work_group.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/third_party/register/aclnnopInterface.h"
 
 namespace xla {
 
@@ -90,6 +91,17 @@ class NpuKernelThunk : public NpuKernelThunkBase {
 
     static constexpr size_t Size(int64_t size) { return std::max<size_t>(size, 0); }
 
+    absl::StatusOr<std::vector<aclTensor*>> ExtractAclInputOutTensorPtr(const NpuBufferAllocations* allocations,
+                                                                        const std::vector<Shape>& input_param_shapes,
+                                                                        const std::vector<Shape>& output_param_shapes);
+    using AclnnExecFunc = aclnnStatus (*)(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+                                          aclrtStream stream);
+    tsl::AsyncValueRef<ExecuteEvent> ExecuteAclnn(uint64_t workspaceSize, aclOpExecutor* executor,
+                                                  AclnnExecFunc aclnnExecFunc);
+
+    absl::StatusOr<bool> PrintOutputTensor(const NpuBufferAllocations* allocations,
+                                           const std::vector<Shape>& output_param_shapes);
+
     // If we know the number of arguments and results at compile time, we use
     // std::array with a fixed size, which allows compiler to automatically unroll
     // all the loops on a hot path.
@@ -100,16 +112,16 @@ class NpuKernelThunk : public NpuKernelThunkBase {
     using ResultsBuffers = std::conditional_t<IsDynamic(num_results), std::vector<BufferAllocation::Slice>,
                                               std::array<BufferAllocation::Slice, Size(num_results)>>;
 
-    using KernelArgs = std::conditional_t<IsDynamic(num_arguments) || IsDynamic(num_results),
-                                          absl::InlinedVector<XLA_CPU_KernelArg, 8>,
-                                          std::array<XLA_CPU_KernelArg, Size(num_arguments + num_results)>>;
+    // using KernelArgs = std::conditional_t<IsDynamic(num_arguments) || IsDynamic(num_results),
+    //                                       absl::InlinedVector<XLA_CPU_KernelArg, 8>,
+    //                                       std::array<XLA_CPU_KernelArg, Size(num_arguments + num_results)>>;
 
     NpuKernelThunk(Info info, absl::Span<const BufferAllocation::Slice> arguments_buffers,
                    absl::Span<const BufferAllocation::Slice> results_buffers,
                    absl::flat_hash_set<int64_t> invariant_arguments, absl::string_view kernel_name,
                    NumWorkGroups num_workgroups, std::optional<uint64_t> min_alignment);
 
-    absl::Status CheckInvariantBuffersMemory(const KernelArgs& kernel_args) const;
+    // absl::Status CheckInvariantBuffersMemory(const KernelArgs& kernel_args) const;
 
     ArgumentsBuffers arguments_buffers_;
     ResultsBuffers results_buffers_;
@@ -128,29 +140,29 @@ class NpuKernelThunk : public NpuKernelThunkBase {
     // workgroup.
     bool call_once_;
 
-    // Lazily loaded host kernel corresponding to `kernel_name_`.
-    absl::once_flag kernel_init_flag_;
-    absl::StatusOr<cpu::Kernel> kernel_;
+    // // Lazily loaded host kernel corresponding to `kernel_name_`.
+    // absl::once_flag kernel_init_flag_;
+    // absl::StatusOr<cpu::Kernel> kernel_;
 
-    // Pre-initialized kernel arguments that are updated with memory addresses
-    // before the kernel launch. Align `KernelArgs` to 64 bytes to allow aligned
-    // moves on a hot path.
-    alignas(64) KernelArgs kernel_args_;
+    // // Pre-initialized kernel arguments that are updated with memory addresses
+    // // before the kernel launch. Align `KernelArgs` to 64 bytes to allow aligned
+    // // moves on a hot path.
+    // alignas(64) KernelArgs kernel_args_;
 };
 
 }  // namespace internal
 
-// Kernel thunk specialization for a small kernel with a statically known number
-// of arguments and results.
-template <int64_t num_arguments, int64_t num_results>
-class NpuSmallKernelThunk final : public internal::NpuKernelThunk<num_arguments, num_results> {
-    using Base = internal::NpuKernelThunk<num_arguments, num_results>;
+// // Kernel thunk specialization for a small kernel with a statically known number
+// // of arguments and results.
+// template <int64_t num_arguments, int64_t num_results>
+// class NpuSmallKernelThunk final : public internal::NpuKernelThunk<num_arguments, num_results> {
+//     using Base = internal::NpuKernelThunk<num_arguments, num_results>;
 
-   public:
-    using Base::Base;
+//    public:
+//     using Base::Base;
 
-    tsl::AsyncValueRef<NpuThunk::ExecuteEvent> Execute(const NpuThunk::ExecuteParams& params) final;
-};
+//     tsl::AsyncValueRef<NpuThunk::ExecuteEvent> Execute(const NpuThunk::ExecuteParams& params) final;
+// };
 
 // Kernel thunk specialization for dynamic number of arguments and results.
 class NpuKernelThunk final : public internal::NpuKernelThunk<> {

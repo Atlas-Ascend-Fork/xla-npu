@@ -60,8 +60,8 @@ try:
     # x = np.array([1.0, 2.0, 3.0, 4.0])
     print(f"input array: {x}")
 
-    # func = jax.jit(lambda x: jax.nn.gelu(x))
-    func = jax.jit(lambda x: x + 2)
+    func = jax.jit(lambda x: jax.nn.gelu(x))
+    # func = jax.jit(lambda x: x + 2)
     y = func(x)
     result = y.block_until_ready()
     print(f"output array: {result}")

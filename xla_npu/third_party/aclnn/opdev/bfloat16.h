@@ -21,7 +21,7 @@
 #include <cmath>
 #include <complex>
 
-#include "opdev/fp16_t.h"
+#include "xla/xla_npu/third_party/aclnn/opdev/fp16_t.h"
 
 namespace op {
 
@@ -33,52 +33,35 @@ typedef std::complex<double> complex128;
 // see framework/bfloat16.h for description.
 struct bfloat16 {
     struct from_bits_t {};
-    static constexpr from_bits_t from_bits()
-    {
-        return from_bits_t();
-    }
+    static constexpr from_bits_t from_bits() { return from_bits_t(); }
 
-    constexpr bfloat16(uint16_t bits, [[maybe_unused]] from_bits_t fromBits) : value(bits)
-    {
-    }
+    constexpr bfloat16(uint16_t bits, [[maybe_unused]] from_bits_t fromBits) : value(bits) {}
 
     // The default constructor must yield a zero value, not an uninitialized
     // value; some TF kernels use T() as a zero value.
-    bfloat16() : value(ZERO_VALUE)
-    {}
+    bfloat16() : value(ZERO_VALUE) {}
 
-    bfloat16(float v)
-    {
-        value = round_to_bfloat16(v).value;
-    }
+    bfloat16(float v) { value = round_to_bfloat16(v).value; }
 
     // Following the convention of numpy, converting between complex and
     // float will lead to loss of imag value.
-    bfloat16(const complex64 &val)
-        : bfloat16(val.real())
-    {}
+    bfloat16(const complex64& val) : bfloat16(val.real()) {}
 
-    bfloat16(const complex128 &val)
-        : bfloat16(static_cast<float>(val.real()))
-    {}
+    bfloat16(const complex128& val) : bfloat16(static_cast<float>(val.real())) {}
 
-    template<class T>
-    bfloat16(const T &val)
-        : bfloat16(static_cast<float>(val))
-    {}
+    template <class T>
+    bfloat16(const T& val) : bfloat16(static_cast<float>(val)) {}
 
-    template<typename T>
-    bfloat16 &operator=(T other)
-    {
+    template <typename T>
+    bfloat16& operator=(T other) {
         value = round_to_bfloat16(static_cast<float>(other)).value;
         return *this;
     }
 
-    operator float() const
-    {
+    operator float() const {
         float result = 0;
 
-        uint16_t *q = reinterpret_cast<uint16_t *>(&result);
+        uint16_t* q = reinterpret_cast<uint16_t*>(&result);
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
         q[0] = value;
@@ -88,80 +71,35 @@ struct bfloat16 {
         return result;
     }
 
-    operator bool() const
-    {
-        return std::abs(float(*this)) >= std::numeric_limits<float>::epsilon();
-    }
+    operator bool() const { return std::abs(float(*this)) >= std::numeric_limits<float>::epsilon(); }
 
-    operator short() const
-    {
-        return static_cast<short>(float(*this));
-    }
+    operator short() const { return static_cast<short>(float(*this)); }
 
-    operator int() const
-    {
-        return static_cast<int>(float(*this));
-    }
+    operator int() const { return static_cast<int>(float(*this)); }
 
-    operator long() const
-    {
-        return static_cast<long>(float(*this));
-    }
+    operator long() const { return static_cast<long>(float(*this)); }
 
-    operator char() const
-    {
-        return static_cast<char>(float(*this));
-    }
+    operator char() const { return static_cast<char>(float(*this)); }
 
-    operator signed char() const
-    {
-        return static_cast<signed char>(float(*this));
-    }
+    operator signed char() const { return static_cast<signed char>(float(*this)); }
 
-    operator unsigned char() const
-    {
-        return static_cast<unsigned char>(float(*this));
-    }
+    operator unsigned char() const { return static_cast<unsigned char>(float(*this)); }
 
-    operator unsigned short() const
-    {
-        return static_cast<unsigned short>(float(*this));
-    }
+    operator unsigned short() const { return static_cast<unsigned short>(float(*this)); }
 
-    operator unsigned int() const
-    {
-        return static_cast<unsigned int>(float(*this));
-    }
+    operator unsigned int() const { return static_cast<unsigned int>(float(*this)); }
 
-    operator unsigned long() const
-    {
-        return static_cast<unsigned long>(float(*this));
-    }
+    operator unsigned long() const { return static_cast<unsigned long>(float(*this)); }
 
-    operator unsigned long long() const
-    {
-        return static_cast<unsigned long long>(float(*this));
-    }
+    operator unsigned long long() const { return static_cast<unsigned long long>(float(*this)); }
 
-    operator long long() const
-    {
-        return static_cast<long long>(float(*this));
-    }
+    operator long long() const { return static_cast<long long>(float(*this)); }
 
-    operator double() const
-    {
-        return static_cast<double>(float(*this));
-    }
+    operator double() const { return static_cast<double>(float(*this)); }
 
-    operator complex64() const
-    {
-        return complex64(float(*this), float(0.0));
-    }
+    operator complex64() const { return complex64(float(*this), float(0.0)); }
 
-    operator complex128() const
-    {
-        return complex128(double(*this), double(0.0));
-    }
+    operator complex128() const { return complex128(double(*this), double(0.0)); }
 
     union FP32 {
         unsigned int u;
@@ -174,8 +112,7 @@ struct bfloat16 {
     // than this (documented in cl/175987786), that is exponentially harder to
     // understand and document. Switch to the faster version when converting to
     // BF16 becomes compute-bound.
-    static bfloat16 round_to_bfloat16(float v)
-    {
+    static bfloat16 round_to_bfloat16(float v) {
         uint32_t input;
         FP32 f;
         f.f = v;
@@ -199,214 +136,122 @@ struct bfloat16 {
         return output;
     }
 
-    constexpr static bfloat16 epsilon()
-    {
-        return bfloat16(0x3c00, from_bits());
-    }
+    constexpr static bfloat16 epsilon() { return bfloat16(0x3c00, from_bits()); }
 
-    constexpr static bfloat16 highest()
-    {
-        return bfloat16(0x7F7F, from_bits());
-    }
+    constexpr static bfloat16 highest() { return bfloat16(0x7F7F, from_bits()); }
 
-    constexpr static bfloat16 lowest()
-    {
-        return bfloat16(0xFF7F, from_bits());
-    }
+    constexpr static bfloat16 lowest() { return bfloat16(0xFF7F, from_bits()); }
 
-    constexpr static bfloat16 min_positive_normal()
-    {
-        return bfloat16(0x0080, from_bits());
-    }
+    constexpr static bfloat16 min_positive_normal() { return bfloat16(0x0080, from_bits()); }
 
-    bool IsZero() const
-    { return (value & 0x7FFF) == ZERO_VALUE; }
+    bool IsZero() const { return (value & 0x7FFF) == ZERO_VALUE; }
 
     uint16_t value;
 
     // A value that represents "not a number".
     static constexpr uint16_t NAN_VALUE = 0x7FC0;
 
-private:
+   private:
     // A value that represents "zero".
     static constexpr uint16_t ZERO_VALUE = 0;
 
-    static bool float_isnan(const float &x)
-    {
-        return std::isnan(x);
-    }
+    static bool float_isnan(const float& x) { return std::isnan(x); }
 };
 
-inline std::ostream &operator<<(std::ostream &os,
-                                const bfloat16 &dt)
-{
+inline std::ostream& operator<<(std::ostream& os, const bfloat16& dt) {
     os << static_cast<float>(dt);
     return os;
 }
 
-inline bfloat16 operator+(bfloat16 a, bfloat16 b)
-{
-    return bfloat16(static_cast<float>(a) + static_cast<float>(b));
-}
-inline bfloat16 operator+(bfloat16 a, int b)
-{
-    return bfloat16(static_cast<float>(a) + static_cast<float>(b));
-}
-inline bfloat16 operator+(int a, bfloat16 b)
-{
-    return bfloat16(static_cast<float>(a) + static_cast<float>(b));
-}
-inline bfloat16 operator-(bfloat16 a, bfloat16 b)
-{
-    return bfloat16(static_cast<float>(a) - static_cast<float>(b));
-}
-inline bfloat16 operator*(bfloat16 a, bfloat16 b)
-{
-    return bfloat16(static_cast<float>(a) * static_cast<float>(b));
-}
-inline bfloat16 operator/(bfloat16 a, bfloat16 b)
-{
-    return bfloat16(static_cast<float>(a) / static_cast<float>(b));
-}
-inline bfloat16 operator-(bfloat16 a)
-{
+inline bfloat16 operator+(bfloat16 a, bfloat16 b) { return bfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+inline bfloat16 operator+(bfloat16 a, int b) { return bfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+inline bfloat16 operator+(int a, bfloat16 b) { return bfloat16(static_cast<float>(a) + static_cast<float>(b)); }
+inline bfloat16 operator-(bfloat16 a, bfloat16 b) { return bfloat16(static_cast<float>(a) - static_cast<float>(b)); }
+inline bfloat16 operator*(bfloat16 a, bfloat16 b) { return bfloat16(static_cast<float>(a) * static_cast<float>(b)); }
+inline bfloat16 operator/(bfloat16 a, bfloat16 b) { return bfloat16(static_cast<float>(a) / static_cast<float>(b)); }
+inline bfloat16 operator-(bfloat16 a) {
     a.value ^= 0x8000;
     return a;
 }
 
-inline bool operator<(bfloat16 a, bfloat16 b)
-{
+inline bool operator<(bfloat16 a, bfloat16 b) { return static_cast<float>(a) < static_cast<float>(b); }
+
+template <typename T>
+bool operator<(T a, bfloat16 b) {
     return static_cast<float>(a) < static_cast<float>(b);
 }
 
-template<typename T>
-bool operator<(T a, bfloat16 b)
-{
-    return static_cast<float>(a) < static_cast<float>(b);
-}
+inline bool operator<=(bfloat16 a, bfloat16 b) { return static_cast<float>(a) <= static_cast<float>(b); }
+inline bool operator==(bfloat16 a, bfloat16 b) { return a.value == b.value; }
+inline bool operator!=(bfloat16 a, bfloat16 b) { return a.value != b.value; }
 
-inline bool operator<=(bfloat16 a, bfloat16 b)
-{
-    return static_cast<float>(a) <= static_cast<float>(b);
-}
-inline bool operator==(bfloat16 a, bfloat16 b)
-{
-    return a.value == b.value;
-}
-inline bool operator!=(bfloat16 a, bfloat16 b)
-{
-    return a.value != b.value;
-}
-
-template<typename T>
-bool operator>(T a, bfloat16 b)
-{
+template <typename T>
+bool operator>(T a, bfloat16 b) {
     return static_cast<float>(a) > static_cast<float>(b);
 }
-inline bool operator>=(bfloat16 a, bfloat16 b)
-{
-    return static_cast<float>(a) >= static_cast<float>(b);
-}
-inline bfloat16 &operator+=(bfloat16 &a, bfloat16 b)
-{
+inline bool operator>=(bfloat16 a, bfloat16 b) { return static_cast<float>(a) >= static_cast<float>(b); }
+inline bfloat16& operator+=(bfloat16& a, bfloat16 b) {
     a = a + b;
     return a;
 }
-inline bfloat16 &operator-=(bfloat16 &a, bfloat16 b)
-{
+inline bfloat16& operator-=(bfloat16& a, bfloat16 b) {
     a = a - b;
     return a;
 }
-inline bfloat16 operator++(bfloat16 &a)
-{
+inline bfloat16 operator++(bfloat16& a) {
     a += bfloat16(1);
     return a;
 }
-inline bfloat16 operator--(bfloat16 &a)
-{
+inline bfloat16 operator--(bfloat16& a) {
     a -= bfloat16(1);
     return a;
 }
-inline bfloat16 operator++(bfloat16 &a, int)
-{
+inline bfloat16 operator++(bfloat16& a, int) {
     bfloat16 original_value = a;
     ++a;
     return original_value;
 }
-inline bfloat16 operator--(bfloat16 &a, int)
-{
+inline bfloat16 operator--(bfloat16& a, int) {
     bfloat16 original_value = a;
     --a;
     return original_value;
 }
-inline bfloat16 &operator*=(bfloat16 &a, bfloat16 b)
-{
+inline bfloat16& operator*=(bfloat16& a, bfloat16 b) {
     a = a * b;
     return a;
 }
-inline bfloat16 &operator/=(bfloat16 &a, bfloat16 b)
-{
+inline bfloat16& operator/=(bfloat16& a, bfloat16 b) {
     a = a / b;
     return a;
 }
-} // end namespace op
+}  // end namespace op
 
 namespace std {
-template<>
+template <>
 struct hash<op::bfloat16> {
-    size_t operator()(const op::bfloat16 &v) const
-    {
-        return hash<float>()(static_cast<float>(v));
-    }
+    size_t operator()(const op::bfloat16& v) const { return hash<float>()(static_cast<float>(v)); }
 };
 
 using op::bfloat16;
-inline bool isinf(const bfloat16 &a)
-{ return std::isinf(float(a)); }
-inline bool isnan(const bfloat16 &a)
-{ return std::isnan(float(a)); }
-inline bool isfinite(const bfloat16 &a)
-{ return std::isfinite(float(a)); }
-inline bfloat16 abs(const bfloat16 &a)
-{ return bfloat16(std::abs(float(a))); }
-inline bfloat16 exp(const bfloat16 &a)
-{ return bfloat16(std::exp(float(a))); }
-inline bfloat16 log(const bfloat16 &a)
-{ return bfloat16(std::log(float(a))); }
-inline bfloat16 log10(const bfloat16 &a)
-{
-    return bfloat16(std::log10(float(a)));
-}
-inline bfloat16 sqrt(const bfloat16 &a)
-{
-    return bfloat16(std::sqrt(float(a)));
-}
-inline bfloat16 pow(const bfloat16 &a, const bfloat16 &b)
-{
-    return bfloat16(std::pow(float(a), float(b)));
-}
-inline bfloat16 sin(const bfloat16 &a)
-{ return bfloat16(std::sin(float(a))); }
-inline bfloat16 cos(const bfloat16 &a)
-{ return bfloat16(std::cos(float(a))); }
-inline bfloat16 tan(const bfloat16 &a)
-{ return bfloat16(std::tan(float(a))); }
-inline bfloat16 tanh(const bfloat16 &a)
-{
-    return bfloat16(std::tanh(float(a)));
-}
-inline bfloat16 floor(const bfloat16 &a)
-{
-    return bfloat16(std::floor(float(a)));
-}
-inline bfloat16 ceil(const bfloat16 &a)
-{
-    return bfloat16(std::ceil(float(a)));
-}
+inline bool isinf(const bfloat16& a) { return std::isinf(float(a)); }
+inline bool isnan(const bfloat16& a) { return std::isnan(float(a)); }
+inline bool isfinite(const bfloat16& a) { return std::isfinite(float(a)); }
+inline bfloat16 abs(const bfloat16& a) { return bfloat16(std::abs(float(a))); }
+inline bfloat16 exp(const bfloat16& a) { return bfloat16(std::exp(float(a))); }
+inline bfloat16 log(const bfloat16& a) { return bfloat16(std::log(float(a))); }
+inline bfloat16 log10(const bfloat16& a) { return bfloat16(std::log10(float(a))); }
+inline bfloat16 sqrt(const bfloat16& a) { return bfloat16(std::sqrt(float(a))); }
+inline bfloat16 pow(const bfloat16& a, const bfloat16& b) { return bfloat16(std::pow(float(a), float(b))); }
+inline bfloat16 sin(const bfloat16& a) { return bfloat16(std::sin(float(a))); }
+inline bfloat16 cos(const bfloat16& a) { return bfloat16(std::cos(float(a))); }
+inline bfloat16 tan(const bfloat16& a) { return bfloat16(std::tan(float(a))); }
+inline bfloat16 tanh(const bfloat16& a) { return bfloat16(std::tanh(float(a))); }
+inline bfloat16 floor(const bfloat16& a) { return bfloat16(std::floor(float(a))); }
+inline bfloat16 ceil(const bfloat16& a) { return bfloat16(std::ceil(float(a))); }
 
-template<>
+template <>
 class numeric_limits<op::bfloat16> {
-public:
+   public:
     static constexpr bool has_infinity = true;
     static constexpr bool has_quiet_NaN = true;
     static constexpr bool has_signaling_NaN = true;
@@ -431,45 +276,19 @@ public:
     static constexpr auto traps = numeric_limits<float>::traps;
     static constexpr auto tinyness_before = numeric_limits<float>::tinyness_before;
 
-    static constexpr op::bfloat16 min()
-    {
-        return op::bfloat16::min_positive_normal();
-    }
-    static constexpr op::bfloat16 lowest()
-    {
-        return op::bfloat16::lowest();
-    }
-    static constexpr op::bfloat16 max()
-    {
-        return op::bfloat16::highest();
-    }
-    static constexpr op::bfloat16 epsilon()
-    {
-        return op::bfloat16::epsilon();
-    }
-    static constexpr op::bfloat16 round_error()
-    {
-        return op::bfloat16(0x3F00, op::bfloat16::from_bits());
-    }
-    static constexpr op::bfloat16 infinity()
-    {
-        return op::bfloat16(0x7F80, op::bfloat16::from_bits());
-    }
-    static constexpr op::bfloat16 quiet_NaN()
-    {
+    static constexpr op::bfloat16 min() { return op::bfloat16::min_positive_normal(); }
+    static constexpr op::bfloat16 lowest() { return op::bfloat16::lowest(); }
+    static constexpr op::bfloat16 max() { return op::bfloat16::highest(); }
+    static constexpr op::bfloat16 epsilon() { return op::bfloat16::epsilon(); }
+    static constexpr op::bfloat16 round_error() { return op::bfloat16(0x3F00, op::bfloat16::from_bits()); }
+    static constexpr op::bfloat16 infinity() { return op::bfloat16(0x7F80, op::bfloat16::from_bits()); }
+    static constexpr op::bfloat16 quiet_NaN() {
         return op::bfloat16(op::bfloat16::NAN_VALUE, op::bfloat16::from_bits());
     }
-    static constexpr op::bfloat16 signaling_NaN()
-    {
-        return op::bfloat16(0x7F80, op::bfloat16::from_bits());
-    }
-    static constexpr op::bfloat16 denorm_min()
-    {
-        return op::bfloat16(0x0001, op::bfloat16::from_bits());
-    }
+    static constexpr op::bfloat16 signaling_NaN() { return op::bfloat16(0x7F80, op::bfloat16::from_bits()); }
+    static constexpr op::bfloat16 denorm_min() { return op::bfloat16(0x0001, op::bfloat16::from_bits()); }
 };
 
-} // namespace std
+}  // namespace std
 
-
-#endif // OP_API_BFLOAT16_H
+#endif  // OP_API_BFLOAT16_H

@@ -118,6 +118,7 @@ class NpuDeviceMemoryConstant final : public NpuDeviceMemory {
     void* base_;
     size_t size_bytes_;
 };
+
 tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateDelayedMemory() {
     return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
 }
@@ -132,11 +133,12 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* 
     aclError ret = npu::aclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (ret != ACL_SUCCESS) {
         NpuLog::Print(NpuLog::Level::ERROR, "Copy result from device to host failed. ERROR: %d\n", ret);
-        // TODO 异常处理
+        return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
     }
 
+    // 原本cpu的常量内存分配逻辑是直接复用host上已有的常量内存地址,npu则不行,需要做一次h2d
     NpuLog::Print(NpuLog::Level::DEBUG, "Create const memory and move to npu, addr %p, size_bytes %d", base, size);
-    return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryConstant>(mem->base(), mem->size_bytes());
+    return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
 }
 
 // Allocates owning memory wrapped in an available `AsyncValueRef`.

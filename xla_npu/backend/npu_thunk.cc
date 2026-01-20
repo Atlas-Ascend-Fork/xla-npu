@@ -12,14 +12,14 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "xla/backends/cpu/collectives/cpu_collectives.h"
-#include "xla/backends/cpu/collectives/in_process_collectives.h"
+// #include "xla/backends/cpu/collectives/cpu_collectives.h"
+// #include "xla/backends/cpu/collectives/in_process_collectives.h"
 // #include "xla/backends/cpu/runtime/xnnpack/xnn_interop.h"
 // #include "xla/backends/cpu/runtime/xnnpack/xnn_threadpool.h"
 #include "tsl/profiler/lib/traceme.h"
 #include "tsl/profiler/lib/traceme_encode.h"
 #include "xla/executable_run_options.h"
-#include "xla/service/cpu/cpu_executable_run_options.h"
+// #include "xla/service/cpu/cpu_executable_run_options.h"
 #include "xla/service/global_device_id.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
@@ -33,12 +33,50 @@
 // #include "xla/backends/cpu/runtime/ynnpack/ynn_threadpool.h"
 // #endif  // XLA_YNNPACK
 
+#include "xla/xla_npu/third_party/register/aclInterface.h"
+
 namespace xla {
 
 // Ok execute event allocated with the static storage duration.
 static tsl::internal::AsyncValueStorage<NpuThunk::ExecuteEvent> ok_storage;
 absl::NoDestructor<tsl::AsyncValueOwningRef<NpuThunk::ExecuteEvent>> NpuThunk::ok_event_(
     tsl::MakeAvailableAsyncValueRef<ExecuteEvent>(ok_storage));
+
+tsl::AsyncValueRef<NpuThunk::ExecuteEvent> NpuThunk::ErrorExecuteEvent(absl::Status error_status) {
+    auto async_value = tsl::MakeAvailableAsyncValueRef<ExecuteEvent>();
+    // 设置错误状态（TSL AsyncValue 通用接口）
+    async_value.SetError(std::move(error_status));
+    return async_value;
+}
+
+tsl::AsyncValueRef<NpuThunk::ExecuteEvent> NpuThunk::AclErrorExecuteEvent(int acl_ret, const std::string& context) {
+    // 映射 ACL 错误码到 absl::Status
+    absl::StatusCode code = absl::StatusCode::kInternal;
+    std::string error_detail;
+    switch (acl_ret) {
+        case ACL_ERROR_INVALID_PARAM:
+            code = absl::StatusCode::kInvalidArgument;
+            error_detail = "invalid parameter";
+            break;
+        case ACL_ERROR_API_NOT_SUPPORT:
+            code = absl::StatusCode::kUnimplemented;
+            error_detail = "operation not supported";
+            break;
+        case ACL_ERROR_BAD_ALLOC:
+            code = absl::StatusCode::kResourceExhausted;
+            error_detail = "out of memory";
+            break;
+        default:
+            error_detail = "internal error";
+            break;
+    }
+
+    // 拼接详细错误信息（含文件、行号、上下文）
+    std::string error_msg =
+        absl::StrFormat("[%s:%d] %s: %s (ACL error code: %d)", __FILE__, __LINE__, context, error_detail, acl_ret);
+
+    return ErrorExecuteEvent(absl::Status(code, error_msg));
+}
 
 absl::string_view NpuThunk::KindToString(Kind kind) {
     switch (kind) {
@@ -87,37 +125,37 @@ absl::string_view NpuThunk::KindToString(Kind kind) {
 
 NpuThunk::NpuThunk(Kind kind, Info info) : kind_(kind), info_(std::move(info)) {}
 
-absl::StatusOr<NpuThunk::CollectiveExecuteParams> NpuThunk::CollectiveExecuteParams::Create(
-    const ExecutableRunOptions* run_options) {
-    // Device ordinal must be set by caller and passed in run options, if not,
-    // we use the device ordinal from the parent StreamExecutor.
-    int32_t device_ordinal = run_options->device_ordinal() >= 0 ? run_options->device_ordinal()
-                                                                : run_options->stream()->parent()->device_ordinal();
+// absl::StatusOr<NpuThunk::CollectiveExecuteParams> NpuThunk::CollectiveExecuteParams::Create(
+//     const ExecutableRunOptions* run_options) {
+//     // Device ordinal must be set by caller and passed in run options, if not,
+//     // we use the device ordinal from the parent StreamExecutor.
+//     int32_t device_ordinal = run_options->device_ordinal() >= 0 ? run_options->device_ordinal()
+//                                                                 : run_options->stream()->parent()->device_ordinal();
 
-    // Default implementation of a collectives interface that can execute
-    // collective operations within the same process.
-    static cpu::CpuCollectives* const in_process_collectives = new cpu::InProcessCollectives();
+//     // Default implementation of a collectives interface that can execute
+//     // collective operations within the same process.
+//     static cpu::CpuCollectives* const in_process_collectives = new cpu::InProcessCollectives();
 
-    // If CPU executable run options are set, use the collectives interface
-    // provided by the executable run options if it is set. Otherwise, use the
-    // in-process collectives interface.
-    const cpu::CpuExecutableRunOptions* cpu_run_options = run_options->cpu_executable_run_options();
-    cpu::CpuCollectives* collectives =
-        cpu_run_options && cpu_run_options->collectives() ? cpu_run_options->collectives() : in_process_collectives;
+//     // If CPU executable run options are set, use the collectives interface
+//     // provided by the executable run options if it is set. Otherwise, use the
+//     // in-process collectives interface.
+//     const cpu::CpuExecutableRunOptions* cpu_run_options = run_options->cpu_executable_run_options();
+//     cpu::CpuCollectives* collectives =
+//         cpu_run_options && cpu_run_options->collectives() ? cpu_run_options->collectives() : in_process_collectives;
 
-    return CollectiveExecuteParams{run_options->run_id(), device_ordinal, GlobalDeviceId(run_options->device_ordinal()),
-                                   run_options->device_assignment(), collectives};
-}
+//     return CollectiveExecuteParams{run_options->run_id(), device_ordinal, GlobalDeviceId(run_options->device_ordinal()),
+//                                    run_options->device_assignment(), collectives};
+// }
 
-NpuThunk::CollectiveExecuteParams::CollectiveExecuteParams(RunId run_id, int64_t local_device_ordinal,
-                                                           GlobalDeviceId global_device_id,
-                                                           const DeviceAssignment* device_assignment,
-                                                           cpu::CpuCollectives* collectives)
-    : run_id(run_id),
-      local_device_ordinal(local_device_ordinal),
-      global_device_id(global_device_id),
-      device_assignment(device_assignment),
-      collectives(collectives) {}
+// NpuThunk::CollectiveExecuteParams::CollectiveExecuteParams(RunId run_id, int64_t local_device_ordinal,
+//                                                            GlobalDeviceId global_device_id,
+//                                                            const DeviceAssignment* device_assignment,
+//                                                            cpu::CpuCollectives* collectives)
+//     : run_id(run_id),
+//       local_device_ordinal(local_device_ordinal),
+//       global_device_id(global_device_id),
+//       device_assignment(device_assignment),
+//       collectives(collectives) {}
 
 absl::StatusOr<NpuThunk::CustomCallExecuteParams> NpuThunk::CustomCallExecuteParams::Create(
     const ExecutableRunOptions* run_options) {

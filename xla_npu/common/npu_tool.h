@@ -7,17 +7,9 @@
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/xla_data.pb.h"
-
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"
-
-#define CHECK_RET(cond, return_expr) \
-    do {                             \
-        if (!(cond)) {               \
-            return_expr;             \
-        }                            \
-    } while (0)
 
 namespace xla {
 

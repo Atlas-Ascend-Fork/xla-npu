@@ -414,6 +414,15 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
     NpuLog::Print(NpuLog::Level::DEBUG, "PjRtNpuClient created.");
 }
 
+PjRtNpuClient::~PjRtNpuClient() {
+    auto ret = npu::aclFinalize();
+    if (ret != ACL_SUCCESS) {
+        NpuLog::Print(NpuLog::Level::ERROR, "Acl finalize failed, error code %d", ret);
+    } else {
+        NpuLog::Print(NpuLog::Level::DEBUG, "Acl finalize success");
+    }
+}
+
 absl::StatusOr<PjRtDevice*> PjRtNpuClient::LookupDevice(PjRtGlobalDeviceId global_device_id) const {
     auto it = id_to_device_.find(global_device_id);
     if (it != id_to_device_.end()) {
@@ -1045,8 +1054,8 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
 
             NpuBufferAllocations allocations(buffer_device_mem);
 
-            TF_ASSIGN_OR_RETURN(NpuThunk::CollectiveExecuteParams collective_params,
-                                NpuThunk::CollectiveExecuteParams::Create(&run_options));
+            // TF_ASSIGN_OR_RETURN(NpuThunk::CollectiveExecuteParams collective_params,
+            //                     NpuThunk::CollectiveExecuteParams::Create(&run_options));
 
             TF_ASSIGN_OR_RETURN(NpuThunk::CustomCallExecuteParams custom_call_execute_params,
                                 NpuThunk::CustomCallExecuteParams::Create(&run_options));
@@ -1065,14 +1074,12 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
 
             NpuThunk::ExecuteParams execute_params = {
                 // npu_executable->function_library(),
-                nullptr,
                 &allocations,
                 // cpu::GetXfeedManager(run_options.device_ordinal()),
-                nullptr,
                 run_options.intra_op_thread_pool(),
                 // &task_runner,
                 nullptr,
-                &collective_params,
+                // &collective_params,
                 &custom_call_execute_params,
                 // xnn_params ? &*xnn_params : nullptr,
                 // ynn_params ? &*ynn_params : nullptr,

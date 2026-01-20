@@ -2,6 +2,7 @@
 #define REGISTER_ACLNNINTERFACE_H_
 
 #include "xla/xla_npu/third_party/aclnn/acl_meta.h"
+// #include "xla/xla_npu/third_party/aclnn/opdev/common_types.h"
 #include "xla/xla_npu/third_party/register/functionLoader.h"
 
 #define DECLARE_ACL_FUNC_IN_NNOPBASE(ret, func_name, args_type, args_name) \

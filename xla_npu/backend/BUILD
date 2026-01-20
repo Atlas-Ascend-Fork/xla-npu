@@ -54,12 +54,13 @@ cc_library(
     # defines = if_ynnpack(["XLA_YNNPACK"]),
     deps = [
         ":npu_buffer_allocations",
+        "//xla/xla_npu/third_party/register:acl_interface",
 
-        "//xla/backends/cpu/runtime:function_library",
-        "//xla/backends/cpu/runtime:xfeed_manager",
+        # "//xla/backends/cpu/runtime:function_library",
+        # "//xla/backends/cpu/runtime:xfeed_manager",
         "//xla:executable_run_options",
-        "//xla/backends/cpu/collectives:cpu_collectives",
-        "//xla/backends/cpu/collectives:in_process_collectives",
+        # "//xla/backends/cpu/collectives:cpu_collectives",
+        # "//xla/backends/cpu/collectives:in_process_collectives",
         # "//xla/backends/cpu/runtime/xnnpack:xnn_interop",
         # "//xla/backends/cpu/runtime/xnnpack:xnn_threadpool",
         "//xla/ffi:execution_context",
@@ -99,10 +100,10 @@ cc_library(
         "//xla/xla_npu/third_party/register:aclnn_interface",
         "//xla/xla_npu/third_party/register:aclnnop_interface",
 
-        "//xla/backends/cpu/runtime:buffer_allocations",
-        "//xla/backends/cpu/runtime:function_library",
-        "//xla/backends/cpu/runtime:kernel",
-        "//xla/backends/cpu/runtime:kernel_c_api",
+        # "//xla/backends/cpu/runtime:buffer_allocations",
+        # "//xla/backends/cpu/runtime:function_library",
+        # "//xla/backends/cpu/runtime:kernel",
+        # "//xla/backends/cpu/runtime:kernel_c_api",
         "//xla:util",
         "//xla/codegen:kernel_spec",
         "//xla/runtime:buffer_use",
@@ -138,6 +139,7 @@ cc_library(
     # local_defines = if_windows(["_ENABLE_EXTENDED_ALIGNED_STORAGE"]),
     deps = [
         ":npu_thunk",
+        
         "//xla/runtime:buffer_use",
         "//xla/runtime:execution_graph",
         "//xla/runtime:resource_use",

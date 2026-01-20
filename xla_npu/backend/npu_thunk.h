@@ -16,10 +16,10 @@
 #include "absl/functional/function_ref.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "xla/backends/cpu/collectives/cpu_collectives.h"
+// #include "xla/backends/cpu/collectives/cpu_collectives.h"
 // #include "xla/backends/cpu/runtime/buffer_allocations.h"
-#include "xla/backends/cpu/runtime/function_library.h"
-#include "xla/backends/cpu/runtime/xfeed_manager.h"
+// #include "xla/backends/cpu/runtime/function_library.h"
+// #include "xla/backends/cpu/runtime/xfeed_manager.h"
 // #include "xla/backends/cpu/runtime/xnnpack/xnn_interop.h"
 // #include "xla/backends/cpu/runtime/xnnpack/xnn_threadpool.h"
 #include "xla/executable_run_options.h"
@@ -90,6 +90,7 @@ class NpuThunk {
     }
 
     struct Info {
+        std::string hloInstrDesc;  // 保留hlo instruction描述,便于debug
         HloOpcode op_code;
         std::vector<Shape> input_param_shapes;  // 与instruction中参数顺序一致
         std::vector<Shape> output_param_shapes;
@@ -197,26 +198,26 @@ class NpuThunk {
         int64_t split_threshold_;
     };
 
-    //===--------------------------------------------------------------------===//
-    // CollectiveExecuteParams
-    //===--------------------------------------------------------------------===//
+    // //===--------------------------------------------------------------------===//
+    // // CollectiveExecuteParams
+    // //===--------------------------------------------------------------------===//
 
-    // Parameters capturing all the details required for collective execution
-    // of XLA executables (multiple partitions and replicas).
-    struct CollectiveExecuteParams {
-        static absl::StatusOr<CollectiveExecuteParams> Create(const ExecutableRunOptions* run_options);
+    // // Parameters capturing all the details required for collective execution
+    // // of XLA executables (multiple partitions and replicas).
+    // struct CollectiveExecuteParams {
+    //     static absl::StatusOr<CollectiveExecuteParams> Create(const ExecutableRunOptions* run_options);
 
-        RunId run_id;
+    //     RunId run_id;
 
-        int64_t local_device_ordinal;
-        GlobalDeviceId global_device_id;
+    //     int64_t local_device_ordinal;
+    //     GlobalDeviceId global_device_id;
 
-        const DeviceAssignment* device_assignment = nullptr;
-        cpu::CpuCollectives* collectives = nullptr;
+    //     const DeviceAssignment* device_assignment = nullptr;
+    //     cpu::CpuCollectives* collectives = nullptr;
 
-        CollectiveExecuteParams(RunId run_id, int64_t local_device_ordinal, GlobalDeviceId global_device_id,
-                                const DeviceAssignment* device_assignment, cpu::CpuCollectives* collectives);
-    };
+    //     CollectiveExecuteParams(RunId run_id, int64_t local_device_ordinal, GlobalDeviceId global_device_id,
+    //                             const DeviceAssignment* device_assignment, cpu::CpuCollectives* collectives);
+    // };
 
     //===--------------------------------------------------------------------===//
     // CustomCallExecuteParams
@@ -277,12 +278,12 @@ class NpuThunk {
     // Parameters passed to Execute. Execute is responsible for launching "work"
     // on device, i.e., it launches host kernels, calls into libraries, etc.
     struct ExecuteParams {
-        cpu::FunctionLibrary* function_library = nullptr;
+        // cpu::FunctionLibrary* function_library = nullptr;
         const NpuBufferAllocations* buffer_allocations = nullptr;
-        cpu::XfeedManager* xfeed = nullptr;
+        // cpu::XfeedManager* xfeed = nullptr;
         const Eigen::ThreadPoolDevice* intra_op_threadpool = nullptr;
         TaskRunner* task_runner = nullptr;
-        CollectiveExecuteParams* collective_params = nullptr;
+        // CollectiveExecuteParams* collective_params = nullptr;
         CustomCallExecuteParams* custom_call_params = nullptr;
         // XnnParams* xnn_params = nullptr;
         // YnnParams* ynn_params = nullptr;
@@ -302,6 +303,10 @@ class NpuThunk {
     }
 
     bool IsOkExecuteEvent(tsl::AsyncValuePtr<ExecuteEvent> event) const { return event == ok_event_->AsPtr(); }
+
+    static tsl::AsyncValueRef<ExecuteEvent> ErrorExecuteEvent(absl::Status error_status);
+
+    static tsl::AsyncValueRef<ExecuteEvent> AclErrorExecuteEvent(int acl_ret, const std::string& context);
 
     // NpuThunk execution must be asynchronous and never block the caller thread,
     // especially waiting for work submitted into the `intra_op_threadpool`,
