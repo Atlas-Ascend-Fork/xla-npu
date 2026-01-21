@@ -8,6 +8,14 @@ package(
 )
 
 cc_library(
+    name = "npu_constant",
+    srcs = ["npu_constant.cc"],
+    hdrs = ["npu_constant.h"],
+    deps = [
+    ],
+)
+
+cc_library(
     name = "npu_log",
     hdrs = ["npu_log.h"],
     deps = [

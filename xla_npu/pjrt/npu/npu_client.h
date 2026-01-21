@@ -17,9 +17,9 @@
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
 #include "xla/pjrt/transpose.h"
+#include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/pjrt/npu/npu_device.h"
 #include "xla/xla_npu/pjrt/npu/tracked_npu_device_buffer.h"
-#include "xla/xla_npu/pjrt/npu_pjrt_common.h"
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology_description.h"
@@ -51,11 +51,11 @@ class PjRtNpuClient final : public CommonPjRtClient {
 
     absl::Span<PjRtDevice* const> addressable_devices() const override { return addressable_devices_; }
 
-    PjRtPlatformId platform_id() const override { return tsl::Fingerprint64(NpuName()); }
+    PjRtPlatformId platform_id() const override { return tsl::Fingerprint64(NpuConstant::platformName); }
 
-    absl::string_view platform_name() const override { return NpuName(); }
+    absl::string_view platform_name() const override { return NpuConstant::platformName; }
 
-    absl::string_view platform_version() const override { return NpuName(); }
+    absl::string_view platform_version() const override { return NpuConstant::platformName; }
 
     // Gets the pointer to the topology description held by the client.
     absl::StatusOr<const PjRtTopologyDescription*> GetTopologyDescription() const override { return &topology_; }

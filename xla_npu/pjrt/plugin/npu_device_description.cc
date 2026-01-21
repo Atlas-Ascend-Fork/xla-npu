@@ -2,7 +2,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "xla/xla_npu/pjrt/npu_pjrt_common.h"
+#include "xla/xla_npu/common/npu_constant.h"
 
 namespace xla {
 NpuDeviceDescription::NpuDeviceDescription(int process_id, int local_device_id)
@@ -13,7 +13,7 @@ NpuDeviceDescription::NpuDeviceDescription(int process_id, int local_device_id)
     to_string_ = absl::StrCat("NpuDevice(id=", id_.value(), ")");
 }
 
-absl::string_view NpuDeviceDescription::device_kind() const { return NpuName(); }
+absl::string_view NpuDeviceDescription::device_kind() const { return NpuConstant::platformName; }
 
 absl::string_view NpuDeviceDescription::DebugString() const { return debug_string_; }
 

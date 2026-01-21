@@ -20,6 +20,8 @@ cc_library(
     hdrs = ["pjrt_c_api_npu_internal.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//xla/xla_npu/client:npu_local_client",
+
         "//xla/xla_npu/pjrt/npu:npu_client",
         "//xla/xla_npu/pjrt/plugin:npu_client_options",
         

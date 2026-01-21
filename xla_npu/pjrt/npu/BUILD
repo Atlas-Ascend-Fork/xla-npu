@@ -78,7 +78,6 @@ cc_library(
     srcs = ["npu_device.cc"],
     hdrs = ["npu_device.h"],
     deps = [
-        "//xla/xla_npu/pjrt:npu_pjrt_common",
         "//xla/xla_npu/pjrt/plugin:npu_device_description",
 
         "//xla:future",
@@ -111,6 +110,7 @@ cc_library(
         "//xla/xla_npu/backend:npu_thunk",
         "//xla/xla_npu/backend:npu_buffer_allocations",
         "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/pjrt:npu_host_memory_spaces",
         "//xla/xla_npu/pjrt/plugin:npu_client_options",
         "//xla/xla_npu/pjrt/plugin:npu_topology_description",
