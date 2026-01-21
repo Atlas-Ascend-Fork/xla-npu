@@ -34,7 +34,7 @@ cc_library(
     hdrs = ["npu_device_description.h"],
     deps = [
         ":npu_topology",
-        "//xla/xla_npu/pjrt:npu_pjrt_common",
+        "//xla/xla_npu/common:npu_constant",
 
         "//xla/pjrt:pjrt_common",
         "//xla/pjrt:pjrt_device_description",

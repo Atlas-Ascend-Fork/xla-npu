@@ -218,7 +218,7 @@
 #include "xla/shape_pool.h"
 #include "xla/shape_util.h"
 #include "xla/status_macros.h"
-#include "xla/stream_executor/host/host_platform_id.h"
+// #include "xla/stream_executor/host/host_platform_id.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/platform/env.h"
@@ -247,6 +247,7 @@
 
 #include "xla/xla_npu/backend/npu_constant_allocation.h"
 #include "xla/xla_npu/service/npu_thunk_emitter.h"
+#include "xla/xla_npu/stream_executor/npu_platform_id.h"
 
 namespace xla {
 namespace {
@@ -2094,7 +2095,7 @@ absl::StatusOr<std::unique_ptr<AotCompilationResult>> NpuCompiler::CompileAheadO
     //     cpu_executable->target_machine_options());
 }
 
-se::Platform::Id NpuCompiler::PlatformId() const { return se::host::kHostPlatformId; }
+se::Platform::Id NpuCompiler::PlatformId() const { return se::kNpuPlatformId; }
 
 HloCostAnalysis::ShapeSizeFunction NpuCompiler::ShapeSizeBytesFunction() const { return NpuExecutable::ShapeSizeBytes; }
 

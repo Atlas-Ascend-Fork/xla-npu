@@ -206,6 +206,7 @@ cc_library(
         ":npu_executable",
         ":npu_thunk_emitter",
         "//xla/xla_npu/backend:npu_constant_allocation",
+        "//xla/xla_npu/stream_executor:npu_platform_id",
 
         "//xla/service/cpu:conv_canonicalization",
         "//xla/service/cpu:cpu_aot_compilation_result",

@@ -8,16 +8,6 @@ package(
 )
 
 cc_library(
-    name = "npu_pjrt_common",
-    hdrs = ["npu_pjrt_common.h"],
-    deps = [
-        "//xla/pjrt/proto:pjrt_value_type_proto_cc",
-        "//xla/tsl/lib/gtl:int_type",
-        "@com_google_absl//absl/container:inlined_vector",
-    ],
-)
-
-cc_library(
     name = "npu_host_memory_spaces",
     srcs = ["npu_host_memory_spaces.cc"],
     hdrs = ["npu_host_memory_spaces.h"],
