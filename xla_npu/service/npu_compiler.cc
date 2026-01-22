@@ -246,6 +246,9 @@
 #endif  // XLA_YNNPACK
 
 #include "xla/xla_npu/backend/npu_constant_allocation.h"
+#include "xla/xla_npu/common/npu_constant.h"
+#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/service/npu_thunk_emitter.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
 
@@ -1050,6 +1053,8 @@ absl::Status NpuCompiler::RunHloPassesAfterLayoutAssn(HloModule* module, bool is
 
 absl::Status NpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile, llvm::TargetMachine* target_machine,
                                        const CompileOptions& compile_options) {
+    NpuLog::Print(NpuLog::Level::DEBUG, "Run npu hlo pass.");
+
     HloPassPipeline pipeline("npu pass");
     // 清除无效HLO指令
     pipeline.AddPass<HloDCE>();
@@ -1063,6 +1068,8 @@ absl::Status NpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile, l
     // TF_RETURN_IF_ERROR(RunHloPassesThroughLayoutAssn(module, is_aot_compile, &target_machine_features));
     // TF_RETURN_IF_ERROR(RunHloPassesAfterLayoutAssn(module, is_aot_compile, &target_machine_features,
     // compile_options));
+
+    NpuTool::PrintHloModule(module, "Xla hlo module after run npu hol pass");
 
     return absl::OkStatus();
 }
@@ -1887,6 +1894,8 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuCompiler::CompileNpuExecutable
 absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_ptr<HloModule> module,
                                                                     [[maybe_unused]] se::StreamExecutor* stream_exec,
                                                                     const CompileOptions& options) {
+    NpuLog::Print(NpuLog::Level::DEBUG, "Run npu llvm compile(contains thunks generate).");
+
     TraceMe trace([&] { return TraceMeEncode("NpuCompiler::RunBackend", {{"name", module->name()}}); });
 
     VLOG(1) << "Compiling: " << module->name();
@@ -2020,80 +2029,79 @@ absl::StatusOr<std::vector<std::unique_ptr<AotCompilationResult>>> NpuCompiler::
     // return std::move(results);
 }
 
-absl::StatusOr<std::unique_ptr<AotCompilationResult>> NpuCompiler::CompileAheadOfTimeThunks(
-    std::unique_ptr<HloModule> module, cpu::IrCompiler::TargetMachineBuilder target_machine_builder,
-    const cpu::CpuAotCompilationOptions& aot_options, const llvm::Triple& triple,
-    const llvm::PICLevel::Level& pic_level, const llvm::PIELevel::Level& pie_level) {
-    return absl::UnimplementedError("unsupport NpuCompiler::CompileAheadOfTimeThunks now");
+// absl::StatusOr<std::unique_ptr<AotCompilationResult>> NpuCompiler::CompileAheadOfTimeThunks(
+//     std::unique_ptr<HloModule> module, cpu::IrCompiler::TargetMachineBuilder target_machine_builder,
+//     const cpu::CpuAotCompilationOptions& aot_options, const llvm::Triple& triple,
+//     const llvm::PICLevel::Level& pic_level, const llvm::PIELevel::Level& pie_level) {
 
-    // TraceMe trace([&] {
-    //   return TraceMeEncode("NpuCompiler::CompileAheadOfTimeThunks",
-    //                        {{"name", module->name()}});
-    // });
+// TraceMe trace([&] {
+//   return TraceMeEncode("NpuCompiler::CompileAheadOfTimeThunks",
+//                        {{"name", module->name()}});
+// });
 
-    // TF_ASSIGN_OR_RETURN(std::unique_ptr<llvm::TargetMachine> target_machine,
-    //                     target_machine_builder());
+// TF_ASSIGN_OR_RETURN(std::unique_ptr<llvm::TargetMachine> target_machine,
+//                     target_machine_builder());
 
-    // NpuThunkEmitter::Options thunk_emitter_options = {
-    //     /*compile_copy_as_llvm_kernel=*/aot_options.compile_copy_as_llvm_kernel(),
-    //     /*is_aot_compilation=*/true};
+// NpuThunkEmitter::Options thunk_emitter_options = {
+//     /*compile_copy_as_llvm_kernel=*/aot_options.compile_copy_as_llvm_kernel(),
+//     /*is_aot_compilation=*/true};
 
-    // cpu::IrCompiler::Options ir_compiler_options = {
-    //     /*optimization_level=*/target_machine->getOptLevel(),
-    //     /*optimize_for_size=*/
-    //     cpu::options::OptimizeForSizeRequested(module->config()),
-    //     /*max_cpu_isa=*/
-    //     cpu::CpuFeatureFromString(module->config().debug_options().xla_cpu_max_isa()),
-    //     /*fast_math_flags=*/llvm_ir::GetCpuFastMathFlags(module->config()),
-    //     /*disable_expensive_passes=*/
-    //     module->config().debug_options().xla_llvm_disable_expensive_passes(),
-    //     /*disable_slp_vectorizer=*/
-    //     cpu::options::SlpVectorizerDisabled(module->config()),
-    //     /*disable_loop_unrolling=*/
-    //     cpu::options::DisableLoopUnrolling(module->config()),
-    //     /*disable_platform_dependent_math=*/
-    //     cpu::options::DisablePlatformDependentMath(module->config()),
-    //     /*dfsan_enabled=*/aot_options.sanitize_dataflow(),
-    //     /*dfsan_abilists_enabled=*/aot_options.sanitize_abilists_dataflow()};
+// cpu::IrCompiler::Options ir_compiler_options = {
+//     /*optimization_level=*/target_machine->getOptLevel(),
+//     /*optimize_for_size=*/
+//     cpu::options::OptimizeForSizeRequested(module->config()),
+//     /*max_cpu_isa=*/
+//     cpu::CpuFeatureFromString(module->config().debug_options().xla_cpu_max_isa()),
+//     /*fast_math_flags=*/llvm_ir::GetCpuFastMathFlags(module->config()),
+//     /*disable_expensive_passes=*/
+//     module->config().debug_options().xla_llvm_disable_expensive_passes(),
+//     /*disable_slp_vectorizer=*/
+//     cpu::options::SlpVectorizerDisabled(module->config()),
+//     /*disable_loop_unrolling=*/
+//     cpu::options::DisableLoopUnrolling(module->config()),
+//     /*disable_platform_dependent_math=*/
+//     cpu::options::DisablePlatformDependentMath(module->config()),
+//     /*dfsan_enabled=*/aot_options.sanitize_dataflow(),
+//     /*dfsan_abilists_enabled=*/aot_options.sanitize_abilists_dataflow()};
 
-    // auto ir_compiler = std::make_unique<cpu::IrCompiler>(
-    //     std::move(target_machine_builder), ir_compiler_options,
-    //     cpu::IrCompiler::CompilationHooks{});
+// auto ir_compiler = std::make_unique<cpu::IrCompiler>(
+//     std::move(target_machine_builder), ir_compiler_options,
+//     cpu::IrCompiler::CompilationHooks{});
 
-    // TF_ASSIGN_OR_RETURN(
-    //     auto cpu_executable,
-    //     cpu::CompileCpuExecutable(std::move(module), thunk_emitter_options,
-    //                          std::move(ir_compiler), pic_level, pie_level));
+// TF_ASSIGN_OR_RETURN(
+//     auto cpu_executable,
+//     cpu::CompileCpuExecutable(std::move(module), thunk_emitter_options,
+//                          std::move(ir_compiler), pic_level, pie_level));
 
-    // const NpuThunkSequence& thunk_sequence =
-    //     cpu_executable->thunks().thunk_sequence();
+// const NpuThunkSequence& thunk_sequence =
+//     cpu_executable->thunks().thunk_sequence();
 
-    // std::unique_ptr<HloProfilePrinterData> executable_hlo_profile_printer_data =
-    //     cpu_executable->module().config().hlo_profiling_enabled()
-    //         ? std::make_unique<HloProfilePrinterData>(
-    //               cpu_executable->hlo_profile_printer_data())
-    //         : nullptr;
+// std::unique_ptr<HloProfilePrinterData> executable_hlo_profile_printer_data =
+//     cpu_executable->module().config().hlo_profiling_enabled()
+//         ? std::make_unique<HloProfilePrinterData>(
+//               cpu_executable->hlo_profile_printer_data())
+//         : nullptr;
 
-    // if (cpu_executable->obj_files().size() > 1) {
-    //   return Internal(
-    //       "Expected at most one object file for AOT compilation, but got %d",
-    //       cpu_executable->obj_files().size());
-    // }
+// if (cpu_executable->obj_files().size() > 1) {
+//   return Internal(
+//       "Expected at most one object file for AOT compilation, but got %d",
+//       cpu_executable->obj_files().size());
+// }
 
-    // std::vector<ObjFileProto> obj_files;
+// std::vector<ObjFileProto> obj_files;
 
-    // for (const auto& obj_file : cpu_executable->obj_files()) {
-    //   obj_files.push_back(obj_file);
-    // }
+// for (const auto& obj_file : cpu_executable->obj_files()) {
+//   obj_files.push_back(obj_file);
+// }
 
-    // return CpuAotCompilationResult::Create(
-    //     &cpu_executable->module(), &cpu_executable->buffer_assignment(),
-    //     cpu_executable->module_name(), std::move(obj_files),
-    //     cpu_executable->get_compiled_symbols_proto(), thunk_sequence,
-    //     std::move(*cpu_executable).consume_function_library(),
-    //     std::move(executable_hlo_profile_printer_data),
-    //     cpu_executable->target_machine_options());
-}
+// return CpuAotCompilationResult::Create(
+//     &cpu_executable->module(), &cpu_executable->buffer_assignment(),
+//     cpu_executable->module_name(), std::move(obj_files),
+//     cpu_executable->get_compiled_symbols_proto(), thunk_sequence,
+//     std::move(*cpu_executable).consume_function_library(),
+//     std::move(executable_hlo_profile_printer_data),
+//     cpu_executable->target_machine_options());
+// }
 
 se::Platform::Id NpuCompiler::PlatformId() const { return se::kNpuPlatformId; }
 

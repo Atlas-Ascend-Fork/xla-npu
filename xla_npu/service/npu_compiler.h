@@ -16,9 +16,9 @@
 #include "xla/hlo/ir/hlo_schedule.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/compiler.h"
-#include "xla/service/cpu/cpu_aot_compilation_result.h"
+// #include "xla/service/cpu/cpu_aot_compilation_result.h"
 // #include "xla/service/cpu/executable.pb.h"
-#include "xla/service/cpu/thunk_emitter.h"
+// #include "xla/service/cpu/thunk_emitter.h"
 #include "xla/service/executable.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/service/hlo_cost_analysis.h"
@@ -101,10 +101,10 @@ class NpuCompiler : public LLVMCompiler {
         std::unique_ptr<cpu::IrCompiler> ir_compiler, const llvm::PICLevel::Level& pic_level = llvm::PICLevel::NotPIC,
         const llvm::PIELevel::Level& pie_level = llvm::PIELevel::Default);
 
-    absl::StatusOr<std::unique_ptr<AotCompilationResult>> CompileAheadOfTimeThunks(
-        std::unique_ptr<HloModule> module, cpu::IrCompiler::TargetMachineBuilder target_machine_builder,
-        const cpu::CpuAotCompilationOptions& aot_options, const llvm::Triple& triple,
-        const llvm::PICLevel::Level& pic_level, const llvm::PIELevel::Level& pie_level);
+    // absl::StatusOr<std::unique_ptr<AotCompilationResult>> CompileAheadOfTimeThunks(
+    //     std::unique_ptr<HloModule> module, cpu::IrCompiler::TargetMachineBuilder target_machine_builder,
+    //     const cpu::CpuAotCompilationOptions& aot_options, const llvm::Triple& triple,
+    //     const llvm::PICLevel::Level& pic_level, const llvm::PIELevel::Level& pie_level);
 
     NpuCompiler(const NpuCompiler&) = delete;
     NpuCompiler& operator=(const NpuCompiler&) = delete;

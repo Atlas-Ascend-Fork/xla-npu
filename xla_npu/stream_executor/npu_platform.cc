@@ -16,8 +16,10 @@
 #include "xla/stream_executor/platform/initialize.h"
 #include "xla/stream_executor/platform_manager.h"
 #include "xla/xla_npu/common/npu_constant.h"
+#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/stream_executor/npu_executor.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace stream_executor {
 
@@ -27,7 +29,33 @@ NpuPlatform::~NpuPlatform() {}
 
 Platform::Id NpuPlatform::id() const { return kNpuPlatformId; }
 
-int NpuPlatform::VisibleDeviceCount() const { return 1; }
+bool NpuPlatform::Initialized() const { return initialized_; }
+
+absl::Status NpuPlatform::Initialize() {
+    aclError acl_status = npu::aclInit(nullptr);
+    if (acl_status != ACL_SUCCESS) {
+        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Init platform for '%s' failed.", name_);
+        return absl::UnavailableError("Acl init failed.");
+    }
+
+    initialized_ = true;
+
+    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Init platform for '%s' success.", name_);
+    return absl::OkStatus();
+}
+
+int NpuPlatform::VisibleDeviceCount() const {
+    uint32_t device_count = 0;
+    aclError acl_status = npu::aclrtGetDeviceCount(&device_count);
+    if (acl_status != ACL_SUCCESS) {
+        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Get device count for '%s' failed.", name_);
+        return 0;
+    }
+
+    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Get device count for '%s' success, total device num is %d.", name_,
+                       device_count);
+    return device_count;
+}
 
 const std::string& NpuPlatform::Name() const { return name_; }
 
@@ -50,11 +78,4 @@ absl::StatusOr<std::unique_ptr<StreamExecutor>> NpuPlatform::GetUncachedExecutor
     return std::move(executor);
 }
 
-static void InitializeNpuPlatform() {
-    std::unique_ptr<Platform> platform(new NpuPlatform);
-    TF_CHECK_OK(PlatformManager::RegisterPlatform(std::move(platform)));
-}
-
 }  // namespace stream_executor
-
-STREAM_EXECUTOR_REGISTER_MODULE_INITIALIZER(npu_platform, stream_executor::InitializeNpuPlatform());
