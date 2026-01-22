@@ -27,7 +27,7 @@ class NpuLog {
                 logLevelString = "ERROR";
         }
 
-        std::cout << "NPU." << logLevelString << ": " << logStr << std::endl;
+        std::cout << "XLA_NPU." << logLevelString << ": " << logStr << std::endl;
     }
 
     template <typename... Args>

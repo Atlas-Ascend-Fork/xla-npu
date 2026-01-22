@@ -206,6 +206,9 @@ cc_library(
         ":npu_executable",
         ":npu_thunk_emitter",
         "//xla/xla_npu/backend:npu_constant_allocation",
+        "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/stream_executor:npu_platform_id",
 
         "//xla/service/cpu:conv_canonicalization",
@@ -442,4 +445,36 @@ cc_library(
     ]) + if_ynnpack([
         "//xla/backends/cpu:ynn_support",
     ]),
+)
+
+cc_library(
+    name = "npu_transfer_manager",
+    srcs = ["npu_transfer_manager.cc"],
+    hdrs = ["npu_transfer_manager.h"],
+    deps = [
+        "//xla/xla_npu/stream_executor:npu_platform_id",
+
+        # ":cpu_runtime",
+        # ":cpu_xfeed",
+        "//xla:literal",
+        "//xla:literal_util",
+        "//xla:shape_util",
+        "//xla:status_macros",
+        "//xla:types",
+        "//xla:util",
+        "//xla:xla_data_proto_cc",
+        # "//xla/backends/cpu/runtime:xfeed_manager",
+        "//xla/service:compiler",
+        "//xla/service:generic_transfer_manager",
+        "//xla/service:transfer_manager",
+        "//xla/stream_executor:device_memory",
+        "//xla/stream_executor:platform_manager",
+        "//xla/stream_executor:stream_executor_h",
+        # "//xla/stream_executor/host:host_platform_id",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
+        "@tsl//tsl/platform:errors",
+        "@tsl//tsl/platform:logging",
+    ],
 )

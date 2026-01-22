@@ -275,16 +275,13 @@ static absl::StatusOr<std::unique_ptr<xla::Executable>> JitCompile(
         llvm_ir::ExtractXlaBackendExtraOptions(hlo_module->config().debug_options().xla_backend_extra_options());
     llvm_ir::LLVMCommandLineOptionsLock llvm_lock(llvm_options);
 
-    NpuLog::Print(NpuLog::Level::DEBUG, "run npu hlo pass");
     // Run Hlo Passes
     NpuCompiler compiler;
     if (!build_options.run_backend_only()) {
         TF_ASSIGN_OR_RETURN(hlo_module,
                             compiler.RunHloPasses(std::move(hlo_module), /*stream_exec=*/nullptr, compile_options));
     }
-    NpuTool::PrintHloModule(hlo_module.get(), "xla hlo module after pass");
 
-    NpuLog::Print(NpuLog::Level::DEBUG, "run npu llvm compile");
     // Run backend.
     return compiler.RunBackend(std::move(hlo_module), /*stream_exec=*/nullptr, compile_options);
 }
@@ -303,12 +300,12 @@ static std::vector<NpuTopology::NpuDevice> GetNpuDevices(absl::Span<const std::u
 absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options) {
     NpuLog::Print(NpuLog::Level::DEBUG, "Start create npu client");
 
-    aclError aclStatus = npu::aclInit(nullptr);
-    if (aclStatus != ACL_SUCCESS) {
-        return absl::UnavailableError("ACL init failed.");
-    }
+    // aclError aclStatus = npu::aclInit(nullptr);
+    // if (aclStatus != ACL_SUCCESS) {
+    //     return absl::UnavailableError("ACL init failed.");
+    // }
     uint32_t real_device_count = -1;
-    aclStatus = npu::aclrtGetDeviceCount(&real_device_count);
+    aclError aclStatus = npu::aclrtGetDeviceCount(&real_device_count);
     if (aclStatus != ACL_SUCCESS) {
         return absl::UnavailableError("ACL get device count failed.");
     }

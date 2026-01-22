@@ -35,9 +35,11 @@
 #include "xla/stream_executor/stream_executor.h"
 // #include "xla/tsl/platform/profile_utils/cpu_utils.h"
 #include "xla/tsl/platform/threadpool.h"
+#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace stream_executor {
 
@@ -47,8 +49,16 @@ NpuStream* AsNpuStream(Stream* stream) {
 }
 
 absl::Status NpuExecutor::Init() {
-    thread_pool_ =
-        std::make_shared<tsl::thread::ThreadPool>(tsl::Env::Default(), "npu-executor", 1);
+    // thread_pool_ = std::make_shared<tsl::thread::ThreadPool>(tsl::Env::Default(), "npu-executor", 1);
+    aclError acl_status = npu::aclrtSetDevice(device_ordinal_);
+    if (acl_status != ACL_SUCCESS) {
+        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Set device %d for '%s' failed.", device_ordinal_,
+                           GetPlatform()->Name());
+        return absl::UnavailableError("Acl set device failed.");
+    }
+
+    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Set device %d for '%s' success.", device_ordinal_,
+                       GetPlatform()->Name());
     return absl::OkStatus();
 }
 
@@ -65,27 +75,40 @@ bool NpuExecutor::DeviceMemoryUsage(int64_t* free, int64_t* total) const {
 
 DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     CHECK_EQ(memory_space, 0);
-    // Use a minimum alignment of 64 bytes to be friendly to AVX512 code.
-    // This should probably be kept in sync with
-    // tsl::Allocator::kAllocatorAlignment.
-    return DeviceMemoryBase(tsl::port::AlignedMalloc(size, /*minimum_alignment=*/64), size);
+
+    void* base = nullptr;
+    aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
+    if (ret != ACL_SUCCESS) {
+        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size,
+                           ret);
+        return DeviceMemoryBase(nullptr, size);
+    }
+
+    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
+    return DeviceMemoryBase(base, size);
 }
 
-void NpuExecutor::Deallocate(DeviceMemoryBase* mem) { tsl::port::AlignedFree(mem->opaque()); }
+void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
+    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
+    npu::aclrtFree(mem->opaque());
+}
 
 absl::Status NpuExecutor::SynchronousMemZero(DeviceMemoryBase* location, uint64_t size) {
-    memset(location->opaque(), 0, size);
-    return absl::OkStatus();
+    // memset(location->opaque(), 0, size);
+    // return absl::OkStatus();
+    return absl::UnimplementedError("NpuExecutor::SynchronousMemZero is not supported.");
 }
 
 absl::Status NpuExecutor::SynchronousMemcpy(DeviceMemoryBase* gpu_dst, const void* host_src, uint64_t size) {
-    memcpy(gpu_dst->opaque(), host_src, size);
-    return absl::OkStatus();
+    // memcpy(gpu_dst->opaque(), host_src, size);
+    // return absl::OkStatus();
+    return absl::UnimplementedError("NpuExecutor::SynchronousMemcpy h2d is not supported.");
 }
 
 absl::Status NpuExecutor::SynchronousMemcpy(void* host_dst, const DeviceMemoryBase& gpu_src, uint64_t size) {
-    memcpy(host_dst, gpu_src.opaque(), size);
-    return absl::OkStatus();
+    // memcpy(host_dst, gpu_src.opaque(), size);
+    // return absl::OkStatus();
+    return absl::UnimplementedError("NpuExecutor::SynchronousMemcpy d2h is not supported.");
 }
 
 void NpuExecutor::DeallocateStream(Stream* stream) {}

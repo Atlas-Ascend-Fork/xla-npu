@@ -20,6 +20,13 @@ class NpuPlatform : public Platform {
 
     Platform::Id id() const override;
 
+    // Returns true if the platform has been initialized.
+    bool Initialized() const override;
+
+    // Initializes the platform. The platform must be initialized before obtaining
+    // StreamExecutor objects.
+    absl::Status Initialize() override;
+
     // Device count is less clear-cut for NPUs than accelerators. This call
     // currently returns the number of thread units in the host.
     int VisibleDeviceCount() const override;
@@ -44,6 +51,8 @@ class NpuPlatform : public Platform {
 
     NpuPlatform(const NpuPlatform&) = delete;
     void operator=(const NpuPlatform&) = delete;
+
+    bool initialized_ = false;
 };
 
 }  // namespace stream_executor

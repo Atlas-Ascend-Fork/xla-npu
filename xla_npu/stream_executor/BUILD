@@ -89,6 +89,8 @@ cc_library(
         ":npu_event",
         ":npu_stream",
         ":npu_stream_factory",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla/stream_executor:device_description",
         "//xla/stream_executor:device_memory",
@@ -113,7 +115,6 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@tsl//tsl/platform:platform_port",
     ],
-    alwayslink = True,
 )
 
 cc_library(
@@ -128,6 +129,8 @@ cc_library(
         ":npu_executor",
         ":npu_platform_id",
         "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla/stream_executor:device_description",
         "//xla/stream_executor:executor_cache",
@@ -140,5 +143,4 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@tsl//tsl/platform:status",
     ],
-    alwayslink = True,  # Registers itself with the PlatformManager.
 )

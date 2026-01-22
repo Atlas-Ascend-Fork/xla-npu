@@ -14,7 +14,7 @@
 #include "xla/pjrt/c/pjrt_c_api_phase_compile_internal.h"
 #include "xla/pjrt/c/pjrt_c_api_wrapper_impl.h"
 #include "xla/pjrt/pjrt_client.h"
-#include "xla/xla_npu/client/npu_local_client.h"
+#include "xla/xla_npu/client/npu_stream_client.h"
 #include "xla/xla_npu/pjrt/npu/npu_client.h"
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 
@@ -24,7 +24,7 @@ namespace npu_plugin {
 
 PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args) {
     // TODO: temp debug
-    xla::CreateNpuLocalClient();
+    xla::CreateNpuPjrtStreamExecutorClient();
 
     // 暂不使用外部传入参数
     xla::NpuClientOptions options;
