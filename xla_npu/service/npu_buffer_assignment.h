@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef SERVICE_NPU_BUFFER_ASSIGNMENT_H_
 #define SERVICE_NPU_BUFFER_ASSIGNMENT_H_
 
@@ -26,3 +28,4 @@ class NpuBufferAssignment {
 }  // namespace xla
 
 #endif  // SERVICE_NPU_BUFFER_ASSIGNMENT_H_
+*/

@@ -34,7 +34,7 @@
 #include "xla/xla_npu/backend/npu_constant_allocation.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/backend/npu_thunk_executor.h"
-#include "xla/xla_npu/service/npu_buffer_assignment.h"
+// #include "xla/xla_npu/service/npu_buffer_assignment.h" // Not used
 
 namespace xla {
 

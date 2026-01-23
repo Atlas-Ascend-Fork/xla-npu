@@ -1,3 +1,5 @@
+// Not used
+/*
 #include "xla/xla_npu/service/npu_buffer_assignment.h"
 
 #include "xla/service/buffer_assignment.h"
@@ -22,3 +24,4 @@ void NpuBufferAssignment::Finalize() {
 }
 
 }  // namespace xla
+*/

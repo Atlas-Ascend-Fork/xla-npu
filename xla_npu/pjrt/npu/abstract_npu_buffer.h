@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_ABSTRACT_NPU_BUFFER_H_
 #define PJRT_NPU_ABSTRACT_NPU_BUFFER_H_
 
@@ -76,3 +78,4 @@ void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal, void* d
 }  // namespace xla
 
 #endif  // PJRT_NPU_ABSTRACT_NPU_BUFFER_H_
+*/

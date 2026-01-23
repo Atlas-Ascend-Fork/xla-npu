@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_NPU_EVENT_H_
 #define PJRT_NPU_NPU_EVENT_H_
 namespace xla {
@@ -10,3 +12,4 @@ struct NpuEvent {
 
 }  // namespace xla
 #endif  // PJRT_NPU_NPU_EVENT_H_
+*/
