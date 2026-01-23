@@ -59,8 +59,8 @@ class NpuExecutable : public Executable {
 
     // Calls emitted thunk sequence with the given arguments using the supplied
     // buffers.
-    // absl::Status ExecuteThunks(const ExecutableRunOptions* run_options,
-    //                            absl::Span<MaybeOwningDeviceMemory const> buffers);
+    absl::Status ExecuteThunks(const ExecutableRunOptions* run_options,
+                               absl::Span<MaybeOwningDeviceMemory const> buffers);
 
     // absl::Span<const ObjFileProto> obj_files() const { return obj_files_; }
 
@@ -168,7 +168,7 @@ class NpuExecutable : public Executable {
 
     // Returns the instruction value set of the root instruction of the entry
     // computation. Uses dataflow analysis from buffer assignment.
-    // const InstructionValueSet& GetRootValueSet() const;
+    const InstructionValueSet& GetRootValueSet() const;
 
     // The FunctionLibrary containing compiled modules.
     // std::unique_ptr<FunctionLibrary> function_library_;

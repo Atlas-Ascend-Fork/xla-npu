@@ -31,16 +31,18 @@ cc_library(
     deps = [
         ":npu_module",
         "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/pjrt/npu:npu_pjrt_stream_executor_client",
         "//xla/xla_npu/stream_executor:npu_platform",
         "//xla/xla_npu/stream_executor:npu_platform_id",
         "//xla/xla_npu/service:npu_compiler",
 
         "//xla/client:client_library",
-        "//xla/pjrt:pjrt_stream_executor_client",
+        # "//xla/pjrt:pjrt_stream_executor_client",
         "//xla/service:platform_util",
         "//xla/stream_executor:platform",
         "//xla/stream_executor:platform_manager",
         "//xla/tsl/platform:status",
         "//xla/tsl/platform:statusor",
+        "@tsl//tsl/platform:fingerprint",
     ],
 )

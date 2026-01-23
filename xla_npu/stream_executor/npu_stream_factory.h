@@ -8,7 +8,7 @@ namespace stream_executor {
 class NpuStreamFactory {
    public:
     virtual ~NpuStreamFactory() = default;
-    virtual std::unique_ptr<NpuStream> CreateStream(StreamExecutor* executor) const = 0;
+    virtual absl::StatusOr<std::unique_ptr<NpuStream>> CreateStream(StreamExecutor* executor) const = 0;
     static void Register(std::unique_ptr<NpuStreamFactory> factory, int priority);
     static const NpuStreamFactory* GetFactory();
 };
@@ -16,8 +16,10 @@ class NpuStreamFactory {
 class NpuStreamDefaultFactory : public NpuStreamFactory {
    public:
     ~NpuStreamDefaultFactory() override = default;
-    std::unique_ptr<NpuStream> CreateStream(StreamExecutor* executor) const override {
-        return std::make_unique<NpuStream>(executor);
+    absl::StatusOr<std::unique_ptr<NpuStream>> CreateStream(StreamExecutor* executor) const override {
+        auto npuStream = std::make_unique<NpuStream>(executor);
+        TF_RETURN_IF_ERROR(npuStream->Init());
+        return std::move(npuStream);
     }
 };
 

@@ -17,7 +17,7 @@
 
 namespace xla {
 
-absl::StatusOr<std::unique_ptr<PjRtStreamExecutorClient>> CreateNpuPjrtStreamExecutorClient() {
+absl::StatusOr<std::unique_ptr<NpuPjrtStreamExecutorClient>> GetNpuPjrtStreamExecutorClient() {
     constexpr int used_device_id = 0;
 
     InitNpuSubModule();
@@ -46,7 +46,7 @@ absl::StatusOr<std::unique_ptr<PjRtStreamExecutorClient>> CreateNpuPjrtStreamExe
         std::make_unique<PjRtStreamExecutorMemorySpace>(0, devices.back().get(), NpuConstant::platformName, 0));
     devices.back()->AttachMemorySpace(memory_spaces.back().get(),
                                       /*is_default=*/true);
-    return std::make_unique<PjRtStreamExecutorClient>(
+    return std::make_unique<NpuPjrtStreamExecutorClient>(
         NpuConstant::platformName, local_client, std::move(devices),
         /*process_index=*/0, std::move(memory_spaces),
         /*allocator=*/nullptr,              // 不传递则会使用local_client的backend().memory_allocator(),

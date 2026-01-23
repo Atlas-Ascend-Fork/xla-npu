@@ -27,6 +27,7 @@
 #include "xla/service/buffer_assignment.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnopInterface.h"
 
 namespace xla {
@@ -96,7 +97,7 @@ class NpuKernelThunk : public NpuKernelThunkBase {
                                                                         const std::vector<Shape>& output_param_shapes);
     using AclnnExecFunc = aclnnStatus (*)(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
                                           aclrtStream stream);
-    tsl::AsyncValueRef<ExecuteEvent> ExecuteAclnn(uint64_t workspaceSize, aclOpExecutor* executor,
+    tsl::AsyncValueRef<ExecuteEvent> ExecuteAclnn(aclrtStream& stream, uint64_t workspaceSize, aclOpExecutor* executor,
                                                   AclnnExecFunc aclnnExecFunc);
 
     absl::StatusOr<bool> PrintOutputTensor(const NpuBufferAllocations* allocations,

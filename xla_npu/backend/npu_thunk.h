@@ -27,6 +27,7 @@
 #include "xla/runtime/buffer_use.h"
 #include "xla/runtime/resource_use.h"
 #include "xla/service/global_device_id.h"
+#include "xla/stream_executor/stream.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/tsl/concurrency/chain.h"
 #include "xla/tsl/platform/logging.h"
@@ -278,6 +279,7 @@ class NpuThunk {
     // Parameters passed to Execute. Execute is responsible for launching "work"
     // on device, i.e., it launches host kernels, calls into libraries, etc.
     struct ExecuteParams {
+        stream_executor::Stream* stream;
         // cpu::FunctionLibrary* function_library = nullptr;
         const NpuBufferAllocations* buffer_allocations = nullptr;
         // cpu::XfeedManager* xfeed = nullptr;

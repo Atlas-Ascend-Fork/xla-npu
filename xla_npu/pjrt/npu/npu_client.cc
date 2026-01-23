@@ -1070,6 +1070,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
             // cpu::ThreadPoolTaskRunner task_runner(run_options.intra_op_thread_pool()->getPool()); // TODO 实现
 
             NpuThunk::ExecuteParams execute_params = {
+                nullptr,
                 // npu_executable->function_library(),
                 &allocations,
                 // cpu::GetXfeedManager(run_options.device_ordinal()),
