@@ -24,6 +24,20 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_operation",
+    srcs = ["npu_operation.cc"],
+    hdrs = ["npu_operation.h"],
+    deps = [
+        ":npu_constant",
+        ":npu_log",
+        "//xla/xla_npu/third_party/register:acl_interface",
+
+        "//xla/tsl/platform:errors",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
     name = "npu_tool",
     hdrs = ["npu_tool.h"],
     deps = [

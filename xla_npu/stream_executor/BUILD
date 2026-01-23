@@ -39,6 +39,9 @@ cc_library(
     ],
     deps = [
         ":npu_event",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/common:npu_operation",
+        "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla/stream_executor:device_memory",
         "//xla/stream_executor:event",
@@ -90,6 +93,7 @@ cc_library(
         ":npu_stream",
         ":npu_stream_factory",
         "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/common:npu_operation",
         "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla/stream_executor:device_description",

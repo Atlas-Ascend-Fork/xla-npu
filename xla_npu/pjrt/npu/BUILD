@@ -9,6 +9,17 @@ package(
 )
 
 cc_library(
+    name = "npu_pjrt_stream_executor_client",
+    srcs = ["npu_pjrt_stream_executor_client.cc"],
+    hdrs = ["npu_pjrt_stream_executor_client.h"],
+    deps = [
+        "//xla/xla_npu/pjrt/plugin:npu_topology_description",
+
+        "//xla/pjrt:pjrt_stream_executor_client",
+    ],
+)
+
+cc_library(
     name = "npu_event",
     hdrs = ["npu_event.h"],
 )

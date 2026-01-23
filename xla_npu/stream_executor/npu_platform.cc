@@ -25,7 +25,20 @@ namespace stream_executor {
 
 NpuPlatform::NpuPlatform() : name_(xla::NpuConstant::platformName) {}
 
-NpuPlatform::~NpuPlatform() {}
+NpuPlatform::~NpuPlatform() {
+    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Finalize platform for '%s'.", name_);
+    if (initialized_) {
+        auto ret = npu::aclFinalize();
+        if (ret != ACL_SUCCESS) {
+            xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Finalize platform for '%s' failed, error code %d", name_,
+                               ret);
+        } else {
+            xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Finalize platform for '%s' success.", name_);
+        }
+
+        initialized_ = false;
+    }
+}
 
 Platform::Id NpuPlatform::id() const { return kNpuPlatformId; }
 

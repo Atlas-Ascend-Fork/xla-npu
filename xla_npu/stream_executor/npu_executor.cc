@@ -36,6 +36,7 @@
 // #include "xla/tsl/platform/profile_utils/cpu_utils.h"
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/common/npu_operation.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
@@ -48,17 +49,12 @@ NpuStream* AsNpuStream(Stream* stream) {
     return dynamic_cast<NpuStream*>(stream);
 }
 
+// 注意jax调用xla接口获取客户端时是用的新的线程(非主线程),因此主线程使用这个device时,需要重新set device
 absl::Status NpuExecutor::Init() {
     // thread_pool_ = std::make_shared<tsl::thread::ThreadPool>(tsl::Env::Default(), "npu-executor", 1);
-    aclError acl_status = npu::aclrtSetDevice(device_ordinal_);
-    if (acl_status != ACL_SUCCESS) {
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Set device %d for '%s' failed.", device_ordinal_,
-                           GetPlatform()->Name());
-        return absl::UnavailableError("Acl set device failed.");
-    }
 
-    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Set device %d for '%s' success.", device_ordinal_,
-                       GetPlatform()->Name());
+    TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(device_ordinal_));
+
     return absl::OkStatus();
 }
 
@@ -76,11 +72,13 @@ bool NpuExecutor::DeviceMemoryUsage(int64_t* free, int64_t* total) const {
 DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     CHECK_EQ(memory_space, 0);
 
+    // 保证当前线程执行过set device
+    xla::NpuOperation::SetDevice(device_ordinal_);
+
     void* base = nullptr;
     aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
     if (ret != ACL_SUCCESS) {
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size,
-                           ret);
+        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
         return DeviceMemoryBase(nullptr, size);
     }
 
@@ -89,6 +87,9 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
 }
 
 void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
+    // 保证当前线程执行过set device
+    xla::NpuOperation::SetDevice(device_ordinal_);
+
     xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
     npu::aclrtFree(mem->opaque());
 }
@@ -137,9 +138,10 @@ absl::StatusOr<std::unique_ptr<Stream>> NpuExecutor::CreateStream(
     std::optional<std::variant<StreamPriority, int>> priority) {
     const NpuStreamFactory* factory = NpuStreamFactory::GetFactory();
     if (factory != nullptr) {
-        return factory->CreateStream(this);
+        TF_ASSIGN_OR_RETURN(auto stream, factory->CreateStream(this));
+        return std::move(stream);
     }
-    return std::make_unique<NpuStream>(this);
+    return absl::UnavailableError(absl::StrCat("Npu stream factory not init"));
 }
 
 absl::StatusOr<std::unique_ptr<MemoryAllocator>> NpuExecutor::CreateMemoryAllocator(MemoryType type) {

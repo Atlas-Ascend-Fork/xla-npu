@@ -1896,6 +1896,9 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
                                                                     const CompileOptions& options) {
     NpuLog::Print(NpuLog::Level::DEBUG, "Run npu llvm compile(contains thunks generate).");
 
+    // // 确保set device(仅适用于单卡,多卡场景需要重新设计流程)
+    // stream_exec->Init();
+
     TraceMe trace([&] { return TraceMeEncode("NpuCompiler::RunBackend", {{"name", module->name()}}); });
 
     VLOG(1) << "Compiling: " << module->name();

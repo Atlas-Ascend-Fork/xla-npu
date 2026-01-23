@@ -214,14 +214,8 @@ absl::StatusOr<std::vector<aclTensor*>> NpuKernelThunk<num_arguments, num_result
 
 template <int64_t num_arguments, int64_t num_results>
 tsl::AsyncValueRef<NpuThunk::ExecuteEvent> NpuKernelThunk<num_arguments, num_results>::ExecuteAclnn(
-    uint64_t workspaceSize, aclOpExecutor* executor, AclnnExecFunc aclnnExecFunc) {
+    aclrtStream& stream, uint64_t workspaceSize, aclOpExecutor* executor, AclnnExecFunc aclnnExecFunc) {
     aclnnStatus ret = 0;
-    aclrtStream stream;  // TODO 执行thunk前创建
-    ret = npu::aclrtCreateStream(&stream);
-    if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Create stream failed. Error code: %d", ret);
-        return AclErrorExecuteEvent(ret, "");
-    }
 
     // 根据第一段接口计算出的workspaceSize申请device内存
     void* workspaceAddr = nullptr;
@@ -277,6 +271,17 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                   arguments_buffers_.size(), results_buffers_.size(), num_workgroups_);
     NpuLog::Print(NpuLog::Level::DEBUG, "---- Corresponding hlo instruction: %s ----", info().hloInstrDesc);
 
+    if (params.stream == nullptr) {
+        NpuLog::Print(NpuLog::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
+        return AclErrorExecuteEvent(-1, "");
+    }
+    auto stream_handle = params.stream->platform_specific_handle();
+    if (stream_handle.stream == nullptr) {
+        NpuLog::Print(NpuLog::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
+        return AclErrorExecuteEvent(-1, "");
+    }
+    auto stream = stream_handle.stream;
+
     const NpuBufferAllocations* allocations = params.buffer_allocations;
     const auto& input_param_shapes = info().input_param_shapes;
     const auto& output_param_shapes = info().output_param_shapes;
@@ -307,7 +312,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                 return AclErrorExecuteEvent(ret, "");
             }
 
-            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnExpand);
+            exec_event_value = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnExpand);
             break;
         }
 
@@ -323,7 +328,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                 return AclErrorExecuteEvent(ret, "");
             }
 
-            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnAdd);
+            exec_event_value = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnAdd);
             break;
         }
 
@@ -335,7 +340,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                 return AclErrorExecuteEvent(ret, "");
             }
 
-            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnTanh);
+            exec_event_value = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnTanh);
             break;
         }
 
@@ -347,7 +352,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
                 return AclErrorExecuteEvent(ret, "");
             }
 
-            exec_event_value = ExecuteAclnn(workspaceSize, executor, npu::aclnnMul);
+            exec_event_value = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnMul);
             break;
         }
 

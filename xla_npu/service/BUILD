@@ -34,8 +34,11 @@ cc_library(
     hdrs = ["npu_executable.h"],
     deps = [
         ":npu_buffer_assignment",
+        "//xla/xla_npu/backend:npu_buffer_allocations",
         "//xla/xla_npu/backend:npu_constant_allocation",
         "//xla/xla_npu/backend:npu_thunk_executor",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/common:npu_operation",
 
         # ":cpu_runtime",
         # ":executable_proto_cc",
@@ -63,8 +66,8 @@ cc_library(
         "//xla/service:maybe_owning_device_memory",
         "//xla/service:shaped_buffer",
         "//xla/service:xla_debug_info_manager",
-        # "//xla/stream_executor:device_memory",
-        # "//xla/stream_executor:device_memory_allocator",
+        "//xla/stream_executor:device_memory",
+        "//xla/stream_executor:device_memory_allocator",
         "//xla/tsl/concurrency:async_value",
         "//xla/tsl/platform:env",
         "//xla/tsl/platform:errors",

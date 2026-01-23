@@ -21,7 +21,7 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/common/npu_log.h"
 
 namespace xla {
 
