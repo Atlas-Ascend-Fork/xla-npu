@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_NPU_CLIENT_H_
 #define PJRT_NPU_NPU_CLIENT_H_
 
@@ -23,7 +25,7 @@
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology_description.h"
-#include "xla/xla_npu/service/npu_buffer_assignment.h"
+// #include "xla/xla_npu/service/npu_buffer_assignment.h" // Not used
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 
 namespace xla {
@@ -333,3 +335,4 @@ absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions op
 }  // namespace xla
 
 #endif  // PJRT_NPU_NPU_CLIENT_H_
+*/

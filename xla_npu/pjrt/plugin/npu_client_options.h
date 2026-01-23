@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_PLUGIN_NPU_CLIENT_OPTIONS_H_
 #define PJRT_PLUGIN_NPU_CLIENT_OPTIONS_H_
 
@@ -47,3 +49,4 @@ struct NpuClientOptions {
 }  // namespace xla
 
 #endif  // PJRT_PLUGIN_NPU_CLIENT_OPTIONS_H_
+*/

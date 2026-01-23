@@ -1,3 +1,5 @@
+
+/*
 #ifndef PJRT_NPU_HOST_MEMORY_SPACES_H_
 #define PJRT_NPU_HOST_MEMORY_SPACES_H_
 #include "absl/strings/string_view.h"
@@ -37,3 +39,4 @@ class NpuDeviceMemorySpace : public PjRtMemorySpace {
 
 }  // namespace xla
 #endif  // PJRT_NPU_HOST_MEMORY_SPACES_H_
+*/

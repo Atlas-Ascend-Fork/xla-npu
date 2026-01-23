@@ -19,21 +19,22 @@ package(
     licenses = ["notice"],
 )
 
-cc_library(
-    name = "npu_buffer_assignment",
-    srcs = ["npu_buffer_assignment.cc"],
-    hdrs = ["npu_buffer_assignment.h"],
-    deps = [
-        "//xla/service:buffer_assignment",
-    ],
-)
+# // Not used
+# cc_library(
+#     name = "npu_buffer_assignment",
+#     srcs = ["npu_buffer_assignment.cc"],
+#     hdrs = ["npu_buffer_assignment.h"],
+#     deps = [
+#         "//xla/service:buffer_assignment",
+#     ],
+# )
 
 cc_library(
     name = "npu_executable",
     srcs = ["npu_executable.cc"],
     hdrs = ["npu_executable.h"],
     deps = [
-        ":npu_buffer_assignment",
+        # ":npu_buffer_assignment", // Not used
         "//xla/xla_npu/backend:npu_buffer_allocations",
         "//xla/xla_npu/backend:npu_constant_allocation",
         "//xla/xla_npu/backend:npu_thunk_executor",

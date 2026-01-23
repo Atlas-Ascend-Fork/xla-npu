@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_NPU_DEVICE_H_
 #define PJRT_NPU_NPU_DEVICE_H_
 
@@ -73,3 +75,4 @@ class PjRtNpuDevice final : public PjRtDevice {
 
 }  // namespace xla
 #endif  // PJRT_NPU_NPU_DEVICE_H_
+*/

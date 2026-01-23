@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_TRACKED_NPU_DEVICE_BUFFER_H_
 #define PJRT_NPU_TRACKED_NPU_DEVICE_BUFFER_H_
 #include <cstddef>
@@ -178,3 +180,4 @@ class TrackedNpuDeviceBuffer : public AbstractTrackedDeviceBuffer {
 
 }  // namespace xla
 #endif  // PJRT_NPU_TRACKED_NPU_DEVICE_BUFFER_H_
+*/

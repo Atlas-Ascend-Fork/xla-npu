@@ -1,3 +1,5 @@
+// Not used
+/*
 #ifndef PJRT_NPU_NPU_RAW_BUFFER_H_
 #define PJRT_NPU_NPU_RAW_BUFFER_H_
 
@@ -131,3 +133,4 @@ class NpuRawBuffer : public CommonPjRtRawBuffer {
 };
 }  // namespace xla
 #endif  // PJRT_NPU_NPU_RAW_BUFFER_H_
+*/

@@ -15,8 +15,8 @@
 #include "xla/pjrt/c/pjrt_c_api_wrapper_impl.h"
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/xla_npu/client/npu_stream_client.h"
-// #include "xla/xla_npu/pjrt/npu/npu_client.h"
-// #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
+// #include "xla/xla_npu/pjrt/npu/npu_client.h" // Not used
+// #include "xla/xla_npu/pjrt/plugin/npu_client_options.h" // Not used
 
 namespace pjrt {
 

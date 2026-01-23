@@ -7,17 +7,18 @@ package(
     licenses = ["notice"],
 )
 
-cc_library(
-    name = "npu_host_memory_spaces",
-    srcs = ["npu_host_memory_spaces.cc"],
-    hdrs = ["npu_host_memory_spaces.h"],
-    deps = [
-        "//xla/pjrt:pjrt_client",
+# // Not used
+# cc_library(
+#     name = "npu_host_memory_spaces",
+#     srcs = ["npu_host_memory_spaces.cc"],
+#     hdrs = ["npu_host_memory_spaces.h"],
+#     deps = [
+#         "//xla/pjrt:pjrt_client",
         
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_absl//absl/types:span",
-        "@tsl//tsl/platform:fingerprint",
-    ],
-)
+#         "@com_google_absl//absl/log:check",
+#         "@com_google_absl//absl/strings:str_format",
+#         "@com_google_absl//absl/strings:string_view",
+#         "@com_google_absl//absl/types:span",
+#         "@tsl//tsl/platform:fingerprint",
+#     ],
+# )
