@@ -12,6 +12,7 @@ cc_library(
     srcs = ["npu_constant.cc"],
     hdrs = ["npu_constant.h"],
     deps = [
+        "//xla/codegen/emitters:kernel_arguments",
     ],
 )
 

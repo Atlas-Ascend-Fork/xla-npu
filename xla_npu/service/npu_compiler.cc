@@ -1069,7 +1069,15 @@ absl::Status NpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile, l
     // TF_RETURN_IF_ERROR(RunHloPassesAfterLayoutAssn(module, is_aot_compile, &target_machine_features,
     // compile_options));
 
-    NpuTool::PrintHloModule(module, "Xla hlo module after run npu hol pass");
+    NpuTool::PrintHloModule(module, "Xla hlo module after run npu hlo pass");
+
+    // 执行融合
+    // HloPassPipeline fusion_pipeline("npu fusion");
+    // bool use_multi_output_fusion = cpu::options::UseMultiOutputFusion(module->config());
+    // fusion_pipeline.AddPass<cpu::CpuInstructionFusion>(/*may_duplicate=*/!use_multi_output_fusion);
+    // fusion_pipeline.AddPass<cpu::FusionWrapper>(true);
+    // TF_RETURN_IF_ERROR(fusion_pipeline.Run(module).status());
+    // NpuTool::PrintHloModule(module, "Xla hlo module after run npu hlo fusion");
 
     return absl::OkStatus();
 }
