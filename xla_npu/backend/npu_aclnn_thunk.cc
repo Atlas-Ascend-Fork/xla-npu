@@ -21,7 +21,7 @@
 #include "xla/stream_executor/dnn.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/thunk.h"
+#include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"

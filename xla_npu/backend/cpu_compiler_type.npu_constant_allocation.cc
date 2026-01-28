@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_constant_allocation.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_constant_allocation.h"
 
 #include <cstdint>
 #include <memory>

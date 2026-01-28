@@ -11,7 +11,7 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/client/npu_module.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/service/npu_compiler.h"
+#include "xla/xla_npu/service/cpu_compiler_type.npu_compiler.h"
 #include "xla/xla_npu/stream_executor/npu_platform.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
 

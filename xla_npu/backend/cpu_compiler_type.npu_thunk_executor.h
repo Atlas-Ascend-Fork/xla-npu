@@ -23,7 +23,7 @@
 // #include "xla/backends/cpu/runtime/thunk.h"
 #include "xla/runtime/execution_graph.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 
 namespace xla {
 

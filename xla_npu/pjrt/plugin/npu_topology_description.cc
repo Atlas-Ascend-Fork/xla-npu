@@ -55,18 +55,17 @@ std::vector<std::unique_ptr<const PjRtDeviceDescription>> NpuTopologyDescription
     return devices;
 }
 
-// absl::StatusOr<xla::PjRtTopologyDescriptionProto>
-// NpuTopologyDescription::ToProto() const {
-//     PjRtTopologyDescriptionProto proto;
-//     proto.set_platform_id(platform_id());
-//     proto.set_platform_name(platform_name());
-//     proto.set_platform_version(platform_version());
-//     proto.set_is_subslice_topology(is_subslice_topology());
+absl::StatusOr<xla::PjRtTopologyDescriptionProto> NpuTopologyDescription::ToProto() const {
+    PjRtTopologyDescriptionProto proto;
+    proto.set_platform_id(platform_id());
+    proto.set_platform_name(platform_name());
+    proto.set_platform_version(platform_version());
+    proto.set_is_subslice_topology(is_subslice_topology());
 
-//     CpuTopologyProto cpu_topology_proto = npu_topology_.ToProto();
-//     proto.mutable_platform_specific_topology()->PackFrom(cpu_topology_proto);
-//     return proto;
-// }
+    // CpuTopologyProto cpu_topology_proto = npu_topology_.ToProto();
+    // proto.mutable_platform_specific_topology()->PackFrom(cpu_topology_proto);
+    return proto;
+}
 
 // absl::StatusOr<std::unique_ptr<NpuTopologyDescription>>
 // NpuTopologyDescription::FromProto(

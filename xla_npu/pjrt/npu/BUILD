@@ -41,7 +41,7 @@ cc_library(
 #     deps = [
 #         ":npu_event",
 #         "//xla/xla_npu/common:npu_tool",
-#         "//xla/xla_npu/service:npu_executable",
+#         "//xla/xla_npu/service:cpu_compiler_type.npu_executable",
 #         "//xla/xla_npu/third_party/register:acl_interface",
         
 #         "//xla:future",
@@ -122,16 +122,16 @@ cc_library(
 #     deps = [
 #         ":abstract_npu_buffer",
 #         ":npu_device",
-#         "//xla/xla_npu/backend:npu_thunk",
-#         "//xla/xla_npu/backend:npu_buffer_allocations",
+#         "//xla/xla_npu/backend:cpu_compiler_type.npu_thunk",
+#         "//xla/xla_npu/backend:cpu_compiler_type.npu_buffer_allocations",
 #         "//xla/xla_npu/common:npu_tool",
 #         "//xla/xla_npu/common:npu_constant",
 #         "//xla/xla_npu/pjrt:npu_host_memory_spaces",
 #         "//xla/xla_npu/pjrt/plugin:npu_client_options",
 #         "//xla/xla_npu/pjrt/plugin:npu_topology_description",
 #         # "//xla/xla_npu/service:npu_buffer_assignment", // Not used
-#         "//xla/xla_npu/service:npu_executable",
-#         "//xla/xla_npu/service:npu_compiler",
+#         "//xla/xla_npu/service:cpu_compiler_type.npu_executable",
+#         "//xla/xla_npu/service:cpu_compiler_type.npu_compiler",
 #         "//xla/xla_npu/third_party/register:acl_interface",
 
 #         "//xla:array",

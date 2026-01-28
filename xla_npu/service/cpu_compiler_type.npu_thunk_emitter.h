@@ -33,7 +33,7 @@
 #include "xla/shape_util.h"
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 
 namespace xla {
 

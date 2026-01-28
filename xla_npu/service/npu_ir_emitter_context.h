@@ -29,7 +29,7 @@
 #include "xla/service/name_uniquer.h"
 #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
-#include "xla/xla_npu/service/gpu_executable.h"
+#include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 
 namespace xla {

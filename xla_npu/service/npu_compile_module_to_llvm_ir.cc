@@ -46,7 +46,7 @@
 // #include "xla/service/gpu/execution_stream_assignment.h"
 // #include "xla/service/gpu/gpu_constants.h"
 // #include "xla/service/gpu/gpu_executable.h"
-// #include "xla/service/gpu/gpu_memory_space_assignment.h"
+#include "xla/service/gpu/gpu_memory_space_assignment.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
 // #include "xla/service/gpu/ir_emitter_unnested.h"
 // #include "xla/service/gpu/metrics.h"
@@ -63,9 +63,11 @@
 #include "xla/util.h"
 #include "xla/xla.pb.h"
 #include "xla/xla_data.pb.h"
+#include "xla/xla_npu/service/npu_executable.h"
+#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
 
 namespace xla::gpu {
 
@@ -155,9 +157,9 @@ bool UseCache(const DebugOptions& options, bool split_constants_module) {
 }
 
 absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> LowerHlo(const HloModule* hlo_module,
-                                                          NpuIrEmitterContext& ir_emitter_context,
-                                                          llvm::Module* llvm_module_constants,
-                                                          se::Platform::Id platform_id, bool use_cache) {
+                                                             NpuIrEmitterContext& ir_emitter_context,
+                                                             llvm::Module* llvm_module_constants,
+                                                             se::Platform::Id platform_id, bool use_cache) {
     const DebugOptions& options = hlo_module->config().debug_options();
     ScopedAnnotation annotation(Phase("XlaEmitLlvmIr", hlo_module));
     uint64_t start_usecs = tsl::Env::Default()->NowMicros();
@@ -213,15 +215,21 @@ absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> LowerHlo(const HloModule* hl
 
 absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
     const HloModule* module, const GpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function) {
-    ScopedAnnotation annotation(Phase("XlaBufferAssignment", module));
+    // ScopedAnnotation annotation(Phase("XlaBufferAssignment", module));
 
-    const DebugOptions& options = module->config().debug_options();
+    // const DebugOptions& options = module->config().debug_options();
 
     // std::optional<BufferValue::Color> color =
     //     options.xla_gpu_temp_buffer_use_separate_color()
     //         ? std::optional<BufferValue::Color>((int)MemorySpaceColor::kTempBuffer)
     //         : std::nullopt;
-    std::optional<BufferValue::Color> color = std::nullopt;
+    // std::optional<BufferValue::Color> color = std::nullopt;
+
+    if (!module->has_schedule()) {
+        const std::string err_msg = "Module need to be scheduled.";
+        NpuLog::Print(NpuLog::Level::ERROR, err_msg);
+        return absl::UnavailableError(err_msg);
+    }
 
     TF_ASSIGN_OR_RETURN(std::unique_ptr<BufferAssignment> buffer_assignment,
                         BufferAssigner::Run(
@@ -229,13 +237,15 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
                             std::move(buffer_size_bytes_function), alias_info,
                             /*color_alignment=*/
                             [](LogicalBuffer::Color) { return 256; },
-                            /*allocate_buffers_for_constants=*/true,
+                            /*allocate_buffers_for_constants=*/true
                             // /*colorer=*/CreateColorer(options),
-                            /*colorer=*/nullptr,
-                            /*must_not_live_out=*/{},
-                            /*preset_assignments*/ {},
-                            /*private_stack*/ {}, /*heap_buffer_interval_compare*/ nullptr,
-                            /*isolation_options*/ std::nullopt, color));
+                            // /*must_not_live_out=*/{},
+                            // /*preset_assignments*/ {},
+                            // /*private_stack*/ {},
+                            // /*heap_buffer_interval_compare*/ nullptr,
+                            // /*isolation_options*/ std::nullopt,
+                            // color
+                            ));
 
     VLOG(1) << "Buffer Assignment Stats for " << module->name() << "\n" << buffer_assignment->StatsString(alias_info);
     return buffer_assignment;

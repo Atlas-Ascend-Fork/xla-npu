@@ -19,7 +19,7 @@
 #include "xla/service/gpu/gpu_constants.h"
 // #include "xla/service/gpu/gpu_executable.h"
 #include "xla/service/gpu/ir_emission_utils.h"
-#include "xla/xla_npu/service/gpu_executable.h"
+#include "xla/xla_npu/service/npu_executable.h"
 
 namespace xla {
 namespace gpu {
@@ -30,7 +30,8 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
     // small constants directly in LLVM IR.  Larger constants are emitted with
     // zero initializers in LLVM IR and are later overwritten when the PTX/CUBIN
     // is loaded.
-    bool should_emit_initializer = num_elements <= 1;
+    // bool should_emit_initializer = num_elements <= 1;
+    bool should_emit_initializer = false;
 
     // Ptxas has issues if the constant allocation is smaller than 64 bytes.
     // TODO(b/253259975): Remove when fixed ptxas version is submitted.

@@ -2,237 +2,318 @@
 #define SERVICE_NPU_EXECUTABLE_H_
 
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
+#include <tuple>
+#include <variant>
 #include <vector>
 
 #include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-// #include "xla/backends/cpu/constant_allocation.h"
-// #include "xla/backends/cpu/runtime/function_library.h"
-// #include "xla/backends/cpu/runtime/thunk.h"
-// #include "xla/backends/cpu/runtime/thunk_executor.h"
-#include "xla/executable_run_options.h"
-#include "xla/hlo/ir/hlo_instruction.h"
+#include "xla/backends/gpu/runtime/annotation.h"
+// #include "xla/backends/gpu/runtime/sequential_thunk.h"
+// #include "xla/backends/gpu/runtime/thunk.h"
+#include "xla/hlo/ir/hlo_input_output_alias_config.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
-// #include "xla/service/cpu/executable.pb.h"
-#include "xla/service/custom_call_status.h"
+#include "xla/service/computation_layout.h"
 #include "xla/service/executable.h"
-#include "xla/service/hlo_execution_profile.h"
-#include "xla/service/hlo_profile_printer_data.pb.h"
-#include "xla/service/hlo_value.h"
-#include "xla/service/maybe_owning_device_memory.h"
+#include "xla/service/gpu/alias_info.h"
+#include "xla/service/gpu/buffer_allocations.h"
+#include "xla/service/gpu/gpu_executable.pb.h"
+#include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/service_executable_run_options.h"
-// #include "xla/stream_executor/device_memory_allocator.h"
-
-#include "xla/xla_npu/backend/npu_constant_allocation.h"
+#include "xla/service/shaped_buffer.h"
+#include "xla/shape.h"
+#include "xla/shape_util.h"
+#include "xla/stream_executor/device_description.h"
+#include "xla/stream_executor/device_memory.h"
+#include "xla/stream_executor/device_memory_allocator.h"
+#include "xla/stream_executor/scoped_module_handle.h"
+#include "xla/stream_executor/stream_executor.h"
+#include "xla/xla_npu/backend/npu_sequential_thunk.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
-#include "xla/xla_npu/backend/npu_thunk_executor.h"
-// #include "xla/xla_npu/service/npu_buffer_assignment.h" // Not used
 
 namespace xla {
+namespace gpu {
 
-// CPU-targeting implementation of the XLA Executable interface.
+// GPU-targeting implementation of the XLA Executable interface.
 //
-// Wraps a JIT-ed object that can be executed "on device". We JIT for the host
-// architecture, so JIT-ed code and host code share the same ABI.
+// Launches the given GPU kernel via the StreamExecutor.
+//
+// This is an immutable data type after initialization, and thus thread safe.
 class NpuExecutable : public Executable {
    public:
-    // Creates a NpuExecutable from a thunk sequence.
-    static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(
-        // std::unique_ptr<FunctionLibrary> function_library,
-        std::unique_ptr<BufferAssignment> assignment, std::unique_ptr<HloModule> hlo_module, NpuThunkSequence thunks,
-        std::vector<NpuConstantAllocation> constants, std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-        std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map);
-    // TargetMachineOptionsProto target_machine_options);
+    struct ConstantInfo {
+        std::string symbol_name;
+        DenseDataIntermediate content;
+        int allocation_index = -1;
 
+        GpuExecutableProto::ConstantInfoProto ToProto() const;
+
+        static ConstantInfo FromProto(const GpuExecutableProto::ConstantInfoProto& proto);
+    };
+
+    struct OutputInfo {
+        // Corresponding allocation index.
+        int allocation_index;
+
+        // Output is passed-through from a parameter.
+        bool passthrough = false;
+
+        // Whether this output is hinted to alias a parameter (BufferAllocation*
+        // would indicate the aliased parameter), and what kind of alias it is.
+        std::optional<HloInputOutputAliasConfig::Alias> alias_config;
+
+        GpuExecutableProto::OutputInfoProto ToProto() const;
+        static absl::StatusOr<OutputInfo> FromProto(const GpuExecutableProto::OutputInfoProto& proto);
+
+        friend bool operator==(const OutputInfo& lhs, const OutputInfo& rhs) {
+            return std::tie(lhs.allocation_index, lhs.passthrough, lhs.alias_config) ==
+                   std::tie(rhs.allocation_index, rhs.passthrough, rhs.alias_config);
+        }
+
+        friend bool operator!=(const OutputInfo& lhs, const OutputInfo& rhs) { return !(lhs == rhs); }
+    };
+
+    struct Params {
+        std::string asm_text;
+        std::vector<uint8_t> binary;
+        BinaryMap dnn_compiled_graphs;
+        std::unique_ptr<NpuSequentialThunk> executable;
+        std::vector<ConstantInfo> constants;
+        absl::flat_hash_map<ShapeIndex, OutputInfo> output_info;
+        std::string module_name;
+        ProgramShape program_shape;
+        std::optional<std::vector<BufferAllocation>> mlir_allocations;
+        std::unique_ptr<const BufferAssignment> buffer_assignment;
+        std::unique_ptr<GpuAliasInfo> alias_info;
+        DebugOptions debug_options;
+        se::DeviceDescription device_description;
+        std::unique_ptr<HloModule> debug_module = nullptr;
+        bool enable_debug_info_manager = true;
+    };
+
+    static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(Params params);
     ~NpuExecutable() override;
 
-    absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStream(const ServiceExecutableRunOptions* run_options,
-                                                         std::vector<ExecutionInput> arguments) override;
-
-    // Calls emitted thunk sequence with the given arguments using the supplied
-    // buffers.
-    absl::Status ExecuteThunks(const ExecutableRunOptions* run_options,
-                               absl::Span<MaybeOwningDeviceMemory const> buffers);
-
-    // absl::Span<const ObjFileProto> obj_files() const { return obj_files_; }
-
-    // std::vector<SymbolProto> get_compiled_symbols_proto() const {
-    //   std::vector<SymbolProto> symbols;
-    //   for (const auto& symbol : compiled_symbols_) {
-    //     SymbolProto symbol_proto;
-    //     symbol_proto.set_name(symbol.name);
-    //     symbol_proto.set_function_type_id(GetFunctionTypeId(symbol.type_id));
-    //     symbols.push_back(std::move(symbol_proto));
-    //   }
-    //   return symbols;
-    // }
-
-    // void set_obj_files(std::vector<ObjFileProto> obj_files) {
-    //   obj_files_ = std::move(obj_files);
-    // }
-
-    // void set_compiled_symbols(
-    //     std::vector<FunctionLibrary::Symbol> compiled_symbols) {
-    //   compiled_symbols_ = std::move(compiled_symbols);
-    // }
-
-    // void set_symbol_type_id_to_function_type_id(
-    //     absl::flat_hash_map<FunctionLibrary::TypeId, SymbolProto::FunctionTypeId>
-    //         symbol_type_id_to_function_type_id) {
-    //   symbol_type_id_to_function_type_id_ =
-    //       std::move(symbol_type_id_to_function_type_id);
-    // }
-
-    // SymbolProto::FunctionTypeId GetFunctionTypeId(
-    //     const FunctionLibrary::TypeId type_id) const {
-    //   auto it = symbol_type_id_to_function_type_id_.find(type_id);
-    //   if (it == symbol_type_id_to_function_type_id_.end()) {
-    //     return SymbolProto::UNKNOWN;
-    //   }
-    //   return it->second;
-    // }
+    int64_t SizeOfGeneratedCodeInBytes() const override;
 
     // This should be called after set_ir_module_string.
     const std::string& ir_module_string() const { return ir_module_string_; }
 
+    absl::string_view name() const override { return module_name_; }
+
+    xla::Shape result_shape() const override { return program_shape_.result(); }
+
+    const absl::flat_hash_map<ShapeIndex, OutputInfo>& output_info() const { return output_info_; }
+
+    ComputationLayout compute_computation_layout() const override {
+        return ComputationLayout(program_shape_, /*ignore_layouts=*/false);
+    }
+
+    // This should be called before ExecuteOnStream.
     void set_ir_module_string(const std::string& ir_module_string) { ir_module_string_ = ir_module_string; }
 
-    const std::string& module_name() const { return module_name_; }
+    // Returns the compiled code for the computation.
+    //
+    // The compiled code is PTX in Cuda and unused empty string in ROCm.
+    // This may be left empty for saving memory if we have a non-empty binary.
+    // If both text() and binary() are empty, that means the HLO required no
+    // custom kernels to be compiled.
+    const std::string& text() const { return text_; }
 
-    static int64_t ShapeSizeBytes(const Shape& shape);
+    // Returns the binary stored in this NpuExecutable.
+    //
+    // The binary is cubin in Cuda, and HSA code object in ROCm. It may be empty,
+    // in which case compilation is left up to the GPU driver. If both text() and
+    // binary() are empty, that means the HLO required no custom kernels to be
+    // compiled.
+    const std::vector<uint8_t>& binary() const { return binary_; }
 
-    bool has_thunks() const { return thunks_.has_value(); }
-    NpuThunkExecutor& thunks() { return *thunks_; }
+    const BinaryMap& dnn_compiled_graphs() const { return dnn_compiled_graphs_; }
 
-    bool has_xnn_fusions() const { return has_xnn_fusions_; }
-    bool has_ynn_fusions() const { return has_ynn_fusions_; }
+    // ExecuteAsyncOnStream will fail if the compute capability of the stream
+    // doesn't match the compute capability passed to this object's constructor.
+    absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStream(const ServiceExecutableRunOptions* run_options,
+                                                         std::vector<ExecutionInput> arguments) override;
 
-    const BufferAssignment& buffer_assignment() const { return *assignment_; }
-    absl::Span<const NpuConstantAllocation> constants() const { return constants_; }
+    absl::StatusOr<ScopedShapedBuffer> ExecuteAsyncOnStream(const ServiceExecutableRunOptions* run_options,
+                                                            absl::Span<const ShapedBuffer* const> arguments) override;
 
-    int64_t SizeOfGeneratedCodeInBytes() const override;
+    using VariantArguments = std::variant<absl::Span<const ShapedBuffer* const>, absl::Span<ExecutionInput>>;
+    absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStreamImpl(const ServiceExecutableRunOptions* run_options,
+                                                             VariantArguments arguments);
 
-    absl::Span<const BufferAllocation* absl_nonnull const> GetAllocations() const override { return alloc_ptrs_; }
+    absl::Span<const BufferAllocation* absl_nonnull const> GetAllocations() const override { return allocation_ptrs_; }
 
-    // FunctionLibrary* function_library() const { return function_library_.get(); }
+    const std::vector<ConstantInfo>& constants() const { return constants_; }
 
-    // std::unique_ptr<FunctionLibrary> consume_function_library() && {
-    //   return std::move(function_library_);
-    // }
+    const BufferAssignment* buffer_assignment() const { return buffer_assignment_.get(); }
 
-    // Finalize construction of the NpuExecutable and finalize all internal data
-    // structures that might have been used at compile time.
-    void Finalize();
+    const GpuAliasInfo* alias_info() const { return alias_info_.get(); }
 
-    // const TargetMachineOptionsProto& target_machine_options() const {
-    //   return target_machine_options_;
-    // }
+    const NpuSequentialThunk& GetThunk() { return *thunks_; }
+
+    absl::Status ExecuteThunks(const BufferAllocations& buffer_allocations,
+                               const ServiceExecutableRunOptions* run_options);
+
+    using BufferAllocToDeviceMemoryMap = absl::flat_hash_map<BufferAllocation::Index, se::DeviceMemoryBase>;
+
+    // Loads the PTX or CUBIN for this executable and initializes all
+    // constants that haven't already been initialized by the CUDA driver. Loaded
+    // modules are owned by this executable.
+    //
+    // Returns a map from buffer allocation indices to device memory pointers
+    // (only for allocations that contain constants).
+    //
+    // The returned map is cached. If the above process has already been run for
+    // the given stream, it is skipped and the cached map is immediately returned
+    // instead.
+    absl::StatusOr<const BufferAllocToDeviceMemoryMap*> ResolveConstantGlobals(stream_executor::Stream* stream);
+
+    absl::Status VerboseAllocationError(absl::Status s);
+
+    // static absl::StatusOr<std::unique_ptr<NpuExecutable>> FromProto(const GpuExecutableProto&,
+    //                                                                 const se::DeviceDescription& device_description,
+    //                                                                 absl::string_view platform);
+
+    // absl::StatusOr<GpuExecutableProto> ToProto() const;
 
    private:
-    // Creates an array suitable for passing as the "buffer_table" argument to the
-    // JIT compiled function pointer.
+    // Use NpuExecutable::Create() to create an instance.
+    explicit NpuExecutable(Params params, std::deque<BufferAllocation> thunk_pass_allocations);
+
+    // // NpuExecutable check with either AMD's ISA version, or Nvidia's major minor
+    // // version for compute capability, depending on the hardware.
+    // absl::Status CheckCompatibilityWithServiceExecutableRunOptions(const ServiceExecutableRunOptions* run_options);
+
+    absl::StatusOr<BufferAllocations> GenerateBufferAllocations(
+        VariantArguments arguments, const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
+        se::DeviceMemoryAllocator* memory_allocator, int device_ordinal);
+
+    absl::StatusOr<se::DeviceMemoryBase> BufferForAllocation(VariantArguments arguments,
+                                                             const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
+                                                             const BufferAllocation& allocation,
+                                                             se::DeviceMemoryAllocator* memory_allocator,
+                                                             int device_ordinal, int64_t arg_idx);
+
+    // The LLVM IR, in string format, of the unoptimized module generated for
+    // this NpuExecutable. We save a string instead of an llvm::Module* because
+    // leaving llvm::Module* in a singleton can cause the heap checker to emit
+    // false positives.
     //
-    // Returns (unowning_buffers, owning_buffers) where:
-    //
-    //  - unowning_buffers.data() can be passed as the buffer_table argument as-is
-    //    and includes pointers to the scratch storage required by the
-    //    computation, the live-out buffer into which the result will be written
-    //    and entry computation parameters.
-    //
-    //  - owning_buffers contains owning pointers to the buffers that were
-    //    allocated by this routine.  This routine allocates buffers for temporary
-    //    storage and the live-out buffer into which the computation writes it
-    //    result.
-    //
-    //  - buffers_to_free: buffers whose ownership was donated by the caller that
-    //    are to be freed by the caller.
-    absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> CreateBufferTable(se::DeviceMemoryAllocator* memory_allocator,
-                                                                           int device_ordinal,
-                                                                           absl::Span<ExecutionInput const> arguments);
-
-    // Creates an Execution output holding ScopedShapedBuffer for holding the
-    // result of the computation, moving buffers out of allocated_buffers and into
-    // the result as appropriate.  The addresses are set according to buffer
-    // assignment.
-    absl::StatusOr<ExecutionOutput> CreateResultShapedBuffer(const ServiceExecutableRunOptions* run_options,
-                                                             absl::Span<MaybeOwningDeviceMemory> buffers,
-                                                             absl::Span<ExecutionInput> arguments);
-
-    // Returns the instruction value set of the root instruction of the entry
-    // computation. Uses dataflow analysis from buffer assignment.
-    const InstructionValueSet& GetRootValueSet() const;
-
-    // The FunctionLibrary containing compiled modules.
-    // std::unique_ptr<FunctionLibrary> function_library_;
-
-    // Object files (machine code) compiled from an HLO module by the JIT
-    // compiler. We capture all object files created by JitCompiler so we can
-    // export them to AOT compilation result.
-    // std::vector<ObjFileProto> obj_files_;
-
-    // Generate compiled symbols. We capture all compiled symbols so we can export
-    // them to AOT compilation result.
-    // std::vector<FunctionLibrary::Symbol> compiled_symbols_;
-
-    // absl::flat_hash_map<FunctionLibrary::TypeId, SymbolProto::FunctionTypeId>
-    //     symbol_type_id_to_function_type_id_;
-
-    // Buffer assignment for the buffers we need to allocate.
-    std::shared_ptr<BufferAssignment> assignment_;
-    std::vector<const BufferAllocation*> alloc_ptrs_;
-
-    // The LLVM IR, in string format, of the unoptimized module generated for this
-    // NpuExecutable. We save a string instead of an llvm::Module* because leaving
-    // llvm::Module* in a singleton can cause the heap checker to emit false
-    // positives.
+    // This string should be modified only before ExecuteOnStream.
     std::string ir_module_string_;
 
-    // Unique identifier.
+    // The compiled code for the computation.
+    const std::string text_;
+
+    // The GPU machine code for the computation, targeting GPUs at
+    // compute_capability_.
+    //
+    // May be empty, in which case we leave compilation up to the GPU driver.
+    std::vector<uint8_t> binary_;
+
+    BinaryMap dnn_compiled_graphs_;
+
+    // The GPU version for compute compatibility check.
+    se::GpuComputeCapability gpu_version_;
+
+    // The thunks to be invoked by this NpuExecutable. They are generated by the
+    // IrEmitter (null if XLA:GPU runtime is enabled).
+    std::unique_ptr<NpuSequentialThunk> thunks_;
+
+    // Additional execution streams requested by `thunks_`.
+    absl::flat_hash_set<NpuExecutionStreamId> execution_stream_ids_;
+
     std::string module_name_;
 
-    // We have two execution modes:
+    ProgramShape program_shape_;
+
+    // Provides information for allocating memory for every output/temp buffer.
     //
-    //   (1) HLO module compiled to a single function using LLVM JIT and we get
-    //       a function pointer to it.
-    //   (2) HLO module compiled to a thunk sequence that gets interpreted at run
-    //       time.
+    // Non-owning pointers - allocation objects reside either in allocations_
+    // or buffer_assignment_.
     //
-    // We are currently transitioning from (1) to (2) with a long term plan to
-    // unify thunk-based runtime with all XLA backends.
+    // A NpuExecutable can get its allocations in three ways:
+    // 1 - From a regular compilation that uses allocations from MLIR.
+    // 2 - From a regular compilation that uses the original allocations from
+    //     the buffer assignment.
+    // 3 - From loading the executable from an object file.
+    //
+    // In cases 1 and 3, the allocations are stored in allocations_ and in
+    // case 2, they are part of the buffer_assignment.
+    const std::vector<const BufferAllocation*> allocation_ptrs_;
 
-    // A thunk executor created from the compiled thunk sequence.
-    std::optional<NpuThunkExecutor> thunks_;
-    // Vector indexed by BufferAllocation::Index for efficient access.
-    std::vector<NpuConstantAllocation> constants_;
+    // The allocations_ object contains allocations that **may** be used to
+    // provide information for allocating memory for every output/temp buffer.
+    // See the comment on allocation_ptrs_.
+    std::optional<const std::vector<BufferAllocation>> allocations_;
 
-    // Whether the thunk executor contains any XNN fusion thunks.
-    bool has_xnn_fusions_ = false;
+    // The buffer_assignment_ object contains allocations that **may** be used to
+    // provide information for allocating memory for every output/temp buffer.
+    // See the comment on allocation_ptrs_.
+    //
+    // This object is also used for dumping debug info.
+    std::shared_ptr<const xla::BufferAssignment> buffer_assignment_;
 
-    // Whether the thunk executor contains any YNN fusion thunks.
-    bool has_ynn_fusions_ = false;
+    // Extra allocations added by thunk passes outside of the normal buffer
+    // assignment process.
+    // std::deque is used to ensure pointer stability.
+    const std::deque<BufferAllocation> thunk_pass_allocations_;
 
-    // TargetMachineOptionsProto target_machine_options_;
+    // Backend specific aliasing information whether operands can/should share the
+    // buffer with the user.
+    std::unique_ptr<GpuAliasInfo> alias_info_;
 
-    // Entry function name for the computation.
-    std::string entry_function_name_;
+    ModuleAnnotations module_annotations_ = [this] {
+        if (has_module()) {
+            return ModuleAnnotations(module());
+        }
+        return ModuleAnnotations(module_name_);
+    }();
 
-    NpuExecutable(std::unique_ptr<HloModule> hlo_module,
-                  std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
-                  std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
-                  std::unique_ptr<BufferAssignment> assignment);
-    // TargetMachineOptionsProto target_machine_options);
+    int64_t debug_buffer_assignment_show_max_;
+
+    absl::Mutex module_handle_mutex_;
+    // Cache of module handles. Required to keep loaded modules alive until this
+    // executable is destroyed.
+    absl::flat_hash_map<stream_executor::StreamExecutor*, se::ScopedModuleHandle> module_handles_
+        ABSL_GUARDED_BY(module_handle_mutex_);
+    // Cache of constant buffer allocation maps used by `ResolveConstantGlobals`.
+    absl::flat_hash_map<stream_executor::StreamExecutor*, std::unique_ptr<BufferAllocToDeviceMemoryMap>> module_globals_
+        ABSL_GUARDED_BY(module_handle_mutex_);
+
+    // Cache previous memory allocations for current module, this is used to help
+    // identify if user's model have unstable pointers by turning on VLOG(5).
+    absl::flat_hash_map<stream_executor::StreamExecutor*, std::vector<se::DeviceMemoryBase>> module_allocations_
+        ABSL_GUARDED_BY(module_handle_mutex_);
+
+    std::vector<ConstantInfo> constants_;
+    const absl::flat_hash_map<ShapeIndex, OutputInfo> output_info_;
+    // Retains shared ownership of on-device constants that are managed by XLA and
+    // potentially shared with other executables.
+    std::vector<std::shared_ptr<se::DeviceMemoryBase>> shared_constants_;
+    bool enable_debug_info_manager_;
+
     NpuExecutable(const NpuExecutable&) = delete;
     NpuExecutable& operator=(const NpuExecutable&) = delete;
 };
 
+absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGetOutputInfo(
+    const HloModule& hlo_module, const BufferAssignment& assignment);
+
+}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_EXECUTABLE_H_
