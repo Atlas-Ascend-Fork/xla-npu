@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_kernel_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_kernel_thunk.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -39,8 +39,8 @@
 
 #define EIGEN_USE_THREADS
 #include "unsupported/Eigen/CXX11/Tensor"
-#include "xla/xla_npu/backend/npu_buffer_allocations.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_buffer_allocations.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"

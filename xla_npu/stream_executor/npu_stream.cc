@@ -50,11 +50,11 @@ absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src, 
     auto acl_ret = npu::aclrtMemcpy(host_dst, size, src_mem, size, ACL_MEMCPY_DEVICE_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(
-            absl::StrCat("Execute aclrtMemcpy d2h on stream %s failed, error code: %d", GetName(), acl_ret));
+            absl::StrCat("Execute aclrtMemcpy d2h on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
     xla::NpuLog::Print(xla::NpuLog::Level::DEBUG,
-                       "Npu memory copy d2h on stream %s success, dst cpu addr %p, src npu addr %p, size %d", GetName(),
-                       host_dst, src_mem, size);
+                       "Npu memory copy d2h on stream '%s' success, dst cpu addr %p, src npu addr %p, size %d",
+                       GetName(), host_dst, src_mem, size);
     return absl::OkStatus();
 }
 
@@ -65,11 +65,11 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const void* host_src, 
     auto acl_ret = npu::aclrtMemcpy(dst_mem, size, host_src, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(
-            absl::StrCat("Execute aclrtMemcpy h2d on stream %s failed, error code: %d", GetName(), acl_ret));
+            absl::StrCat("Execute aclrtMemcpy h2d on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
     xla::NpuLog::Print(xla::NpuLog::Level::DEBUG,
-                       "Npu memory copy h2d on stream %s success, dst npu addr %p, src cpu addr %p, size %d", GetName(),
-                       dst_mem, host_src, size);
+                       "Npu memory copy h2d on stream '%s' success, dst npu addr %p, src cpu addr %p, size %d",
+                       GetName(), dst_mem, host_src, size);
     return absl::OkStatus();
 }
 

@@ -75,7 +75,7 @@ class NpuTopologyDescription : public PjRtTopologyDescription {
 
     absl::StatusOr<Layout> GetDefaultLayout(PrimitiveType element_type, absl::Span<const int64_t> dims) const override;
 
-    // absl::StatusOr<xla::PjRtTopologyDescriptionProto> ToProto() const override;
+    absl::StatusOr<xla::PjRtTopologyDescriptionProto> ToProto() const override;
 
     // static absl::StatusOr<std::unique_ptr<NpuTopologyDescription>> FromProto(
     //     const xla::PjRtTopologyDescriptionProto& proto);

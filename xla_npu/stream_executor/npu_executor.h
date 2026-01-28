@@ -75,6 +75,9 @@ class NpuExecutor : public StreamExecutorCommon {
         std::optional<std::variant<StreamPriority, int>> priority) override;
     absl::StatusOr<std::unique_ptr<MemoryAllocator>> CreateMemoryAllocator(MemoryType type) override;
 
+    absl::StatusOr<std::shared_ptr<DeviceMemoryBase>> CreateOrShareConstant(Stream* stream,
+                                                                            absl::Span<const uint8_t> content) override;
+
    private:
     int device_ordinal_;
     std::shared_ptr<tsl::thread::ThreadPool> thread_pool_;

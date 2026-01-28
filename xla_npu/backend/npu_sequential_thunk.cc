@@ -21,7 +21,7 @@
 #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/thunk.h"
+#include "xla/xla_npu/backend/npu_thunk.h"
 
 namespace xla {
 namespace gpu {

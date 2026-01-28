@@ -4,11 +4,11 @@
 #include "xla/stream_executor/platform_manager.h"
 #include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/common/npu_log.h"
-// #include "xla/xla_npu/service/gpu_compiler.h"
 #include "xla/xla_npu/service/npu_compiler.h"
 #include "xla/xla_npu/service/npu_transfer_manager.h"
 #include "xla/xla_npu/stream_executor/npu_platform.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
+// #include "xla/xla_npu/service/cpu_compiler_type.npu_compiler.h" // !!! Cpu compiler type code, currently not used.
 
 namespace xla {
 
@@ -31,6 +31,16 @@ static void RegisterNpuPlatform() {
 }
 
 static void RegisterNpuCompiler() {
+    /*
+
+    // !!! Cpu compiler type code, currently not used.
+    //    It has been verified and works properly(2026.1.28).
+    //    To use this functionality, please enable this code block, its corresponding header files,
+    //    and the BUILD file configurations, and comment out all other code within this function except this block.
+    Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId,
+                                    []() { return std::make_unique<NpuCompiler>(); });
+    */
+
     // 用于编译流程.
     // 在PjRtStreamExecutorClient::CompileInternal中client()->Compile会调用到,
     // 实际编译逻辑会通过LocalClient中的LocalService(Backend)这两层中间类执行调用, LocalClient即上面的client()
@@ -41,11 +51,9 @@ static void RegisterNpuCompiler() {
     //       'LocalService'->BuildExecutable
     //         'Backend'->'NpuCompiler'->RunHloPasses
     //         'Backend'->'NpuCompiler'->RunBackend
-    Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId,
-                                      []() { return std::make_unique<NpuCompiler>(); });
-    // Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId, []() {
-    //     return std::make_unique<gpu::GpuCompiler>(stream_executor::kNpuPlatformId, nullptr, nullptr);
-    // });
+    Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId, []() {
+        return std::make_unique<gpu::NpuCompiler>(stream_executor::kNpuPlatformId, "", "");
+    });
     NpuLog::Print(NpuLog::Level::INFO, "Resister compiler for '%s'.", NpuConstant::platformName);
 }
 

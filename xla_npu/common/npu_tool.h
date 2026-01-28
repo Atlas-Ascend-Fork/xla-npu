@@ -130,12 +130,13 @@ class NpuTool {
             vector_shape.emplace_back(xla_data_shape_dim);
         }
 
-        // std::cout << "Convert xla shape to shape vector,"
-        //     << " input xla shape is " << xla_data_shape
-        //     << ", output vector shape is " << GetShapeString(vector_shape)
-        //     << std::endl;
-
         return vector_shape;
+    }
+
+    static void PrintXlaShape(const Shape& xla_data_shape, std::string desc = "Xla tensor shape: ") {
+        const auto& vector_shape = ConvertXlaShape2VectorShape(xla_data_shape);
+        const auto& vector_shape_str = GetShapeString(vector_shape);
+        NpuLog::Print(NpuLog::Level::DEBUG, "%s%s", desc, vector_shape_str);
     }
 
     static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {

@@ -15,10 +15,10 @@ cc_library(
         "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/service:npu_compiler",
-        # "//xla/xla_npu/service:npu_compiler_new",
         "//xla/xla_npu/service:npu_transfer_manager",
         "//xla/xla_npu/stream_executor:npu_platform",
         "//xla/xla_npu/stream_executor:npu_platform_id",
+        # "//xla/xla_npu/service:cpu_compiler_type.npu_compiler", # !!! Cpu compiler type code, currently not used.
 
         "//xla/stream_executor:platform_manager",
         "//xla/service:computation_placer",
@@ -35,7 +35,7 @@ cc_library(
         "//xla/xla_npu/pjrt/npu:npu_pjrt_stream_executor_client",
         "//xla/xla_npu/stream_executor:npu_platform",
         "//xla/xla_npu/stream_executor:npu_platform_id",
-        "//xla/xla_npu/service:npu_compiler",
+        "//xla/xla_npu/service:cpu_compiler_type.npu_compiler",
 
         "//xla/client:client_library",
         # "//xla/pjrt:pjrt_stream_executor_client",

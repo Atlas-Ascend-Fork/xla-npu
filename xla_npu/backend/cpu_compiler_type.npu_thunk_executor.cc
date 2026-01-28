@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_thunk_executor.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk_executor.h"
 
 #include <sys/types.h>
 
@@ -36,7 +36,7 @@
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/logging.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 
 namespace xla {
 

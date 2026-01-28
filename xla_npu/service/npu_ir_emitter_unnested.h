@@ -34,7 +34,7 @@
 #include "xla/service/llvm_ir/loop_emitter.h"
 #include "xla/shape_util.h"
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
-#include "xla/xla_npu/backend/thunk.h"
+#include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/service/npu_ir_emitter.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 

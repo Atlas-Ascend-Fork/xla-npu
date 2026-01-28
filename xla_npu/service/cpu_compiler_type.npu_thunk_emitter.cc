@@ -1,4 +1,4 @@
-#include "xla/xla_npu/service/npu_thunk_emitter.h"
+#include "xla/xla_npu/service/cpu_compiler_type.npu_thunk_emitter.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -118,8 +118,8 @@
 // #endif  // XLA_YNNPACK
 
 #include "tsl/platform/demangle.h"
-#include "xla/xla_npu/backend/npu_kernel_thunk.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_kernel_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 
 namespace xla {

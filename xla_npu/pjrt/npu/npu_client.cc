@@ -18,16 +18,16 @@
 #include "xla/service/llvm_ir/llvm_command_line_options.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/threadpool.h"
-#include "xla/xla_npu/backend/npu_buffer_allocations.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_buffer_allocations.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/pjrt/npu/abstract_npu_buffer.h"
 #include "xla/xla_npu/pjrt/npu/npu_device.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/pjrt/npu_host_memory_spaces.h"
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
-#include "xla/xla_npu/service/npu_compiler.h"
-#include "xla/xla_npu/service/npu_executable.h"
+#include "xla/xla_npu/service/cpu_compiler_type.npu_compiler.h"
+#include "xla/xla_npu/service/cpu_compiler_type.npu_executable.h"
 
 namespace xla {
 

@@ -8,7 +8,7 @@
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/hlo/ir/hlo_module.h"
-#include "xla/xla_npu/backend/thunk.h"
+#include "xla/xla_npu/backend/npu_thunk.h"
 
 namespace xla::gpu {
 

@@ -26,7 +26,7 @@
 #include "xla/runtime/work_group.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
 #include "xla/xla_npu/third_party/register/aclInterface.h"
 #include "xla/xla_npu/third_party/register/aclnnopInterface.h"
 
