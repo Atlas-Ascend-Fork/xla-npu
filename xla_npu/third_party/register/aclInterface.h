@@ -38,6 +38,11 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMallocHost, (void** hostPtr, size_t size), (ho
 
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtFreeHost, (void* hostPtr), (hostPtr))
 
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtLaunchKernel,
+                             (aclrtFuncHandle funcHandle, uint32_t blockDim, const void* argsData, size_t argsSize,
+                              aclrtStream stream),
+                             (funcHandle, blockDim, argsData, argsSize, stream))
+
 }  // namespace npu
 
 #endif  // REGISTER_ACLINTERFACE_H_

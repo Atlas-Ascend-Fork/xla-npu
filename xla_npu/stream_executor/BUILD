@@ -94,6 +94,8 @@ cc_library(
         ":npu_stream_factory",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_operation",
+        "//xla/xla_npu/kernel:npu_auto_fuse_kernel",
+        "//xla/xla_npu/kernel:npu_kernel_config",
         "//xla/xla_npu/third_party/register:acl_interface",
 
         "//xla/stream_executor:device_description",

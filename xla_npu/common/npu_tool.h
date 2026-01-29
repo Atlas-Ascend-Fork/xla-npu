@@ -21,8 +21,8 @@ class NpuTool {
         opts
             // 打印大常量（默认关闭，大常量会被截断）
             .set_print_large_constants(true)
-            // 打印子计算的完整内容（默认仅打印子计算名称）
-            .set_print_subcomputation_mode(HloPrintOptions::PrintSubcomputationMode::kFullBodies)
+            // 打印子计算的完整内容（默认仅打印子计算名称）HloPrintOptions::PrintSubcomputationMode::kFullBodies
+            .set_print_subcomputation_mode(HloPrintOptions::PrintSubcomputationMode::kNameOnly)
             // 打印原始值
             .set_print_original_value(true)
             // 打印元数据（如位置、注释等）-- 不打印

@@ -170,13 +170,16 @@
 #include "xla/tsl/protobuf/dnn.pb.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
-// #include "xla/xla_npu/backend/kernel_thunk.h"
 #include "xla/xla_npu/backend/npu_aclnn_thunk.h"
+#include "xla/xla_npu/backend/npu_custom.h"
+#include "xla/xla_npu/backend/npu_custom_kernel_thunk.h"
+#include "xla/xla_npu/backend/npu_fusion_emitter.h"
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -1306,7 +1309,7 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 
 // absl::Status NpuIrEmitterUnnested::EmitAsyncComputation(const HloInstruction* instr) {
 //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
-//     const ExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
+//     const NpuExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
 //     TF_ASSIGN_OR_RETURN(auto stream, stream_assignment.GetSyncExecutionStreamId(wrapped));
 //     TF_RET_CHECK(wrapped->called_computations().size() == 1);
 //     auto computation = wrapped->called_computations().front();
@@ -1317,7 +1320,7 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 //         thunk->set_execution_stream_id(stream);
 //     }
 //     auto* async_start = Cast<HloAsyncInstruction>(instr);
-//     TF_ASSIGN_OR_RETURN(ExecutionStreamAssignment::AsyncExecutionStreamIds async_streams,
+//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds async_streams,
 //                         stream_assignment.GetAsyncExecutionStreamIds(async_start));
 //     // We launch the thunk sequence computation on a concurrent
 //     // stream. The concurrent stream needs to first wait until the
@@ -1332,28 +1335,27 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 // }
 
 absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr) {
-    return absl::UnimplementedError(" is not supported.");
-
-    // const se::DeviceDescription& device_info = ir_emitter_context_->gpu_device_info();
-    // const HloFusionAnalysis fusion_analysis = HloFusionAnalysis::Create(*instr, device_info);
-    // VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:start";
-    // std::unique_ptr<FusionInterface> emitter = GetFusionEmitter(
+    const se::DeviceDescription& device_info = ir_emitter_context_->gpu_device_info();
+    const HloFusionAnalysis fusion_analysis = HloFusionAnalysis::Create(*instr, device_info);
+    VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:start";
+    // std::unique_ptr<NpuFusionInterface> emitter = GetFusionEmitter(
     //     /*fusion_info=*/HloFusionInfo(
     //         /*analysis=*/fusion_analysis, instr,
     //         /*buffer_assignment=*/
     //         &ir_emitter_context_->buffer_assignment(),
     //         /*call_graph=*/*call_graph_),
     //     ir_emitter_context_->expr_context());
-    // TF_ASSIGN_OR_RETURN(auto result, emitter->Emit(*ir_emitter_context_, *instr));
+    std::unique_ptr<NpuFusionInterface> emitter = std::make_unique<NpuCustomFusion>();
+    TF_ASSIGN_OR_RETURN(auto result, emitter->Emit(*ir_emitter_context_, *instr));
 
-    // const ExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
-    // for (std::unique_ptr<NpuThunk>& thunk : result.thunks) {
-    //     TF_ASSIGN_OR_RETURN(ExecutionStreamId execution_stream_id,
-    //     stream_assignment.GetSyncExecutionStreamId(instr)); thunk->set_execution_stream_id(execution_stream_id);
-    //     AddThunkToThunkSequence(std::move(thunk));
-    // }
-    // VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:complete";
-    // return absl::OkStatus();
+    const NpuExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
+    for (std::unique_ptr<NpuThunk>& thunk : result.thunks) {
+        TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id, stream_assignment.GetSyncExecutionStreamId(instr));
+        thunk->set_execution_stream_id(execution_stream_id);
+        AddThunkToThunkSequence(std::move(thunk));
+    }
+    VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:complete";
+    return absl::OkStatus();
 }
 
 // absl::Status NpuIrEmitterUnnested::EmitCopy(const HloInstruction* instr) {
@@ -1372,13 +1374,13 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
 // absl::Status NpuIrEmitterUnnested::EmitAsyncCustomCallStart(const HloInstruction* instr) {
 //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
 //     auto* async_start = Cast<HloAsyncInstruction>(instr);
-//     const ExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
-//     TF_ASSIGN_OR_RETURN(ExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+//     const NpuExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
+//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
 //                         stream_assignment.GetAsyncExecutionStreamIds(async_start));
 //     AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
 //         NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
 //         streams.destination_stream_id, streams.source_stream_id));
-//     TF_ASSIGN_OR_RETURN(ExecutionStreamId execution_stream_id, stream_assignment.GetSyncExecutionStreamId(wrapped));
+//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id, stream_assignment.GetSyncExecutionStreamId(wrapped));
 
 //     auto* custom_call = Cast<HloCustomCallInstruction>(wrapped);
 //     if (IsLegacyCublasMatmul(*wrapped)) {
@@ -2328,8 +2330,8 @@ absl::Status NpuIrEmitterUnnested::EmitTargetElementLoop(const HloInstruction& h
 //                             "color S(%d)",
 //                             copy_start_instr->ToString(), static_cast<int>(stream_executor::MemoryType::kHost)));
 //     }
-//     const ExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
-//     TF_ASSIGN_OR_RETURN(ExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+//     const NpuExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
+//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
 //                         stream_assignment.GetAsyncExecutionStreamIds(copy_start_instr));
 //     // Insert a waitFor() thunk for asynchronous memcpy only when the
 //     // source and destination stream IDs differ. If the IDs are the
@@ -2697,9 +2699,9 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         //             }
         //             // Wait until the concurrent stream has finished.
         //             auto* async_done = Cast<HloAsyncInstruction>(instr);
-        //             const ExecutionStreamAssignment& stream_assignment =
+        //             const NpuExecutionStreamAssignment& stream_assignment =
         //                 ir_emitter_context_->execution_stream_assignment();
-        //             TF_ASSIGN_OR_RETURN(ExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+        //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
         //                                 stream_assignment.GetAsyncExecutionStreamIds(async_done));
         //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
         //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
@@ -2746,9 +2748,9 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         //             // that may be used as inputs to the fusion computation.
         //             // We enforce this by inlining a `WaitForStreams` thunk.
         //             auto* async_start = Cast<HloAsyncInstruction>(instr);
-        //             const ExecutionStreamAssignment& stream_assignment =
+        //             const NpuExecutionStreamAssignment& stream_assignment =
         //                 ir_emitter_context_->execution_stream_assignment();
-        //             TF_ASSIGN_OR_RETURN(ExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+        //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
         //                                 stream_assignment.GetAsyncExecutionStreamIds(async_start));
         //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
         //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),

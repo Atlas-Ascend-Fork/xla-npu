@@ -157,15 +157,19 @@ cc_library(
     hdrs = ["npu_ir_emitter_unnested.h"],
     tags = ["gpu"],
     deps = [
+        ":npu_execution_stream_assignment",
         ":npu_ir_emitter",
         ":npu_ir_emitter_context",
 
         "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/common:npu_log",
-        "//xla/xla_npu/backend:npu_thunk",
         "//xla/xla_npu/backend:npu_aclnn_thunk",
+        "//xla/xla_npu/backend:npu_custom",
+        "//xla/xla_npu/backend:npu_custom_kernel_thunk",
+        "//xla/xla_npu/backend:npu_fusion_emitter",
         "//xla/xla_npu/backend:npu_sequential_thunk",
+        "//xla/xla_npu/backend:npu_thunk",
 
         # "//xla/service/gpu:backend_configs_cc",
         # "//xla/service/gpu:cublas_cudnn",
@@ -484,6 +488,8 @@ cc_library(
         ":npu_executable",
         ":npu_compile_module_to_llvm_ir",
         ":npu_ir_emitter_unnested",
+        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/common:npu_tool",
 
         "//xla/service/gpu:alias_info",
         # "//xla/service/gpu:compile_module_to_llvm_ir",

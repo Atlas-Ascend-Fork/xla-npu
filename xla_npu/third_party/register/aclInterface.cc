@@ -18,5 +18,6 @@ REGISTER_FUNCTION(libascendcl, aclrtFree)
 REGISTER_FUNCTION(libascendcl, aclrtMemcpy)
 REGISTER_FUNCTION(libascendcl, aclrtMallocHost)
 REGISTER_FUNCTION(libascendcl, aclrtFreeHost)
+REGISTER_FUNCTION(libascendcl, aclrtLaunchKernel)
 
 }  // namespace npu
