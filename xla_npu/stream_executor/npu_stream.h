@@ -39,7 +39,7 @@ class NpuStream : public StreamCommon {
         }
     }
 
-    absl::Status BlockHostUntilDone() override { return absl::OkStatus(); }
+    absl::Status BlockHostUntilDone() override;
 
     absl::Status WaitFor(Stream* other) override;
     absl::Status WaitFor(Event* event) override;

@@ -11,8 +11,6 @@ class NpuOperation {
    public:
     enum class MemcpyType { H2D, D2H };
 
-    // 提示: 可以使用"xla/tsl/platform/errors.h"中TF_RETURN_IF_ERROR宏快速对结果进行判断和返回
-
     static absl::Status SetDevice(int device_id);
     static absl::Status CreateStream(aclrtStream* stream);
     static absl::Status Malloc(void** new_device_addr, size_t size_bytes);

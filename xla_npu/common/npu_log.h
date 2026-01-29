@@ -9,6 +9,18 @@
 
 #include "absl/strings/str_format.h"
 
+// 封装具有返回absl::Status状态的日志打印宏
+#define CHECK_COND_AND_PRINT_NPU_LOG(err_cond_expr, err_format, ...)                \
+    do {                                                                            \
+        if ((err_cond_expr)) {                                                      \
+            const std::string err_msg = absl::StrFormat(err_format, ##__VA_ARGS__); \
+            xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);                 \
+            return absl::InternalError(err_msg);                                    \
+        }                                                                           \
+    } while (0)
+
+// 提示: 可以使用"xla/tsl/platform/errors.h"中TF_RETURN_IF_ERROR宏快速对absl::Status结果进行判断和返回
+
 namespace xla {
 
 class NpuLog {
@@ -37,8 +49,8 @@ class NpuLog {
         std::string pid_str = absl::StrFormat("%6d", pid);
         std::string tid_str = absl::StrFormat("%6d", tid);
 
-        std::cout << "[" << pid_str << ":" << tid_str << "]" << "XLA_NPU." << logLevelString 
-                  << ": " << logStr << std::endl;
+        std::cout << "[" << pid_str << ":" << tid_str << "]" << "XLA_NPU." << logLevelString << ": " << logStr
+                  << std::endl;
     }
 
     template <typename... Args>

@@ -37,6 +37,8 @@
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
+#include "xla/xla_npu/kernel/npu_auto_fuse_kernel.h"
+#include "xla/xla_npu/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
@@ -59,7 +61,17 @@ absl::Status NpuExecutor::Init() {
 }
 
 absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(const KernelLoaderSpec& spec) {
-    return absl::InternalError("No method of loading npu kernel provided");
+    CHECK_COND_AND_PRINT_NPU_LOG(!spec.has_in_process_symbol(), "In process symbol when load kernel is empty");
+    auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(spec.in_process_symbol().value().symbol);
+    switch (npu_kernel_config_ptr->npu_kernel_type) {
+        case xla::NpuKernelConfig::NpuKernelType::FUSION:
+            auto kernel = std::make_unique<xla::NpuAutoFuseKernel>("", this);
+            TF_RETURN_IF_ERROR(kernel->Load());
+            return std::move(kernel);
+    }
+
+    return absl::InternalError(absl::StrFormat("Kernel type %d does not support launch.",
+                                               static_cast<int64_t>(npu_kernel_config_ptr->npu_kernel_type)));
 }
 
 bool NpuExecutor::DeviceMemoryUsage(int64_t* free, int64_t* total) const {

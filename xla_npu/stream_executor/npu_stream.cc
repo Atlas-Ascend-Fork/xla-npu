@@ -35,6 +35,16 @@ absl::Status NpuStream::Init() {
     return absl::OkStatus();
 }
 
+absl::Status NpuStream::BlockHostUntilDone() {
+    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Block host until stream %s done", GetName());
+    TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
+
+    auto acl_ret = npu::aclrtSynchronizeStream(stream_);
+    CHECK_COND_AND_PRINT_NPU_LOG(acl_ret != ACL_SUCCESS, "Synchronize stream failed. Error code: %d", acl_ret);
+
+    return absl::OkStatus(); 
+}
+
 absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const DeviceMemoryBase& npu_src, uint64_t size) {
     // void* dst_mem = gpu_dst->opaque();
     // void* src_mem = const_cast<void*>(gpu_src.opaque());

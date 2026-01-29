@@ -35,7 +35,6 @@ cc_library(
         "//xla/xla_npu/pjrt/npu:npu_pjrt_stream_executor_client",
         "//xla/xla_npu/stream_executor:npu_platform",
         "//xla/xla_npu/stream_executor:npu_platform_id",
-        "//xla/xla_npu/service:cpu_compiler_type.npu_compiler",
 
         "//xla/client:client_library",
         # "//xla/pjrt:pjrt_stream_executor_client",

@@ -301,8 +301,10 @@
 #endif  // PLATFORM_GOOGLE
 
 #include "xla/xla_npu/backend/npu_thunk.h"
-#include "xla/xla_npu/service/npu_executable.h"
+#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/service/npu_compile_module_to_llvm_ir.h"
+#include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 
@@ -1619,13 +1621,12 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //   module->mutable_config().set_partition_size(options.slice_size);
     // }
 
-    // const DebugOptions debug_opts = module->config().debug_options();
+    const DebugOptions debug_opts = module->config().debug_options();
     // TF_RETURN_IF_ERROR(LoadAutotuneResultsFromFile(debug_opts));
     // bool is_deviceless = options.gpu_target_config.has_value() ||
     //                      !debug_opts.xla_gpu_target_config_filename().empty();
 
-    // TF_ASSIGN_OR_RETURN(GpuTargetConfig gpu_target_config,
-    //                     GetTargetConfig(options, debug_opts, stream_exec));
+    TF_ASSIGN_OR_RETURN(GpuTargetConfig gpu_target_config, GetTargetConfig(options, debug_opts, stream_exec));
     // const std::optional<std::string> unoptimized_fingerprint =
     //     MaybeUploadUnoptimizedGpuSymbols(module.get(),
     //                                      gpu_target_config.ToProto());
@@ -1682,6 +1683,39 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //   DumpToFileInDirOrStdout(*module, "", "autotune_results.pbtxt",
     //                           autotune_results);
     // }
+
+
+
+    // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo pass");
+
+    // bool is_deviceless = true;
+    // const se::DeviceDescription& device_description = gpu_target_config.device_description;
+    // std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(device_description);
+    // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
+    //                                      gpu_target_config, alias_info.get()));
+
+
+    // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
+    //     /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
+    //     /*default_thread_pool=*/options.thread_pool,
+    //     /*default_parallelism=*/tsl::port::MaxParallelism());
+    // TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
+    //                                    ShapeSizeBytesFunction(), &symbolic_expr_context_));
+    // HloPassPipeline pipeline("autotune-fusion-emitters");
+    // TF_RETURN_IF_ERROR(AddFusionAutotuningPass(&pipeline, module.get(), options, thread_pool.get_mutable(),
+    // stream_exec,
+    //                                            &gpu_target_config, ShapeSizeBytesFunction()));
+    // TF_RETURN_IF_ERROR(pipeline.Run(module.get()).status());
+
+    // HloPassPipeline main_pipeline("post-scheduling-passes");
+    // const se::DeviceDescription& gpu_device_info = gpu_target_config.device_description;
+    // HloPassPipeline& pipeline = main_pipeline.AddPass<HloPassPipeline>("fusion-wrapper");
+    // pipeline.AddPass<FusionWrapper>(gpu_device_info);
+    // TF_RETURN_IF_ERROR(main_pipeline.Run(module.get()).status());
+
+    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
+
+    // return absl::InternalError("npu fusion not implements");
 
     return std::move(module);
 }
@@ -2089,7 +2123,8 @@ absl::StatusOr<NpuCompiler::CompileResultWithMetadata> NpuCompiler::CompileToBac
     AddHloVerifier(&pipeline);
     TF_RETURN_IF_ERROR(pipeline.Run(module).status());
     // TF_RETURN_IF_ERROR(
-    //     RunPostSchedulingPipelines(module, schedule_metadata.scheduler_mem_limit, gpu_device_info, alias_info.get()));
+    //     RunPostSchedulingPipelines(module, schedule_metadata.scheduler_mem_limit, gpu_device_info,
+    //     alias_info.get()));
 
     absl::StatusOr<se::Platform*> platform = se::PlatformManager::PlatformWithId(PlatformId());
     if (!platform.ok()) {
@@ -2100,7 +2135,8 @@ absl::StatusOr<NpuCompiler::CompileResultWithMetadata> NpuCompiler::CompileToBac
 
     // TF_ASSIGN_OR_RETURN(bool can_use_link_modules, CanUseLinkModules(module->config(), gpu_device_info));
     // const bool split_modules =
-    //     can_use_link_modules && module->config().debug_options().xla_gpu_enable_llvm_module_compilation_parallelism();
+    //     can_use_link_modules &&
+    //     module->config().debug_options().xla_gpu_enable_llvm_module_compilation_parallelism();
     // const bool use_cache = split_modules && !module->config().debug_options().xla_gpu_kernel_cache_file().empty();
     const bool use_cache = false;
 

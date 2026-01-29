@@ -25,6 +25,7 @@ class FunctionLoader {
     ~FunctionLoader();
     /**
         set function name
+        仅注册lib或者func的名称,在get时会进行校验,未注册的不允许调用.
         */
     void Set(const std::string& name);
     /**
