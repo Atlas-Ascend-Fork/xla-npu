@@ -12,7 +12,7 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
-#include "xla/backends/gpu/runtime/thunk.pb.h"
+// #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/stream_executor/dnn.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
@@ -37,12 +37,12 @@ class NpuAclnnThunk : public NpuThunk {
     std::shared_ptr<se::dnn::LazyDnnGraph> graph() const { return graph_; }
     const std::vector<BufferAllocation::Slice>& arguments() const { return args_; }
 
-    absl::StatusOr<ThunkProto> ToProto() const override;
+    // absl::StatusOr<ThunkProto> ToProto() const override;
 
-    static absl::StatusOr<std::unique_ptr<NpuAclnnThunk>> FromProto(
-        ThunkInfo thunk_info, const CudnnThunkProto& proto, absl::Span<const BufferAllocation> buffer_allocations);
+    // static absl::StatusOr<std::unique_ptr<NpuAclnnThunk>> FromProto(
+    //     ThunkInfo thunk_info, const CudnnThunkProto& proto, absl::Span<const BufferAllocation> buffer_allocations);
 
-    absl::StatusOr<std::vector<aclTensor*>> ExtractAclInputOutTensorPtr(const BufferAllocations* allocations,
+    absl::StatusOr<std::vector<aclTensor*>> ExtractAclInputOutTensorPtr(const NpuBufferAllocations* allocations,
                                                                         const std::vector<Shape>& param_shapes);
 
     using AclnnExecFunc = aclnnStatus (*)(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
@@ -50,7 +50,8 @@ class NpuAclnnThunk : public NpuThunk {
     absl::Status ExecuteAclnn(aclrtStream& stream, uint64_t workspaceSize, aclOpExecutor* executor,
                               AclnnExecFunc aclnnExecFunc);
 
-    absl::Status PrintOutputTensor(const BufferAllocations* allocations, const std::vector<Shape>& output_param_shapes);
+    absl::Status PrintOutputTensor(const NpuBufferAllocations* allocations,
+                                   const std::vector<Shape>& output_param_shapes);
 
    private:
     absl::once_flag once_flag_;

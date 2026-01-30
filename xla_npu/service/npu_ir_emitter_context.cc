@@ -16,16 +16,18 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/Alignment.h"
 #include "llvm/TargetParser/Triple.h"
-#include "xla/service/gpu/gpu_constants.h"
+// #include "xla/service/gpu/gpu_constants.h"
 // #include "xla/service/gpu/gpu_executable.h"
-#include "xla/service/gpu/ir_emission_utils.h"
+// #include "xla/service/gpu/ir_emission_utils.h"
+#include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/service/npu_executable.h"
+#include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
 namespace gpu {
 
 void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_element, absl::string_view symbol_name,
-                                        int allocation_idx, DenseDataIntermediate content, llvm::IRBuilderBase* b) {
+                                        int allocation_idx, NpuDenseDataIntermediate content, llvm::IRBuilderBase* b) {
     // LLVM and PTXAS don't deal well with large constants, so we only emit very
     // small constants directly in LLVM IR.  Larger constants are emitted with
     // zero initializers in LLVM IR and are later overwritten when the PTX/CUBIN
@@ -72,7 +74,7 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
         /*TLMode=*/llvm::GlobalValue::NotThreadLocal,
         /*AddressSpace=*/addrspace,
         /*isExternallyInitialized=*/false);
-    global_for_const->setAlignment(llvm::Align(kConstantBufferAlignBytes));
+    global_for_const->setAlignment(llvm::Align(NpuConstant::kConstantBufferAlignBytes));
     llvm_module_constants()->insertGlobalVariable(global_for_const);
 
     info.symbol_name.assign(symbol_name);

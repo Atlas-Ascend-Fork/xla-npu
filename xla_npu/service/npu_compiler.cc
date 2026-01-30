@@ -52,7 +52,7 @@
 #include "xla/backends/gpu/runtime/runtime_intrinsics.h"
 #include "xla/backends/gpu/runtime/sequential_thunk.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
-#include "xla/backends/gpu/runtime/thunk.pb.h"
+// #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/core/host_offloading/hlo_host_device_type_call_wrapper.h"
 #include "xla/core/host_offloading/host_compute_asyncifier.h"
 #include "xla/hlo/analysis/alias_info.h"
@@ -154,12 +154,12 @@
 #include "xla/service/export_hlo.h"
 #include "xla/service/float_support.h"
 #include "xla/service/gather_expander.h"
-#include "xla/service/gpu/alias_info.h"
+// #include "xla/service/gpu/alias_info.h"
 #include "xla/service/gpu/autotuning/autotuner_util.h"
 // #include "xla/service/gpu/compile_module_to_llvm_ir.h"
 #include "xla/service/gpu/conv_layout_normalization.h"
 #include "xla/service/gpu/cublas_cudnn.h"
-#include "xla/service/gpu/execution_stream_assignment.h"
+// #include "xla/service/gpu/execution_stream_assignment.h"
 #include "xla/service/gpu/flag_utils.h"
 #include "xla/service/gpu/fusion_dispatch_pipeline.h"
 #include "xla/service/gpu/fusion_pipeline.h"
@@ -303,8 +303,10 @@
 #include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_compile_module_to_llvm_ir.h"
 #include "xla/xla_npu/service/npu_executable.h"
+#include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 
@@ -976,53 +978,53 @@ void AddDoubleBufferingPasses(const HloModule& module, HloPassPipeline& pipeline
     }
 }
 
-constexpr int kCombineThresholdCount = 256;
+// constexpr int kCombineThresholdCount = 256;
 
-void AddCollectiveCombinerPasses(HloPassPipeline& pipeline, const HloModule& module,
-                                 const se::DeviceDescription& device_description, const GpuAliasInfo* alias_info,
-                                 int pointer_size, const NpuCompiler::CompileOptions& options,
-                                 SymbolicExprContext* symbolic_expr_context) {
-    const DebugOptions& opts = module.config().debug_options();
+// void AddCollectiveCombinerPasses(HloPassPipeline& pipeline, const HloModule& module,
+//                                  const se::DeviceDescription& device_description, const NpuAliasInfo* alias_info,
+//                                  int pointer_size, const NpuCompiler::CompileOptions& options,
+//                                  SymbolicExprContext* symbolic_expr_context) {
+//     const DebugOptions& opts = module.config().debug_options();
 
-    if (EnableHeuristicCollectiveCombining(module.config(), device_description, options.slice_size)) {
-        pipeline.AddPass<CollectiveCombinerAnnotator>(device_description, alias_info, pointer_size,
-                                                      symbolic_expr_context);
-    }
+//     if (EnableHeuristicCollectiveCombining(module.config(), device_description, options.slice_size)) {
+//         pipeline.AddPass<CollectiveCombinerAnnotator>(device_description, alias_info, pointer_size,
+//                                                       symbolic_expr_context);
+//     }
 
-    pipeline.AddPass<GpuAllGatherCombiner>(kDefaultAllGatherCombineThreshold,
-                                           opts.xla_gpu_all_gather_combine_threshold_bytes(), kCombineThresholdCount,
-                                           opts.xla_gpu_enable_all_gather_combine_by_dim(),
-                                           /*combine_different_dtypes=*/true);
-    pipeline.AddPass<GpuAllReduceCombiner>(kDefaultAllReduceCombineThreshold,
-                                           opts.xla_gpu_all_reduce_combine_threshold_bytes(), kCombineThresholdCount);
-    pipeline.AddPass<GpuReduceScatterCombiner>(
-        kDefaultReduceScatterCombineThreshold, opts.xla_gpu_reduce_scatter_combine_threshold_bytes(),
-        kCombineThresholdCount, opts.xla_gpu_enable_reduce_scatter_combine_by_dim());
-    pipeline.AddPass<CollectivePermuteCombiner>(opts.xla_gpu_collective_permute_combine_threshold_bytes(),
-                                                kCombineThresholdCount);
-}
+//     pipeline.AddPass<GpuAllGatherCombiner>(kDefaultAllGatherCombineThreshold,
+//                                            opts.xla_gpu_all_gather_combine_threshold_bytes(), kCombineThresholdCount,
+//                                            opts.xla_gpu_enable_all_gather_combine_by_dim(),
+//                                            /*combine_different_dtypes=*/true);
+//     pipeline.AddPass<GpuAllReduceCombiner>(kDefaultAllReduceCombineThreshold,
+//                                            opts.xla_gpu_all_reduce_combine_threshold_bytes(), kCombineThresholdCount);
+//     pipeline.AddPass<GpuReduceScatterCombiner>(
+//         kDefaultReduceScatterCombineThreshold, opts.xla_gpu_reduce_scatter_combine_threshold_bytes(),
+//         kCombineThresholdCount, opts.xla_gpu_enable_reduce_scatter_combine_by_dim());
+//     pipeline.AddPass<CollectivePermuteCombiner>(opts.xla_gpu_collective_permute_combine_threshold_bytes(),
+//                                                 kCombineThresholdCount);
+// }
 
-absl::Status RunPostFusionPasses(HloModule* hlo_module, const se::DeviceDescription& device_description,
-                                 const GpuAliasInfo* alias_info, int pointer_size,
-                                 const NpuCompiler::CompileOptions& options,
-                                 SymbolicExprContext* symbolic_expr_context) {
-    HloPassPipeline pipeline("post-fusion optimization");
-    pipeline.AddPass<RenameFusions>();
-    AddCollectiveCombinerPasses(pipeline, *hlo_module, device_description, alias_info, pointer_size, options,
-                                symbolic_expr_context);
+// absl::Status RunPostFusionPasses(HloModule* hlo_module, const se::DeviceDescription& device_description,
+//                                  const NpuAliasInfo* alias_info, int pointer_size,
+//                                  const NpuCompiler::CompileOptions& options,
+//                                  SymbolicExprContext* symbolic_expr_context) {
+//     HloPassPipeline pipeline("post-fusion optimization");
+//     pipeline.AddPass<RenameFusions>();
+//     AddCollectiveCombinerPasses(pipeline, *hlo_module, device_description, alias_info, pointer_size, options,
+//                                 symbolic_expr_context);
 
-    pipeline.AddPass<AllReduceContiguous>();
+//     pipeline.AddPass<AllReduceContiguous>();
 
-    int32_t blueconnect_num_devices_per_host =
-        hlo_module->config().debug_options().xla_gpu_all_reduce_blueconnect_num_devices_per_host();
-    if (blueconnect_num_devices_per_host > 0) {
-        pipeline.AddPass<AllReduceBlueConnect>(blueconnect_num_devices_per_host);
-    }
+//     int32_t blueconnect_num_devices_per_host =
+//         hlo_module->config().debug_options().xla_gpu_all_reduce_blueconnect_num_devices_per_host();
+//     if (blueconnect_num_devices_per_host > 0) {
+//         pipeline.AddPass<AllReduceBlueConnect>(blueconnect_num_devices_per_host);
+//     }
 
-    AddDoubleBufferingPasses(*hlo_module, pipeline);
+//     AddDoubleBufferingPasses(*hlo_module, pipeline);
 
-    return pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status();
-}
+//     return pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status();
+// }
 
 absl::Status RunPostFusionSimplificationPasses(HloModule* hlo_module, const AlgebraicSimplifierOptions& algsimp_options,
                                                se::GpuComputeCapability gpu_version,
@@ -1101,29 +1103,29 @@ absl::Status RunAsyncDotPasses(HloModule* hlo_module) {
     return pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status();
 }
 
-absl::Status RunDynamicSliceFusionPasses(HloModule* hlo_module, se::Platform::Id platform_id) {
-    const DebugOptions& opts = hlo_module->config().debug_options();
-    if (opts.xla_gpu_enable_dynamic_slice_fusion()) {
-        HloPassPipeline pipeline("dynamic-slice");
-        TF_ASSIGN_OR_RETURN(se::Platform * platform, se::PlatformManager::PlatformWithId(platform_id));
-        pipeline.AddPass<GpuReduceScatterCombiner>(
-            kDefaultReduceScatterCombineThreshold, opts.xla_gpu_reduce_scatter_combine_threshold_bytes(),
-            kCombineThresholdCount, opts.xla_gpu_enable_reduce_scatter_combine_by_dim());
-        pipeline.AddPass<DynamicSliceFusionRewriter>(platform->Name());
-        pipeline.AddPass<AsyncWrapper>([](const HloInstruction* instr) {
-            if (!IsDynamicSliceFusion(instr)) {
-                return false;
-            }
-            std::optional<const HloInstruction*> hero_op =
-                HloBfsFindIf({instr->fused_instructions_computation()->root_instruction()},
-                             [](const HloInstruction* instr) -> bool { return IsCollective(instr); });
-            return hero_op.has_value();
-        });
-        TF_RETURN_IF_ERROR(pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status());
-    }
+// absl::Status RunDynamicSliceFusionPasses(HloModule* hlo_module, se::Platform::Id platform_id) {
+//     const DebugOptions& opts = hlo_module->config().debug_options();
+//     if (opts.xla_gpu_enable_dynamic_slice_fusion()) {
+//         HloPassPipeline pipeline("dynamic-slice");
+//         TF_ASSIGN_OR_RETURN(se::Platform * platform, se::PlatformManager::PlatformWithId(platform_id));
+//         pipeline.AddPass<GpuReduceScatterCombiner>(
+//             kDefaultReduceScatterCombineThreshold, opts.xla_gpu_reduce_scatter_combine_threshold_bytes(),
+//             kCombineThresholdCount, opts.xla_gpu_enable_reduce_scatter_combine_by_dim());
+//         pipeline.AddPass<DynamicSliceFusionRewriter>(platform->Name());
+//         pipeline.AddPass<AsyncWrapper>([](const HloInstruction* instr) {
+//             if (!IsDynamicSliceFusion(instr)) {
+//                 return false;
+//             }
+//             std::optional<const HloInstruction*> hero_op =
+//                 HloBfsFindIf({instr->fused_instructions_computation()->root_instruction()},
+//                              [](const HloInstruction* instr) -> bool { return IsCollective(instr); });
+//             return hero_op.has_value();
+//         });
+//         TF_RETURN_IF_ERROR(pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status());
+//     }
 
-    return absl::OkStatus();
-}
+//     return absl::OkStatus();
+// }
 }  // namespace
 
 AlgebraicSimplifierOptions NpuCompiler::GetAlgebraicSimplifierOptions(AlgebraicSimplifierMode mode,
@@ -1195,7 +1197,7 @@ absl::Status NpuCompiler::RunCollectiveScheduleLinearizerPasses(HloModule* hlo_m
 // Runs optimization passes on the given HLO module.
 absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
                                             const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
-                                            const GpuAliasInfo* alias_info) {
+                                            const NpuAliasInfo* alias_info) {
     tsl::profiler::TraceMe traceme("OptimizeHloModule");
     const se::DeviceDescription& device_description = gpu_target_config.device_description;
 
@@ -1268,13 +1270,13 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     TF_RETURN_IF_ERROR(OptimizeHloPostLayoutAssignment(hlo_module, stream_exec, options, gpu_target_config, alias_info,
                                                        thread_pool.get_mutable()));
 
-    // This is a "low effort, high impact" fusion that should be run first.
-    TF_RETURN_IF_ERROR(RunDynamicSliceFusionPasses(hlo_module, /*platform_id=*/PlatformId()));
+    // // This is a "low effort, high impact" fusion that should be run first.
+    // TF_RETURN_IF_ERROR(RunDynamicSliceFusionPasses(hlo_module, /*platform_id=*/PlatformId()));
 
     TF_RETURN_IF_ERROR(RunFusionPasses(hlo_module, gpu_target_config, thread_pool.get_mutable(),
                                        ShapeSizeBytesFunction(), &symbolic_expr_context_));
-    TF_RETURN_IF_ERROR(RunPostFusionPasses(hlo_module, device_description, alias_info, pointer_size_, options,
-                                           &symbolic_expr_context_));
+    // TF_RETURN_IF_ERROR(RunPostFusionPasses(hlo_module, device_description, alias_info, pointer_size_, options,
+    //                                        &symbolic_expr_context_));
     TF_RETURN_IF_ERROR(RunAsyncCollectivesConversionPasses(hlo_module));
     TF_RETURN_IF_ERROR(RunPostFusionSimplificationPasses(
         hlo_module,
@@ -1298,13 +1300,13 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     return absl::OkStatus();
 }  // NOLINT(readability/fn_size)
 
-absl::Status NpuCompiler::RunPreSchedulingCopyInsertion(HloModule& hlo_module,
-                                                        const se::DeviceDescription& device_description,
-                                                        const GpuAliasInfo* alias_info) {
-    return PreSchedulingCopyInsertionPipeline(hlo_module.config(), alias_info, device_description)
-        .Run(&hlo_module, {HloInstruction::kMainExecutionThread})
-        .status();
-}
+// absl::Status NpuCompiler::RunPreSchedulingCopyInsertion(HloModule& hlo_module,
+//                                                         const se::DeviceDescription& device_description,
+//                                                         const NpuAliasInfo* alias_info) {
+//     return PreSchedulingCopyInsertionPipeline(hlo_module.config(), alias_info, device_description)
+//         .Run(&hlo_module, {HloInstruction::kMainExecutionThread})
+//         .status();
+// }
 
 namespace {
 void AddGemmRewriterPasses(HloPassPipeline& pipeline, const DebugOptions& debug_options,
@@ -1334,7 +1336,7 @@ void AddGemmRewriterPasses(HloPassPipeline& pipeline, const DebugOptions& debug_
 absl::Status NpuCompiler::OptimizeHloPostLayoutAssignment(HloModule* hlo_module, se::StreamExecutor* stream_exec,
                                                           const CompileOptions& options,
                                                           const GpuTargetConfig& gpu_target_config,
-                                                          const GpuAliasInfo* alias_info,
+                                                          const NpuAliasInfo* alias_info,
                                                           tsl::thread::ThreadPool* thread_pool) {
     // Constants:
     const DebugOptions& debug_options = hlo_module->config().debug_options();
@@ -1642,7 +1644,7 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
 
     // const se::DeviceDescription& device_description =
     //     gpu_target_config.device_description;
-    // std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(device_description);
+    // std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
     // TF_RETURN_IF_ERROR(
     //     OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec,
     //                       options, gpu_target_config, alias_info.get()));
@@ -1684,16 +1686,13 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //                           autotune_results);
     // }
 
-
-
     // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo pass");
 
     // bool is_deviceless = true;
     // const se::DeviceDescription& device_description = gpu_target_config.device_description;
-    // std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(device_description);
+    // std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
     // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
     //                                      gpu_target_config, alias_info.get()));
-
 
     // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
     //     /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
@@ -1744,7 +1743,7 @@ bool ShouldAddCopyForCollectiveMemorySpace(const HloValue* value) {
     return false;
 }
 
-absl::Status RunPostSchedulingCopyInsertion(HloModule* module, const GpuAliasInfo* alias_info) {
+absl::Status RunPostSchedulingCopyInsertion(HloModule* module, const NpuAliasInfo* alias_info) {
     // We run a separate pass of copy elision here because the sequential ordering
     // from the HLO schedule potentially allows for more copies to be eliminated.
     constexpr int64_t kRegionBasedLiveRangeAnalysisLimit = -1;
@@ -2048,40 +2047,42 @@ absl::StatusOr<NpuCompiler::BackendCompileResult> NpuCompiler::CompileAndLink(
         }
     }
 
-    if (use_cache) {
-        std::string resolved_path;
-        if (!tsl::io::ResolveTestPrefixes(cache_path, resolved_path)) {
-            return FailedPrecondition("File path can not be resolved: %s", cache_path);
-        }
-        // current_cache contains new kernels from the current compilation and
-        // kernels to reuse from previous compilations if some were loaded from the
-        // cache file.
-        const CompilationCacheProto& current_cache = compile_module_results.kernel_compilation_cache;
-        const bool cache_file_exists = tsl::Env::Default()->FileExists(resolved_path).ok();
-        if (cache_file_exists) {
-            // Pick reused binaries from previous compilations needed to link the
-            // current executable.
-            int loaded_kernel_count = 0;
-            for (const auto& [name, entry] : current_cache.entries()) {
-                if (llvm_module->getFunction(name) != nullptr) {
-                    VLOG(5) << "Using the just compiled kernel for " << name;
-                    TF_RET_CHECK(entry.binary().empty()) << name
-                                                         << " is a just compiled kernel and is not expected to have a "
-                                                            "binary yet.";
-                    continue;
-                }
-                const uint8_t* binary = reinterpret_cast<const uint8_t*>(entry.binary().data());
-                binaries_to_link.push_back(std::vector<uint8_t>(binary, binary + entry.binary().size()));
-                VLOG(5) << "Using " << name << " from cache: " << entry.binary().size();
-                ++loaded_kernel_count;
-            }
-            VLOG(2) << "Using " << loaded_kernel_count << " / " << current_cache.entries_size() << " cached kernels.";
-        }
-        if (!binaries_to_cache.empty()) {
-            TF_RETURN_IF_ERROR(UpdateDiskKernelCache(resolved_path, /*do_append=*/cache_file_exists, current_cache,
-                                                     binaries_to_cache));
-        }
-    }
+    // if (use_cache) {
+    //     std::string resolved_path;
+    //     if (!tsl::io::ResolveTestPrefixes(cache_path, resolved_path)) {
+    //         return FailedPrecondition("File path can not be resolved: %s", cache_path);
+    //     }
+    //     // current_cache contains new kernels from the current compilation and
+    //     // kernels to reuse from previous compilations if some were loaded from the
+    //     // cache file.
+    //     const CompilationCacheProto& current_cache = compile_module_results.kernel_compilation_cache;
+    //     const bool cache_file_exists = tsl::Env::Default()->FileExists(resolved_path).ok();
+    //     if (cache_file_exists) {
+    //         // Pick reused binaries from previous compilations needed to link the
+    //         // current executable.
+    //         int loaded_kernel_count = 0;
+    //         for (const auto& [name, entry] : current_cache.entries()) {
+    //             if (llvm_module->getFunction(name) != nullptr) {
+    //                 VLOG(5) << "Using the just compiled kernel for " << name;
+    //                 TF_RET_CHECK(entry.binary().empty()) << name
+    //                                                      << " is a just compiled kernel and is not expected to have a
+    //                                                      "
+    //                                                         "binary yet.";
+    //                 continue;
+    //             }
+    //             const uint8_t* binary = reinterpret_cast<const uint8_t*>(entry.binary().data());
+    //             binaries_to_link.push_back(std::vector<uint8_t>(binary, binary + entry.binary().size()));
+    //             VLOG(5) << "Using " << name << " from cache: " << entry.binary().size();
+    //             ++loaded_kernel_count;
+    //         }
+    //         VLOG(2) << "Using " << loaded_kernel_count << " / " << current_cache.entries_size() << " cached
+    //         kernels.";
+    //     }
+    //     if (!binaries_to_cache.empty()) {
+    //         TF_RETURN_IF_ERROR(UpdateDiskKernelCache(resolved_path, /*do_append=*/cache_file_exists, current_cache,
+    //                                                  binaries_to_cache));
+    //     }
+    // }
 
     auto maybe_backend_result =
         LinkModules(device_description, std::move(binaries_to_link), module_config.debug_options());
@@ -2094,7 +2095,7 @@ absl::StatusOr<NpuCompiler::BackendCompileResult> NpuCompiler::CompileAndLink(
         return maybe_backend_result.status();
     }
     VLOG(4) << "Binary size after linking [B]: " << maybe_backend_result->size();
-    compile_module_results.kernel_compilation_cache.Clear();
+    // compile_module_results.kernel_compilation_cache.Clear();
     return BackendCompileResult{ptx_snippets, std::move(*maybe_backend_result)};
 }
 
@@ -2114,11 +2115,13 @@ absl::StatusOr<NpuCompiler::CompileResultWithMetadata> NpuCompiler::CompileToBac
     HloModule* module, llvm::LLVMContext* llvm_context, const CompileOptions& options,
     const se::DeviceDescription& gpu_device_info) {
     tsl::profiler::TraceMe traceme("CompileToBackendResult");
-    std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
+    std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
+    std::unique_ptr<gpu::GpuAliasInfo> gpu_alias_info =
+        std::make_unique<gpu::GpuAliasInfo>(gpu_device_info);  // TODO 切换为NPU的
     // TF_RETURN_IF_ERROR(RunPreSchedulingPasses(module, gpu_device_info, alias_info.get()));
     TF_ASSIGN_OR_RETURN(
         ScheduleMetadata schedule_metadata,
-        ScheduleGpuModule(module, pointer_size_, gpu_device_info, &symbolic_expr_context_, alias_info.get()));
+        ScheduleGpuModule(module, pointer_size_, gpu_device_info, &symbolic_expr_context_, gpu_alias_info.get()));
     HloPassPipeline pipeline("scheduled-npu-module");
     AddHloVerifier(&pipeline);
     TF_RETURN_IF_ERROR(pipeline.Run(module).status());
@@ -2311,8 +2314,8 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
     tsl::profiler::ScopedAnnotation annotation(
         [&] { return absl::StrFormat("XlaCreateGpuExecutable:#module=%s#", module->name()); });
 
-    std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
-    const GpuAliasInfo* alias_info_ptr = alias_info.get();
+    std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
+    const NpuAliasInfo* alias_info_ptr = alias_info.get();
     TF_ASSIGN_OR_RETURN(
         std::unique_ptr<NpuExecutable> npu_executable,
         NpuExecutable::Create(NpuExecutable::Params{
@@ -2320,8 +2323,8 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
                 ? std::string()
                 : std::move(res.backend_result.asm_text),
             /*binary=*/std::move(res.backend_result.binary),
-            /*dnn_compiled_graphs=*/
-            std::move(dnn_compiled_graphs),
+            // /*dnn_compiled_graphs=*/
+            // std::move(dnn_compiled_graphs),
             /*executable=*/std::move(res.compile_module_results.executable),
             /*constants=*/std::move(res.compile_module_results.constants),
             /*output_info=*/std::move(res.compile_module_results.output_info),
@@ -2426,7 +2429,7 @@ absl::StatusOr<std::unique_ptr<AotCompilationResult>> NpuCompiler::Export(Execut
 }
 
 absl::Status NpuCompiler::RunPreSchedulingPasses(HloModule* module, const se::DeviceDescription& gpu_device_info,
-                                                 const GpuAliasInfo* alias_info) {
+                                                 const NpuAliasInfo* alias_info) {
     tsl::profiler::TraceMe traceme("RunPreSchedulingPasses");
     HloPassPipeline pipeline("pre-scheduling-passes");
     pipeline.AddPass<FusionWrapper>(gpu_device_info);
@@ -2514,7 +2517,7 @@ HloRematerialization::Options CreateRematOpts(const HloModule& module, const se:
 
 absl::Status NpuCompiler::RunPostSchedulingPipelines(HloModule* module, int64_t scheduler_mem_limit,
                                                      const se::DeviceDescription& gpu_device_info,
-                                                     const GpuAliasInfo* alias_info) {
+                                                     const NpuAliasInfo* alias_info) {
     tsl::profiler::TraceMe traceme("RunPostSchedulingPipelines");
     TF_RETURN_IF_ERROR(RunPostSchedulingCopyInsertion(module, alias_info));
     HloPassPipeline main_pipeline("post-scheduling-passes");
@@ -2633,7 +2636,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::LoadExecutableFromAotRe
     // TF_ASSIGN_OR_RETURN(std::unique_ptr<HloModule> hlo_module,
     //                     HloModule::CreateFromProtoWithConfig(proto.hlo_module_with_config()));
 
-    // ExecutionStreamAssignment execution_stream_assignment(hlo_module.get());
+    // NpuExecutionStreamAssignment execution_stream_assignment(hlo_module.get());
 
     // std::vector<uint8_t> binary(proto.binary().begin(), proto.binary().end());
 
@@ -2649,7 +2652,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::LoadExecutableFromAotRe
     // llvm_module->setDataLayout(data_layout());
 
     // // Recreate BufferAssignment from proto.
-    // std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
+    // std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
     // TF_ASSIGN_OR_RETURN(std::unique_ptr<BufferAssignment> buffer_assignment,
     //                     BufferAssignment::FromProto(proto.buffer_assignment(), hlo_module.get(),
     //                                                 BufferSizeBytesFunction(), alias_info.get()));
@@ -2677,7 +2680,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::LoadExecutableFromAotRe
 
     // {
     //     tsl::profiler::TraceMe traceme("CreateGpuExecutable");
-    //     std::unique_ptr<GpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
+    //     std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
     //     return NpuExecutable::Create(
     //         NpuExecutable::Params{/*asm_text=*/proto.asm_text(),
     //                               /*binary=*/binary,

@@ -16,7 +16,7 @@
 #include "mlir/IR/Operation.h"
 // #include "xla/backends/gpu/runtime/collective_thunk.h"
 // #include "xla/backends/gpu/runtime/host_execute_thunk.h"
-#include "xla/backends/gpu/runtime/thunk_id.h"
+// #include "xla/backends/gpu/runtime/thunk_id.h"
 #include "xla/hlo/analysis/symbolic_expr.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_module.h"
@@ -24,13 +24,15 @@
 #include "xla/service/call_inliner.h"
 // #include "xla/service/gpu/execution_stream_assignment.h"
 // #include "xla/service/gpu/gpu_executable.h"
-#include "xla/service/gpu/ir_emission_utils.h"
-#include "xla/service/gpu/kernel_reuse_cache.h"
+// #include "xla/service/gpu/ir_emission_utils.h"
+// #include "xla/service/gpu/kernel_reuse_cache.h"
 #include "xla/service/name_uniquer.h"
-#include "xla/stream_executor/cuda/cuda_compute_capability.h"
+// #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
+#include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
 namespace gpu {
@@ -105,11 +107,11 @@ class NpuIrEmitterContext {
     // Emit a constant with a given number of element, given byte size of the
     // element, given symbol name and content.
     void emit_constant(int64_t num_elements, int64_t bytes_per_element, absl::string_view symbol_name,
-                       int allocation_idx, DenseDataIntermediate content, llvm::IRBuilderBase* b);
+                       int allocation_idx, NpuDenseDataIntermediate content, llvm::IRBuilderBase* b);
 
     const DebugOptions& debug_options() const { return hlo_module_->config().debug_options(); }
 
-    KernelReuseCache& kernel_cache() { return kernel_cache_; }
+    // KernelReuseCache& kernel_cache() { return kernel_cache_; }
     // NpuCollectivesAsyncEvents& collectives_async_events() {
     //   return collectives_async_events_;
     // }
@@ -121,7 +123,7 @@ class NpuIrEmitterContext {
 
     bool emit_kernels() const { return emit_kernels_; }
 
-    ThunkId GetNextThunkId() { return thunk_id_generator_.GetNextThunkId(); }
+    NpuThunkId GetNextThunkId() { return thunk_id_generator_.GetNextThunkId(); }
 
    private:
     const HloModule* hlo_module_;
@@ -135,7 +137,7 @@ class NpuIrEmitterContext {
     llvm::Module* llvm_module_constants_;
     NameUniquer name_uniquer_;
     std::vector<NpuExecutable::ConstantInfo> constants_;
-    KernelReuseCache kernel_cache_;
+    // KernelReuseCache kernel_cache_;
     std::unique_ptr<InlinedModule> inlined_module_;
 
     // NpuCollectivesAsyncEvents collectives_async_events_;
@@ -145,7 +147,7 @@ class NpuIrEmitterContext {
     const bool emit_kernels_;
 
     // Generates unique IDs for thunk creation.
-    ThunkIdGenerator thunk_id_generator_;
+    NpuThunkIdGenerator thunk_id_generator_;
 };
 
 }  // namespace gpu

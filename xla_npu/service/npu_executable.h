@@ -19,7 +19,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "xla/backends/gpu/runtime/annotation.h"
+// #include "xla/backends/gpu/runtime/annotation.h"
 // #include "xla/backends/gpu/runtime/sequential_thunk.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
 #include "xla/hlo/ir/hlo_input_output_alias_config.h"
@@ -27,10 +27,10 @@
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/computation_layout.h"
 #include "xla/service/executable.h"
-#include "xla/service/gpu/alias_info.h"
-#include "xla/service/gpu/buffer_allocations.h"
-#include "xla/service/gpu/gpu_executable.pb.h"
-#include "xla/service/gpu/ir_emission_utils.h"
+// #include "xla/service/gpu/alias_info.h"
+// #include "xla/service/gpu/buffer_allocations.h"
+// #include "xla/service/gpu/gpu_executable.pb.h"
+// #include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/service_executable_run_options.h"
 #include "xla/service/shaped_buffer.h"
 #include "xla/shape.h"
@@ -42,6 +42,9 @@
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/service/npu_alias_info.h"
+#include "xla/xla_npu/service/npu_buffer_allocations.h"
+#include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
 namespace gpu {
@@ -55,12 +58,12 @@ class NpuExecutable : public Executable {
    public:
     struct ConstantInfo {
         std::string symbol_name;
-        DenseDataIntermediate content;
+        NpuDenseDataIntermediate content;
         int allocation_index = -1;
 
-        GpuExecutableProto::ConstantInfoProto ToProto() const;
+        // GpuExecutableProto::ConstantInfoProto ToProto() const;
 
-        static ConstantInfo FromProto(const GpuExecutableProto::ConstantInfoProto& proto);
+        // static ConstantInfo FromProto(const GpuExecutableProto::ConstantInfoProto& proto);
     };
 
     struct OutputInfo {
@@ -74,8 +77,8 @@ class NpuExecutable : public Executable {
         // would indicate the aliased parameter), and what kind of alias it is.
         std::optional<HloInputOutputAliasConfig::Alias> alias_config;
 
-        GpuExecutableProto::OutputInfoProto ToProto() const;
-        static absl::StatusOr<OutputInfo> FromProto(const GpuExecutableProto::OutputInfoProto& proto);
+        // GpuExecutableProto::OutputInfoProto ToProto() const;
+        // static absl::StatusOr<OutputInfo> FromProto(const GpuExecutableProto::OutputInfoProto& proto);
 
         friend bool operator==(const OutputInfo& lhs, const OutputInfo& rhs) {
             return std::tie(lhs.allocation_index, lhs.passthrough, lhs.alias_config) ==
@@ -88,7 +91,7 @@ class NpuExecutable : public Executable {
     struct Params {
         std::string asm_text;
         std::vector<uint8_t> binary;
-        BinaryMap dnn_compiled_graphs;
+        // BinaryMap dnn_compiled_graphs;
         std::unique_ptr<NpuSequentialThunk> executable;
         std::vector<ConstantInfo> constants;
         absl::flat_hash_map<ShapeIndex, OutputInfo> output_info;
@@ -96,7 +99,7 @@ class NpuExecutable : public Executable {
         ProgramShape program_shape;
         std::optional<std::vector<BufferAllocation>> mlir_allocations;
         std::unique_ptr<const BufferAssignment> buffer_assignment;
-        std::unique_ptr<GpuAliasInfo> alias_info;
+        std::unique_ptr<NpuAliasInfo> alias_info;
         DebugOptions debug_options;
         se::DeviceDescription device_description;
         std::unique_ptr<HloModule> debug_module = nullptr;
@@ -140,7 +143,7 @@ class NpuExecutable : public Executable {
     // compiled.
     const std::vector<uint8_t>& binary() const { return binary_; }
 
-    const BinaryMap& dnn_compiled_graphs() const { return dnn_compiled_graphs_; }
+    // const BinaryMap& dnn_compiled_graphs() const { return dnn_compiled_graphs_; }
 
     // ExecuteAsyncOnStream will fail if the compute capability of the stream
     // doesn't match the compute capability passed to this object's constructor.
@@ -160,11 +163,11 @@ class NpuExecutable : public Executable {
 
     const BufferAssignment* buffer_assignment() const { return buffer_assignment_.get(); }
 
-    const GpuAliasInfo* alias_info() const { return alias_info_.get(); }
+    const NpuAliasInfo* alias_info() const { return alias_info_.get(); }
 
     const NpuSequentialThunk& GetThunk() { return *thunks_; }
 
-    absl::Status ExecuteThunks(const BufferAllocations& buffer_allocations,
+    absl::Status ExecuteThunks(const NpuBufferAllocations& buffer_allocations,
                                const ServiceExecutableRunOptions* run_options);
 
     using BufferAllocToDeviceMemoryMap = absl::flat_hash_map<BufferAllocation::Index, se::DeviceMemoryBase>;
@@ -181,7 +184,7 @@ class NpuExecutable : public Executable {
     // instead.
     absl::StatusOr<const BufferAllocToDeviceMemoryMap*> ResolveConstantGlobals(stream_executor::Stream* stream);
 
-    absl::Status VerboseAllocationError(absl::Status s);
+    // absl::Status VerboseAllocationError(absl::Status s);
 
     // static absl::StatusOr<std::unique_ptr<NpuExecutable>> FromProto(const GpuExecutableProto&,
     //                                                                 const se::DeviceDescription& device_description,
@@ -197,7 +200,7 @@ class NpuExecutable : public Executable {
     // // version for compute capability, depending on the hardware.
     // absl::Status CheckCompatibilityWithServiceExecutableRunOptions(const ServiceExecutableRunOptions* run_options);
 
-    absl::StatusOr<BufferAllocations> GenerateBufferAllocations(
+    absl::StatusOr<NpuBufferAllocations> GenerateBufferAllocations(
         VariantArguments arguments, const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
         se::DeviceMemoryAllocator* memory_allocator, int device_ordinal);
 
@@ -224,7 +227,7 @@ class NpuExecutable : public Executable {
     // May be empty, in which case we leave compilation up to the GPU driver.
     std::vector<uint8_t> binary_;
 
-    BinaryMap dnn_compiled_graphs_;
+    // BinaryMap dnn_compiled_graphs_;
 
     // The GPU version for compute compatibility check.
     se::GpuComputeCapability gpu_version_;
@@ -274,14 +277,14 @@ class NpuExecutable : public Executable {
 
     // Backend specific aliasing information whether operands can/should share the
     // buffer with the user.
-    std::unique_ptr<GpuAliasInfo> alias_info_;
+    std::unique_ptr<NpuAliasInfo> alias_info_;
 
-    ModuleAnnotations module_annotations_ = [this] {
-        if (has_module()) {
-            return ModuleAnnotations(module());
-        }
-        return ModuleAnnotations(module_name_);
-    }();
+    // ModuleAnnotations module_annotations_ = [this] {
+    //     if (has_module()) {
+    //         return ModuleAnnotations(module());
+    //     }
+    //     return ModuleAnnotations(module_name_);
+    // }();
 
     int64_t debug_buffer_assignment_show_max_;
 

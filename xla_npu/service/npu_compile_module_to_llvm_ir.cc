@@ -63,9 +63,10 @@
 #include "xla/util.h"
 #include "xla/xla.pb.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
 #include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/service/npu_alias_info.h"
+#include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 
@@ -214,7 +215,7 @@ absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> LowerHlo(const HloModule* hl
 // }
 
 absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
-    const HloModule* module, const GpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function) {
+    const HloModule* module, const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function) {
     // ScopedAnnotation annotation(Phase("XlaBufferAssignment", module));
 
     // const DebugOptions& options = module->config().debug_options();
@@ -254,7 +255,7 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
 absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     const HloModule* hlo_module, llvm::LLVMContext* llvm_context, const std::string& target_triple,
     const std::string& data_layout, const se::Platform* platform, const se::DeviceDescription& device_desc,
-    const GpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function, bool split_constants_module) {
+    const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function, bool split_constants_module) {
     tsl::profiler::TraceMe traceme("NpuCompileModuleToLlvmIr");
     const bool use_cache = UseCache(hlo_module->config().debug_options(), split_constants_module);
 
@@ -284,9 +285,9 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
                                                      results.llvm_module_constants.get(), platform->id(), use_cache));
 
     results.constants = std::move(ir_emitter_context.constants());
-    if (use_cache) {
-        results.kernel_compilation_cache = ir_emitter_context.kernel_cache().Export();
-    }
+    // if (use_cache) {
+    //     results.kernel_compilation_cache = ir_emitter_context.kernel_cache().Export();
+    // }
 
     return results;
 }

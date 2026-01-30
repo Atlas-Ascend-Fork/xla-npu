@@ -19,11 +19,11 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "xla/backends/gpu/collectives/gpu_clique_key.h"
-#include "xla/backends/gpu/collectives/gpu_cliques.h"
-#include "xla/backends/gpu/collectives/gpu_collectives.h"
-#include "xla/backends/gpu/runtime/thunk.pb.h"
-#include "xla/backends/gpu/runtime/thunk_id.h"
+// #include "xla/backends/gpu/collectives/gpu_clique_key.h"
+// #include "xla/backends/gpu/collectives/gpu_cliques.h"
+// #include "xla/backends/gpu/collectives/gpu_collectives.h"
+// #include "xla/backends/gpu/runtime/thunk.pb.h"
+// #include "xla/backends/gpu/runtime/thunk_id.h"
 #include "xla/core/collectives/communicator.h"
 #include "xla/core/collectives/rank_id.h"
 #include "xla/executable_run_options.h"
@@ -32,14 +32,16 @@
 #include "xla/runtime/buffer_use.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/global_device_id.h"
-#include "xla/service/gpu/buffer_allocations.h"
-#include "xla/service/gpu/gpu_executable_run_options.h"
-#include "xla/service/gpu/ir_emission_utils.h"
+// #include "xla/service/gpu/buffer_allocations.h"
+// #include "xla/service/gpu/gpu_executable_run_options.h"
+// #include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/service_executable_run_options.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/lib/gtl/int_type.h"
 #include "xla/util.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
+#include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
 namespace gpu {
@@ -194,7 +196,7 @@ class NpuThunk {
     struct ExecutableSource {
         absl::string_view text;            // PTX for NVIDIA backend
         absl::Span<const uint8_t> binary;  // CUBIN for NVIDIA backends
-        BinaryMap dnn_compiled_graphs;
+        // BinaryMap dnn_compiled_graphs;
     };
 
     // Metadata associated with a NpuThunk,
@@ -202,20 +204,20 @@ class NpuThunk {
     struct ThunkInfo {
         ThunkInfo() = default;  // Disable implicit constructors.
 
-        // Deserializes a ThunkInfo from a ThunkInfoProto.
-        // Returns an error if the proto is invalid.
-        static absl::StatusOr<NpuThunk::ThunkInfo> FromProto(const ThunkInfoProto& proto);
+        // // Deserializes a ThunkInfo from a ThunkInfoProto.
+        // // Returns an error if the proto is invalid.
+        // static absl::StatusOr<NpuThunk::ThunkInfo> FromProto(const ThunkInfoProto& proto);
 
-        static ThunkInfo WithProfileAnnotation(const HloInstruction* instr, ThunkId thunk_id);
+        static ThunkInfo WithProfileAnnotation(const HloInstruction* instr, NpuThunkId thunk_id);
 
         std::string profile_annotation;
 
         NpuExecutionStreamId execution_stream_id = kDefaultExecutionStreamId;
 
-        ThunkId thunk_id = ThunkId{0};
+        NpuThunkId thunk_id = NpuThunkId{0};
 
-        // Serializes a ThunkInfo to a ThunkInfoProto.
-        ThunkInfoProto ToProto() const;
+        // // Serializes a ThunkInfo to a ThunkInfoProto.
+        // ThunkInfoProto ToProto() const;
 
         // 提供给aclnn使用
         std::string hloInstrDesc;  // 保留hlo instruction描述,便于debug
@@ -234,91 +236,91 @@ class NpuThunk {
     class ResourceRequestsInterface {
        public:
         virtual ~ResourceRequestsInterface() = default;
-        virtual absl::Status AddClique(const GpuCliqueKey& clique_key) = 0;
+        // virtual absl::Status AddClique(const GpuCliqueKey& clique_key) = 0;
     };
 
-    //===--------------------------------------------------------------------===//
-    // CollectiveCliques
-    //===--------------------------------------------------------------------===//
+    // //===--------------------------------------------------------------------===//
+    // // CollectiveCliques
+    // //===--------------------------------------------------------------------===//
 
-    // A collection of collective cliques acquired based on resource requests
-    // collected from all thunks at prepare stage.
-    class CollectiveCliques {
-       public:
-        CollectiveCliques() = default;
-        CollectiveCliques(AcquiredCliquesMap cliques_map, int32_t num_transient_cliques);
+    // // A collection of collective cliques acquired based on resource requests
+    // // collected from all thunks at prepare stage.
+    // class CollectiveCliques {
+    //    public:
+    //     CollectiveCliques() = default;
+    //     CollectiveCliques(AcquiredCliquesMap cliques_map, int32_t num_transient_cliques);
 
-        absl::StatusOr<Communicator*> GetComm(const GpuCliqueKey& clique_key, RankId rank) const;
+    //     absl::StatusOr<Communicator*> GetComm(const GpuCliqueKey& clique_key, RankId rank) const;
 
-        // Returns whether peer device memory access is possible between all devices
-        // in the clique.
-        absl::StatusOr<bool> peer_access_enabled(const GpuCliqueKey& clique_key) const;
+    //     // Returns whether peer device memory access is possible between all devices
+    //     // in the clique.
+    //     absl::StatusOr<bool> peer_access_enabled(const GpuCliqueKey& clique_key) const;
 
-        bool empty() const { return cliques_map_.empty(); }
+    //     bool empty() const { return cliques_map_.empty(); }
 
-        bool num_transient_cliques() const { return num_transient_cliques_; }
+    //     bool num_transient_cliques() const { return num_transient_cliques_; }
 
-       private:
-        AcquiredCliquesMap cliques_map_;
+    //    private:
+    //     AcquiredCliquesMap cliques_map_;
 
-        // The number of acquired non-persistent clique. We need to keep track of
-        // newly created communicators to insert rendezvous after first
-        // initialization, because otherwise we observe deadlocks with NCCL
-        // collectives backends.
-        int32_t num_transient_cliques_ = 0;
-    };
+    //     // The number of acquired non-persistent clique. We need to keep track of
+    //     // newly created communicators to insert rendezvous after first
+    //     // initialization, because otherwise we observe deadlocks with NCCL
+    //     // collectives backends.
+    //     int32_t num_transient_cliques_ = 0;
+    // };
 
-    //===--------------------------------------------------------------------===//
-    // CollectiveExecuteParams
-    //===--------------------------------------------------------------------===//
+    // //===--------------------------------------------------------------------===//
+    // // CollectiveExecuteParams
+    // //===--------------------------------------------------------------------===//
 
-    // Parameters capturing all the details required for collective execution of
-    // XLA executables (multiple partitions and replicas).
-    struct CollectiveExecuteParams {
-        // Creates NCCL execution parameters from the run options for the given
-        // local device. Returns an error if run options are misconfigured (i.e.
-        // missing a global device mapping for a local device ordinal).
-        static absl::StatusOr<CollectiveExecuteParams> Create(const ServiceExecutableRunOptions& run_options,
-                                                              absl::Span<se::Stream* const> async_streams,
-                                                              int64_t local_device_ordinal,
-                                                              int64_t collective_max_nchannels = 0,
-                                                              int64_t p2p_max_nchannels = 0);
+    // // Parameters capturing all the details required for collective execution of
+    // // XLA executables (multiple partitions and replicas).
+    // struct CollectiveExecuteParams {
+    //     // Creates NCCL execution parameters from the run options for the given
+    //     // local device. Returns an error if run options are misconfigured (i.e.
+    //     // missing a global device mapping for a local device ordinal).
+    //     static absl::StatusOr<CollectiveExecuteParams> Create(const ServiceExecutableRunOptions& run_options,
+    //                                                           absl::Span<se::Stream* const> async_streams,
+    //                                                           int64_t local_device_ordinal,
+    //                                                           int64_t collective_max_nchannels = 0,
+    //                                                           int64_t p2p_max_nchannels = 0);
 
-        // A mapping from local device ordinals to global device IDs.
-        using GlobalDeviceIdMap = std::map<int32_t, GlobalDeviceId>;
+    //     // A mapping from local device ordinals to global device IDs.
+    //     using GlobalDeviceIdMap = std::map<int32_t, GlobalDeviceId>;
 
-        GpuCollectives* collectives;
-        se::StreamExecutor* executor;
+    //     GpuCollectives* collectives;
+    //     se::StreamExecutor* executor;
 
-        // XLA execution run id allows us to distinguish collective operations
-        // from different concurrent executions and avoid deadlocks.
-        RunId run_id;
+    //     // XLA execution run id allows us to distinguish collective operations
+    //     // from different concurrent executions and avoid deadlocks.
+    //     RunId run_id;
 
-        // Streams for asynchronous collective communications.
-        absl::InlinedVector<se::Stream*, 4> async_streams;
+    //     // Streams for asynchronous collective communications.
+    //     absl::InlinedVector<se::Stream*, 4> async_streams;
 
-        int64_t local_device_ordinal;
-        GlobalDeviceId global_device_id;
+    //     int64_t local_device_ordinal;
+    //     GlobalDeviceId global_device_id;
 
-        const DeviceAssignment* device_assn;
-        const GlobalDeviceIdMap* global_device_id_map;
-        const CliqueIdCallback* nccl_clique_id_callback;
-        const absl::flat_hash_map<GlobalDeviceId, IncarnationId>* incarnations;
+    //     const DeviceAssignment* device_assn;
+    //     const GlobalDeviceIdMap* global_device_id_map;
+    //     const CliqueIdCallback* nccl_clique_id_callback;
+    //     const absl::flat_hash_map<GlobalDeviceId, IncarnationId>* incarnations;
 
-        int64_t collective_max_nchannels;
-        int64_t p2p_max_nchannels;
+    //     int64_t collective_max_nchannels;
+    //     int64_t p2p_max_nchannels;
 
-        bool need_barrier = false;
+    //     bool need_barrier = false;
 
-       private:
-        CollectiveExecuteParams(GpuCollectives* collectives, se::StreamExecutor* executor, RunId run_id,
-                                absl::Span<se::Stream* const> async_streams, int64_t local_device_ordinal,
-                                GlobalDeviceId global_device_id, const DeviceAssignment* device_assn,
-                                const GlobalDeviceIdMap* global_device_id_map,
-                                const CliqueIdCallback* nccl_clique_id_callback,
-                                const absl::flat_hash_map<GlobalDeviceId, IncarnationId>* incarnations,
-                                int64_t collective_max_nchannels, int64_t p2p_max_nchannels);
-    };
+    //    private:
+    //     CollectiveExecuteParams(GpuCollectives* collectives, se::StreamExecutor* executor, RunId run_id,
+    //                             absl::Span<se::Stream* const> async_streams, int64_t local_device_ordinal,
+    //                             GlobalDeviceId global_device_id, const DeviceAssignment* device_assn,
+    //                             const GlobalDeviceIdMap* global_device_id_map,
+    //                             const CliqueIdCallback* nccl_clique_id_callback,
+    //                             const absl::flat_hash_map<GlobalDeviceId, IncarnationId>* incarnations,
+    //                             int64_t collective_max_nchannels, int64_t p2p_max_nchannels);
+    // };
 
     //===--------------------------------------------------------------------===//
     // PrepareParams
@@ -328,8 +330,8 @@ class NpuThunk {
     // work or do any expensive initialization and only pass resource requirements
     // back to executable, i.e. request collective cliques required at run time.
     struct PrepareParams {
-        // Parameters for executing collective operations.
-        const CollectiveExecuteParams* collective_params = nullptr;
+        // // Parameters for executing collective operations.
+        // const CollectiveExecuteParams* collective_params = nullptr;
     };
 
     //===--------------------------------------------------------------------===//
@@ -343,7 +345,7 @@ class NpuThunk {
         se::StreamExecutor* executor = nullptr;
         ExecutableSource src;
 
-        const BufferAllocations* buffer_allocations = nullptr;
+        const NpuBufferAllocations* buffer_allocations = nullptr;
 
         // Main compute stream that will be used, passed via `ExecuteParams` to
         // `ExecuteOnStream`. It can be used to initialize on-device "state" (i.e.
@@ -356,11 +358,11 @@ class NpuThunk {
         // avoid accidental tracing of unrelated activities on a main stream.
         se::Stream* command_buffer_trace_stream = nullptr;
 
-        // Parameters for executing collective operations.
-        CollectiveExecuteParams* collective_params = nullptr;
+        // // Parameters for executing collective operations.
+        // CollectiveExecuteParams* collective_params = nullptr;
 
-        // Collective cliques acquired based on resource requests.
-        CollectiveCliques* collective_cliques = nullptr;
+        // // Collective cliques acquired based on resource requests.
+        // CollectiveCliques* collective_cliques = nullptr;
 
         // XLA FFI execution context.
         const ffi::ExecutionContext* ffi_execution_context = nullptr;
@@ -380,17 +382,18 @@ class NpuThunk {
         // Constructs execute parameters from an executable run options. Return
         // error if run options are misconfigured.
         static ExecuteParams Create(const ServiceExecutableRunOptions& run_options,
-                                    const BufferAllocations& buffer_allocations, se::Stream* stream,
-                                    se::Stream* command_buffer_trace_stream, CollectiveExecuteParams* collective_params,
-                                    CollectiveCliques* collective_cliques,
+                                    const NpuBufferAllocations& buffer_allocations, se::Stream* stream,
+                                    se::Stream* command_buffer_trace_stream,
+                                    // CollectiveExecuteParams* collective_params,
+                                    // CollectiveCliques* collective_cliques,
                                     ExecutionStreamIdMap additional_compute_streams = {});
 
         // Constructs execute parameters from an existing parameters but with
         // different buffer allocations.
         static ExecuteParams CloneWithNewAllocations(const ExecuteParams& params,
-                                                     const BufferAllocations& buffer_allocations);
+                                                     const NpuBufferAllocations& buffer_allocations);
 
-        const BufferAllocations* buffer_allocations;  // never null
+        const NpuBufferAllocations* buffer_allocations;  // never null
 
         // Main compute stream on which thunks launch operations.
         se::Stream* stream;
@@ -399,11 +402,11 @@ class NpuThunk {
         // avoid accidental tracing of unrelated activities on a main stream.
         se::Stream* command_buffer_trace_stream;
 
-        // Parameters for executing collective operations.
-        CollectiveExecuteParams* collective_params;
+        // // Parameters for executing collective operations.
+        // CollectiveExecuteParams* collective_params;
 
-        // Collective cliques acquired based on resource requests.
-        CollectiveCliques* collective_cliques;
+        // // Collective cliques acquired based on resource requests.
+        // CollectiveCliques* collective_cliques;
 
         // Streams for moving data between host and device.
         se::Stream* device_to_host_stream;
@@ -426,10 +429,12 @@ class NpuThunk {
        private:
         friend class CommandBufferThunk;
 
-        ExecuteParams(const BufferAllocations* buffer_allocations, se::Stream* stream,
-                      se::Stream* command_buffer_trace_stream, CollectiveExecuteParams* collective_params,
-                      CollectiveCliques* collective_cliques, se::Stream* device_to_host_stream,
-                      se::Stream* host_to_device_stream, SendDeviceMemoryFunction* send_device_memory_function,
+        ExecuteParams(const NpuBufferAllocations* buffer_allocations, se::Stream* stream,
+                      se::Stream* command_buffer_trace_stream,
+                      //   CollectiveExecuteParams* collective_params,
+                      //   CollectiveCliques* collective_cliques,
+                      se::Stream* device_to_host_stream, se::Stream* host_to_device_stream,
+                      SendDeviceMemoryFunction* send_device_memory_function,
                       RecvDeviceMemoryFunction* recv_device_memory_function,
                       const ffi::ExecutionContext* ffi_execution_context,
                       ExecutionStreamIdMap additional_compute_streams = {}, bool mock_collectives = false,
@@ -488,7 +493,8 @@ class NpuThunk {
         thunk_info_.execution_stream_id = execution_stream_id;
     }
 
-    static absl::StatusOr<se::Stream*> GetStreamForExecution(NpuExecutionStreamId stream_id, const ExecuteParams& params);
+    static absl::StatusOr<se::Stream*> GetStreamForExecution(NpuExecutionStreamId stream_id,
+                                                             const ExecuteParams& params);
 
     // Returns `true` if this thunk requires inter-GPU communication.
     bool IsCollective() const;
@@ -513,32 +519,32 @@ class NpuThunk {
         return absl::OkStatus();
     }
 
-    // A helper function to get the `GpuCollectives*` pointer from the
-    // CollectiveExecuteParams.
-    static absl::StatusOr<GpuCollectives* absl_nonnull> GetGpuCollectives(CollectiveExecuteParams const& params);
+    // // A helper function to get the `GpuCollectives*` pointer from the
+    // // CollectiveExecuteParams.
+    // static absl::StatusOr<GpuCollectives* absl_nonnull> GetGpuCollectives(CollectiveExecuteParams const& params);
 
-    // A helper function to get the `GpuCollectives*` pointer from the
-    // thunk parameters. Returns an error if collectives API is not provided.
-    template <typename Params>
-    static absl::StatusOr<GpuCollectives* absl_nonnull> GetGpuCollectives(const Params& params) {
-        if (params.collective_params == nullptr) {
-            return Internal("Collective params are not provided");
-        }
-        return GetGpuCollectives(*params.collective_params);
-    }
+    // // A helper function to get the `GpuCollectives*` pointer from the
+    // // thunk parameters. Returns an error if collectives API is not provided.
+    // template <typename Params>
+    // static absl::StatusOr<GpuCollectives* absl_nonnull> GetGpuCollectives(const Params& params) {
+    //     if (params.collective_params == nullptr) {
+    //         return Internal("Collective params are not provided");
+    //     }
+    //     return GetGpuCollectives(*params.collective_params);
+    // }
 
-    // Serializes the thunk into a `ThunkProto`.
-    virtual absl::StatusOr<ThunkProto> ToProto() const;
+    // // Serializes the thunk into a `ThunkProto`.
+    // virtual absl::StatusOr<ThunkProto> ToProto() const;
 
-    // Serializes the metadata of the thunk into a `ThunkMetadataProto`.
-    ThunkMetadataProto ToMetadataProto() const;
+    // // Serializes the metadata of the thunk into a `ThunkMetadataProto`.
+    // ThunkMetadataProto ToMetadataProto() const;
 
-    // This declares a deserializer callback that `FromProto` NpuThunk factory
-    // functions can use to deserialize sub messages.
-    using Deserializer = absl::AnyInvocable<absl::StatusOr<std::unique_ptr<NpuThunk>>(const ThunkProto&) const>;
+    // // This declares a deserializer callback that `FromProto` NpuThunk factory
+    // // functions can use to deserialize sub messages.
+    // using Deserializer = absl::AnyInvocable<absl::StatusOr<std::unique_ptr<NpuThunk>>(const ThunkProto&) const>;
 
-    using DeserializerWithCustomAllocations = absl::AnyInvocable<absl::StatusOr<std::unique_ptr<NpuThunk>>(
-        const ThunkProto&, absl::Span<const BufferAllocation>) const>;
+    // using DeserializerWithCustomAllocations = absl::AnyInvocable<absl::StatusOr<std::unique_ptr<NpuThunk>>(
+    //     const ThunkProto&, absl::Span<const BufferAllocation>) const>;
 
     void add_control_predecessor(const NpuThunk* control_predecessor) {
         control_predecessors_.push_back(control_predecessor);
@@ -573,8 +579,8 @@ std::ostream& operator<<(std::ostream& os, NpuThunk::Kind kind);
 // reduce-scatter).
 bool IsReductionCollective(NpuThunk::Kind kind);
 
-// Returns the metadata from all thunks in the given thunk graph.
-ThunkMetadataListProto GetMetadataListProtoFromThunkGraph(const NpuThunk& root_thunk);
+// // Returns the metadata from all thunks in the given thunk graph.
+// ThunkMetadataListProto GetMetadataListProtoFromThunkGraph(const NpuThunk& root_thunk);
 
 }  // namespace gpu
 }  // namespace xla

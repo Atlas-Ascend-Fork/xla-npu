@@ -52,16 +52,16 @@
 #include "xla/service/call_inliner.h"
 #include "xla/service/custom_call_status.h"
 #include "xla/service/custom_call_target_registry.h"
-#include "xla/service/gpu/backend_configs.pb.h"
-#include "xla/service/gpu/cublas_cudnn.h"
-#include "xla/service/gpu/gpu_constants.h"
-#include "xla/service/gpu/hlo_fusion_analysis.h"
-#include "xla/service/gpu/ir_emission_utils.h"
+// #include "xla/service/gpu/backend_configs.pb.h"
+// #include "xla/service/gpu/cublas_cudnn.h"
+// #include "xla/service/gpu/gpu_constants.h"
+// #include "xla/service/gpu/hlo_fusion_analysis.h"
+// #include "xla/service/gpu/ir_emission_utils.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
-#include "xla/service/gpu/kernels/custom_kernel.h"
-#include "xla/service/gpu/kernels/custom_kernel_fusion.h"
-#include "xla/service/gpu/matmul_utils.h"
-#include "xla/service/gpu/stream_executor_util.h"
+// #include "xla/service/gpu/kernels/custom_kernel.h"
+// #include "xla/service/gpu/kernels/custom_kernel_fusion.h"
+// #include "xla/service/gpu/matmul_utils.h"
+// #include "xla/service/gpu/stream_executor_util.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
@@ -74,6 +74,7 @@
 #include "xla/xla_npu/backend/npu_custom_kernel_thunk.h"
 #include "xla/xla_npu/backend/npu_fusion_emitter.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
@@ -88,8 +89,9 @@ namespace {
 absl::StatusOr<std::unique_ptr<NpuThunk>> BuildCustomKernelThunkForFusion(NpuIrEmitterContext& ir_emitter_context,
                                                                           const HloFusionInstruction& fusion,
                                                                           NpuCustomKernel custom_kernel) {
-    TF_ASSIGN_OR_RETURN(auto kernel_arguments, emitters::KernelArguments::Create(ir_emitter_context.buffer_assignment(),
-                                                                                 GetDefaultBufferAlignment(), &fusion));
+    TF_ASSIGN_OR_RETURN(auto kernel_arguments,
+                        emitters::KernelArguments::Create(ir_emitter_context.buffer_assignment(),
+                                                          NpuConstant::GetDefaultBufferAlignment(), &fusion));
 
     NpuThunk::ThunkInfo thunk_info =
         NpuThunk::ThunkInfo::WithProfileAnnotation(&fusion, ir_emitter_context.GetNextThunkId());
@@ -1186,11 +1188,11 @@ absl::StatusOr<std::unique_ptr<NpuThunk>> BuildCustomKernelThunkForFusion(NpuIrE
 
 absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContext& ir_emitter_context,
                                                               const HloFusionInstruction& fusion) const {
-    TF_ASSIGN_OR_RETURN(auto gpu_config, fusion.backend_config<GpuBackendConfig>());
-    const FusionBackendConfig& backend_config = gpu_config.fusion_backend_config();
-    const CustomFusionConfig& config = backend_config.custom_fusion_config();
+    // TF_ASSIGN_OR_RETURN(auto gpu_config, fusion.backend_config<GpuBackendConfig>());
+    // const FusionBackendConfig& backend_config = gpu_config.fusion_backend_config();
+    // const CustomFusionConfig& config = backend_config.custom_fusion_config();
 
-    VLOG(3) << "Lower HLO fusion to a custom fusion " << config.name();
+    // VLOG(3) << "Lower HLO fusion to a custom fusion " << config.name();
 
     // auto* registry = CustomKernelFusionRegistry::Default();
     // auto* custom_kernel_fusion = registry->Lookup(config.name());
@@ -1235,37 +1237,35 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     return result;
 }
 
-absl::StatusOr<NpuFusionEmissionResult> NpuDynamicSliceFusion::Emit(NpuIrEmitterContext& ir_emitter_context,
-                                                                    const HloFusionInstruction& fusion) const {
-    return absl::UnimplementedError("NpuDynamicSliceFusion::Emit is unimplemented");
+// absl::StatusOr<NpuFusionEmissionResult> NpuDynamicSliceFusion::Emit(NpuIrEmitterContext& ir_emitter_context,
+//                                                                     const HloFusionInstruction& fusion) const {
+//     const HloFusionAdaptor& adaptor = analysis_.fusion();
+//     // Only reduce-scatter is supported for now.
+//     auto maybe_collective = HloBfsFindIf(
+//         /*roots=*/adaptor.GetRoots(), /*fusion=*/adaptor,
+//         /*visit=*/[](HloInstructionAdaptor node) -> bool { return node.opcode() == HloOpcode::kReduceScatter; });
 
-    // const HloFusionAdaptor& adaptor = analysis_.fusion();
-    // // Only reduce-scatter is supported for now.
-    // auto maybe_collective = HloBfsFindIf(
-    //     /*roots=*/adaptor.GetRoots(), /*fusion=*/adaptor,
-    //     /*visit=*/[](HloInstructionAdaptor node) -> bool { return node.opcode() == HloOpcode::kReduceScatter; });
+//     if (maybe_collective != std::nullopt) {
+//         const HloReduceScatterInstruction* rs =
+//             Cast<const HloReduceScatterInstruction>(&maybe_collective->instruction());
+//         return EmitCollective<ReduceScatterStartThunk, HloReduceScatterInstruction>(
+//             ir_emitter_context, adaptor, /*fusion_instr=*/fusion, /*instr=*/rs,
+//             /*use_global_device_ids=*/rs->use_global_device_ids(),
+//             /*call_graph=*/call_graph_);
+//     }
+//     auto maybe_custom_call_adaptor =
+//         HloBfsFindIf(adaptor.GetRoots(), adaptor, [](auto node) { return node.opcode() == HloOpcode::kCustomCall; });
+//     if (maybe_custom_call_adaptor == std::nullopt) {
+//         return absl::InternalError("NpuDynamicSliceFusion requires a CustomCall hero");
+//     }
 
-    // if (maybe_collective != std::nullopt) {
-    //     const HloReduceScatterInstruction* rs =
-    //         Cast<const HloReduceScatterInstruction>(&maybe_collective->instruction());
-    //     return EmitCollective<ReduceScatterStartThunk, HloReduceScatterInstruction>(
-    //         ir_emitter_context, adaptor, /*fusion_instr=*/fusion, /*instr=*/rs,
-    //         /*use_global_device_ids=*/rs->use_global_device_ids(),
-    //         /*call_graph=*/call_graph_);
-    // }
-    // auto maybe_custom_call_adaptor =
-    //     HloBfsFindIf(adaptor.GetRoots(), adaptor, [](auto node) { return node.opcode() == HloOpcode::kCustomCall; });
-    // if (maybe_custom_call_adaptor == std::nullopt) {
-    //     return absl::InternalError("NpuDynamicSliceFusion requires a CustomCall hero");
-    // }
+//     const auto& custom_call = *static_cast<const
+//     HloCustomCallInstruction*>(&maybe_custom_call_adaptor->instruction()); if (IsLegacyCublasMatmul(custom_call)) {
+//         return EmitGemm(ir_emitter_context, adaptor, fusion, custom_call, call_graph_);
+//     }
 
-    // const auto& custom_call = *static_cast<const
-    // HloCustomCallInstruction*>(&maybe_custom_call_adaptor->instruction()); if (IsLegacyCublasMatmul(custom_call)) {
-    //     return EmitGemm(ir_emitter_context, adaptor, fusion, custom_call, call_graph_);
-    // }
-
-    // return EmitCustomCall(ir_emitter_context, adaptor, fusion, custom_call, call_graph_);
-}
+//     return EmitCustomCall(ir_emitter_context, adaptor, fusion, custom_call, call_graph_);
+// }
 
 }  // namespace gpu
 }  // namespace xla
