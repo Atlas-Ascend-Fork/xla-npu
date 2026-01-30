@@ -19,7 +19,7 @@
 #include "xla/pjrt/distributed/key_value_store_interface.h"
 #include "xla/service/compiler.h"
 #include "xla/service/executable.h"
-#include "xla/service/gpu/alias_info.h"
+// #include "xla/service/gpu/alias_info.h"
 #include "xla/service/gpu/autotuning/autotuner_util.h"
 // #include "xla/service/gpu/compile_module_to_llvm_ir.h"
 #include "xla/service/gpu/ir_emission_utils.h"
@@ -36,7 +36,7 @@
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/util.h"
 #include "xla/xla.pb.h"
-
+#include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_compile_module_to_llvm_ir.h"
 
 namespace xla {
@@ -77,7 +77,7 @@ class NpuCompiler : public LLVMCompiler {
 
     absl::Status RunPostSchedulingPipelines(HloModule* module, int64_t scheduler_mem_limit,
                                             const se::DeviceDescription& gpu_device_info,
-                                            const GpuAliasInfo* alias_info);
+                                            const NpuAliasInfo* alias_info);
 
     std::string target_triple() const { return target_triple_; }
     std::string data_layout() const { return data_layout_; }
@@ -95,8 +95,8 @@ class NpuCompiler : public LLVMCompiler {
     mlir::MLIRContext* mlir_context() { return &mlir_context_; }
     SymbolicExprContext* symbolic_expr_context() { return &symbolic_expr_context_; }
 
-    virtual std::unique_ptr<GpuAliasInfo> GetAliasInfo(const se::DeviceDescription& device_description) const {
-        return std::make_unique<GpuAliasInfo>(device_description);
+    virtual std::unique_ptr<NpuAliasInfo> GetAliasInfo(const se::DeviceDescription& device_description) const {
+        return std::make_unique<NpuAliasInfo>(device_description);
     }
 
     virtual absl::StatusOr<bool> CanUseLinkModules(const HloModuleConfig& config,
@@ -133,7 +133,7 @@ class NpuCompiler : public LLVMCompiler {
     virtual absl::Status OptimizeHloPostLayoutAssignment(HloModule* hlo_module, se::StreamExecutor* stream_exec,
                                                          const CompileOptions& options,
                                                          const GpuTargetConfig& gpu_target_config,
-                                                         const GpuAliasInfo* alias_info,
+                                                         const NpuAliasInfo* alias_info,
                                                          tsl::thread::ThreadPool* thread_pool);
 
     // CollectivesScheduleLinearizer enforces a total ordering between collectives
@@ -205,7 +205,7 @@ class NpuCompiler : public LLVMCompiler {
     absl::Status SerializeAutotuneResultsToFile(const DebugOptions& debug_options);
 
     absl::Status RunPreSchedulingPasses(HloModule* module, const se::DeviceDescription& gpu_device_info,
-                                        const GpuAliasInfo* alias_info);
+                                        const NpuAliasInfo* alias_info);
     absl::Status RunCollectiveScheduleLinearizerPasses(HloModule* hlo_module, se::StreamExecutor* stream_exec);
 
     // During compilation with device, stream_exec != null and autotune_results
@@ -213,13 +213,13 @@ class NpuCompiler : public LLVMCompiler {
     // autotune_results != null.
     absl::Status OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
                                    const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
-                                   const GpuAliasInfo* alias_info);
+                                   const NpuAliasInfo* alias_info);
 
     virtual absl::Status OptimizeHloConvolutionCanonicalization(HloModule* hlo_module,
                                                                 const se::GpuComputeCapability& gpu_version,
                                                                 se::dnn::VersionInfo dnn_version,
                                                                 const se::SemanticVersion& toolkit_version) {
-        return absl::OkStatus(); // 原本的纯虚函数改为空实现
+        return absl::OkStatus();  // 原本的纯虚函数改为空实现
     }
 
     // TODO(timshen): Replace `debug_module` with some portable debug information
@@ -228,12 +228,12 @@ class NpuCompiler : public LLVMCompiler {
         const HloModuleConfig& module_config, llvm::Module* llvm_module,
         const stream_executor::DeviceDescription& device_description, bool relocatable, const HloModule* debug_module,
         const CompileOptions& options, std::optional<int> shard_number) {
-        return BackendCompileResult{}; // 原本的纯虚函数改为空实现
+        return BackendCompileResult{};  // 原本的纯虚函数改为空实现
     }
 
-    // Inserts and optimizes mandatory copies. Necessary for correctness.
-    absl::Status RunPreSchedulingCopyInsertion(HloModule& hlo_module, const se::DeviceDescription& device_description,
-                                               const GpuAliasInfo* alias_info);
+    // // Inserts and optimizes mandatory copies. Necessary for correctness.
+    // absl::Status RunPreSchedulingCopyInsertion(HloModule& hlo_module, const se::DeviceDescription& device_description,
+    //                                            const NpuAliasInfo* alias_info);
 
     virtual absl::StatusOr<std::vector<uint8_t>> LinkModules(
         const stream_executor::DeviceDescription& device_description, std::vector<std::vector<uint8_t>> modules,
@@ -258,7 +258,7 @@ class NpuCompiler : public LLVMCompiler {
     // Returns the LLVM command line options that we use for compilation.
     // THey need to be set globally whenever we call into LLVM.
     virtual std::vector<std::string> GetLLVMCommandLineOptions(const DebugOptions& debug_options) {
-        return {}; // 原本的纯虚函数改为空实现
+        return {};  // 原本的纯虚函数改为空实现
     }
 
     // A MLIR context that can be used by pre-codegen passes. For codegen, we will

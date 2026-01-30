@@ -180,6 +180,7 @@
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
+#include "xla/xla_npu/service/npu_ir_emission_utils.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -231,7 +232,7 @@ std::unique_ptr<NpuIrEmitterUnnested> NpuIrEmitterUnnested::Create(NpuIrEmitterC
 }
 
 absl::Status NpuIrEmitterUnnested::EmitConstant(const HloConstantInstruction* instr) {
-    TF_ASSIGN_OR_RETURN(DenseDataIntermediate content, LiteralToXlaFormat(instr->literal()));
+    TF_ASSIGN_OR_RETURN(NpuDenseDataIntermediate content, NpuLiteralToXlaFormat(instr->literal()));
 
     int element_bytes = primitive_util::ByteWidth(instr->literal().shape().element_type());
     TF_RET_CHECK(content.span().size() % element_bytes == 0);
@@ -882,7 +883,8 @@ absl::Status NpuIrEmitterUnnested::EmitNpuAclnnThunk(const HloInstruction* instr
     TF_ASSIGN_OR_RETURN(auto kernel_arguments,
                         emitters::KernelArguments::Create(ir_emitter_context_->buffer_assignment(),
                                                           NpuConstant::GetDefaultBufferAlignment(), instr));
-    TF_ASSIGN_OR_RETURN(const std::string fingerprint, FingerprintWithBackendConfig<GpuBackendConfig>(*instr));
+    // TF_ASSIGN_OR_RETURN(const std::string fingerprint, FingerprintWithBackendConfig<GpuBackendConfig>(*instr));
+    const std::string fingerprint = "";
     // check if sdpa dropout is enabled
     std::optional<int64_t> dropout_seed = std::nullopt;
     // if (MHACallHasDropout(instr->custom_call_target())) {
@@ -903,7 +905,7 @@ absl::Status NpuIrEmitterUnnested::EmitNpuAclnnThunk(const HloInstruction* instr
 
 absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSliceForHlo(const HloInstruction* instr,
                                                                                        const ShapeIndex& index) const {
-    return xla::gpu::GetAllocationSlice(ir_emitter_context_->buffer_assignment(), instr, index);
+    return NpuGetAllocationSlice(ir_emitter_context_->buffer_assignment(), instr, index);
 }
 
 // absl::Status NpuIrEmitterUnnested::EmitCubDeviceRadixSort(const HloCustomCallInstruction* instr) {
@@ -1335,8 +1337,8 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 // }
 
 absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr) {
-    const se::DeviceDescription& device_info = ir_emitter_context_->gpu_device_info();
-    const HloFusionAnalysis fusion_analysis = HloFusionAnalysis::Create(*instr, device_info);
+    // const se::DeviceDescription& device_info = ir_emitter_context_->gpu_device_info();
+    // const HloFusionAnalysis fusion_analysis = HloFusionAnalysis::Create(*instr, device_info);
     VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:start";
     // std::unique_ptr<NpuFusionInterface> emitter = GetFusionEmitter(
     //     /*fusion_info=*/HloFusionInfo(
@@ -1350,7 +1352,8 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
 
     const NpuExecutionStreamAssignment& stream_assignment = ir_emitter_context_->execution_stream_assignment();
     for (std::unique_ptr<NpuThunk>& thunk : result.thunks) {
-        TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id, stream_assignment.GetSyncExecutionStreamId(instr));
+        TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id,
+                            stream_assignment.GetSyncExecutionStreamId(instr));
         thunk->set_execution_stream_id(execution_stream_id);
         AddThunkToThunkSequence(std::move(thunk));
     }
@@ -1380,7 +1383,8 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
 //     AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
 //         NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
 //         streams.destination_stream_id, streams.source_stream_id));
-//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id, stream_assignment.GetSyncExecutionStreamId(wrapped));
+//     TF_ASSIGN_OR_RETURN(NpuExecutionStreamId execution_stream_id,
+//     stream_assignment.GetSyncExecutionStreamId(wrapped));
 
 //     auto* custom_call = Cast<HloCustomCallInstruction>(wrapped);
 //     if (IsLegacyCublasMatmul(*wrapped)) {
@@ -2215,44 +2219,42 @@ std::vector<const HloInstruction*> GetRealDependencyInstructions(const HloInstru
 //     return absl::OkStatus();
 // }
 
-absl::StatusOr<std::vector<llvm_ir::IrArray>> NpuIrEmitterUnnested::BuildKernelThunkForNonFusionOp(
-    const HloInstruction* instr, const LaunchDimensions& launch_dimensions) {
-    return absl::UnimplementedError("NpuIrEmitterUnnested::BuildKernelThunkForNonFusionOp is not supported.");
+// absl::StatusOr<std::vector<llvm_ir::IrArray>> NpuIrEmitterUnnested::BuildKernelThunkForNonFusionOp(
+//     const HloInstruction* instr, const LaunchDimensions& launch_dimensions) {
+// std::string suggested_kernel_name(instr->name());
 
-    // std::string suggested_kernel_name(instr->name());
+// TF_ASSIGN_OR_RETURN(auto kernel_arguments,
+//                     emitters::KernelArguments::Create(ir_emitter_context_->buffer_assignment(),
+//                                                       GetDefaultBufferAlignment(), instr));
 
-    // TF_ASSIGN_OR_RETURN(auto kernel_arguments,
-    //                     emitters::KernelArguments::Create(ir_emitter_context_->buffer_assignment(),
-    //                                                       GetDefaultBufferAlignment(), instr));
+// VLOG(3) << "Generating (without reuse check): " << suggested_kernel_name;
 
-    // VLOG(3) << "Generating (without reuse check): " << suggested_kernel_name;
+// TF_ASSIGN_OR_RETURN(llvm::Function * kernel,
+//                     BuildKernelPrototype(*ir_emitter_context_, suggested_kernel_name, suggested_kernel_name,
+//                                          kernel_arguments, launch_dimensions, &b_));
 
-    // TF_ASSIGN_OR_RETURN(llvm::Function * kernel,
-    //                     BuildKernelPrototype(*ir_emitter_context_, suggested_kernel_name, suggested_kernel_name,
-    //                                          kernel_arguments, launch_dimensions, &b_));
+// AddThunkToThunkSequence(std::make_unique<KernelThunk>(
+//     NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
+//     kernel->getName().str(), kernel_arguments, launch_dimensions,
+//     /*cluster_dim=*/std::nullopt,
+//     /*shmem_bytes=*/0,
+//     /*tma_metadata=*/se::gpu::TmaMetadata()));
 
-    // AddThunkToThunkSequence(std::make_unique<KernelThunk>(
-    //     NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
-    //     kernel->getName().str(), kernel_arguments, launch_dimensions,
-    //     /*cluster_dim=*/std::nullopt,
-    //     /*shmem_bytes=*/0,
-    //     /*tma_metadata=*/se::gpu::TmaMetadata()));
+// std::vector<llvm_ir::IrArray> ir_arrays;
+// ir_arrays.reserve(kernel_arguments.args().size());
+// for (const auto& [kernel_argument, llvm_arg] : llvm::zip(kernel_arguments.args(), kernel->args())) {
+//     llvm::Type* ir_type = llvm_ir::ShapeToIrType(kernel_argument.shape(), llvm_arg.getContext());
+//     llvm_ir::IrArray ir_array(&llvm_arg, ir_type, kernel_argument.shape());
 
-    // std::vector<llvm_ir::IrArray> ir_arrays;
-    // ir_arrays.reserve(kernel_arguments.args().size());
-    // for (const auto& [kernel_argument, llvm_arg] : llvm::zip(kernel_arguments.args(), kernel->args())) {
-    //     llvm::Type* ir_type = llvm_ir::ShapeToIrType(kernel_argument.shape(), llvm_arg.getContext());
-    //     llvm_ir::IrArray ir_array(&llvm_arg, ir_type, kernel_argument.shape());
+//     if (!kernel_argument.written()) {
+//         ir_array.MarkInvariantOverWholeProgram(&llvm_arg.getContext());
+//     }
 
-    //     if (!kernel_argument.written()) {
-    //         ir_array.MarkInvariantOverWholeProgram(&llvm_arg.getContext());
-    //     }
+//     ir_arrays.push_back(ir_array);
+// }
 
-    //     ir_arrays.push_back(ir_array);
-    // }
-
-    // return ir_arrays;
-}
+// return ir_arrays;
+// }
 
 // absl::StatusOr<std::unique_ptr<NpuThunk>> NpuIrEmitterUnnested::BuildWhileThunk(const HloInstruction* instr,
 //                                                                                 const NpuThunk::ThunkInfo&

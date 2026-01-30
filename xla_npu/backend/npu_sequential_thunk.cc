@@ -14,11 +14,11 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "xla/backends/gpu/runtime/annotation.h"
+// #include "xla/backends/gpu/runtime/annotation.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
 #include "tsl/profiler/lib/scoped_annotation.h"
 #include "tsl/profiler/lib/traceme.h"
-#include "xla/backends/gpu/runtime/thunk.pb.h"
+// #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
@@ -68,11 +68,11 @@ absl::Status NpuSequentialThunk::Initialize(const InitializeParams& params) {
 }
 
 absl::Status NpuSequentialThunk::ExecuteOnStream(const ExecuteParams& params) {
-    std::optional<tsl::profiler::ScopedAnnotation> seq_annotation = GetKernelAnnotation(profile_annotation());
+    // std::optional<tsl::profiler::ScopedAnnotation> seq_annotation = GetKernelAnnotation(profile_annotation());
     for (const std::unique_ptr<NpuThunk>& thunk : thunks_) {
         tsl::profiler::TraceMe trace(thunk->profile_annotation());
 
-        std::optional<tsl::profiler::ScopedAnnotation> annotation = GetKernelAnnotation(thunk->profile_annotation());
+        // std::optional<tsl::profiler::ScopedAnnotation> annotation = GetKernelAnnotation(thunk->profile_annotation());
         if (params.mock_collectives && thunk->IsCollective()) {
             continue;
         }
@@ -109,29 +109,29 @@ absl::Status NpuSequentialThunk::TransformAllNestedThunks(
     return absl::OkStatus();
 }
 
-absl::StatusOr<ThunkProto> NpuSequentialThunk::ToProto() const {
-    ThunkProto proto;
-    *proto.mutable_thunk_info() = thunk_info().ToProto();
+// absl::StatusOr<ThunkProto> NpuSequentialThunk::ToProto() const {
+//     ThunkProto proto;
+//     *proto.mutable_thunk_info() = thunk_info().ToProto();
 
-    // This sets the oneof-type to the sequential thunk, even if the thunk list is
-    // empty.
-    proto.mutable_sequential_thunk();
-    for (const auto& thunk : thunks_) {
-        TF_ASSIGN_OR_RETURN(*proto.mutable_sequential_thunk()->add_thunks(), thunk->ToProto());
-    }
-    return proto;
-}
+//     // This sets the oneof-type to the sequential thunk, even if the thunk list is
+//     // empty.
+//     proto.mutable_sequential_thunk();
+//     for (const auto& thunk : thunks_) {
+//         TF_ASSIGN_OR_RETURN(*proto.mutable_sequential_thunk()->add_thunks(), thunk->ToProto());
+//     }
+//     return proto;
+// }
 
-absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> NpuSequentialThunk::FromProto(
-    ThunkInfo thunk_info, const SequentialThunkProto& thunk_proto, const Deserializer& deserializer) {
-    NpuThunkSequence thunk_sequence;
-    for (const auto& sub_thunk_proto : thunk_proto.thunks()) {
-        TF_ASSIGN_OR_RETURN(std::unique_ptr<NpuThunk> sub_thunk, deserializer(sub_thunk_proto));
-        thunk_sequence.push_back(std::move(sub_thunk));
-    }
+// absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> NpuSequentialThunk::FromProto(
+//     ThunkInfo thunk_info, const SequentialThunkProto& thunk_proto, const Deserializer& deserializer) {
+//     NpuThunkSequence thunk_sequence;
+//     for (const auto& sub_thunk_proto : thunk_proto.thunks()) {
+//         TF_ASSIGN_OR_RETURN(std::unique_ptr<NpuThunk> sub_thunk, deserializer(sub_thunk_proto));
+//         thunk_sequence.push_back(std::move(sub_thunk));
+//     }
 
-    return std::make_unique<NpuSequentialThunk>(std::move(thunk_info), std::move(thunk_sequence));
-}
+//     return std::make_unique<NpuSequentialThunk>(std::move(thunk_info), std::move(thunk_sequence));
+// }
 
 std::unique_ptr<NpuSequentialThunk> NpuSequentialThunk::FromThunk(std::unique_ptr<NpuThunk> thunk) {
     if (thunk->kind() == NpuThunk::kSequential) {

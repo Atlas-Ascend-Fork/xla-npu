@@ -15,21 +15,22 @@
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/buffer_value.h"
-#include "xla/service/gpu/alias_info.h"
+// #include "xla/service/gpu/alias_info.h"
 // #include "xla/service/gpu/execution_stream_assignment.h"
 // #include "xla/service/gpu/gpu_executable.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
-#include "xla/service/gpu/kernel_reuse_cache.pb.h"
+// #include "xla/service/gpu/kernel_reuse_cache.pb.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/util.h"
+#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
 
 namespace xla {
 namespace gpu {
@@ -45,7 +46,7 @@ struct NpuCompileModuleResults {
     absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo> output_info;
     Shape output_shape;
     std::string module_name;
-    CompilationCacheProto kernel_compilation_cache;
+    // CompilationCacheProto kernel_compilation_cache;
 
     // If true, the compiled module uses buffer allocations owned by
     // buffer_assignment. Otherwise the compiled module uses buffer allocations
@@ -58,7 +59,7 @@ struct NpuCompileModuleResults {
 absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     const HloModule* hlo_module, llvm::LLVMContext* llvm_context, const std::string& target_triple,
     const std::string& data_layout, const se::Platform* platform, const se::DeviceDescription& device_desc,
-    const GpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function,
+    const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function,
     bool split_constants_module = false);
 
 }  // namespace gpu

@@ -36,11 +36,11 @@ class NpuSequentialThunk : public NpuThunk {
     absl::Status TransformAllNestedThunks(
         absl::FunctionRef<absl::StatusOr<std::unique_ptr<NpuThunk>>(std::unique_ptr<NpuThunk>)> fn) override;
 
-    absl::StatusOr<ThunkProto> ToProto() const override;
+    // absl::StatusOr<ThunkProto> ToProto() const override;
 
-    static absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> FromProto(ThunkInfo thunk_info,
-                                                                         const SequentialThunkProto& thunk_proto,
-                                                                         const Deserializer& deserializer);
+    // static absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> FromProto(ThunkInfo thunk_info,
+    //                                                                      const SequentialThunkProto& thunk_proto,
+    //                                                                      const Deserializer& deserializer);
 
     // Converts a NpuThunk into a NpuSequentialThunk. If the input is already a
     // NpuSequentialThunk, the returned value is the downcasted input.

@@ -11,7 +11,7 @@
 #include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "xla/backends/gpu/runtime/print_buffer_contents.h"
+// #include "xla/backends/gpu/runtime/print_buffer_contents.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
 #include "xla/codegen/emitters/kernel_arguments.h"
 #include "xla/runtime/buffer_use.h"

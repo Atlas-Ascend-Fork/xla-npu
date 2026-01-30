@@ -287,8 +287,8 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
     // //   ```
     // absl::Status EmitSliceToDynamic(const HloCustomCallInstruction* instr);
 
-    absl::StatusOr<std::vector<llvm_ir::IrArray>> BuildKernelThunkForNonFusionOp(
-        const HloInstruction* instr, const LaunchDimensions& launch_dimensions);
+    // absl::StatusOr<std::vector<llvm_ir::IrArray>> BuildKernelThunkForNonFusionOp(
+    //     const HloInstruction* instr, const LaunchDimensions& launch_dimensions);
 
     // // Returns a WhileThunk that invokes thunk sequences for 'condition' and
     // // 'body' sub-computations of while instruction.

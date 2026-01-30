@@ -15,7 +15,7 @@
 #include "xla/codegen/emitters/kernel_arguments.h"
 #include "xla/service/buffer_assignment.h"
 // #include "xla/service/gpu/kernels/custom_kernel.h"
-#include "xla/service/gpu/launch_dimensions.h"
+// #include "xla/service/gpu/launch_dimensions.h"
 #include "xla/stream_executor/kernel.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
