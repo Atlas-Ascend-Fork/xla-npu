@@ -38,11 +38,10 @@ limitations under the License.
 #include "Dialect/AFIR/AFIR.h"
 
 ABSL_FLAG(std::string, input, "", "Input HLO file path");
-ABSL_FLAG(std::string, output, "", "Output MLIR file path (default: stdout)");
+ABSL_FLAG(std::string, output, "", "Output file path (default: stdout)");
 ABSL_FLAG(bool, preserve_names, true, "Preserve HLO instruction names in MLIR");
 ABSL_FLAG(bool, verify, true, "Verify generated MLIR module");
-ABSL_FLAG(bool, emit_afir, false,
-          "Emit AFIR dialect operations (experimental)");
+ABSL_FLAG(bool, emit_afir, false, "Emit AFIR dialect operations (experimental)");
 
 namespace xla {
 

@@ -26,29 +26,57 @@ cc_library(
     srcs = ["convert_to_afir.cc"],
     hdrs = ["convert_to_afir.h"],
     deps = [
+        "//xla:util",
+        "//xla/hlo/ir:hlo",
         "//xla/xla_npu/third_party:AFIRDialect",
         "//xla/xla_npu/third_party:AFIRHeaders",
-        "//xla/hlo/ir:hlo",
-        "//xla:util",
         "@com_google_absl//absl/strings",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:ArithDialect",
+        "@llvm-project//mlir:FuncDialect",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:MathDialect",
         "@llvm-project//mlir:Support",
     ],
     alwayslink = 1,
 )
 
-# Test library
-cc_test(
-    name = "convert_to_afir_test",
-    srcs = ["convert_to_afir_test.cc"],
+# AscIR backend library
+cc_library(
+    name = "ascir_backend_lib",
+    srcs = ["ascir_backend.cc"],
+    hdrs = ["ascir_backend.h"],
     deps = [
         ":convert_to_afir_lib",
+        "//xla:util",
         "//xla/hlo/ir:hlo",
-        "//xla/tests:hlo_test_base",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
+        "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
+        "//xla/xla_npu/third_party:AFIRHeaders",
+        "@com_google_absl//absl/strings",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Parser",
+        "@llvm-project//mlir:Pass",
+        "@python_3_10//:python_headers",
+    ],
+    alwayslink = 1,
+)
+
+# Binary test for AscIR backend
+cc_binary(
+    name = "ascir_backend_test",
+    srcs = ["ascir_backend_test.cc"],
+    linkopts = [
+        "-L$(PYTHON_LIB_DIR)",
+        "-lpython3.10",
+        "-Wl,-rpath,$(PYTHON_LIB_DIR)",
+    ],
+    deps = [
+        ":ascir_backend_lib",
+        "//xla:util",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/parser:hlo_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -58,9 +86,9 @@ cc_binary(
     srcs = ["hlo_to_afir_tool.cc"],
     deps = [
         ":convert_to_afir_lib",
-        "//xla/xla_npu/third_party:AFIRHeaders",
         "//xla/hlo/ir:hlo",
         "//xla/tools:hlo_module_loader",
+        "//xla/xla_npu/third_party:AFIRHeaders",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
     ],
