@@ -1,0 +1,80 @@
+# Copyright 2025 The OpenXLA Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache 2.0
+
+# ============================================================================
+# Ascend-MLIR Headers
+# ============================================================================
+
+cc_library(
+    name = "AFIRHeaders",
+    hdrs = glob([
+        "Ascend-MLIR/include/Dialect/AFIR/**/*.h",
+        "Ascend-MLIR/include/Dialect/AFIR/**/*.hpp",
+        "Ascend-MLIR/include/Utils/*.h",
+        "Ascend-MLIR/include/Utils/*.hpp",
+        "Ascend-MLIR/include/Interface/*.h",
+        "Ascend-MLIR/include/Interface/*.hpp",
+        "Ascend-MLIR/build/include/Dialect/AFIR/**/*.inc",
+        "Ascend-MLIR/build/include/Interface/*.inc",
+        "Ascend-MLIR/build/include/Conversion/*.inc",
+        "Ascend-MLIR/build/externals/pyasc/include/ascir/**/*.inc",
+    ]),
+    includes = [
+        "Ascend-MLIR/build/externals/pyasc/include",
+        "Ascend-MLIR/build/include",
+        "Ascend-MLIR/externals/pyasc/include",
+        "Ascend-MLIR/include",
+    ],
+)
+
+# ============================================================================
+# Ascend-MLIR Libraries
+# ============================================================================
+
+cc_library(
+    name = "MLIRAsc",
+    srcs = ["Ascend-MLIR/build/lib/libMLIRAsc.a"],
+    hdrs = glob(["Ascend-MLIR/externals/pyasc/include/ascir/**/*.inc"]),
+    includes = ["Ascend-MLIR/externals/pyasc/include"],
+    deps = [
+        ":AFIRHeaders",
+    ],
+)
+
+cc_library(
+    name = "AFIRDialect",
+    srcs = ["Ascend-MLIR/build/lib/libAFIRDialect.a"],
+    hdrs = glob([
+        "Ascend-MLIR/build/include/Dialect/AFIR/*.inc",
+        "Ascend-MLIR/build/include/Interface/*.inc",
+    ]),
+    includes = ["Ascend-MLIR/build/include"],
+    deps = [
+        ":AFIRHeaders",
+        ":AFIRUtils",
+        ":MLIRAsc",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Support",
+    ],
+)
+
+cc_library(
+    name = "AFIRUtils",
+    srcs = ["Ascend-MLIR/build/lib/libAFIRUtils.a"],
+    deps = [":AFIRHeaders"],
+)

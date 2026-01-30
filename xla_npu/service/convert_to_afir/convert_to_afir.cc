@@ -22,6 +22,7 @@ limitations under the License.
 #include "absl/strings/str_cat.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Location.h"
@@ -82,6 +83,10 @@ class HloToAfirConverter {
   absl::StatusOr<mlir::Value> ConvertMultiplyOp(
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertDivideOp(
+      const HloInstruction* instruction);
+  absl::StatusOr<mlir::Value> ConvertBroadcastOp(
+      const HloInstruction* instruction);
+  absl::StatusOr<mlir::Value> ConvertTanhOp(
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertFusionOp(
       const HloInstruction* instruction);
@@ -299,6 +304,12 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertInstruction(
     case HloOpcode::kDivide:
       return ConvertDivideOp(instruction);
 
+    case HloOpcode::kBroadcast:
+      return ConvertBroadcastOp(instruction);
+
+    case HloOpcode::kTanh:
+      return ConvertTanhOp(instruction);
+
     case HloOpcode::kFusion:
       return ConvertFusionOp(instruction);
 
@@ -343,15 +354,77 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(
   switch (literal.shape().element_type()) {
     case F32: {
       float value = literal.GetFirstElement<float>();
-      auto attr = builder_.getF32FloatAttr(value);
-      auto op = builder_.create<mlir::arith::ConstantOp>(loc, attr);
-      return op.getResult();
+      auto tensor_type = mlir::cast<mlir::RankedTensorType>(result_type);
+
+      if (options_.emit_afir_dialect) {
+        // Create identity indexing map
+        int64_t rank = tensor_type.getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+        auto indexing_maps_attr = CreateIndexingMaps({identity_map});
+
+        // Create output attribute
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Create AFIR scalar constant with value attribute
+        auto value_attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto scalar_op = builder_.create<mlir::afir::ScalarOp>(
+            loc,
+            result_type,
+            indexing_maps_attr,
+            nullptr,  // loop_axis
+            builder_.getDictionaryAttr({}),  // ir_attr_def
+            nullptr,  // tmp_buffers
+            outputs_array
+        );
+        // Set the value attribute
+        scalar_op->setAttr("value", value_attr);
+        return scalar_op.getResult();
+      } else {
+        // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)
+        auto attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto op = builder_.create<mlir::arith::ConstantOp>(loc, result_type, attr);
+        return op.getResult();
+      }
     }
     case S32: {
       int32_t value = literal.GetFirstElement<int32_t>();
-      auto attr = builder_.getI32IntegerAttr(value);
-      auto op = builder_.create<mlir::arith::ConstantOp>(loc, attr);
-      return op.getResult();
+      auto tensor_type = mlir::cast<mlir::RankedTensorType>(result_type);
+
+      if (options_.emit_afir_dialect) {
+        // Create identity indexing map
+        int64_t rank = tensor_type.getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+        auto indexing_maps_attr = CreateIndexingMaps({identity_map});
+
+        // Create output attribute
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Create AFIR scalar constant with value attribute
+        auto value_attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto scalar_op = builder_.create<mlir::afir::ScalarOp>(
+            loc,
+            result_type,
+            indexing_maps_attr,
+            nullptr,  // loop_axis
+            builder_.getDictionaryAttr({}),  // ir_attr_def
+            nullptr,  // tmp_buffers
+            outputs_array
+        );
+        // Set the value attribute
+        scalar_op->setAttr("value", value_attr);
+        return scalar_op.getResult();
+      } else {
+        // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)
+        auto attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto op = builder_.create<mlir::arith::ConstantOp>(loc, result_type, attr);
+        return op.getResult();
+      }
     }
     default:
       return absl::UnimplementedError(
@@ -530,6 +603,129 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertDivideOp(
   // Use arith.div as fallback
   auto div_op = builder_.create<mlir::arith::DivSIOp>(loc, lhs, rhs);
   return div_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertTanhOp(
+    const HloInstruction* instruction) {
+  if (instruction->operand_count() != 1) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Tanh operation must have 1 operand, got ",
+                    instruction->operand_count()));
+  }
+
+  mlir::Location loc = ConvertLocation(instruction);
+  mlir::Value operand = value_map_[instruction->operand(0)];
+  mlir::Type result_type = ConvertShape(instruction->shape());
+
+  // Use afir.tanh when emit_afir_dialect is true
+  if (options_.emit_afir_dialect) {
+    int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+    auto identity_map = GetIdentityAffineMap(rank);
+
+    auto output_attr = CreateDefaultOutputAttr(result_type);
+    llvm::SmallVector<mlir::Attribute> output_attrs;
+    output_attrs.push_back(output_attr);
+    auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+    // Build indexing_maps array (2 maps: operand, result)
+    llvm::SmallVector<mlir::AffineMap> maps;
+    maps.push_back(identity_map);  // operand
+    maps.push_back(identity_map);  // result
+    auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+    // Create TanhOp with all required attributes
+    auto tanh_op = builder_.create<mlir::afir::TanhOp>(
+        loc,
+        result_type,
+        operand,
+        indexing_maps_attr,
+        nullptr,  // loop_axis (use default)
+        builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
+        nullptr,  // tmp_buffers (use default)
+        outputs_array
+    );
+    return tanh_op.getResult();
+  }
+
+  // Use math.tanh as fallback
+  auto tanh_op = builder_.create<mlir::math::TanhOp>(loc, operand);
+  return tanh_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertBroadcastOp(
+    const HloInstruction* instruction) {
+  if (instruction->operand_count() != 1) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Broadcast operation must have 1 operand, got ",
+                    instruction->operand_count()));
+  }
+
+  mlir::Location loc = ConvertLocation(instruction);
+  mlir::Value operand = value_map_[instruction->operand(0)];
+  mlir::Type result_type = ConvertShape(instruction->shape());
+
+  // Use afir.broadcast when emit_afir_dialect is true
+  if (options_.emit_afir_dialect) {
+    auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+    auto operand_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(operand.getType());
+
+    int64_t result_rank = result_tensor_type.getRank();
+    int64_t operand_rank = operand_tensor_type.getRank();
+
+    // Get broadcast dimensions from HLO instruction
+    const auto& broadcast_dims = instruction->dimensions();
+
+    // Build indexing maps for broadcast
+    // For broadcast, we need to map from result dimensions to operand dimensions
+    llvm::SmallVector<mlir::AffineExpr> operand_exprs;
+    llvm::SmallVector<mlir::AffineExpr> result_exprs;
+
+    // Result map: identity (use all dimensions)
+    for (int64_t i = 0; i < result_rank; ++i) {
+      result_exprs.push_back(builder_.getAffineDimExpr(i));
+    }
+    auto result_map = mlir::AffineMap::get(result_rank, 0, result_exprs, context_);
+
+    // Operand map: map result dims to operand dims based on broadcast_dims
+    // For example, if broadcasting from (2,) to (3, 2) with broadcast_dims={1},
+    // then operand map should be (d0, d1) -> (d1)
+    llvm::SmallVector<mlir::AffineExpr> exprs;
+    for (int64_t i = 0; i < operand_rank; ++i) {
+      // Find which result dimension corresponds to this operand dimension
+      int64_t result_dim = broadcast_dims[i];
+      exprs.push_back(builder_.getAffineDimExpr(result_dim));
+    }
+    auto operand_map = mlir::AffineMap::get(result_rank, 0, exprs, context_);
+
+    // Build outputs attribute
+    auto output_attr = CreateDefaultOutputAttr(result_type);
+    llvm::SmallVector<mlir::Attribute> output_attrs;
+    output_attrs.push_back(output_attr);
+    auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+    // Build indexing_maps array (2 maps: operand, result)
+    llvm::SmallVector<mlir::AffineMap> maps;
+    maps.push_back(operand_map);  // operand (broadcasted)
+    maps.push_back(result_map);   // result
+    auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+    // Create BroadcastOp with all required attributes
+    auto broadcast_op = builder_.create<mlir::afir::BroadcastOp>(
+        loc,
+        result_type,
+        operand,
+        indexing_maps_attr,
+        nullptr,  // loop_axis (use default)
+        builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
+        nullptr,  // tmp_buffers (use default)
+        outputs_array
+    );
+    return broadcast_op.getResult();
+  }
+
+  // Fallback: Broadcast is only supported with AFIR dialect
+  return absl::UnimplementedError(
+      "Broadcast operation requires emit_afir_dialect=true");
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertFusionOp(

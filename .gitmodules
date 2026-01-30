@@ -1,0 +1,4 @@
+[submodule "xla_npu/third_party/Ascend-MLIR"]
+	path = xla_npu/third_party/Ascend-MLIR
+	url = git@gitcode.com:niuyuhu/Ascend-MLIR.git
+	branch = dev
