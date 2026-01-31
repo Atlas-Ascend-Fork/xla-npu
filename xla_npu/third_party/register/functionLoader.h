@@ -18,7 +18,8 @@ class FunctionLoader {
     /**
         ctr
         */
-    explicit FunctionLoader(const std::string& filename, int flags = RTLD_LAZY);
+    explicit FunctionLoader(const std::string& file_name, const std::string& file_name_suffix = ".so",
+                            int flags = RTLD_LAZY);
     /**
         dectr
         */

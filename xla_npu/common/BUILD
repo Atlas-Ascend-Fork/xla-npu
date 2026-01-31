@@ -25,6 +25,18 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_config",
+    srcs = ["npu_config.cc"],
+    hdrs = ["npu_config.h"],
+    deps = [
+        ":npu_constant",
+        ":npu_log",
+
+        "//xla/tsl/util:env_var",
+    ],
+)
+
+cc_library(
     name = "npu_operation",
     srcs = ["npu_operation.cc"],
     hdrs = ["npu_operation.h"],

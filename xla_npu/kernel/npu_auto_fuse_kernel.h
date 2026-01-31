@@ -23,8 +23,8 @@ class NpuAutoFuseKernel : public stream_executor::Kernel {
 
     absl::Status Load();
 
-    std::string GetTilingFileName() const { return ""; }
-    std::string GetKernelFileName() const { return ""; }
+    std::string GetTilingFileName() const { return "libhost_tiling"; }
+    std::string GetKernelFileName() const { return "kernel"; }
 
    private:
     absl::Status Launch(const stream_executor::ThreadDim& thread_dims, const stream_executor::BlockDim& block_dims,

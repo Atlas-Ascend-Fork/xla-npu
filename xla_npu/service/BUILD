@@ -643,8 +643,10 @@ cc_library(
         ":npu_execution_stream_assignment",
         ":npu_compile_module_to_llvm_ir",
         ":npu_ir_emitter_unnested",
+        "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/service/transform:npu_super_fusion",
 
         "//xla/service/gpu:alias_info",
         # "//xla/service/gpu:compile_module_to_llvm_ir",

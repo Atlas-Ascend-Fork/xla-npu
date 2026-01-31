@@ -2,10 +2,12 @@
 #define COMMON_NPU_CONSTANT_H_
 
 #include <string>
+
 #include "xla/codegen/emitters/kernel_arguments.h"
 
 namespace xla {
 
+// npu常量配置类
 class NpuConstant {
    public:
     static const std::string platformName;

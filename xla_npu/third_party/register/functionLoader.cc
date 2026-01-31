@@ -4,8 +4,8 @@
 
 namespace npu {
 
-FunctionLoader::FunctionLoader(const std::string& name, int flags) {
-    this->fileName = name + ".so";
+FunctionLoader::FunctionLoader(const std::string& file_name, const std::string& file_name_suffix, int flags) {
+    this->fileName = file_name + file_name_suffix;
     this->flags = flags;
 }
 

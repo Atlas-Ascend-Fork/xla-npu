@@ -56,12 +56,14 @@ try:
     # print(f"Created JAX array on device: {x.devices()}")
     # print(x)
 
+
     # x = np.ones((1024, 1024), dtype=np.float32)
     x = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
     # x = np.array([1.0, 2.0, 3.0, 4.0])
     print(f"input array: {x}")
 
-    func = jax.jit(lambda x: jax.nn.gelu(x))
+    func = jax.jit(lambda x: jax.nn.tanh(x))
+    # func = jax.jit(lambda x: jax.nn.gelu(x))
     # func = jax.jit(lambda x: x + 2)
     y = func(x)
     result = y.block_until_ready()

@@ -7,6 +7,7 @@
 
 namespace xla {
 
+// npu硬件交互接口封装类
 class NpuOperation {
    public:
     enum class MemcpyType { H2D, D2H };

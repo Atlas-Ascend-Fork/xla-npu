@@ -9,13 +9,17 @@
 #include "absl/strings/string_view.h"
 #include "xla/stream_executor/kernel_spec.h"
 #include "xla/stream_executor/launch_dim.h"
+#include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 
 namespace xla::gpu {
 
-NpuCustomKernel::NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
+NpuCustomKernel::NpuCustomKernel(NpuKernelConfig npu_kernel_config, std::string name, se::BlockDim block_dims,
                                  size_t shared_memory_bytes)
-    : name_(std::move(name)),
-      kernel_spec_(std::move(kernel_spec)),
+    : npu_kernel_config_(std::move(npu_kernel_config)),
+      name_(std::move(name)),
+      // auto fusion算子执行暂不依赖这里设置的arity(CreateInProcessSymbolSpec接口倒数第二个参数)表示的算子参数个数
+      kernel_spec_(std::move(stream_executor::KernelLoaderSpec::CreateInProcessSymbolSpec(
+          static_cast<void*>(&npu_kernel_config_), name, 0, nullptr))),
       block_dims_(block_dims),
       shared_memory_bytes_(shared_memory_bytes) {}
 
