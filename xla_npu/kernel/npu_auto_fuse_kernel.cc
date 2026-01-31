@@ -18,8 +18,8 @@ absl::Status NpuAutoFuseKernel::Load() {
     // 注册lib
     const std::string& tiling_file_path = tsl::io::JoinPath(load_file_base_dir_, GetTilingFileName());
     const std::string& kernel_file_path = tsl::io::JoinPath(load_file_base_dir_, GetKernelFileName());
-    registry[GetTilingFileName()] = std::move(std::make_unique<npu::FunctionLoader>(tiling_file_path));
-    registry[GetKernelFileName()] = std::move(std::make_unique<npu::FunctionLoader>(kernel_file_path));
+    registry[GetTilingFileName()] = std::move(std::make_unique<npu::FunctionLoader>(tiling_file_path, ".so"));
+    registry[GetKernelFileName()] = std::move(std::make_unique<npu::FunctionLoader>(kernel_file_path, ".bin"));
 
     // 注册func
     registry[GetTilingFileName()]->Set(get_tiling_size_func_name);

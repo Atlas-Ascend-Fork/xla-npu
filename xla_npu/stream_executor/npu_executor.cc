@@ -38,7 +38,7 @@
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
 #include "xla/xla_npu/kernel/npu_auto_fuse_kernel.h"
-#include "xla/xla_npu/kernel/npu_kernel_config.h"
+#include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
@@ -65,7 +65,8 @@ absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(const KernelLoad
     auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(spec.in_process_symbol().value().symbol);
     switch (npu_kernel_config_ptr->npu_kernel_type) {
         case xla::NpuKernelConfig::NpuKernelType::FUSION:
-            auto kernel = std::make_unique<xla::NpuAutoFuseKernel>("", this);
+            auto kernel =
+                std::make_unique<xla::NpuAutoFuseKernel>("/home/z00808263/code/xla/npu_output/af_ir_compile/", this);
             TF_RETURN_IF_ERROR(kernel->Load());
             return std::move(kernel);
     }

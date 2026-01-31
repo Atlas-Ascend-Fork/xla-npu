@@ -8,10 +8,19 @@ package(
 )
 
 cc_library(
+    name = "npu_kernel_config",
+    hdrs = ["npu_kernel_config.h"],
+    deps = [
+    ],
+)
+
+cc_library(
     name = "npu_custom_kernel",
     srcs = ["npu_custom_kernel.cc"],
     hdrs = ["npu_custom_kernel.h"],
     deps = [
+        ":npu_kernel_config",
+
         "//xla/stream_executor:kernel_spec",
         "//xla/stream_executor:launch_dim",
         "@com_google_absl//absl/strings:str_format",

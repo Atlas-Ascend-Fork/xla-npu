@@ -23,6 +23,7 @@
 
 namespace xla {
 
+// npu日志打印控制类
 class NpuLog {
    public:
     enum class Level { DEBUG, INFO, WARN, ERROR };

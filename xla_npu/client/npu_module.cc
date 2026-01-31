@@ -2,6 +2,7 @@
 
 #include "xla/service/computation_placer.h"
 #include "xla/stream_executor/platform_manager.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/service/npu_compiler.h"
@@ -74,6 +75,8 @@ static void RegisterNpuComputationPlacer() {
 }
 
 void InitNpuSubModule() {
+    NpuConfig::GetInstance().Init();  // TODO 判断返回值
+
     RegisterNpuPlatform();
     RegisterNpuCompiler();
     RegisterNpuTransferManager();

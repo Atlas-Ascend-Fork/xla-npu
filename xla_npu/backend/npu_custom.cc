@@ -75,8 +75,8 @@
 #include "xla/xla_npu/backend/npu_fusion_emitter.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
+#include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -1223,13 +1223,10 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
 
     NpuKernelConfig npu_kernel_config;
     npu_kernel_config.npu_kernel_type = NpuKernelConfig::NpuKernelType::FUSION;
-    size_t arity = 0;  // auto fusion算子执行暂不依赖这里设置的这个参数个数
     const std::string name = "auto_fuse_kernel";
-    auto kernel_spec = stream_executor::KernelLoaderSpec::CreateInProcessSymbolSpec(
-        static_cast<void*>(&npu_kernel_config), name, arity, nullptr);
     se::BlockDim block_dims(1);
     size_t shared_memory_bytes = 0;
-    NpuCustomKernel kernel(name, kernel_spec, block_dims, shared_memory_bytes);
+    NpuCustomKernel kernel(npu_kernel_config, name, block_dims, shared_memory_bytes);
     TF_ASSIGN_OR_RETURN(auto thunk, BuildCustomKernelThunkForFusion(ir_emitter_context, fusion, std::move(kernel)));
 
     NpuFusionEmissionResult result;

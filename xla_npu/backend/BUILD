@@ -214,9 +214,9 @@ cc_library(
         ":npu_thunk",
         ":npu_fusion_emitter",
         "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/kernel:npu_kernel_config",
         "//xla/xla_npu/service:npu_ir_emitter_context",
         "//xla/xla_npu/service/kernel:npu_custom_kernel",
+        "//xla/xla_npu/service/kernel:npu_kernel_config",
 
         "//xla:literal",
         "//xla:literal_util",

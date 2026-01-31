@@ -12,6 +12,7 @@ cc_library(
     srcs = ["npu_module.cc"],
     hdrs = ["npu_module.h"],
     deps = [
+        "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/service:npu_compiler",

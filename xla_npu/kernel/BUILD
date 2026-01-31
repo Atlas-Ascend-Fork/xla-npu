@@ -8,13 +8,6 @@ package(
 )
 
 cc_library(
-    name = "npu_kernel_config",
-    hdrs = ["npu_kernel_config.h"],
-    deps = [
-    ],
-)
-
-cc_library(
     name = "npu_auto_fuse_kernel",
     srcs = ["npu_auto_fuse_kernel.cc"],
     hdrs = ["npu_auto_fuse_kernel.h"],

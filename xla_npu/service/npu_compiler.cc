@@ -301,6 +301,7 @@
 #endif  // PLATFORM_GOOGLE
 
 #include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
@@ -309,6 +310,7 @@
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
+#include "xla/xla_npu/service/transform/npu_super_fusion.h"
 
 namespace xla {
 namespace gpu {
@@ -936,6 +938,13 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
                            .Run(hlo_module, {HloInstruction::kMainExecutionThread})
                            .status());
 
+    /* 实现所有instruction融合成一条语句(仅用于调试) 开始 */
+    // Add super fusion pass for NPU
+    HloPassPipeline super_fusion_pipeline("super-fusion");
+    super_fusion_pipeline.AddPass<NpuSuperFusion>();
+    TF_RETURN_IF_ERROR(super_fusion_pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status());
+    /* 实现所有instruction融合成一条语句(仅用于调试) 结束 */
+
     if (VLOG_IS_ON(2)) {
         HloFusionStatsVisitor stats;
         TF_RETURN_IF_ERROR(hlo_module->entry_computation()->Accept(&stats));
@@ -996,7 +1005,8 @@ void AddDoubleBufferingPasses(const HloModule& module, HloPassPipeline& pipeline
 //                                            opts.xla_gpu_enable_all_gather_combine_by_dim(),
 //                                            /*combine_different_dtypes=*/true);
 //     pipeline.AddPass<GpuAllReduceCombiner>(kDefaultAllReduceCombineThreshold,
-//                                            opts.xla_gpu_all_reduce_combine_threshold_bytes(), kCombineThresholdCount);
+//                                            opts.xla_gpu_all_reduce_combine_threshold_bytes(),
+//                                            kCombineThresholdCount);
 //     pipeline.AddPass<GpuReduceScatterCombiner>(
 //         kDefaultReduceScatterCombineThreshold, opts.xla_gpu_reduce_scatter_combine_threshold_bytes(),
 //         kCombineThresholdCount, opts.xla_gpu_enable_reduce_scatter_combine_by_dim());
@@ -1686,7 +1696,7 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //                           autotune_results);
     // }
 
-    // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo pass");
+    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run no hlo pass");
 
     // bool is_deviceless = true;
     // const se::DeviceDescription& device_description = gpu_target_config.device_description;
@@ -1694,12 +1704,16 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
     //                                      gpu_target_config, alias_info.get()));
 
-    // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
-    //     /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
-    //     /*default_thread_pool=*/options.thread_pool,
-    //     /*default_parallelism=*/tsl::port::MaxParallelism());
-    // TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
-    //                                    ShapeSizeBytesFunction(), &symbolic_expr_context_));
+    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
+        MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
+            /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
+            /*default_thread_pool=*/options.thread_pool,
+            /*default_parallelism=*/tsl::port::MaxParallelism());
+        TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
+                                           ShapeSizeBytesFunction(), &symbolic_expr_context_));
+        NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
+    }
+
     // HloPassPipeline pipeline("autotune-fusion-emitters");
     // TF_RETURN_IF_ERROR(AddFusionAutotuningPass(&pipeline, module.get(), options, thread_pool.get_mutable(),
     // stream_exec,
@@ -1711,8 +1725,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     // HloPassPipeline& pipeline = main_pipeline.AddPass<HloPassPipeline>("fusion-wrapper");
     // pipeline.AddPass<FusionWrapper>(gpu_device_info);
     // TF_RETURN_IF_ERROR(main_pipeline.Run(module.get()).status());
-
-    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
 
     // return absl::InternalError("npu fusion not implements");
 

@@ -13,6 +13,7 @@
 
 namespace xla {
 
+// npu常用工具函数类
 class NpuTool {
    public:
     static HloPrintOptions GetDetailedPrintOptions() {
