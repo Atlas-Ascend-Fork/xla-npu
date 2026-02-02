@@ -21,7 +21,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 // Abstract base class for translating HLO graphs to LLVM IR for a GPU.
 //
@@ -119,7 +118,6 @@ class NpuIrEmitter : public DfsHloVisitorWithDefault, public IrBuilderMixin<NpuI
     void BindFusionArguments(const HloInstruction* fusion, FusedIrEmitter* fused_emitter);
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_IR_EMITTER_H_

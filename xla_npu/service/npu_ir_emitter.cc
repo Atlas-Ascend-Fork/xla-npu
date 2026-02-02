@@ -28,8 +28,6 @@
 
 namespace xla {
 
-namespace gpu {
-
 NpuIrEmitter::NpuIrEmitter(NpuIrEmitterContext* ir_emitter_context, bool is_nested)
     : ir_emitter_context_(ir_emitter_context),
       module_(ir_emitter_context->llvm_module()),
@@ -189,5 +187,4 @@ void NpuIrEmitter::BindFusionArguments(const HloInstruction* fusion, FusedIrEmit
     }
 }
 
-}  // namespace gpu
 }  // namespace xla

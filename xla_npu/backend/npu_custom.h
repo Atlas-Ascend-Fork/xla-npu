@@ -10,7 +10,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 // A wrapper for fusions implemented using the mechanism in
 // xla/service/gpu/kernels. See custom_kernel_fusion.h in that folder for
@@ -60,7 +59,6 @@ class NpuCustomFusion : public NpuFusionInterface {
 //     const CallGraph& call_graph_;
 // };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_CUSTOM_H_

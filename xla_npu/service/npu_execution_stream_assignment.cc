@@ -23,8 +23,10 @@
 #include "xla/side_effect_util.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
 
-namespace xla::gpu {
+namespace xla {
+
 namespace {
+
 bool is_async_collective(HloInstruction* instruction) {
     auto status_or_is_async_collective = IsAsyncCollective(instruction);
     CHECK(status_or_is_async_collective.ok()) << status_or_is_async_collective.status();
@@ -45,6 +47,7 @@ std::optional<HloInstruction*> get_async_start_instruction(HloInstruction* instr
     }
     return std::nullopt;
 }
+
 }  // namespace
 
 NpuExecutionStreamAssignment::NpuExecutionStreamAssignment(const HloModule* module,
@@ -178,11 +181,13 @@ NpuExecutionStreamAssignment::NpuExecutionStreamAssignment(const HloModule* modu
 }
 
 namespace {
+
 absl::Status StreamNotFoundError(const HloInstruction* instruction) {
     return absl::NotFoundError(absl::StrCat("No NpuExecutionStreamId found for ", instruction->ToString(),
                                             "; this may happen if the Computation is not reachable from the module's "
                                             "entrypoint, or if it's only reachable through a embedded calls."));
 }
+
 }  // namespace
 
 absl::StatusOr<NpuExecutionStreamId> NpuExecutionStreamAssignment::GetSyncExecutionStreamId(
@@ -206,4 +211,4 @@ NpuExecutionStreamAssignment::GetAsyncExecutionStreamIds(const HloInstruction* i
     return streams->second;
 }
 
-}  // namespace xla::gpu
+}  // namespace xla

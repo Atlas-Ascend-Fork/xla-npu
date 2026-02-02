@@ -47,7 +47,6 @@
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
-namespace gpu {
 
 // GPU-targeting implementation of the XLA Executable interface.
 //
@@ -316,7 +315,6 @@ class NpuExecutable : public Executable {
 absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGetOutputInfo(
     const HloModule& hlo_module, const BufferAssignment& assignment);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_EXECUTABLE_H_

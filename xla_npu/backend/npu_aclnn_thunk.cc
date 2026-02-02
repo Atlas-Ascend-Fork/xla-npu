@@ -29,7 +29,6 @@
 #include "xla/xla_npu/third_party/register/aclnnopInterface.h"
 
 namespace xla {
-namespace gpu {
 
 static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape>& param_shapes) {
     switch (op_code) {
@@ -314,5 +313,4 @@ absl::Status NpuAclnnThunk::PrintOutputTensor(const NpuBufferAllocations* alloca
     return absl::OkStatus();
 }
 
-}  // namespace gpu
 }  // namespace xla

@@ -23,7 +23,6 @@
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
 namespace xla {
-namespace gpu {
 
 // NpuCustomKernelThunk loads and executes kernels defined by a custom kernel
 // (which in practice means hand written CUDA C++ kernel), instead of a kernel
@@ -68,7 +67,6 @@ class NpuCustomKernelThunk : public NpuThunk {
     absl::flat_hash_map<se::StreamExecutor*, std::unique_ptr<se::Kernel>> kernel_cache_ ABSL_GUARDED_BY(mutex_);
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_

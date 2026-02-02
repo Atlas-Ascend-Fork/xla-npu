@@ -14,7 +14,6 @@
 #include "xla/stream_executor/device_memory_allocator.h"
 
 namespace xla {
-namespace gpu {
 
 // A thread-compatible class that encapsulates the base addresses of the
 // allocated device buffers.
@@ -71,7 +70,6 @@ class NpuBufferAllocations {
     se::DeviceMemoryAllocator* memory_allocator_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_BUFFER_ALLOCATIONS_H_

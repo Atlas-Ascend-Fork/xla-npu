@@ -9,7 +9,6 @@
 #include "xla/stream_executor/device_memory.h"
 
 namespace xla {
-namespace gpu {
 
 absl::Status NpuBufferAllocations::TearDown(const std::set<se::DeviceMemoryBase>& live_addresses,
                                             absl::Span<const BufferAllocation* const> allocations) {
@@ -60,5 +59,4 @@ se::DeviceMemoryBase NpuBufferAllocations::GetDeviceAddress(const BufferAllocati
     return base.GetByteSlice(buffer_slice.offset(), buffer_slice.size());
 }
 
-}  // namespace gpu
 }  // namespace xla

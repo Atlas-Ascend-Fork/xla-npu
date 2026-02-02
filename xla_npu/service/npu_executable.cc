@@ -91,7 +91,6 @@
 #include "xla/xla_npu/service/npu_stream_executor_util.h"
 
 namespace xla {
-namespace gpu {
 
 namespace {
 
@@ -1144,7 +1143,5 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
 
 //     return Create(std::move(params));
 // }
-
-}  // namespace gpu
 
 }  // namespace xla

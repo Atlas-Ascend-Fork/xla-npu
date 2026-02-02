@@ -80,7 +80,7 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
+
 namespace {
 
 // constexpr unsigned kGEMMOutputBufferIndex = 0;
@@ -1264,5 +1264,4 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
 //     return EmitCustomCall(ir_emitter_context, adaptor, fusion, custom_call, call_graph_);
 // }
 
-}  // namespace gpu
 }  // namespace xla

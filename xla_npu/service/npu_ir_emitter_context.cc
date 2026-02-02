@@ -24,7 +24,6 @@
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
-namespace gpu {
 
 void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_element, absl::string_view symbol_name,
                                         int allocation_idx, NpuDenseDataIntermediate content, llvm::IRBuilderBase* b) {
@@ -82,5 +81,4 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
     constants_.push_back(std::move(info));
 }
 
-}  // namespace gpu
 }  // namespace xla

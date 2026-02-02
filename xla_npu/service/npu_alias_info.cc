@@ -20,7 +20,7 @@
 #include "xla/stream_executor/device_description.pb.h"
 #include "xla/xla_npu/service/npu_hlo_fusion_analysis.h"
 
-namespace xla::gpu {
+namespace xla {
 namespace {
 std::optional<bool> FusionCanShareBufferHint(const HloInstruction* operand, const HloFusionInstruction* user,
                                              const ShapeIndex& user_index,
@@ -190,4 +190,4 @@ std::optional<bool> NpuAliasInfo::MayAlias(const HloInstruction* operand, const 
     }
     return std::nullopt;
 }
-}  // namespace xla::gpu
+}  // namespace xla

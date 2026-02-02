@@ -55,7 +55,6 @@
 #include "xla/xla_data.pb.h"
 
 namespace xla {
-namespace gpu {
 
 // absl::StatusOr<bool> IsCublasSupportedMatMul(
 //     const HloInstruction& dot, bool allow_matrix_vector_multiplication) {
@@ -712,5 +711,4 @@ absl::StatusOr<NpuDenseDataIntermediate> NpuLiteralToXlaFormat(const Literal& li
 //       std::vector<uint8_t>(data.begin(), data.end()));
 // }
 
-}  // namespace gpu
 }  // namespace xla

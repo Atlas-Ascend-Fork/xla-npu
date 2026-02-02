@@ -30,7 +30,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 struct NpuFusionEmissionResult {
     std::vector<std::unique_ptr<NpuThunk>> thunks;
@@ -107,7 +106,6 @@ class NpuFusionInterface {
 //                                                const LaunchDimensions& launch_dims, llvm::Function* kernel,
 //                                                llvm::Module* llvm_module);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_FUSION_EMITTER_H_

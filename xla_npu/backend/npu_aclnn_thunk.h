@@ -20,7 +20,6 @@
 #include "xla/xla_npu/third_party/register/aclnnInterface.h"
 
 namespace xla {
-namespace gpu {
 
 // Wraps executable cuDNN graph objects.
 class NpuAclnnThunk : public NpuThunk {
@@ -63,7 +62,6 @@ class NpuAclnnThunk : public NpuThunk {
     std::optional<int64_t> sdpa_dropout_seed_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_ACLNN_THUNK_H_

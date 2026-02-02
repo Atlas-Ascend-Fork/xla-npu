@@ -15,7 +15,6 @@
 #include "xla/stream_executor/device_description.h"
 
 namespace xla {
-namespace gpu {
 
 // Returns true if the instruction's fusion backend config kind matches the
 // given one.
@@ -102,7 +101,6 @@ class NpuHloFusionAnalysis {
     InputOutputInfo input_output_info_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_HLO_FUSION_ANALYSIS_H_

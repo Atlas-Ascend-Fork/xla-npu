@@ -8,7 +8,8 @@
 #include "xla/shape_util.h"
 #include "xla/stream_executor/device_description.h"
 
-namespace xla::gpu {
+namespace xla {
+
 class NpuAliasInfo : public AliasInfo {
    public:
     explicit NpuAliasInfo(const se::DeviceDescription& device_description) : device_description_(device_description) {}
@@ -23,6 +24,7 @@ class NpuAliasInfo : public AliasInfo {
    protected:
     se::DeviceDescription device_description_;
 };
-}  // namespace xla::gpu
+
+}  // namespace xla
 
 #endif  // SERVICE_NPU_ALIAS_INFO_H_
