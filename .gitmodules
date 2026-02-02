@@ -1,4 +1,5 @@
-[submodule "xla_npu/third_party/Ascend-MLIR"]
-	path = xla_npu/third_party/Ascend-MLIR
-	url = git@gitcode.com:niuyuhu/Ascend-MLIR.git
+# TODO 执行 git submodule update --init --recursive 不生效,问题待定位
+[submodule "external/Ascend-MLIR"]
+	path = external/Ascend-MLIR
+	url = https://gitcode.com/niuyuhu/Ascend-MLIR.git
 	branch = dev

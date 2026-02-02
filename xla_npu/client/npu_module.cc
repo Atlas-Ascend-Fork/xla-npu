@@ -53,7 +53,7 @@ static void RegisterNpuCompiler() {
     //         'Backend'->'NpuCompiler'->RunHloPasses
     //         'Backend'->'NpuCompiler'->RunBackend
     Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId, []() {
-        return std::make_unique<gpu::NpuCompiler>(stream_executor::kNpuPlatformId, "", "");
+        return std::make_unique<NpuCompiler>(stream_executor::kNpuPlatformId, "", "");
     });
     NpuLog::Print(NpuLog::Level::INFO, "Resister compiler for '%s'.", NpuConstant::platformName);
 }
