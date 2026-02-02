@@ -39,7 +39,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 // Emits LLVM IR for an "unnested computation".
 //
@@ -325,7 +324,6 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
     std::unique_ptr<CallGraph> call_graph_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_IR_EMITTER_UNNESTED_H_

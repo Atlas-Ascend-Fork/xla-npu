@@ -12,7 +12,6 @@
 #include "xla/xla_npu/backend/npu_thunk.h"
 
 namespace xla {
-namespace gpu {
 
 // A thunk that wraps a list of sub-thunks. Executing this thunk executes all
 // the sub-thunks sequentially. This is useful to implement instructions that
@@ -53,7 +52,6 @@ class NpuSequentialThunk : public NpuThunk {
     NpuThunkSequence thunks_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_SEQUENTIAL_THUNK_H_

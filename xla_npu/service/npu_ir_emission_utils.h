@@ -34,7 +34,6 @@
 #include "xla/util.h"
 
 namespace xla {
-namespace gpu {
 
 // // <HLO computation fingerprint, serialized compiled object>.
 // using BinaryMap = absl::flat_hash_map<std::string, std::string>;
@@ -310,7 +309,6 @@ absl::StatusOr<NpuDenseDataIntermediate> NpuLiteralToXlaFormat(const Literal& li
 // std::optional<InductionVariableFunctionalDependency>
 // ResolveFunctionalDependencyOnInductionVariable(const HloInstruction* instr);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_IR_EMISSION_UTILS_H_

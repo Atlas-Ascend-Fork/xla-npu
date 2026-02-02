@@ -10,7 +10,7 @@
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
 
-namespace xla::gpu {
+namespace xla {
 
 struct NpuExecutionStreamAssignmentOptions {
     // The `NpuExecutionStreamAssignment` will round-robin compute thunks across this
@@ -67,6 +67,6 @@ inline bool operator==(const NpuExecutionStreamAssignment::AsyncExecutionStreamI
            first.destination_stream_id == second.destination_stream_id;
 }
 
-}  // namespace xla::gpu
+}  // namespace xla
 
 #endif  // SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_

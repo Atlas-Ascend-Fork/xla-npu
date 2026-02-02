@@ -28,7 +28,6 @@
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
 namespace xla {
-namespace gpu {
 
 NpuCustomKernelThunk::NpuCustomKernelThunk(NpuThunk::ThunkInfo thunk_info, NpuCustomKernel custom_kernel,
                                            const emitters::KernelArguments& kernel_arguments)
@@ -107,5 +106,4 @@ NpuThunk::BufferUses NpuCustomKernelThunk::buffer_uses() const {
     return buffers;
 }
 
-}  // namespace gpu
 }  // namespace xla

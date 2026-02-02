@@ -44,7 +44,6 @@
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
-namespace gpu {
 
 // Execution stream id allows to specify what Gpu stream NpuThunk should be using
 // for launching device work (kernels, library calls, etc.). By default all
@@ -582,7 +581,6 @@ bool IsReductionCollective(NpuThunk::Kind kind);
 // // Returns the metadata from all thunks in the given thunk graph.
 // ThunkMetadataListProto GetMetadataListProtoFromThunkGraph(const NpuThunk& root_thunk);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_THUNK_H_

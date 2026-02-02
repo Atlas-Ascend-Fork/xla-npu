@@ -29,7 +29,6 @@
 // Helper functions for interacting with StreamExecutor.
 
 namespace xla {
-namespace gpu {
 
 // // Returns DNN version info from provided stream executor.
 // absl::StatusOr<se::dnn::VersionInfo> GetDnnVersionInfo(
@@ -138,7 +137,6 @@ absl::Mutex& GetNpuMutex(const se::StreamExecutor* stream_exec);
 // // Returns whether determinism is required.
 // bool RequireDeterminism(const HloModuleConfig& config);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_STREAM_EXECUTOR_UTIL_H_

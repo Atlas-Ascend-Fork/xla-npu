@@ -35,7 +35,7 @@
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
-namespace gpu {
+
 // // Maps async start ops to their async events so we can emit done thunk
 // // sharing events with corresponding start thunk. Async events may be null if
 // // the start op is degenerate (so not emitted).
@@ -150,7 +150,6 @@ class NpuIrEmitterContext {
     NpuThunkIdGenerator thunk_id_generator_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_IR_EMITTER_CONTEXT_H_

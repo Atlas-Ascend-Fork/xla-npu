@@ -70,7 +70,7 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 
-namespace xla::gpu {
+namespace xla {
 
 namespace {
 
@@ -292,4 +292,4 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     return results;
 }
 
-}  // namespace xla::gpu
+}  // namespace xla

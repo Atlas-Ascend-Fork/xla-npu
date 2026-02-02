@@ -24,7 +24,6 @@
 #include "xla/xla_npu/backend/npu_thunk.h"
 
 namespace xla {
-namespace gpu {
 
 NpuSequentialThunk::NpuSequentialThunk(ThunkInfo thunk_info, NpuThunkSequence thunks)
     : NpuThunk(Kind::kSequential, thunk_info), thunks_(std::move(thunks)) {}
@@ -143,5 +142,4 @@ std::unique_ptr<NpuSequentialThunk> NpuSequentialThunk::FromThunk(std::unique_pt
     return std::make_unique<NpuSequentialThunk>(NpuThunk::ThunkInfo(), std::move(thunks));
 }
 
-}  // namespace gpu
 }  // namespace xla

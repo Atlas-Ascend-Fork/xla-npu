@@ -36,7 +36,7 @@ absl::Status NpuStream::Init() {
 }
 
 absl::Status NpuStream::BlockHostUntilDone() {
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Block host until stream %s done", GetName());
+    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Block host until stream '%s' done", GetName());
     TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
     auto acl_ret = npu::aclrtSynchronizeStream(stream_);
@@ -118,7 +118,7 @@ absl::Status NpuStream::RecordEvent(Event* event) {
 }
 
 absl::Status NpuStream::DoHostCallbackWithStatus(absl::AnyInvocable<absl::Status() &&> callback) {
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Execute host callback on stream %s", GetName());
+    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Execute host callback on stream '%s'", GetName());
 
     return std::move(callback)();
 }

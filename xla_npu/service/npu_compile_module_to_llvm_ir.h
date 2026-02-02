@@ -33,7 +33,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 struct NpuCompileModuleResults {
     std::unique_ptr<llvm::Module> llvm_module;
@@ -62,7 +61,6 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function,
     bool split_constants_module = false);
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_

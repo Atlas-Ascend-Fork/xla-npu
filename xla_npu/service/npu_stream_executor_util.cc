@@ -62,7 +62,6 @@ using tsl::profiler::TraceMeEncode;
 using tsl::profiler::TraceMeLevel;
 
 namespace xla {
-namespace gpu {
 
 // absl::StatusOr<se::dnn::VersionInfo> GetDnnVersionInfo(
 //     stream_executor::StreamExecutor* stream_exec) {
@@ -752,5 +751,4 @@ absl::Mutex& GetNpuMutex(const se::StreamExecutor* stream_exec) {
 //   });
 // }
 
-}  // namespace gpu
 }  // namespace xla

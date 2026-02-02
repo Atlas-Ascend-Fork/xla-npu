@@ -40,7 +40,6 @@
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
-namespace gpu {
 
 // //===----------------------------------------------------------------------===//
 // // NpuThunk::CollectiveCliques
@@ -419,5 +418,4 @@ void NpuThunk::ForAllThunksMutable(absl::FunctionRef<void(NpuThunk*)> fn) { fn(t
 //     return proto;
 // }
 
-}  // namespace gpu
 }  // namespace xla

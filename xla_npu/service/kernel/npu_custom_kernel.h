@@ -14,7 +14,7 @@
 // it's included into all device kernel implementations, and we want to minimize
 // the number of (very expensive!) recompilations.
 
-namespace xla::gpu {
+namespace xla {
 namespace se = ::stream_executor;  // NOLINT
 
 // 此类用于生成执行NPU算子的相关参数
@@ -70,6 +70,6 @@ class NpuCustomKernel {
     NpuKernelConfig npu_kernel_config_;
 };
 
-}  // namespace xla::gpu
+}  // namespace xla
 
 #endif  // SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_

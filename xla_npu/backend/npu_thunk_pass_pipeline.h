@@ -17,7 +17,6 @@
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
 
 namespace xla {
-namespace gpu {
 
 class NpuThunkPassBufferAllocator {
    public:
@@ -59,7 +58,6 @@ class NpuThunkPassPipeline : public NpuThunkPassInterface {
     std::vector<std::unique_ptr<NpuThunkPassInterface>> passes_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // BACKEND_NPU_THUNK_PASS_PIPELINE_H_

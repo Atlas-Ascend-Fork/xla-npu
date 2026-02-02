@@ -40,7 +40,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 // // Annotates the launch dimensions of the corresponding IR kernel in
 // // `llvm_module`.
@@ -162,5 +161,4 @@ namespace gpu {
 //     return kernel;
 // }
 
-}  // namespace gpu
 }  // namespace xla

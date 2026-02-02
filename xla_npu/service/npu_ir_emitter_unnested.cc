@@ -184,7 +184,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
-namespace gpu {
 
 namespace {
 // // TODO: move into a host_execute specific file.
@@ -3030,7 +3029,5 @@ absl::Status NpuIrEmitterUnnested::EmitHloComputation(const HloComputation* comp
     // }
     return absl::OkStatus();
 }
-
-}  // namespace gpu
 
 }  // namespace xla

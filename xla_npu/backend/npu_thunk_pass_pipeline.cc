@@ -12,7 +12,6 @@
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
 
 namespace xla {
-namespace gpu {
 
 absl::StatusOr<bool> NpuThunkPassPipeline::Run(NpuSequentialThunk* root_thunk, const DebugOptions& debug_options,
                                             const HloModule* absl_nullable hlo_module,
@@ -28,5 +27,4 @@ absl::StatusOr<bool> NpuThunkPassPipeline::Run(NpuSequentialThunk* root_thunk, c
     return changed;
 }
 
-}  // namespace gpu
 }  // namespace xla

@@ -24,7 +24,6 @@
 #include "xla/shape_util.h"
 
 namespace xla {
-namespace gpu {
 
 using absl::StrAppend;
 using absl::StrCat;
@@ -109,5 +108,4 @@ llvm_ir::IrArray NpuHloToIrBindings::GetIrArray(const HloInstruction& hlo, const
     return ir_array;
 }
 
-}  // namespace gpu
 }  // namespace xla

@@ -14,7 +14,6 @@
 #include "xla/shape_util.h"
 
 namespace xla {
-namespace gpu {
 
 // This class encapsulates the bindings between HloInstructions and LLVM IR
 // values that represent their addresses.
@@ -63,7 +62,6 @@ class NpuHloToIrBindings {
     absl::flat_hash_map<const HloInstruction*, ShapeTree<llvm::Value*>> base_ptrs_;
 };
 
-}  // namespace gpu
 }  // namespace xla
 
 #endif  // SERVICE_NPU_HLO_TO_IR_BINDINGS_H_

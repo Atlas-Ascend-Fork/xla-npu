@@ -30,7 +30,7 @@
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
-namespace gpu {
+
 namespace {
 
 // Returns a description of a transpose hero, that is compatible with all roots.
@@ -291,5 +291,4 @@ const HloInstruction* NpuHloFusionAnalysis::FindHeroReduction() const {
     // LOG(FATAL) << "Did not find a hero reduction";
 }
 
-}  // namespace gpu
 }  // namespace xla

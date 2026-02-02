@@ -11,7 +11,7 @@
 #include "xla/stream_executor/launch_dim.h"
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 
-namespace xla::gpu {
+namespace xla {
 
 NpuCustomKernel::NpuCustomKernel(NpuKernelConfig npu_kernel_config, std::string name, se::BlockDim block_dims,
                                  size_t shared_memory_bytes)
@@ -55,4 +55,4 @@ std::string NpuCustomKernel::ToString() const {
     //     cluster_dims_str, shared_memory_bytes_);
 }
 
-}  // namespace xla::gpu
+}  // namespace xla

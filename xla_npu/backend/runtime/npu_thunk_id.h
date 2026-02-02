@@ -5,7 +5,7 @@
 
 #include "xla/tsl/lib/gtl/int_type.h"
 
-namespace xla::gpu {
+namespace xla {
 
 // Unique identifier for a thunk. When creating a thunk graph it's up to the
 // emitter to generate unique IDs.
@@ -20,6 +20,6 @@ class NpuThunkIdGenerator {
     uint64_t next_thunk_id_ = 1;
 };
 
-}  // namespace xla::gpu
+}  // namespace xla
 
 #endif  // BACKEND_RUNTIME_NPU_THUNK_ID
