@@ -1,2 +1,3 @@
 .idea
 .vscode
+xla_npu/third_party/Ascend-MLIR/*

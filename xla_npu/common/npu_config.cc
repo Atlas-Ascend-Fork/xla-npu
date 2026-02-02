@@ -66,7 +66,6 @@ NpuConfig::ConfigValue NpuConfig::GetConfigValue(NpuConfig::Key key) const {
     if (it != value_map_.end()) {
         return it->second;
     }
-
     // 未找到时返回默认值
     NpuLog::Print(NpuLog::Level::WARN, "Config key - '%d' not found in value map, use default value.",
                   static_cast<int>(key));

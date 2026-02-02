@@ -92,6 +92,7 @@ cc_library(
         ":npu_event",
         ":npu_stream",
         ":npu_stream_factory",
+        "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_operation",
         "//xla/xla_npu/kernel:npu_auto_fuse_kernel",
