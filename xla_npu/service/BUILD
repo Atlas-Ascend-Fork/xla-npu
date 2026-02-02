@@ -14,6 +14,15 @@ load(
 )
 load("//xla/tsl/xnnpack:build_defs.bzl", "if_ynnpack")
 
+# 控制npu afir条件编译
+config_setting(
+    name = "npu_auto_fuse_enabled",
+    define_values = {
+        "NPU_AUTO_FUSE_ENABLED": "1",  # 仅当环境变量值为1时匹配
+    },
+    visibility = ["//visibility:public"],
+)
+
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
     default_visibility = internal_visibility(["//xla:internal"]),
@@ -636,6 +645,11 @@ cc_library(
         "npu_compiler.h",
     ],
     tags = ["gpu"],
+    # 仅当开关开启时，定义宏 NPU_AUTO_FUSE_ENABLED
+    copts = select({
+        ":npu_auto_fuse_enabled": ["-DNPU_AUTO_FUSE_ENABLED=1"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":npu_alias_info",
         ":npu_ir_emitter_context",
@@ -646,6 +660,7 @@ cc_library(
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_tool",
+        # "//xla/xla_npu/service/convert_to_afir:ascir_backend",
         "//xla/xla_npu/service/transform:npu_super_fusion",
 
         "//xla/service/gpu:alias_info",
@@ -956,7 +971,10 @@ cc_library(
         "@tsl//tsl/platform:statusor",
         "@tsl//tsl/profiler/lib:scoped_annotation",
         "@tsl//tsl/profiler/lib:traceme",
-    ],
+    ] + select({
+        ":npu_auto_fuse_enabled": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(

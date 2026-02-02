@@ -4,7 +4,6 @@ load(
 )
 load(
     "//xla/tsl:tsl.bzl",
-    "if_macos",
     "internal_visibility",
 )
 load("//xla/tsl/platform:rules_cc.bzl", "cc_library")
@@ -61,17 +60,15 @@ xla_cc_binary(
     additional_linker_inputs = [
         ":pjrt_c_api_npu_version_script.lds", # 参考cpu的符号导出文件，这个文件实际不区分芯片，功能为仅导出GetPjrtApi接口
     ],
-    linkopts = if_macos(
-        [
-            "-Wl,-exported_symbol,_GetPjrtApi",
-            "-Wl,-install_name,@rpath/pjrt_c_api_npu_plugin.dylib",
-            "-Wl,-undefined,error",
-        ],
+    linkopts = 
         [
             "-Wl,--version-script,$(location :pjrt_c_api_npu_version_script.lds)",
             "-Wl,--no-undefined",
-        ],
-    ),
+            # AFIR构建依赖
+            "-L$(PYTHON_LIB_DIR)",
+            "-lpython3.11",
+            "-Wl,-rpath,$(PYTHON_LIB_DIR)",
+    ],
     linkshared = True,
     tags = [
         "noasan",

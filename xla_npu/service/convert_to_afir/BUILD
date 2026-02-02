@@ -22,7 +22,7 @@ licenses(["notice"])  # Apache 2.0
 
 # Core conversion library
 cc_library(
-    name = "convert_to_afir_lib",
+    name = "convert_to_afir",
     srcs = ["convert_to_afir.cc"],
     hdrs = ["convert_to_afir.h"],
     deps = [
@@ -42,11 +42,11 @@ cc_library(
 
 # AscIR backend library
 cc_library(
-    name = "ascir_backend_lib",
+    name = "ascir_backend",
     srcs = ["ascir_backend.cc"],
     hdrs = ["ascir_backend.h"],
     deps = [
-        ":convert_to_afir_lib",
+        ":convert_to_afir",
         "//xla:util",
         "//xla/hlo/ir:hlo",
         "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
@@ -55,7 +55,7 @@ cc_library(
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Parser",
         "@llvm-project//mlir:Pass",
-        "@python_3_10//:python_headers",
+        "@python_3_11//:python_headers",
     ],
     alwayslink = 1,
 )
@@ -66,11 +66,11 @@ cc_binary(
     srcs = ["ascir_backend_test.cc"],
     linkopts = [
         "-L$(PYTHON_LIB_DIR)",
-        "-lpython3.10",
+        "-lpython3.11",
         "-Wl,-rpath,$(PYTHON_LIB_DIR)",
     ],
     deps = [
-        ":ascir_backend_lib",
+        ":ascir_backend",
         "//xla:util",
         "//xla/hlo/ir:hlo",
         "//xla/hlo/parser:hlo_parser",
@@ -85,7 +85,7 @@ cc_binary(
     name = "hlo_to_afir_tool",
     srcs = ["hlo_to_afir_tool.cc"],
     deps = [
-        ":convert_to_afir_lib",
+        ":convert_to_afir",
         "//xla/hlo/ir:hlo",
         "//xla/tools:hlo_module_loader",
         "//xla/xla_npu/third_party:AFIRHeaders",

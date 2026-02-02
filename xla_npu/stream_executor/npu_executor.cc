@@ -35,6 +35,7 @@
 #include "xla/stream_executor/stream_executor.h"
 // #include "xla/tsl/platform/profile_utils/cpu_utils.h"
 #include "xla/tsl/platform/threadpool.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
 #include "xla/xla_npu/kernel/npu_auto_fuse_kernel.h"
@@ -61,18 +62,20 @@ absl::Status NpuExecutor::Init() {
 }
 
 absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(const KernelLoaderSpec& spec) {
-    CHECK_COND_AND_PRINT_NPU_LOG(!spec.has_in_process_symbol(), "In process symbol when load kernel is empty");
-    auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(spec.in_process_symbol().value().symbol);
-    switch (npu_kernel_config_ptr->npu_kernel_type) {
-        case xla::NpuKernelConfig::NpuKernelType::FUSION:
-            auto kernel =
-                std::make_unique<xla::NpuAutoFuseKernel>("/home/z00808263/code/xla/npu_output/af_ir_compile/", this);
-            TF_RETURN_IF_ERROR(kernel->Load());
-            return std::move(kernel);
-    }
+    // TODO 修复NpuKernelConfig传递不过来的问题
+    // CHECK_COND_AND_PRINT_NPU_LOG(!spec.has_in_process_symbol(), "In process symbol when load kernel is empty");
+    // auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(spec.in_process_symbol().value().symbol);
+    // switch (npu_kernel_config_ptr->npu_kernel_type) {
+    //     case xla::NpuKernelConfig::NpuKernelType::FUSION:
+    auto root_dir = xla::NpuConfig::GetInstance().GetTypedValue<std::string>(
+        xla::NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
+    auto kernel = std::make_unique<xla::NpuAutoFuseKernel>(root_dir, this);
+    TF_RETURN_IF_ERROR(kernel->Load());
+    return std::move(kernel);
+    // }
 
-    return absl::InternalError(absl::StrFormat("Kernel type %d does not support launch.",
-                                               static_cast<int64_t>(npu_kernel_config_ptr->npu_kernel_type)));
+    // return absl::InternalError(absl::StrFormat("Kernel type %d does not support launch.",
+    //                                            static_cast<int64_t>(npu_kernel_config_ptr->npu_kernel_type)));
 }
 
 bool NpuExecutor::DeviceMemoryUsage(int64_t* free, int64_t* total) const {

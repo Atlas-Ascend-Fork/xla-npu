@@ -312,6 +312,10 @@
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 #include "xla/xla_npu/service/transform/npu_super_fusion.h"
 
+#ifdef NPU_AUTO_FUSE_ENABLED
+#include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
+#endif
+
 namespace xla {
 namespace gpu {
 namespace {
@@ -937,13 +941,6 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
                                       symbolic_expr_context)
                            .Run(hlo_module, {HloInstruction::kMainExecutionThread})
                            .status());
-
-    /* 实现所有instruction融合成一条语句(仅用于调试) 开始 */
-    // Add super fusion pass for NPU
-    HloPassPipeline super_fusion_pipeline("super-fusion");
-    super_fusion_pipeline.AddPass<NpuSuperFusion>();
-    TF_RETURN_IF_ERROR(super_fusion_pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status());
-    /* 实现所有instruction融合成一条语句(仅用于调试) 结束 */
 
     if (VLOG_IS_ON(2)) {
         HloFusionStatsVisitor stats;
@@ -1704,29 +1701,12 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
     //                                      gpu_target_config, alias_info.get()));
 
-    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
-        MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
-            /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
-            /*default_thread_pool=*/options.thread_pool,
-            /*default_parallelism=*/tsl::port::MaxParallelism());
-        TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
-                                           ShapeSizeBytesFunction(), &symbolic_expr_context_));
-        NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
-    }
-
-    // HloPassPipeline pipeline("autotune-fusion-emitters");
-    // TF_RETURN_IF_ERROR(AddFusionAutotuningPass(&pipeline, module.get(), options, thread_pool.get_mutable(),
-    // stream_exec,
-    //                                            &gpu_target_config, ShapeSizeBytesFunction()));
-    // TF_RETURN_IF_ERROR(pipeline.Run(module.get()).status());
-
-    // HloPassPipeline main_pipeline("post-scheduling-passes");
-    // const se::DeviceDescription& gpu_device_info = gpu_target_config.device_description;
-    // HloPassPipeline& pipeline = main_pipeline.AddPass<HloPassPipeline>("fusion-wrapper");
-    // pipeline.AddPass<FusionWrapper>(gpu_device_info);
-    // TF_RETURN_IF_ERROR(main_pipeline.Run(module.get()).status());
-
-    // return absl::InternalError("npu fusion not implements");
+    // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
+    //     /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
+    //     /*default_thread_pool=*/options.thread_pool,
+    //     /*default_parallelism=*/tsl::port::MaxParallelism());
+    // TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
+    //                                    ShapeSizeBytesFunction(), &symbolic_expr_context_));
 
     return std::move(module);
 }
@@ -2261,6 +2241,30 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
     tsl::profiler::ScopedAnnotation backend_annotation{[&] {
         return absl::StrFormat("XlaCompileBackend:#module=%s,program_id=%d#", module->name(), module->unique_id());
     }};
+
+#ifdef NPU_AUTO_FUSE_ENABLED
+    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
+        NpuLog::Print(NpuLog::Level::INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
+        AscirBackend ascirBackend;
+        AscirBackendOptions ascirBackendOptions;
+        ascirBackendOptions.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
+            NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
+        TF_ASSIGN_OR_RETURN(auto AscirBackendResult, ascirBackend.Compile(*module.get(), ascirBackendOptions));
+    }
+
+    // hlo instuction融合成一条语句以保证进thunk生成时
+    // 和当前通过auto fuse融合成的一个算子相匹配(未来应该是通过npu的pass来实现融合)
+    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
+        NpuLog::Print(NpuLog::Level::INFO, "Npu auto fuse switch is set open, run fusion pass.");
+        /* 实现所有instruction融合成一条语句(仅用于调试) 开始 */
+        // Add super fusion pass for NPU
+        HloPassPipeline super_fusion_pipeline("super-fusion");
+        super_fusion_pipeline.AddPass<NpuSuperFusion>();
+        TF_RETURN_IF_ERROR(super_fusion_pipeline.Run(module.get(), {HloInstruction::kMainExecutionThread}).status());
+        NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
+        /* 实现所有instruction融合成一条语句(仅用于调试) 结束 */
+    }
+#endif
 
     RecordGpuCompilerStacktrace();
 

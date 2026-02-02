@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
   } else {
     // Use default test HLO
     std::cout << "Using default test HLO" << std::endl;
-    hlo_text = kComplexHLO;
+    hlo_text = kSimpleHLO;
     source_desc = "built-in test";
   }
 
