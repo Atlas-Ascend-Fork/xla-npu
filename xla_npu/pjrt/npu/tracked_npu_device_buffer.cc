@@ -3,7 +3,7 @@
 #include "xla/pjrt/common_pjrt_client.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace xla {
 // Returns an AsyncValueRef<NpuEvent> that will be ready after all the async

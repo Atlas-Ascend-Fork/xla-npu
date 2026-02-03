@@ -30,7 +30,7 @@
 #include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/operator.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
 
 #include "./status.h"

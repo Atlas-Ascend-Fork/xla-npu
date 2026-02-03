@@ -46,7 +46,7 @@
 // #include "xla/service/gpu/execution_stream_assignment.h"
 // #include "xla/service/gpu/gpu_constants.h"
 // #include "xla/service/gpu/gpu_executable.h"
-#include "xla/service/gpu/gpu_memory_space_assignment.h"
+// #include "xla/service/gpu/gpu_memory_space_assignment.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
 // #include "xla/service/gpu/ir_emitter_unnested.h"
 // #include "xla/service/gpu/metrics.h"

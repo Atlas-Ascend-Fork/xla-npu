@@ -369,18 +369,17 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(
         auto outputs_array = builder_.getArrayAttr(output_attrs);
 
         // Create AFIR scalar constant with value attribute
-        auto value_attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto value_attr = mlir::FloatAttr::get(tensor_type.getElementType(), value);
         auto scalar_op = builder_.create<mlir::afir::ScalarOp>(
             loc,
             result_type,
+            value_attr,
             indexing_maps_attr,
             nullptr,  // loop_axis
             builder_.getDictionaryAttr({}),  // ir_attr_def
             nullptr,  // tmp_buffers
             outputs_array
         );
-        // Set the value attribute
-        scalar_op->setAttr("value", value_attr);
         return scalar_op.getResult();
       } else {
         // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)
@@ -406,18 +405,17 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(
         auto outputs_array = builder_.getArrayAttr(output_attrs);
 
         // Create AFIR scalar constant with value attribute
-        auto value_attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto value_attr = mlir::IntegerAttr::get(tensor_type.getElementType(), value);
         auto scalar_op = builder_.create<mlir::afir::ScalarOp>(
             loc,
             result_type,
+            value_attr,
             indexing_maps_attr,
             nullptr,  // loop_axis
             builder_.getDictionaryAttr({}),  // ir_attr_def
             nullptr,  // tmp_buffers
             outputs_array
         );
-        // Set the value attribute
-        scalar_op->setAttr("value", value_attr);
         return scalar_op.getResult();
       } else {
         // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)

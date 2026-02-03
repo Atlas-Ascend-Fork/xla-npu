@@ -42,7 +42,7 @@ cc_library(
 #         ":npu_event",
 #         "//xla/xla_npu/common:npu_tool",
 #         "//xla/xla_npu/service:cpu_compiler_type.npu_executable",
-#         "//xla/xla_npu/third_party/register:acl_interface",
+#         "//xla/xla_npu/dependency/interface:acl_interface",
         
 #         "//xla:future",
 #         "//xla:literal",
@@ -132,7 +132,7 @@ cc_library(
 #         # "//xla/xla_npu/service:npu_buffer_assignment", // Not used
 #         "//xla/xla_npu/service:cpu_compiler_type.npu_executable",
 #         "//xla/xla_npu/service:cpu_compiler_type.npu_compiler",
-#         "//xla/xla_npu/third_party/register:acl_interface",
+#         "//xla/xla_npu/dependency/interface:acl_interface",
 
 #         "//xla:array",
 #         "//xla:debug_options_flags",

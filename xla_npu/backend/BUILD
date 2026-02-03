@@ -104,9 +104,9 @@ cc_library(
         ":npu_thunk",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/service:npu_buffer_allocations",
-        "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/register:aclnn_interface",
-        "//xla/xla_npu/third_party/register:aclnnop_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_nn_interface",
+        "//xla/xla_npu/dependency/interface:acl_nn_op_interface",
 
         # "//xla/backends/gpu/runtime:thunk_proto_cc",
 
@@ -323,7 +323,7 @@ cc_library(
     # defines = if_ynnpack(["XLA_YNNPACK"]),
     deps = [
         ":cpu_compiler_type.npu_buffer_allocations",
-        "//xla/xla_npu/third_party/register:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
 
         # "//xla/backends/cpu/runtime:function_library",
         # "//xla/backends/cpu/runtime:xfeed_manager",
@@ -365,9 +365,9 @@ cc_library(
     deps = [
         ":cpu_compiler_type.npu_thunk",
         "//xla/xla_npu/common:npu_tool",
-        "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/register:aclnn_interface",
-        "//xla/xla_npu/third_party/register:aclnnop_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_nn_interface",
+        "//xla/xla_npu/dependency/interface:acl_nn_op_interface",
 
         # "//xla/backends/cpu/runtime:buffer_allocations",
         # "//xla/backends/cpu/runtime:function_library",

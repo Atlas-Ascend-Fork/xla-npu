@@ -27,8 +27,8 @@
 #include "xla/service/buffer_assignment.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/xla_npu/backend/cpu_compiler_type.npu_thunk.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/third_party/register/aclnnopInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/interface/acl_nn_op_interface.h"
 
 namespace xla {
 

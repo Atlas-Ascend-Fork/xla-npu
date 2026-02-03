@@ -16,8 +16,8 @@
 #include "xla/service/buffer_assignment.h"
 #include "xla/stream_executor/dnn.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/third_party/register/aclnnInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 
 namespace xla {
 

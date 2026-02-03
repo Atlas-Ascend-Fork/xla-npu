@@ -43,7 +43,7 @@ cc_library(
     deps = [
         ":npu_constant",
         ":npu_log",
-        "//xla/xla_npu/third_party/register:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
 
         "//xla/tsl/platform:errors",
         "@com_google_absl//absl/status:statusor",
@@ -55,8 +55,8 @@ cc_library(
     hdrs = ["npu_tool.h"],
     deps = [
         ":npu_log",
-        "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/register:aclnn_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_nn_interface",
 
         "//xla:shape_util",
         "//xla/hlo/ir:hlo",

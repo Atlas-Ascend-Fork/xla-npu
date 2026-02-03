@@ -25,7 +25,7 @@
 #include "xla/xla_npu/pjrt/plugin/npu_client_options.h"
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology_description.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace xla {
 

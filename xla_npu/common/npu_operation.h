@@ -3,7 +3,7 @@
 
 #include "absl/status/status.h"
 #include "xla/tsl/platform/errors.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace xla {
 

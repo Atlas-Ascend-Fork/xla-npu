@@ -33,7 +33,7 @@
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
 #include "xla/xla_npu/common/npu_tool.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace xla {
 constexpr size_t kSmallDataTransferByteSize = 102400;  // 100 KiB
