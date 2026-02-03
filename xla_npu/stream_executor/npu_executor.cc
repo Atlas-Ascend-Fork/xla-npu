@@ -38,12 +38,12 @@
 #include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
-#include "xla/xla_npu/kernel/npu_auto_fuse_kernel.h"
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"
+#include "xla/xla_npu/stream_executor/npu_auto_fuse_kernel.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace stream_executor {
 
@@ -69,7 +69,7 @@ absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(const KernelLoad
     //     case xla::NpuKernelConfig::NpuKernelType::FUSION:
     auto root_dir = xla::NpuConfig::GetInstance().GetTypedValue<std::string>(
         xla::NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
-    auto kernel = std::make_unique<xla::NpuAutoFuseKernel>(root_dir, this);
+    auto kernel = std::make_unique<stream_executor::NpuAutoFuseKernel>(root_dir, this);
     TF_RETURN_IF_ERROR(kernel->Load());
     return std::move(kernel);
     // }

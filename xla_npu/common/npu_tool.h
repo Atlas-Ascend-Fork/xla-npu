@@ -8,8 +8,8 @@
 #include "xla/shape_util.h"
 #include "xla/xla_data.pb.h"
 #include "xla/xla_npu/common/npu_log.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/third_party/register/aclnnInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 
 namespace xla {
 

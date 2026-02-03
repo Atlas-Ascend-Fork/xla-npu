@@ -33,7 +33,7 @@
 // #include "xla/backends/cpu/runtime/ynnpack/ynn_threadpool.h"
 // #endif  // XLA_YNNPACK
 
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace xla {
 

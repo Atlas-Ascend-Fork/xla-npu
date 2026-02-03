@@ -19,7 +19,7 @@
 #include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/stream_executor/npu_executor.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace stream_executor {
 
