@@ -467,26 +467,3 @@ $WORKSPACE/env/python/Python-3.11.9/bin/python -c "import jax; print(jax.__versi
 ```
 
 ---
-
-## 📚 参考文档
-
-- 原始安装指南: `/home/code/xla/install/install-guide.txt`
-- XLA 官方文档: https://openxla.org/xla
-- JAX 官方文档: https://jax.readthedocs.io/
-- 华为 CANN 文档: https://www.hiascend.com/document
-
----
-
-## 🆘 获取帮助
-
-如遇到问题：
-
-1. 查看安装日志: `$WORKSPACE/logs/build_*.log`
-2. 运行脚本帮助: `./build.sh help`
-3. 查看常见问题: [常见问题](#常见问题)
-
----
-
-**安装脚本版本**: 1.0
-**最后更新**: 2025-02-03
-**基于文档**: /home/code/xla/install/install-guide.txt
