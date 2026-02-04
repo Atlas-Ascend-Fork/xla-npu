@@ -6,10 +6,18 @@ package(
 )
 
 cc_library(
+    name = "log",
+    hdrs = ["log.h"],
+    deps = [
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "function_loader",
     srcs = ["function_loader.cc"],
     hdrs = ["function_loader.h"],
     deps = [
-        "//xla/xla_npu/common:npu_log",
+        ":log",
     ],
 )

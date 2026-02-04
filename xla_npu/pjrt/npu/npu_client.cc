@@ -298,7 +298,7 @@ static std::vector<NpuTopology::NpuDevice> GetNpuDevices(absl::Span<const std::u
 }
 
 absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions options) {
-    NpuLog::Print(NpuLog::Level::DEBUG, "Start create npu client");
+    npu::Log::Print(npu::Log::Level::DEBUG, "Start create npu client");
 
     // aclError aclStatus = npu::aclInit(nullptr);
     // if (aclStatus != ACL_SUCCESS) {
@@ -312,7 +312,7 @@ absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(NpuClientOptions op
     if (real_device_count <= 0) {
         return absl::UnavailableError("Threre is no valid device.");
     }
-    NpuLog::Print(NpuLog::Level::DEBUG, "Get npu device count %d", real_device_count);
+    npu::Log::Print(npu::Log::Level::DEBUG, "Get npu device count %d", real_device_count);
 
     // Need at least NpuDeviceCount threads to launch one collective.
     int npu_device_count = options.npu_device_count;
@@ -408,15 +408,15 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
         owned_memory_spaces_.push_back(std::move(unpinned_memory_space));
     }
 
-    NpuLog::Print(NpuLog::Level::DEBUG, "PjRtNpuClient created.");
+    npu::Log::Print(npu::Log::Level::DEBUG, "PjRtNpuClient created.");
 }
 
 PjRtNpuClient::~PjRtNpuClient() {
     auto ret = npu::aclFinalize();
     if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Acl finalize failed, error code %d", ret);
+        npu::Log::Print(npu::Log::Level::ERROR, "Acl finalize failed, error code %d", ret);
     } else {
-        NpuLog::Print(NpuLog::Level::DEBUG, "Acl finalize success");
+        npu::Log::Print(npu::Log::Level::DEBUG, "Acl finalize success");
     }
 }
 
@@ -937,9 +937,9 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // }
 
     for (auto& tracked_buffer : tracked_buffers) {
-        NpuLog::Print(NpuLog::Level::DEBUG, "show argument handle buffer, addr %p, size %d",
-                      tracked_buffer.second->buffer().get().untyped_data(),
-                      tracked_buffer.second->buffer().get().size_bytes());
+        npu::Log::Print(npu::Log::Level::DEBUG, "show argument handle buffer, addr %p, size %d",
+                        tracked_buffer.second->buffer().get().untyped_data(),
+                        tracked_buffer.second->buffer().get().size_bytes());
     }
 
     auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);

@@ -17,20 +17,12 @@ cc_library(
 )
 
 cc_library(
-    name = "npu_log",
-    hdrs = ["npu_log.h"],
-    deps = [
-        "@com_google_absl//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "npu_config",
     srcs = ["npu_config.cc"],
     hdrs = ["npu_config.h"],
     deps = [
         ":npu_constant",
-        ":npu_log",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/tsl/util:env_var",
     ],
@@ -42,8 +34,8 @@ cc_library(
     hdrs = ["npu_operation.h"],
     deps = [
         ":npu_constant",
-        ":npu_log",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/tsl/platform:errors",
         "@com_google_absl//absl/status:statusor",
@@ -54,9 +46,9 @@ cc_library(
     name = "npu_tool",
     hdrs = ["npu_tool.h"],
     deps = [
-        ":npu_log",
         "//xla/xla_npu/dependency/interface:acl_interface",
         "//xla/xla_npu/dependency/interface:acl_nn_interface",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla:shape_util",
         "//xla/hlo/ir:hlo",

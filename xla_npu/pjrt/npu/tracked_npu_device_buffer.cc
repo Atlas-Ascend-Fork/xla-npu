@@ -2,8 +2,8 @@
 
 #include "xla/pjrt/common_pjrt_client.h"
 #include "xla/xla_npu/common/npu_tool.h"
-#include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/pjrt/npu/npu_raw_buffer.h"
 
 namespace xla {
 // Returns an AsyncValueRef<NpuEvent> that will be ready after all the async
@@ -34,7 +34,7 @@ class AlignedMemory final : public NpuDeviceMemory::RawMemory {
 
     ~AlignedMemory() final {
         // tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
-        NpuLog::Print(NpuLog::Level::DEBUG, "Npu memory free, addr: %p, size: %d", base_, size_bytes_);
+        npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory free, addr: %p, size: %d", base_, size_bytes_);
         npu::aclrtFree(base_);
     }
 
@@ -53,11 +53,11 @@ class AlignedAllocator final : public NpuDeviceMemory::Allocator {
         void* base = nullptr;
         aclError ret = npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
         if (ret != ACL_SUCCESS) {
-            NpuLog::Print(NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
+            npu::Log::Print(npu::Log::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
             return Internal("Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
         }
 
-        NpuLog::Print(NpuLog::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size_bytes);
+        npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size_bytes);
         return std::make_unique<AlignedMemory>(base, size_bytes);
     }
 };
@@ -93,7 +93,8 @@ class NpuDeviceMemoryForeign final : public NpuDeviceMemory {
 
     ~NpuDeviceMemoryForeign() final {
         if (on_delete_callback_) {
-            NpuLog::Print(NpuLog::Level::DEBUG, "Call delete function for %p, which size is %d", base_, size_bytes_);
+            npu::Log::Print(npu::Log::Level::DEBUG, "Call delete function for %p, which size is %d", base_,
+                            size_bytes_);
             std::move(on_delete_callback_)();
         }
     }
@@ -132,13 +133,13 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(void* 
     TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem, DefaultAllocator().Allocate(size, 0));
     aclError ret = npu::aclrtMemcpy(mem->base(), mem->size_bytes(), base, size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Copy result from device to host failed, error code: %d", ret);
+        npu::Log::Print(npu::Log::Level::ERROR, "Copy result from device to host failed, error code: %d", ret);
         return tsl::MakeUnconstructedAsyncValueRef<NpuDeviceMemoryOwned>();
     }
 
     // 原本cpu的常量内存分配逻辑是直接复用host上已有的常量内存地址,npu则不行,需要做一次h2d
-    NpuLog::Print(
-        NpuLog::Level::DEBUG,
+    npu::Log::Print(
+        npu::Log::Level::DEBUG,
         "Create const memory and move to npu, cpu addr %p, cpu size bytes %d ---> npu addr %p, npu size bytes %d", base,
         size, mem->base(), mem->size_bytes());
     return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));

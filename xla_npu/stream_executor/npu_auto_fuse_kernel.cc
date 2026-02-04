@@ -5,8 +5,8 @@
 #include "absl/status/status.h"
 #include "tsl/platform/path.h"
 #include "xla/stream_executor/stream_executor.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace stream_executor {
 
@@ -32,7 +32,7 @@ absl::Status NpuAutoFuseKernel::Load() {
     if (GetTilingSizeFunc_ == nullptr) {
         const std::string& err_msg =
             absl::StrFormat("Get func %s from %s failed", get_tiling_size_func_name, GetTilingFileName());
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);
+        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
         return absl::InternalError(err_msg);
     }
 
@@ -40,7 +40,7 @@ absl::Status NpuAutoFuseKernel::Load() {
     if (TilingFunc_ == nullptr) {
         const std::string& err_msg =
             absl::StrFormat("Get func %s from %s failed", tiling_func_name, GetTilingFileName());
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);
+        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
         return absl::InternalError(err_msg);
     }
 
@@ -48,17 +48,16 @@ absl::Status NpuAutoFuseKernel::Load() {
     if (LaunchFunc_ == nullptr) {
         const std::string& err_msg =
             absl::StrFormat("Get func %s from %s failed", launch_func_name, GetKernelFileName());
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);
+        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
         return absl::InternalError(err_msg);
     }
 
     return absl::OkStatus();
 }
 
-absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims,
-                                       const BlockDim& block_dims,
-                                       const std::optional<ClusterDim>& cluster_dims,
-                                       Stream* stream, const KernelArgs& args) {
+absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const BlockDim& block_dims,
+                                       const std::optional<ClusterDim>& cluster_dims, Stream* stream,
+                                       const KernelArgs& args) {
     // thread_dims, cluster_dims not use
 
     uint32_t auto_fuse_ret = 0;
@@ -73,8 +72,7 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims,
     std::vector<uint8_t> tiling_data_holder(tiling_size);
     void* tiling_data = static_cast<void*>(tiling_data_holder.data());
 
-    auto workspace_memory =
-        std::make_unique<DeviceMemoryBase>(executor_->Allocate(tiling_size, /*memory_space=*/0));
+    auto workspace_memory = std::make_unique<DeviceMemoryBase>(executor_->Allocate(tiling_size, /*memory_space=*/0));
     void* workspace = workspace_memory->opaque();
     CHECK_COND_AND_PRINT_NPU_LOG(workspace == nullptr, "Failed to allocate %d bytes for workspace.", tiling_size);
 
@@ -96,7 +94,7 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims,
         CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %d.", auto_fuse_ret);
     } else {
         const std::string& err_msg = absl::StrFormat("Get args failed.");
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);
+        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
         return absl::InternalError(err_msg);
     }
 

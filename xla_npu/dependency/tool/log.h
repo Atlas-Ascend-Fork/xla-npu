@@ -14,17 +14,17 @@
     do {                                                                            \
         if ((err_cond_expr)) {                                                      \
             const std::string err_msg = absl::StrFormat(err_format, ##__VA_ARGS__); \
-            xla::NpuLog::Print(xla::NpuLog::Level::ERROR, err_msg);                 \
+            npu::Log::Print(npu::Log::Level::ERROR, err_msg);                 \
             return absl::InternalError(err_msg);                                    \
         }                                                                           \
     } while (0)
 
 // 提示: 可以使用"xla/tsl/platform/errors.h"中TF_RETURN_IF_ERROR宏快速对absl::Status结果进行判断和返回
 
-namespace xla {
+namespace npu {
 
 // npu日志打印控制类
-class NpuLog {
+class Log {
    public:
     enum class Level { DEBUG, INFO, WARN, ERROR };
 

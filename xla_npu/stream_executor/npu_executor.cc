@@ -36,14 +36,14 @@
 // #include "xla/tsl/platform/profile_utils/cpu_utils.h"
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/xla_npu/common/npu_config.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/stream_executor/npu_auto_fuse_kernel.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 #include "xla/xla_npu/stream_executor/npu_stream_factory.h"
-#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace stream_executor {
 
@@ -94,11 +94,11 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     void* base = nullptr;
     aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
     if (ret != ACL_SUCCESS) {
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
+        npu::Log::Print(npu::Log::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
         return DeviceMemoryBase(nullptr, size);
     }
 
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
+    npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
     return DeviceMemoryBase(base, size);
 }
 
@@ -106,7 +106,8 @@ void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
     // 保证当前线程执行过set device
     xla::NpuOperation::SetDevice(device_ordinal_);
 
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
+    npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(),
+                         mem->size());
     npu::aclrtFree(mem->opaque());
 }
 

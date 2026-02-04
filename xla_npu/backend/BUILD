@@ -130,7 +130,7 @@ cc_library(
     hdrs = ["npu_custom_kernel_thunk.h"],
     deps = [
         ":npu_thunk",
-        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/kernel:npu_custom_kernel",
 
         # "//xla/backends/gpu/runtime:print_buffer_contents",
@@ -298,7 +298,7 @@ cc_library(
     srcs = ["cpu_compiler_type.npu_constant_allocation.cc"],
     hdrs = ["cpu_compiler_type.npu_constant_allocation.h"],
     deps = [
-        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla:literal",
         "//xla:shape_util",

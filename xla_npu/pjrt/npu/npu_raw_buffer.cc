@@ -103,8 +103,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawHostToDev
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("aclrtMemcpy H2D failed, error code: ", acl_ret));
     }
-    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", src, dst,
-                  transfer_size);
+    npu::Log::Print(npu::Log::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", src, dst,
+                    transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -116,8 +116,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyRawDeviceToH
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("aclrtMemcpy D2H failed, error code: ", acl_ret));
     }
-    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from npu to cpu, src addr %p, dst addr %p, byte size %d", src, dst,
-                  transfer_size);
+    npu::Log::Print(npu::Log::Level::DEBUG, "Memcpy from npu to cpu, src addr %p, dst addr %p, byte size %d", src, dst,
+                    transfer_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 
@@ -238,8 +238,8 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         // return result;
     }
 
-    NpuLog::Print(NpuLog::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", data,
-                  dst_data_ptr, byte_size);
+    npu::Log::Print(npu::Log::Level::DEBUG, "Memcpy from cpu to npu, src addr %p, dst addr %p, byte size %d", data,
+                    dst_data_ptr, byte_size);
     return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }
 

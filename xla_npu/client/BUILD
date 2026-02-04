@@ -14,7 +14,7 @@ cc_library(
     deps = [
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service:npu_compiler",
         "//xla/xla_npu/service:npu_transfer_manager",
         "//xla/xla_npu/stream_executor:npu_platform",

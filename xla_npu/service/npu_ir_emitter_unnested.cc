@@ -177,8 +177,8 @@
 #include "xla/xla_npu/backend/npu_sequential_thunk.h"
 #include "xla/xla_npu/backend/npu_thunk.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
@@ -2964,48 +2964,48 @@ absl::Status NpuIrEmitterUnnested::EmitHloComputation(const HloComputation* comp
     int id = 0;
     for (const HloInstruction* instr : sequence.instructions()) {
         // ========== 打印instr的完整信息 ==========
-        NpuLog::Print(NpuLog::Level::DEBUG, "========================================");
-        NpuLog::Print(NpuLog::Level::DEBUG, "[FULL Info for HloInstruction %d] ", id++);
+        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        npu::Log::Print(npu::Log::Level::DEBUG, "[FULL Info for HloInstruction %d] ", id++);
         HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
         std::string detailed_str = instr->ToString(options);
-        NpuLog::Print(NpuLog::Level::DEBUG, detailed_str);
-        // NpuLog::Print(NpuLog::Level::DEBUG, "----------------------------------------");
+        npu::Log::Print(npu::Log::Level::DEBUG, detailed_str);
+        // npu::Log::Print(npu::Log::Level::DEBUG, "----------------------------------------");
 
         int64_t previous_thunk_size = thunk_sequence_.size();
         TF_RETURN_IF_ERROR(EmitHloInstruction(instr));
 
-        NpuLog::Print(NpuLog::Level::DEBUG, "  ----------------------------------------");
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Target thunk Info: ");
+        npu::Log::Print(npu::Log::Level::DEBUG, "  ----------------------------------------");
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Target thunk Info: ");
 
         if (thunk_sequence_.size() > previous_thunk_size) {
             instr_to_thunk[instr] = thunk_sequence_.back().get();
 
             const auto& thunk = thunk_sequence_.back();
             // 打印Thunk的具体类型
-            // NpuLog::Print(NpuLog::Level::DEBUG, "    Thunk class type: %s",
-            // tsl::port::Demangle(typeid(*thunk).name())); 打印Thunk对象的内存地址 NpuLog::Print(NpuLog::Level::DEBUG,
-            // "    Thunk Memory Address: %p", thunk.get());
-            NpuLog::Print(NpuLog::Level::DEBUG, "    Op Code: %s", HloOpcodeString(thunk->thunk_info().op_code));
-            NpuLog::Print(NpuLog::Level::DEBUG, "    Op Name: %s", thunk->thunk_info().op_name);
-            NpuLog::Print(NpuLog::Level::DEBUG, "    Op Shape size: %d", thunk->thunk_info().param_shapes.size());
+            // npu::Log::Print(npu::Log::Level::DEBUG, "    Thunk class type: %s",
+            // tsl::port::Demangle(typeid(*thunk).name())); 打印Thunk对象的内存地址
+            // npu::Log::Print(npu::Log::Level::DEBUG, "    Thunk Memory Address: %p", thunk.get());
+            npu::Log::Print(npu::Log::Level::DEBUG, "    Op Code: %s", HloOpcodeString(thunk->thunk_info().op_code));
+            npu::Log::Print(npu::Log::Level::DEBUG, "    Op Name: %s", thunk->thunk_info().op_name);
+            npu::Log::Print(npu::Log::Level::DEBUG, "    Op Shape size: %d", thunk->thunk_info().param_shapes.size());
             for (int i = 0; i < thunk->thunk_info().param_shapes.size(); ++i) {
                 NpuTool::PrintXlaShape(thunk->thunk_info().param_shapes[i],
                                        absl::StrFormat("    Op param %d shape: ", i));
             }
         } else {
             // 某些op类型不会分配thunk,比如constant类型
-            NpuLog::Print(NpuLog::Level::DEBUG, "    No thunk info.");
+            npu::Log::Print(npu::Log::Level::DEBUG, "    No thunk info.");
         }
     }
 
     // if (auto kernel_thunk = dynamic_cast<const NpuKernelThunkBase*>(thunk.get())) {
-    //     NpuLog::Print(NpuLog::Level::DEBUG, "    Kernel Name: %s", kernel_thunk->kernel_name().data());
-    //     NpuLog::Print(NpuLog::Level::DEBUG, "    Num Work Groups: %s",
+    //     npu::Log::Print(npu::Log::Level::DEBUG, "    Kernel Name: %s", kernel_thunk->kernel_name().data());
+    //     npu::Log::Print(npu::Log::Level::DEBUG, "    Num Work Groups: %s",
     //                   absl::StrFormat("%v", kernel_thunk->num_workgroups()));
-    //     NpuLog::Print(NpuLog::Level::DEBUG, "    Num Arguments: %d", kernel_thunk->arguments_buffers().size());
-    //     NpuLog::Print(NpuLog::Level::DEBUG, "    Num Results: %d", kernel_thunk->results_buffers().size());
+    //     npu::Log::Print(npu::Log::Level::DEBUG, "    Num Arguments: %d", kernel_thunk->arguments_buffers().size());
+    //     npu::Log::Print(npu::Log::Level::DEBUG, "    Num Results: %d", kernel_thunk->results_buffers().size());
     //     if (kernel_thunk->min_alignment().has_value()) {
-    //         NpuLog::Print(NpuLog::Level::DEBUG, "    Min Alignment: %d bytes",
+    //         npu::Log::Print(npu::Log::Level::DEBUG, "    Min Alignment: %d bytes",
     //                       kernel_thunk->min_alignment().value());
     //     }
     // }

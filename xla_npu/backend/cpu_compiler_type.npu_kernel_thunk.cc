@@ -103,23 +103,23 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
         case HloOpcode::kBroadcast:
         case HloOpcode::kTanh:
             if (input_param_shapes.size() != 1 || output_param_shapes.size() != 1) {
-                NpuLog::Print(NpuLog::Level::ERROR,
-                              "Input shape size %d or output shape size %d does not meet target value 1 or 1",
-                              input_param_shapes.size(), output_param_shapes.size());
+                npu::Log::Print(npu::Log::Level::ERROR,
+                                "Input shape size %d or output shape size %d does not meet target value 1 or 1",
+                                input_param_shapes.size(), output_param_shapes.size());
                 return false;
             }
             break;
         case HloOpcode::kAdd:
         case HloOpcode::kMultiply:
             if (input_param_shapes.size() != 2 || output_param_shapes.size() != 1) {
-                NpuLog::Print(NpuLog::Level::ERROR,
-                              "Input shape size %d or output shape size %d does not meet target value 2 or 1",
-                              input_param_shapes.size(), output_param_shapes.size());
+                npu::Log::Print(npu::Log::Level::ERROR,
+                                "Input shape size %d or output shape size %d does not meet target value 2 or 1",
+                                input_param_shapes.size(), output_param_shapes.size());
                 return false;
             }
             break;
         default:
-            NpuLog::Print(NpuLog::Level::WARN, "Op code(%v) does not support check now", HloOpcodeString(op_code));
+            npu::Log::Print(npu::Log::Level::WARN, "Op code(%v) does not support check now", HloOpcodeString(op_code));
     }
 
     return true;
@@ -186,10 +186,10 @@ absl::StatusOr<std::vector<aclTensor*>> NpuKernelThunk<num_arguments, num_result
 
         // TODO: only for DEBUG
         // 只能执行前打印,因为算子执行会复用内存,执行结果会覆盖到入参地址上
-        NpuLog::Print(NpuLog::Level::DEBUG, "---- Input param %d info: ----", i);
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Buffer allocation: %v", arguments_buffers_[i].ToString());
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Tensor Shape: %v", input_param_shapes[i].ToString(true));
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Device addr: %p", input_param_device_addr);
+        npu::Log::Print(npu::Log::Level::DEBUG, "---- Input param %d info: ----", i);
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Buffer allocation: %v", arguments_buffers_[i].ToString());
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Tensor Shape: %v", input_param_shapes[i].ToString(true));
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Device addr: %p", input_param_device_addr);
         NpuTool::PrintNpuDeviceMemoryValue<float>("  Value on device:", NpuTool::GetXlaShapeSize(input_param_shapes[i]),
                                                   input_param_device_addr);
     }
@@ -202,10 +202,10 @@ absl::StatusOr<std::vector<aclTensor*>> NpuKernelThunk<num_arguments, num_result
         acl_tensor_ptr_vector.push_back(output_tensor_ptr);
 
         // TODO: only for DEBUG
-        NpuLog::Print(NpuLog::Level::DEBUG, "---- output param %d info: ----", i);
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Buffer allocation: %v", results_buffers_[i].ToString());
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Tensor Shape: %v", output_param_shapes[i].ToString(true));
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Device addr: %p", output_param_device_addr);
+        npu::Log::Print(npu::Log::Level::DEBUG, "---- output param %d info: ----", i);
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Buffer allocation: %v", results_buffers_[i].ToString());
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Tensor Shape: %v", output_param_shapes[i].ToString(true));
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Device addr: %p", output_param_device_addr);
         // 待执行后打印输出内存地址内容
     }
 
@@ -220,31 +220,31 @@ tsl::AsyncValueRef<NpuThunk::ExecuteEvent> NpuKernelThunk<num_arguments, num_res
     // 根据第一段接口计算出的workspaceSize申请device内存
     void* workspaceAddr = nullptr;
     if (workspaceSize > 0) {
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Additional aclnn WorkspaceSize is %d, need to apply", workspaceSize);
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Additional aclnn WorkspaceSize is %d, need to apply", workspaceSize);
         ret = npu::aclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
         if (ret != ACL_SUCCESS) {
-            NpuLog::Print(NpuLog::Level::ERROR, "Allocate workspace failed. Error code: %d", ret);
+            npu::Log::Print(npu::Log::Level::ERROR, "Allocate workspace failed. Error code: %d", ret);
             return AclErrorExecuteEvent(ret, "");
         }
     } else {
-        NpuLog::Print(NpuLog::Level::DEBUG, "  Additional aclnn WorkspaceSize is 0, no need to apply");
+        npu::Log::Print(npu::Log::Level::DEBUG, "  Additional aclnn WorkspaceSize is 0, no need to apply");
     }
     // 调用aclnnExpand第二段接口
     ret = npu::aclnnExpand(workspaceAddr, workspaceSize, executor, stream);
     if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Execute aclnnExpand failed. Error code: %d", ret);
+        npu::Log::Print(npu::Log::Level::ERROR, "Execute aclnnExpand failed. Error code: %d", ret);
         return AclErrorExecuteEvent(ret, "");
     }
 
     ret = npu::aclrtSynchronizeStream(stream);
     if (ret != ACL_SUCCESS) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Synchronize stream failed. Error code: %d", ret);
+        npu::Log::Print(npu::Log::Level::ERROR, "Synchronize stream failed. Error code: %d", ret);
         return AclErrorExecuteEvent(ret, "");
     }
 
     // ret = npu::aclrtDestroyStream(&stream);
     // if (ret != ACL_SUCCESS) {
-    //     NpuLog::Print(NpuLog::Level::WARN, "Destroy stream failed. Error code: %d", ret);
+    //     npu::Log::Print(npu::Log::Level::WARN, "Destroy stream failed. Error code: %d", ret);
     // }
 
     return OkExecuteEvent();
@@ -266,18 +266,18 @@ absl::StatusOr<bool> NpuKernelThunk<num_arguments, num_results>::PrintOutputTens
 template <int64_t num_arguments, int64_t num_results>
 ABSL_ATTRIBUTE_ALWAYS_INLINE tsl::AsyncValueRef<NpuThunk::ExecuteEvent>
 NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams& params) {
-    NpuLog::Print(NpuLog::Level::DEBUG,
-                  "==== Launch host kernel '%s' with %d arguments and %d results: #workgroups=%v ====", kernel_name_,
-                  arguments_buffers_.size(), results_buffers_.size(), num_workgroups_);
-    NpuLog::Print(NpuLog::Level::DEBUG, "---- Corresponding hlo instruction: %s ----", info().hloInstrDesc);
+    npu::Log::Print(npu::Log::Level::DEBUG,
+                    "==== Launch host kernel '%s' with %d arguments and %d results: #workgroups=%v ====", kernel_name_,
+                    arguments_buffers_.size(), results_buffers_.size(), num_workgroups_);
+    npu::Log::Print(npu::Log::Level::DEBUG, "---- Corresponding hlo instruction: %s ----", info().hloInstrDesc);
 
     if (params.stream == nullptr) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
+        npu::Log::Print(npu::Log::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
         return AclErrorExecuteEvent(-1, "");
     }
     auto stream_handle = params.stream->platform_specific_handle();
     if (stream_handle.stream == nullptr) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
+        npu::Log::Print(npu::Log::Level::ERROR, "Stream need to be created or init before execute npu thunk.");
         return AclErrorExecuteEvent(-1, "");
     }
     auto stream = stream_handle.stream;
@@ -308,7 +308,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             ret = npu::aclnnExpandGetWorkspaceSize(acl_tensor_ptr_vector[0], output_param_size,
                                                    acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
             if (ret != ACL_SUCCESS) {
-                NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnExpandGetWorkspaceSize failed. Error code: %d", ret);
+                npu::Log::Print(npu::Log::Level::ERROR, "Call aclnnExpandGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
 
@@ -324,7 +324,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             ret = npu::aclnnAddGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
                                                 acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
             if (ret != ACL_SUCCESS) {
-                NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnAddGetWorkspaceSize failed. Error code: %d", ret);
+                npu::Log::Print(npu::Log::Level::ERROR, "Call aclnnAddGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
 
@@ -336,7 +336,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             ret = npu::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector.back(), &workspaceSize,
                                                  &executor);
             if (ret != ACL_SUCCESS) {
-                NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnTanGetWorkspaceSize failed. Error code: %d", ret);
+                npu::Log::Print(npu::Log::Level::ERROR, "Call aclnnTanGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
 
@@ -348,7 +348,7 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
             ret = npu::aclnnMulGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
                                                 acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
             if (ret != ACL_SUCCESS) {
-                NpuLog::Print(NpuLog::Level::ERROR, "Call aclnnMulGetWorkspaceSize failed. Error code: %d", ret);
+                npu::Log::Print(npu::Log::Level::ERROR, "Call aclnnMulGetWorkspaceSize failed. Error code: %d", ret);
                 return AclErrorExecuteEvent(ret, "");
             }
 
@@ -357,8 +357,8 @@ NpuKernelThunk<num_arguments, num_results>::ExecuteInternal(const ExecuteParams&
         }
 
         default:
-            NpuLog::Print(NpuLog::Level::ERROR, "Op code(%v) does not support execute now",
-                          HloOpcodeString(info().op_code));
+            npu::Log::Print(npu::Log::Level::ERROR, "Op code(%v) does not support execute now",
+                            HloOpcodeString(info().op_code));
             return AclErrorExecuteEvent(-1, "");
     }
 
