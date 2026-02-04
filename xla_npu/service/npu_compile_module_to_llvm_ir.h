@@ -26,7 +26,7 @@
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/util.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"

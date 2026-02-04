@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_fusion_emitter.h"
+#include "xla/xla_npu/backend/codegen/npu_fusion_emitter.h"
 
 #include <string>
 #include <vector>

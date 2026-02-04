@@ -6,7 +6,7 @@
 #include "xla/hlo/ir/hlo_instructions.h"
 // #include "xla/service/gpu/hlo_fusion_analysis.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
-#include "xla/xla_npu/backend/npu_fusion_emitter.h"
+#include "xla/xla_npu/backend/codegen/npu_fusion_emitter.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -17,7 +17,7 @@ namespace xla {
 class NpuCustomFusion : public NpuFusionInterface {
    public:
     absl::StatusOr<NpuFusionEmissionResult> Emit(NpuIrEmitterContext& ir_emitter_context,
-                                              const HloFusionInstruction& fusion) const final;
+                                                 const HloFusionInstruction& fusion) const final;
 };
 
 // // Emitter for custom fusions implementing address computation. An address

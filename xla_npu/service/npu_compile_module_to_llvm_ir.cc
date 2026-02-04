@@ -63,7 +63,7 @@
 #include "xla/util.h"
 #include "xla/xla.pb.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_executable.h"

@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_custom_kernel_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_custom_kernel_thunk.h"
 
 #include <memory>
 #include <string>
@@ -23,7 +23,7 @@
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 

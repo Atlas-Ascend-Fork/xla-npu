@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 
 #include <algorithm>
 #include <cstdint>

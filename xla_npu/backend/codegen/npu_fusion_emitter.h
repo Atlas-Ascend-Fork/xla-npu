@@ -26,7 +26,7 @@
 #include "xla/service/llvm_ir/ir_array.h"
 #include "xla/shape.h"
 #include "xla/stream_executor/device_description.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {

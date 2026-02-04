@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_custom.h"
+#include "xla/xla_npu/backend/codegen/npu_custom.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -71,9 +71,9 @@
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
-#include "xla/xla_npu/backend/npu_custom_kernel_thunk.h"
-#include "xla/xla_npu/backend/npu_fusion_emitter.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/codegen/npu_fusion_emitter.h"
+#include "xla/xla_npu/backend/runtime/npu_custom_kernel_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"

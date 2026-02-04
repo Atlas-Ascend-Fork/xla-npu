@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_aclnn_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_aclnn_thunk.h"
 
 #include <cstdint>
 #include <memory>
@@ -21,7 +21,7 @@
 #include "xla/stream_executor/dnn.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"

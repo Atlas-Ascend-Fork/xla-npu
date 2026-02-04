@@ -9,7 +9,7 @@
 #include "absl/status/statusor.h"
 // #include "xla/backends/gpu/runtime/thunk.h"
 // #include "xla/backends/gpu/runtime/thunk.pb.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 
 namespace xla {
 
