@@ -1,5 +1,5 @@
-#ifndef REGISTER_ACLINTERFACE_H_
-#define REGISTER_ACLINTERFACE_H_
+#ifndef XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_INTERFACE_H_
+#define XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_INTERFACE_H_
 
 #include "xla/xla_npu/dependency/header/acl/acl.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
@@ -45,4 +45,4 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtLaunchKernel,
 
 }  // namespace npu
 
-#endif  // REGISTER_ACLINTERFACE_H_
+#endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_INTERFACE_H_

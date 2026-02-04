@@ -1,5 +1,5 @@
-#ifndef COMMON_NPU_CONSTANT_H_
-#define COMMON_NPU_CONSTANT_H_
+#ifndef XLA_XLA_NPU_COMMON_NPU_CONSTANT_H_
+#define XLA_XLA_NPU_COMMON_NPU_CONSTANT_H_
 
 #include <string>
 
@@ -34,4 +34,4 @@ class NpuConstant {
 
 }  // namespace xla
 
-#endif  // COMMON_NPU_CONSTANT_H_
+#endif  // XLA_XLA_NPU_COMMON_NPU_CONSTANT_H_

@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_HLO_FUSION_ANALYSIS_H_
-#define SERVICE_NPU_HLO_FUSION_ANALYSIS_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_HLO_FUSION_ANALYSIS_H_
+#define XLA_XLA_NPU_SERVICE_NPU_HLO_FUSION_ANALYSIS_H_
 
 #include <cstdint>
 #include <memory>
@@ -103,4 +103,4 @@ class NpuHloFusionAnalysis {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_HLO_FUSION_ANALYSIS_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_HLO_FUSION_ANALYSIS_H_

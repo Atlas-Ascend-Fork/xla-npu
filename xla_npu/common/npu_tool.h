@@ -1,5 +1,5 @@
-#ifndef COMMON_NPU_TOOL_H_
-#define COMMON_NPU_TOOL_H_
+#ifndef XLA_XLA_NPU_COMMON_NPU_TOOL_H_
+#define XLA_XLA_NPU_COMMON_NPU_TOOL_H_
 
 #include "mlir/IR/BuiltinOps.h"
 #include "xla/hlo/ir/hlo_module.h"
@@ -168,4 +168,4 @@ class NpuTool {
 
 }  // namespace xla
 
-#endif  // COMMON_NPU_TOOL_H_
+#endif  // XLA_XLA_NPU_COMMON_NPU_TOOL_H_

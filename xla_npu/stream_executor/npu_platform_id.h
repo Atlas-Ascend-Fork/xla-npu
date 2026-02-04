@@ -1,5 +1,5 @@
-#ifndef STREAM_EXECUTOR_NPU_PLATFORM_ID_H_
-#define STREAM_EXECUTOR_NPU_PLATFORM_ID_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_ID_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_ID_H_
 
 #include "xla/stream_executor/platform.h"
 
@@ -14,4 +14,4 @@ extern const Platform::Id kNpuPlatformId;
 
 }  // namespace stream_executor
 
-#endif  // STREAM_EXECUTOR_NPU_PLATFORM_ID_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_ID_H_

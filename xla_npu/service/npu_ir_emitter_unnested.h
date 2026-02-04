@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_IR_EMITTER_UNNESTED_H_
-#define SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#define XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_
 
 #include <array>
 #include <cstdint>
@@ -327,4 +327,4 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_

@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_EXECUTABLE_H_
-#define SERVICE_NPU_EXECUTABLE_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_
+#define XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_
 
 #include <cstdint>
 #include <deque>
@@ -317,4 +317,4 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_EXECUTABLE_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_

@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_FUSION_EMITTER_H_
-#define BACKEND_NPU_FUSION_EMITTER_H_
+#ifndef XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_
+#define XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_
 
 #include <array>
 #include <cstddef>
@@ -108,4 +108,4 @@ class NpuFusionInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_FUSION_EMITTER_H_
+#endif  // XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_

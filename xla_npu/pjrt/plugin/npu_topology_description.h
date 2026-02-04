@@ -1,5 +1,5 @@
-#ifndef PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
-#define PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
+#ifndef XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
+#define XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
 
 #include <cstdint>
 #include <memory>
@@ -90,4 +90,4 @@ class NpuTopologyDescription : public PjRtTopologyDescription {
 
 }  // namespace xla
 
-#endif  // PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_
+#endif  // XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_DESCRIPTION_H_

@@ -1,5 +1,5 @@
-#ifndef SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_
-#define SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_
+#ifndef XLA_XLA_NPU_SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_
+#define XLA_XLA_NPU_SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_
 
 #include <cstddef>
 #include <optional>
@@ -72,4 +72,4 @@ class NpuCustomKernel {
 
 }  // namespace xla
 
-#endif  // SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_
+#endif  // XLA_XLA_NPU_SERVICE_KERNEL_NPU_CUSTOM_KERNEL_H_

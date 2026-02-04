@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_BUFFER_ALLOCATIONS_H_
-#define SERVICE_NPU_BUFFER_ALLOCATIONS_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_BUFFER_ALLOCATIONS_H_
+#define XLA_XLA_NPU_SERVICE_NPU_BUFFER_ALLOCATIONS_H_
 
 #include <cstddef>
 #include <set>
@@ -72,4 +72,4 @@ class NpuBufferAllocations {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_BUFFER_ALLOCATIONS_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_BUFFER_ALLOCATIONS_H_

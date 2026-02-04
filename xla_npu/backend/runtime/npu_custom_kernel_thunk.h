@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
-#define BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_
 
 #include <cstdint>
 #include <memory>
@@ -69,4 +69,4 @@ class NpuCustomKernelThunk : public NpuThunk {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_

@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_SEQUENTIAL_THUNK_H_
-#define BACKEND_NPU_SEQUENTIAL_THUNK_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_SEQUENTIAL_THUNK_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_SEQUENTIAL_THUNK_H_
 
 #include <memory>
 #include <string>
@@ -54,4 +54,4 @@ class NpuSequentialThunk : public NpuThunk {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_SEQUENTIAL_THUNK_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_SEQUENTIAL_THUNK_H_

@@ -1,5 +1,5 @@
-#ifndef STREAM_EXECUTOR_NPU_PLATFORM_H_
-#define STREAM_EXECUTOR_NPU_PLATFORM_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_H_
 
 #include <memory>
 #include <string>
@@ -57,4 +57,4 @@ class NpuPlatform : public Platform {
 
 }  // namespace stream_executor
 
-#endif  // STREAM_EXECUTOR_NPU_PLATFORM_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_PLATFORM_H_

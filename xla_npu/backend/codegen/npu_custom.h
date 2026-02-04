@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_CUSTOM_H_
-#define BACKEND_NPU_CUSTOM_H_
+#ifndef XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_
+#define XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_
 
 #include "absl/status/statusor.h"
 // #include "xla/backends/gpu/codegen/fusion_emitter.h"
@@ -61,4 +61,4 @@ class NpuCustomFusion : public NpuFusionInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_CUSTOM_H_
+#endif  // XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_

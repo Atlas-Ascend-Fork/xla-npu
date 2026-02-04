@@ -1,5 +1,5 @@
-#ifndef STREAM_EXECUTOR_NPU_EXECUTOR_H_
-#define STREAM_EXECUTOR_NPU_EXECUTOR_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EXECUTOR_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EXECUTOR_H_
 
 #include <cstdint>
 #include <memory>
@@ -85,4 +85,4 @@ class NpuExecutor : public StreamExecutorCommon {
 
 }  // namespace stream_executor
 
-#endif  // STREAM_EXECUTOR_NPU_EXECUTOR_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EXECUTOR_H_

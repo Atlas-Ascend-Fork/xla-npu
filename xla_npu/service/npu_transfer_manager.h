@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_TRANSFER_MANAGER_H_
-#define SERVICE_NPU_TRANSFER_MANAGER_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_TRANSFER_MANAGER_H_
+#define XLA_XLA_NPU_SERVICE_NPU_TRANSFER_MANAGER_H_
 
 #include <vector>
 
@@ -50,4 +50,4 @@ class NpuTransferManager : public GenericTransferManager {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_TRANSFER_MANAGER_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_TRANSFER_MANAGER_H_

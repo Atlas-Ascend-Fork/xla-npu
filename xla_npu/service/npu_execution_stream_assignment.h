@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_
-#define SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_
+#define XLA_XLA_NPU_SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -69,4 +69,4 @@ inline bool operator==(const NpuExecutionStreamAssignment::AsyncExecutionStreamI
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_EXECUTION_STREAM_ASSIGNMENT_H_

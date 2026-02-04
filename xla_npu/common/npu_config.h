@@ -1,5 +1,5 @@
-#ifndef COMMON_NPU_CONFIG_H_
-#define COMMON_NPU_CONFIG_H_
+#ifndef XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
+#define XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
 
 #include <string>
 #include <unordered_map>
@@ -45,4 +45,4 @@ class NpuConfig {
 
 }  // namespace xla
 
-#endif  // COMMON_NPU_CONFIG_H_
+#endif  // XLA_XLA_NPU_COMMON_NPU_CONFIG_H_

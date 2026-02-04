@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_THUNK_PASS_PIPELINE_H_
-#define BACKEND_NPU_THUNK_PASS_PIPELINE_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_
 
 #include <cstdint>
 #include <memory>
@@ -60,4 +60,4 @@ class NpuThunkPassPipeline : public NpuThunkPassInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_THUNK_PASS_PIPELINE_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_

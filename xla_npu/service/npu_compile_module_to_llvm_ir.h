@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
-#define SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#define XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
 
 #include <memory>
 #include <string>
@@ -63,4 +63,4 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
