@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_custom_kernel_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_custom_kernel_thunk.h"
 
 #include <memory>
 #include <string>
@@ -23,8 +23,8 @@
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
 namespace xla {
@@ -53,7 +53,7 @@ absl::Status NpuCustomKernelThunk::Initialize(const InitializeParams& params) {
 absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) {
     if (params.stream == nullptr) {
         const std::string& errMsg = absl::StrFormat("Xla stream need to be created or init before execute npu thunk.");
-        NpuLog::Print(NpuLog::Level::ERROR, errMsg);
+        npu::Log::Print(npu::Log::Level::ERROR, errMsg);
         return absl::InternalError(errMsg);
     }
 
@@ -66,15 +66,15 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
     int device_ordinal = executor->device_ordinal();
 
-    NpuLog::Print(NpuLog::Level::DEBUG, "[%d] Launching %s as device kernel %s", device_ordinal,
-                  custom_kernel_.ToString(), kernel->name());
+    npu::Log::Print(npu::Log::Level::DEBUG, "[%d] Launching %s as device kernel %s", device_ordinal,
+                    custom_kernel_.ToString(), kernel->name());
 
     absl::InlinedVector<se::DeviceMemoryBase, 4> buffer_args;
     for (const BufferAllocation::Slice& arg : args_) {
         se::DeviceMemoryBase buf = params.buffer_allocations->GetDeviceAddress(arg);
         buffer_args.push_back(buf);
-        NpuLog::Print(NpuLog::Level::DEBUG, "[%d]  Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
-                      arg.offset(), buf.opaque(), buf.size());
+        npu::Log::Print(npu::Log::Level::DEBUG, "[%d]  Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal,
+                        arg.index(), arg.offset(), buf.opaque(), buf.size());
     }
 
     // if (VLOG_IS_ON(100)) {

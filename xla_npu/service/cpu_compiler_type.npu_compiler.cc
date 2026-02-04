@@ -247,8 +247,8 @@
 
 #include "xla/xla_npu/backend/cpu_compiler_type.npu_constant_allocation.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/cpu_compiler_type.npu_thunk_emitter.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
 
@@ -1053,7 +1053,7 @@ absl::Status NpuCompiler::RunHloPassesAfterLayoutAssn(HloModule* module, bool is
 
 absl::Status NpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile, llvm::TargetMachine* target_machine,
                                        const CompileOptions& compile_options) {
-    NpuLog::Print(NpuLog::Level::DEBUG, "Run npu hlo pass.");
+    npu::Log::Print(npu::Log::Level::DEBUG, "Run npu hlo pass.");
 
     HloPassPipeline pipeline("npu pass");
     // 清除无效HLO指令
@@ -1902,7 +1902,7 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuCompiler::CompileNpuExecutable
 absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_ptr<HloModule> module,
                                                                     [[maybe_unused]] se::StreamExecutor* stream_exec,
                                                                     const CompileOptions& options) {
-    NpuLog::Print(NpuLog::Level::DEBUG, "Run npu llvm compile(contains thunks generate).");
+    npu::Log::Print(npu::Log::Level::DEBUG, "Run npu llvm compile(contains thunks generate).");
 
     // // 确保set device(仅适用于单卡,多卡场景需要重新设计流程)
     // stream_exec->Init();

@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_IR_EMITTER_UNNESTED_H_
-#define SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#define XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_
 
 #include <array>
 #include <cstdint>
@@ -33,8 +33,8 @@
 #include "xla/service/llvm_ir/ir_array.h"
 #include "xla/service/llvm_ir/loop_emitter.h"
 #include "xla/shape_util.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/service/npu_ir_emitter.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
@@ -300,7 +300,8 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
     absl::StatusOr<BufferAllocation::Slice> GetAllocationSliceForHlo(const HloInstruction* instr,
                                                                      const ShapeIndex& index = {}) const;
 
-    // NpuCollectivesAsyncEvents& GetCollectivesAsyncEvents() { return ir_emitter_context_->collectives_async_events(); }
+    // NpuCollectivesAsyncEvents& GetCollectivesAsyncEvents() { return ir_emitter_context_->collectives_async_events();
+    // }
 
     // NpuInstructionToHostExecuteAsyncEvents& GetInstructionToHostExecuteAsyncEvents() {
     //     return ir_emitter_context_->instruction_to_host_execute_async_events();
@@ -326,4 +327,4 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_IR_EMITTER_UNNESTED_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_UNNESTED_H_

@@ -1,5 +1,5 @@
-#ifndef KERNEL_NPU_AUTOFUSE_KERNEL_H_
-#define KERNEL_NPU_AUTOFUSE_KERNEL_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_AUTOFUSE_KERNEL_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_AUTOFUSE_KERNEL_H_
 
 #include "absl/status/status.h"
 #include "xla/stream_executor/kernel.h"
@@ -50,4 +50,4 @@ class NpuAutoFuseKernel : public Kernel {
 
 }  // namespace stream_executor
 
-#endif  // KERNEL_NPU_AUTOFUSE_KERNEL_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_AUTOFUSE_KERNEL_H_

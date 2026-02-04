@@ -1,4 +1,4 @@
 .idea
 .vscode
-dependency/external/*
-!dependency/external/BUILD
+xla_npu/dependency/external/*
+!xla_npu/dependency/external/BUILD

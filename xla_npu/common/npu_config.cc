@@ -2,7 +2,7 @@
 
 #include "xla/tsl/util/env_var.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -14,7 +14,7 @@ NpuConfig::NpuConfig()
       } {}
 
 void NpuConfig::Init() {
-    NpuLog::Print(NpuLog::Level::INFO, "Init user config for %s.", NpuConstant::platformName);
+    npu::Log::Print(npu::Log::Level::INFO, "Init user config for %s.", NpuConstant::platformName);
 
     for (const auto& [key, desc] : key_desc_map_) {
         absl::Status status = absl::OkStatus();
@@ -25,8 +25,8 @@ void NpuConfig::Init() {
                 status = tsl::ReadStringFromEnvVar(desc.str_desc, std::get<std::string>(desc.default_value), &str_val);
                 if (status.ok()) {
                     value_map_[key] = str_val;
-                    NpuLog::Print(NpuLog::Level::INFO, "Set config key - '%s', value - '%s', type - '%d' success.",
-                                  desc.str_desc, str_val, static_cast<int>(desc.type));
+                    npu::Log::Print(npu::Log::Level::INFO, "Set config key - '%s', value - '%s', type - '%d' success.",
+                                    desc.str_desc, str_val, static_cast<int>(desc.type));
                 }
                 break;
             }
@@ -35,19 +35,19 @@ void NpuConfig::Init() {
                 status = tsl::ReadBoolFromEnvVar(desc.str_desc, std::get<bool>(desc.default_value), &bool_val);
                 if (status.ok()) {
                     value_map_[key] = bool_val;
-                    NpuLog::Print(NpuLog::Level::INFO, "Set config key - '%s', value - '%v', type - '%d' success.",
-                                  desc.str_desc, bool_val, static_cast<int>(desc.type));
+                    npu::Log::Print(npu::Log::Level::INFO, "Set config key - '%s', value - '%v', type - '%d' success.",
+                                    desc.str_desc, bool_val, static_cast<int>(desc.type));
                 }
                 break;
             }
             default:
-                NpuLog::Print(NpuLog::Level::ERROR, "Set config key - '%s' failed, config type - '%d' not support.",
-                              desc.str_desc, static_cast<int>(desc.type));
+                npu::Log::Print(npu::Log::Level::ERROR, "Set config key - '%s' failed, config type - '%d' not support.",
+                                desc.str_desc, static_cast<int>(desc.type));
         }
 
         if (!status.ok()) {
-            NpuLog::Print(NpuLog::Level::WARN, "Set config key - '%s', type - '%d' failed, error status: %s.",
-                          desc.str_desc, static_cast<int>(desc.type), status.ToString().c_str());
+            npu::Log::Print(npu::Log::Level::WARN, "Set config key - '%s', type - '%d' failed, error status: %s.",
+                            desc.str_desc, static_cast<int>(desc.type), status.ToString().c_str());
         }
     }
 }
@@ -55,7 +55,7 @@ void NpuConfig::Init() {
 NpuConfig::Desc NpuConfig::GetDesc(NpuConfig::Key key) const {
     auto it = key_desc_map_.find(key);
     if (it == key_desc_map_.end()) {
-        NpuLog::Print(NpuLog::Level::ERROR, "Config key - '%d' not found in desc map.", static_cast<int>(key));
+        npu::Log::Print(npu::Log::Level::ERROR, "Config key - '%d' not found in desc map.", static_cast<int>(key));
         throw std::out_of_range("Config key not found");
     }
     return it->second;
@@ -67,8 +67,8 @@ NpuConfig::ConfigValue NpuConfig::GetConfigValue(NpuConfig::Key key) const {
         return it->second;
     }
     // 未找到时返回默认值
-    NpuLog::Print(NpuLog::Level::WARN, "Config key - '%d' not found in value map, use default value.",
-                  static_cast<int>(key));
+    npu::Log::Print(npu::Log::Level::WARN, "Config key - '%d' not found in value map, use default value.",
+                    static_cast<int>(key));
     const Desc& desc = GetDesc(key);
     return desc.default_value;
 }
@@ -82,8 +82,8 @@ T NpuConfig::GetTypedValue(NpuConfig::Key key) const {
     // 类型不匹配时尝试从默认值获取
     const Desc& desc = GetDesc(key);
     if (auto* default_val = std::get_if<T>(&desc.default_value)) {
-        NpuLog::Print(NpuLog::Level::WARN, "Config key - '%d' type mismatch, use default value.",
-                      static_cast<int>(key));
+        npu::Log::Print(npu::Log::Level::WARN, "Config key - '%d' type mismatch, use default value.",
+                        static_cast<int>(key));
         return *default_val;
     }
     throw std::bad_variant_access();

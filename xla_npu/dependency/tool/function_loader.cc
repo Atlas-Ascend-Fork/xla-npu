@@ -1,6 +1,6 @@
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace npu {
 
@@ -50,7 +50,7 @@ FunctionRegister* FunctionRegister::GetInstance() {
 void FunctionRegister::Register(const std::string& soName, std::unique_ptr<FunctionLoader>& libPtr) {
     std::lock_guard<std::mutex> lock(mu_);
     registry.emplace(soName, std::move(libPtr));
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Register lib name '%s'", soName);
+    Log::Print(Log::Level::DEBUG, "Register lib name '%s'", soName);
 }
 
 void FunctionRegister::Register(const std::string& soName, const std::string& funcName) {
@@ -59,7 +59,7 @@ void FunctionRegister::Register(const std::string& soName, const std::string& fu
         throw std::runtime_error(soName + " library should register first.");
     }
     itr->second->Set(funcName);
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Register lib function '%s' in lib name '%s'", funcName, soName);
+    Log::Print(Log::Level::DEBUG, "Register lib function '%s' in lib name '%s'", funcName, soName);
 }
 
 void* FunctionRegister::Get(const std::string& soName, const std::string& funcName) {

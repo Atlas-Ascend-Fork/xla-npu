@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
-#define SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#define XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
 
 #include <memory>
 #include <string>
@@ -26,7 +26,7 @@
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/util.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
@@ -63,4 +63,4 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_COMPILE_MODULE_TO_LLVM_IR_H_

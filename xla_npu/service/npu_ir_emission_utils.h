@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_IR_EMISSION_UTILS_H_
-#define SERVICE_NPU_IR_EMISSION_UTILS_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_IR_EMISSION_UTILS_H_
+#define XLA_XLA_NPU_SERVICE_NPU_IR_EMISSION_UTILS_H_
 
 #include <cstdint>
 #include <functional>
@@ -311,4 +311,4 @@ absl::StatusOr<NpuDenseDataIntermediate> NpuLiteralToXlaFormat(const Literal& li
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_IR_EMISSION_UTILS_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_IR_EMISSION_UTILS_H_

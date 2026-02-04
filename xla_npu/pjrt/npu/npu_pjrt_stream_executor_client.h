@@ -1,5 +1,5 @@
-#ifndef PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_
-#define PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_
+#ifndef XLA_XLA_NPU_PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_
+#define XLA_XLA_NPU_PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_
 
 #include "xla/pjrt/pjrt_stream_executor_client.h"
 #include "xla/xla_npu/pjrt/plugin/npu_topology.h"
@@ -31,4 +31,4 @@ class NpuPjrtStreamExecutorClient : public PjRtStreamExecutorClient {
 
 }  // namespace xla
 
-#endif  // PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_
+#endif  // XLA_XLA_NPU_PJRT_NPU_NPU_PJRT_STREAM_EXECUTOR_CLIENT_H_

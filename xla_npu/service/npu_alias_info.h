@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_ALIAS_INFO_H_
-#define SERVICE_NPU_ALIAS_INFO_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_ALIAS_INFO_H_
+#define XLA_XLA_NPU_SERVICE_NPU_ALIAS_INFO_H_
 
 #include <optional>
 
@@ -27,4 +27,4 @@ class NpuAliasInfo : public AliasInfo {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_ALIAS_INFO_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_ALIAS_INFO_H_

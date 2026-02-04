@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_IR_EMITTER_H_
-#define SERVICE_NPU_IR_EMITTER_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_H_
+#define XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_H_
 
 #include <vector>
 
@@ -120,4 +120,4 @@ class NpuIrEmitter : public DfsHloVisitorWithDefault, public IrBuilderMixin<NpuI
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_IR_EMITTER_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_IR_EMITTER_H_

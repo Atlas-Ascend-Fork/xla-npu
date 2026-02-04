@@ -1,5 +1,5 @@
-#ifndef COMMON_NPU_OPERATION_H_
-#define COMMON_NPU_OPERATION_H_
+#ifndef XLA_XLA_NPU_COMMON_NPU_OPERATION_H_
+#define XLA_XLA_NPU_COMMON_NPU_OPERATION_H_
 
 #include "absl/status/status.h"
 #include "xla/tsl/platform/errors.h"
@@ -20,4 +20,4 @@ class NpuOperation {
 
 }  // namespace xla
 
-#endif  // COMMON_NPU_OPERATION_H_
+#endif  // XLA_XLA_NPU_COMMON_NPU_OPERATION_H_

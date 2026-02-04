@@ -1,5 +1,5 @@
-#ifndef BACKEND_RUNTIME_NPU_THUNK_ID
-#define BACKEND_RUNTIME_NPU_THUNK_ID
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_ID
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_ID
 
 #include <cstdint>
 
@@ -22,4 +22,4 @@ class NpuThunkIdGenerator {
 
 }  // namespace xla
 
-#endif  // BACKEND_RUNTIME_NPU_THUNK_ID
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_ID

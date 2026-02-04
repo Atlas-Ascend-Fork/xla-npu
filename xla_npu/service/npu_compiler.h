@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_COMPILER_H_
-#define SERVICE_NPU_COMPILER_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_COMPILER_H_
+#define XLA_XLA_NPU_SERVICE_NPU_COMPILER_H_
 
 #include <cstdint>
 #include <memory>
@@ -270,4 +270,4 @@ class NpuCompiler : public LLVMCompiler {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_COMPILER_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_COMPILER_H_

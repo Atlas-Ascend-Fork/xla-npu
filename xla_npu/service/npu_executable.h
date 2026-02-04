@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_EXECUTABLE_H_
-#define SERVICE_NPU_EXECUTABLE_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_
+#define XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_
 
 #include <cstdint>
 #include <deque>
@@ -40,8 +40,8 @@
 #include "xla/stream_executor/device_memory_allocator.h"
 #include "xla/stream_executor/scoped_module_handle.h"
 #include "xla/stream_executor/stream_executor.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
@@ -317,4 +317,4 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_EXECUTABLE_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_EXECUTABLE_H_

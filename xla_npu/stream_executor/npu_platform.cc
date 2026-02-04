@@ -16,24 +16,24 @@
 #include "xla/stream_executor/platform/initialize.h"
 #include "xla/stream_executor/platform_manager.h"
 #include "xla/xla_npu/common/npu_constant.h"
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/stream_executor/npu_executor.h"
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
-#include "xla/xla_npu/dependency/interface/acl_interface.h"
 
 namespace stream_executor {
 
 NpuPlatform::NpuPlatform() : name_(xla::NpuConstant::platformName) {}
 
 NpuPlatform::~NpuPlatform() {
-    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Finalize platform for '%s'.", name_);
+    npu::Log::Print(npu::Log::Level::INFO, "Finalize platform for '%s'.", name_);
     if (initialized_) {
         auto ret = npu::aclFinalize();
         if (ret != ACL_SUCCESS) {
-            xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Finalize platform for '%s' failed, error code %d", name_,
-                               ret);
+            npu::Log::Print(npu::Log::Level::ERROR, "Finalize platform for '%s' failed, error code %d", name_,
+                                 ret);
         } else {
-            xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Finalize platform for '%s' success.", name_);
+            npu::Log::Print(npu::Log::Level::INFO, "Finalize platform for '%s' success.", name_);
         }
 
         initialized_ = false;
@@ -47,13 +47,13 @@ bool NpuPlatform::Initialized() const { return initialized_; }
 absl::Status NpuPlatform::Initialize() {
     aclError acl_status = npu::aclInit(nullptr);
     if (acl_status != ACL_SUCCESS) {
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Init platform for '%s' failed.", name_);
+        npu::Log::Print(npu::Log::Level::ERROR, "Init platform for '%s' failed.", name_);
         return absl::UnavailableError("Acl init failed.");
     }
 
     initialized_ = true;
 
-    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Init platform for '%s' success.", name_);
+    npu::Log::Print(npu::Log::Level::INFO, "Init platform for '%s' success.", name_);
     return absl::OkStatus();
 }
 
@@ -61,12 +61,12 @@ int NpuPlatform::VisibleDeviceCount() const {
     uint32_t device_count = 0;
     aclError acl_status = npu::aclrtGetDeviceCount(&device_count);
     if (acl_status != ACL_SUCCESS) {
-        xla::NpuLog::Print(xla::NpuLog::Level::ERROR, "Get device count for '%s' failed.", name_);
+        npu::Log::Print(npu::Log::Level::ERROR, "Get device count for '%s' failed.", name_);
         return 0;
     }
 
-    xla::NpuLog::Print(xla::NpuLog::Level::INFO, "Get device count for '%s' success, total device num is %d.", name_,
-                       device_count);
+    npu::Log::Print(npu::Log::Level::INFO, "Get device count for '%s' success, total device num is %d.",
+                         name_, device_count);
     return device_count;
 }
 

@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_THUNK_H_
-#define BACKEND_NPU_THUNK_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_H_
 
 #include <cstdint>
 #include <map>
@@ -583,4 +583,4 @@ bool IsReductionCollective(NpuThunk::Kind kind);
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_THUNK_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_H_

@@ -1,5 +1,5 @@
-#ifndef PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
-#define PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
+#ifndef XLA_XLA_NPU_PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
+#define XLA_XLA_NPU_PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
 
 #include <string>
 
@@ -38,4 +38,4 @@ class NpuDeviceDescription final : public PjRtDeviceDescription {
     absl::flat_hash_map<std::string, PjRtDeviceAttribute> attributes_ = {};
 };
 }  // namespace xla
-#endif  // PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_
+#endif  // XLA_XLA_NPU_PJRT_PLUGIN_NPU_DEVICE_DESCRIPTION_H_

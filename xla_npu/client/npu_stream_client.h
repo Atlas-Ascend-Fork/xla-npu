@@ -1,5 +1,5 @@
-#ifndef CLIENT_NPU_STREAM_CLIENT_H_
-#define CLIENT_NPU_STREAM_CLIENT_H_
+#ifndef XLA_XLA_NPU_CLIENT_NPU_STREAM_CLIENT_H_
+#define XLA_XLA_NPU_CLIENT_NPU_STREAM_CLIENT_H_
 
 #include "absl/status/statusor.h"
 #include "xla/xla_npu/pjrt/npu/npu_pjrt_stream_executor_client.h"
@@ -10,4 +10,4 @@ absl::StatusOr<std::unique_ptr<NpuPjrtStreamExecutorClient>> GetNpuPjrtStreamExe
 
 }  // namespace xla
 
-#endif  // CLIENT_NPU_STREAM_CLIENT_H_
+#endif  // XLA_XLA_NPU_CLIENT_NPU_STREAM_CLIENT_H_

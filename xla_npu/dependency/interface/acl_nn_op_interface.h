@@ -1,5 +1,5 @@
-#ifndef REGISTER_ACLNNOPINTERFACE_H_
-#define REGISTER_ACLNNOPINTERFACE_H_
+#ifndef XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_
+#define XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_
 
 #include "xla/xla_npu/dependency/header/acl_nn/acl_meta.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
@@ -50,4 +50,4 @@ DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMul)
 
 }  // namespace npu
 
-#endif  // REGISTER_ACLNNOPINTERFACE_H_
+#endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_

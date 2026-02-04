@@ -1,12 +1,12 @@
-#ifndef BACKEND_NPU_CUSTOM_H_
-#define BACKEND_NPU_CUSTOM_H_
+#ifndef XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_
+#define XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_
 
 #include "absl/status/statusor.h"
 // #include "xla/backends/gpu/codegen/fusion_emitter.h"
 #include "xla/hlo/ir/hlo_instructions.h"
 // #include "xla/service/gpu/hlo_fusion_analysis.h"
 // #include "xla/service/gpu/ir_emitter_context.h"
-#include "xla/xla_npu/backend/npu_fusion_emitter.h"
+#include "xla/xla_npu/backend/codegen/npu_fusion_emitter.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -17,7 +17,7 @@ namespace xla {
 class NpuCustomFusion : public NpuFusionInterface {
    public:
     absl::StatusOr<NpuFusionEmissionResult> Emit(NpuIrEmitterContext& ir_emitter_context,
-                                              const HloFusionInstruction& fusion) const final;
+                                                 const HloFusionInstruction& fusion) const final;
 };
 
 // // Emitter for custom fusions implementing address computation. An address
@@ -61,4 +61,4 @@ class NpuCustomFusion : public NpuFusionInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_CUSTOM_H_
+#endif  // XLA_XLA_NPU_BACKEND_CODEGEN_NPU_CUSTOM_H_

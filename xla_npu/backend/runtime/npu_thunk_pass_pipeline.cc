@@ -1,4 +1,4 @@
-#include "xla/xla_npu/backend/npu_thunk_pass_pipeline.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk_pass_pipeline.h"
 
 #include <memory>
 
@@ -9,14 +9,14 @@
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/tsl/platform/statusor.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 
 namespace xla {
 
 absl::StatusOr<bool> NpuThunkPassPipeline::Run(NpuSequentialThunk* root_thunk, const DebugOptions& debug_options,
-                                            const HloModule* absl_nullable hlo_module,
-                                            const se::DeviceDescription& device_info,
-                                            NpuThunkPassBufferAllocator& allocator) {
+                                               const HloModule* absl_nullable hlo_module,
+                                               const se::DeviceDescription& device_info,
+                                               NpuThunkPassBufferAllocator& allocator) {
     bool changed = false;
     for (const auto& pass : passes_) {
         VLOG(1) << "Running ThunkPass: " << pass->name();

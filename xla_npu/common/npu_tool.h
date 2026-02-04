@@ -1,5 +1,5 @@
-#ifndef COMMON_NPU_TOOL_H_
-#define COMMON_NPU_TOOL_H_
+#ifndef XLA_XLA_NPU_COMMON_NPU_TOOL_H_
+#define XLA_XLA_NPU_COMMON_NPU_TOOL_H_
 
 #include "mlir/IR/BuiltinOps.h"
 #include "xla/hlo/ir/hlo_module.h"
@@ -7,9 +7,9 @@
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -64,37 +64,37 @@ class NpuTool {
     }
 
     static void PrintHloModule(const HloModule* hlo_module, const std::string& title) {
-        NpuLog::Print(NpuLog::Level::DEBUG, "========================================");
-        NpuLog::Print(NpuLog::Level::DEBUG, "**** %s: ****", title);
+        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        npu::Log::Print(npu::Log::Level::DEBUG, "**** %s: ****", title);
         HloPrintOptions hloPrintOptions = GetDetailedPrintOptions();
-        NpuLog::Print(NpuLog::Level::DEBUG, hlo_module->ToString(hloPrintOptions));
-        NpuLog::Print(NpuLog::Level::DEBUG, "========================================");
+        npu::Log::Print(npu::Log::Level::DEBUG, hlo_module->ToString(hloPrintOptions));
+        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
     }
 
     static void PrintModuleOp(mlir::ModuleOp module, const std::string& title) {
-        NpuLog::Print(NpuLog::Level::DEBUG, "========================================");
+        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
         std::string result;
         llvm::raw_string_ostream os(result);
         module.print(os);
-        NpuLog::Print(NpuLog::Level::DEBUG, "**** %s: ****", title);
-        NpuLog::Print(NpuLog::Level::DEBUG, os.str());
-        NpuLog::Print(NpuLog::Level::DEBUG, "========================================");
+        npu::Log::Print(npu::Log::Level::DEBUG, "**** %s: ****", title);
+        npu::Log::Print(npu::Log::Level::DEBUG, os.str());
+        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
     }
 
     template <typename printDataType>
     static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr) {
-        NpuLog::Print(NpuLog::Level::DEBUG, title);
+        npu::Log::Print(npu::Log::Level::DEBUG, title);
 
         std::vector<printDataType> resultData(size, 0);
         aclError ret = npu::aclrtMemcpy(resultData.data(), resultData.size() * sizeof(resultData[0]), deviceAddr,
                                         size * sizeof(resultData[0]), ACL_MEMCPY_DEVICE_TO_HOST);
 
         if (ret != ACL_SUCCESS) {
-            NpuLog::Print(NpuLog::Level::DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
+            npu::Log::Print(npu::Log::Level::DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
             return;
         }
         for (int64_t i = 0; i < size; i++) {
-            NpuLog::Print(NpuLog::Level::DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
+            npu::Log::Print(npu::Log::Level::DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
         }
     }
 
@@ -137,7 +137,7 @@ class NpuTool {
     static void PrintXlaShape(const Shape& xla_data_shape, std::string desc = "Xla tensor shape: ") {
         const auto& vector_shape = ConvertXlaShape2VectorShape(xla_data_shape);
         const auto& vector_shape_str = GetShapeString(vector_shape);
-        NpuLog::Print(NpuLog::Level::DEBUG, "%s%s", desc, vector_shape_str);
+        npu::Log::Print(npu::Log::Level::DEBUG, "%s%s", desc, vector_shape_str);
     }
 
     static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {
@@ -168,4 +168,4 @@ class NpuTool {
 
 }  // namespace xla
 
-#endif  // COMMON_NPU_TOOL_H_
+#endif  // XLA_XLA_NPU_COMMON_NPU_TOOL_H_

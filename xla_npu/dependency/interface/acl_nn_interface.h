@@ -1,5 +1,5 @@
-#ifndef REGISTER_ACLNNINTERFACE_H_
-#define REGISTER_ACLNNINTERFACE_H_
+#ifndef XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_
+#define XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_
 
 #include "xla/xla_npu/dependency/header/acl_nn/acl_meta.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
@@ -22,4 +22,4 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclIntArray*, aclCreateIntArray, (const int64_t* va
 
 }  // namespace npu
 
-#endif  // REGISTER_ACLNNINTERFACE_H_
+#endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_

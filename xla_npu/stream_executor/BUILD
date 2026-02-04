@@ -39,9 +39,9 @@ cc_library(
     ],
     deps = [
         ":npu_event",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_operation",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/stream_executor:device_memory",
         "//xla/stream_executor:event",
@@ -85,8 +85,8 @@ cc_library(
     srcs = ["npu_auto_fuse_kernel.cc"],
     hdrs = ["npu_auto_fuse_kernel.h"],
     deps = [
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/dependency/tool:function_loader",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/stream_executor:kernel",
         "//xla/stream_executor:stream_executor_h",
@@ -107,10 +107,10 @@ cc_library(
         ":npu_stream",
         ":npu_stream_factory",
         "//xla/xla_npu/common:npu_config",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_operation",
         "//xla/xla_npu/service/kernel:npu_kernel_config",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/stream_executor:device_description",
         "//xla/stream_executor:device_memory",
@@ -149,8 +149,8 @@ cc_library(
         ":npu_executor",
         ":npu_platform_id",
         "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
 
         "//xla/stream_executor:device_description",
         "//xla/stream_executor:executor_cache",

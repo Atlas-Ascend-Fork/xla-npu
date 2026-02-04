@@ -21,7 +21,7 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -100,9 +100,9 @@ absl::StatusOr<std::vector<NpuConstantAllocation>> CreateNpuConstantAllocations(
                 absl::StrCat("Could not find constant instruction defining buffer ", allocation.ToString()));
         }
 
-        NpuLog::Print(NpuLog::Level::DEBUG,
-                      "Create constant allocation for index %d from constant literal %s; shape=%s", allocation.index(),
-                      const_instr->name(), const_instr->literal().shape().ToString());
+        npu::Log::Print(npu::Log::Level::DEBUG,
+                        "Create constant allocation for index %d from constant literal %s; shape=%s",
+                        allocation.index(), const_instr->name(), const_instr->literal().shape().ToString());
         TF_ASSIGN_OR_RETURN(constants.emplace_back(),
                             LiteralToConstantAllocation(allocation.index(), const_instr->literal()));
     }

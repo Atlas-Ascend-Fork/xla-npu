@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
-#define BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_
 
 #include <cstdint>
 #include <memory>
@@ -19,7 +19,7 @@
 #include "xla/stream_executor/kernel.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
 namespace xla {
@@ -69,4 +69,4 @@ class NpuCustomKernelThunk : public NpuThunk {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_CUSTOM_KERNEL_THUNK_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_CUSTOM_KERNEL_THUNK_H_

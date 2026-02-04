@@ -1,5 +1,5 @@
-#ifndef SERVICE_NPU_HLO_TO_IR_BINDINGS_H_
-#define SERVICE_NPU_HLO_TO_IR_BINDINGS_H_
+#ifndef XLA_XLA_NPU_SERVICE_NPU_HLO_TO_IR_BINDINGS_H_
+#define XLA_XLA_NPU_SERVICE_NPU_HLO_TO_IR_BINDINGS_H_
 
 #include <string>
 
@@ -64,4 +64,4 @@ class NpuHloToIrBindings {
 
 }  // namespace xla
 
-#endif  // SERVICE_NPU_HLO_TO_IR_BINDINGS_H_
+#endif  // XLA_XLA_NPU_SERVICE_NPU_HLO_TO_IR_BINDINGS_H_

@@ -15,8 +15,8 @@
 // #include "xla/stream_executor/host/host_event.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_common.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_operation.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 
 namespace stream_executor {
@@ -36,13 +36,13 @@ absl::Status NpuStream::Init() {
 }
 
 absl::Status NpuStream::BlockHostUntilDone() {
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Block host until stream '%s' done", GetName());
+    npu::Log::Print(npu::Log::Level::DEBUG, "Block host until stream '%s' done", GetName());
     TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
     auto acl_ret = npu::aclrtSynchronizeStream(stream_);
     CHECK_COND_AND_PRINT_NPU_LOG(acl_ret != ACL_SUCCESS, "Synchronize stream failed. Error code: %d", acl_ret);
 
-    return absl::OkStatus(); 
+    return absl::OkStatus();
 }
 
 absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const DeviceMemoryBase& npu_src, uint64_t size) {
@@ -62,9 +62,9 @@ absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src, 
         return absl::InternalError(
             absl::StrCat("Execute aclrtMemcpy d2h on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG,
-                       "Npu memory copy d2h on stream '%s' success, dst cpu addr %p, src npu addr %p, size %d",
-                       GetName(), host_dst, src_mem, size);
+    npu::Log::Print(npu::Log::Level::DEBUG,
+                         "Npu memory copy d2h on stream '%s' success, dst cpu addr %p, src npu addr %p, size %d",
+                         GetName(), host_dst, src_mem, size);
     return absl::OkStatus();
 }
 
@@ -77,9 +77,9 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const void* host_src, 
         return absl::InternalError(
             absl::StrCat("Execute aclrtMemcpy h2d on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG,
-                       "Npu memory copy h2d on stream '%s' success, dst npu addr %p, src cpu addr %p, size %d",
-                       GetName(), dst_mem, host_src, size);
+    npu::Log::Print(npu::Log::Level::DEBUG,
+                         "Npu memory copy h2d on stream '%s' success, dst npu addr %p, src cpu addr %p, size %d",
+                         GetName(), dst_mem, host_src, size);
     return absl::OkStatus();
 }
 
@@ -118,7 +118,7 @@ absl::Status NpuStream::RecordEvent(Event* event) {
 }
 
 absl::Status NpuStream::DoHostCallbackWithStatus(absl::AnyInvocable<absl::Status() &&> callback) {
-    xla::NpuLog::Print(xla::NpuLog::Level::DEBUG, "Execute host callback on stream '%s'", GetName());
+    npu::Log::Print(npu::Log::Level::DEBUG, "Execute host callback on stream '%s'", GetName());
 
     return std::move(callback)();
 }

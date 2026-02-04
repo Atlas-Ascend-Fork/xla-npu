@@ -209,7 +209,7 @@ cc_library(
     srcs = ["npu_execution_stream_assignment.cc"],
     hdrs = ["npu_execution_stream_assignment.h"],
     deps = [
-        "//xla/xla_npu/backend:npu_thunk",
+        "//xla/xla_npu/backend/runtime:npu_thunk",
 
         "//xla:side_effect_util",
         # "//xla/backends/gpu/runtime:thunk",
@@ -318,15 +318,15 @@ cc_library(
         ":npu_ir_emitter",
         ":npu_ir_emitter_context",
 
+        "//xla/xla_npu/backend/codegen:npu_custom",
+        "//xla/xla_npu/backend/codegen:npu_fusion_emitter",
+        "//xla/xla_npu/backend/runtime:npu_aclnn_thunk",
+        "//xla/xla_npu/backend/runtime:npu_custom_kernel_thunk",
+        "//xla/xla_npu/backend/runtime:npu_sequential_thunk",
+        "//xla/xla_npu/backend/runtime:npu_thunk",
         "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/common:npu_tool",
-        "//xla/xla_npu/common:npu_log",
-        "//xla/xla_npu/backend:npu_aclnn_thunk",
-        "//xla/xla_npu/backend:npu_custom",
-        "//xla/xla_npu/backend:npu_custom_kernel_thunk",
-        "//xla/xla_npu/backend:npu_fusion_emitter",
-        "//xla/xla_npu/backend:npu_sequential_thunk",
-        "//xla/xla_npu/backend:npu_thunk",
+        "//xla/xla_npu/dependency/tool:log",
 
         # "//xla/service/gpu:backend_configs_cc",
         # "//xla/service/gpu:cublas_cudnn",
@@ -491,7 +491,7 @@ cc_library(
         ":npu_execution_stream_assignment",
         ":npu_ir_emitter_context",
         ":npu_ir_emitter_unnested",
-        "//xla/xla_npu/common:npu_log",
+        "//xla/xla_npu/dependency/tool:log",
 
         # "//xla/service/gpu:alias_info",
         # "//xla/service/gpu:execution_stream_assignment",
@@ -557,9 +557,9 @@ cc_library(
         ":npu_alias_info",
         ":npu_buffer_allocations",
         ":npu_stream_executor_util",
-        "//xla/xla_npu/backend:npu_thunk",
-        "//xla/xla_npu/backend:npu_sequential_thunk",
-        "//xla/xla_npu/backend:npu_thunk_pass_pipeline",  
+        "//xla/xla_npu/backend/runtime:npu_sequential_thunk",
+        "//xla/xla_npu/backend/runtime:npu_thunk",
+        "//xla/xla_npu/backend/runtime:npu_thunk_pass_pipeline",  
         "//xla/xla_npu/common:npu_constant",
 
         # "//xla/service/gpu:alias_info",
@@ -657,8 +657,8 @@ cc_library(
         ":npu_compile_module_to_llvm_ir",
         ":npu_ir_emitter_unnested",
         "//xla/xla_npu/common:npu_config",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/transform:npu_super_fusion",
 
         "//xla/service/gpu:alias_info",
@@ -1018,8 +1018,8 @@ cc_library(
         "//xla/xla_npu/backend:cpu_compiler_type.npu_buffer_allocations",
         "//xla/xla_npu/backend:cpu_compiler_type.npu_constant_allocation",
         "//xla/xla_npu/backend:cpu_compiler_type.npu_thunk_executor",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_operation",
+        "//xla/xla_npu/dependency/tool:log",
 
         # ":cpu_runtime",
         # ":executable_proto_cc",
@@ -1191,8 +1191,8 @@ cc_library(
         ":cpu_compiler_type.npu_thunk_emitter",
         "//xla/xla_npu/backend:cpu_compiler_type.npu_constant_allocation",
         "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/common:npu_log",
         "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/stream_executor:npu_platform_id",
 
         "//xla/service/cpu:conv_canonicalization",

@@ -1,5 +1,5 @@
-#ifndef STREAM_EXECUTOR_NPU_EVENT_H_
-#define STREAM_EXECUTOR_NPU_EVENT_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EVENT_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EVENT_H_
 
 #include <memory>
 
@@ -29,4 +29,4 @@ class NpuEvent : public Event {
 
 }  // namespace stream_executor
 
-#endif  // STREAM_EXECUTOR_NPU_EVENT_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_EVENT_H_

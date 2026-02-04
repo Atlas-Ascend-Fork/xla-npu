@@ -1,5 +1,5 @@
-#ifndef PJRT_PLUGIN_NPU_TOPOLOGY_H_
-#define PJRT_PLUGIN_NPU_TOPOLOGY_H_
+#ifndef XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_H_
+#define XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_H_
 
 #include <memory>
 #include <string>
@@ -53,4 +53,4 @@ inline int UnpackCpuLocalDeviceId(PjRtGlobalDeviceId global_device_id) {
 
 }  // namespace xla
 
-#endif  // PJRT_PLUGIN_NPU_TOPOLOGY_H_
+#endif  // XLA_XLA_NPU_PJRT_PLUGIN_NPU_TOPOLOGY_H_

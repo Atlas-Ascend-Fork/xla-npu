@@ -1,5 +1,5 @@
-#ifndef STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_
-#define STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_
+#ifndef XLA_XLA_NPU_STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_
+#define XLA_XLA_NPU_STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_
 
 #include "xla/xla_npu/stream_executor/npu_stream.h"
 
@@ -45,4 +45,4 @@ class NpuStreamFactoryRegistrar {
 // __COUNTER__ must go through another macro to be properly expanded
 #define INTERNAL_REGISTER_LOCAL_NPU_STREAM_FACTORY_NAME(ctr) ___##ctr##__object_
 
-#endif  // STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_
+#endif  // XLA_XLA_NPU_STREAM_EXECUTOR_NPU_STREAM_FACTORY_H_

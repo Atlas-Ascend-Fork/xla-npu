@@ -1,5 +1,5 @@
-#ifndef PJRT_C_PJRT_C_API_NPU_H_
-#define PJRT_C_PJRT_C_API_NPU_H_
+#ifndef XLA_XLA_NPU_PJRT_C_PJRT_C_API_NPU_H_
+#define XLA_XLA_NPU_PJRT_C_PJRT_C_API_NPU_H_
 
 #include "xla/pjrt/c/pjrt_c_api.h"
 
@@ -14,4 +14,4 @@ const PJRT_Api* GetPjrtApi();
 }
 #endif
 
-#endif  // PJRT_C_PJRT_C_API_NPU_H_
+#endif  // XLA_XLA_NPU_PJRT_C_PJRT_C_API_NPU_H_

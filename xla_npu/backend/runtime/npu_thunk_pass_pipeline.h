@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_THUNK_PASS_PIPELINE_H_
-#define BACKEND_NPU_THUNK_PASS_PIPELINE_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_
 
 #include <cstdint>
 #include <memory>
@@ -14,7 +14,7 @@
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/stream_executor/device_description.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 
 namespace xla {
 
@@ -60,4 +60,4 @@ class NpuThunkPassPipeline : public NpuThunkPassInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_THUNK_PASS_PIPELINE_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_

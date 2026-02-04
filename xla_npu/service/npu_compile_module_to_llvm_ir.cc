@@ -63,8 +63,8 @@
 #include "xla/util.h"
 #include "xla/xla.pb.h"
 #include "xla/xla_data.pb.h"
-#include "xla/xla_npu/backend/npu_sequential_thunk.h"
-#include "xla/xla_npu/common/npu_log.h"
+#include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
@@ -228,7 +228,7 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
 
     if (!module->has_schedule()) {
         const std::string err_msg = "Module need to be scheduled.";
-        NpuLog::Print(NpuLog::Level::ERROR, err_msg);
+        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
         return absl::UnavailableError(err_msg);
     }
 

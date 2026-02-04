@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_ACLNN_THUNK_H_
-#define BACKEND_NPU_ACLNN_THUNK_H_
+#ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_ACLNN_THUNK_H_
+#define XLA_XLA_NPU_BACKEND_RUNTIME_NPU_ACLNN_THUNK_H_
 
 #include <cstdint>
 #include <memory>
@@ -15,7 +15,7 @@
 // #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/stream_executor/dnn.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 
@@ -64,4 +64,4 @@ class NpuAclnnThunk : public NpuThunk {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_ACLNN_THUNK_H_
+#endif  // XLA_XLA_NPU_BACKEND_RUNTIME_NPU_ACLNN_THUNK_H_

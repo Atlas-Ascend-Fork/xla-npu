@@ -302,10 +302,10 @@
 #include "xla/service/gpu/gpu_hlo_schedule.h"
 #include "xla/service/gpu/gpu_latency_hiding_scheduler.h"
 #include "xla/service/gpu/transforms/add_tracking_suffix_to_instruction_names.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_config.h"
-#include "xla/xla_npu/common/npu_log.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_alias_info.h"
 #include "xla/xla_npu/service/npu_compile_module_to_llvm_ir.h"
 #include "xla/xla_npu/service/npu_executable.h"
@@ -352,8 +352,9 @@ MaybeOwningThreadPool CreateMaybeOwningThreadPool(int parallelism, tsl::thread::
     }
 }
 
-gpu::DeviceOrDevicelessConfig GetDeviceConfig(se::StreamExecutor* stream_exec, const NpuCompiler::CompileOptions& options,
-                                         const Compiler::GpuTargetConfig& gpu_target_config) {
+gpu::DeviceOrDevicelessConfig GetDeviceConfig(se::StreamExecutor* stream_exec,
+                                              const NpuCompiler::CompileOptions& options,
+                                              const Compiler::GpuTargetConfig& gpu_target_config) {
     if (stream_exec) {
         return gpu::DeviceOrDevicelessConfig{gpu::DeviceConfig{stream_exec, options.device_allocator}};
     }
@@ -940,8 +941,8 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
     pre_fusion.AddPass<gpu::AddTrackingSuffixToInstructionNames>();
     TF_RETURN_IF_ERROR(pre_fusion.Run(hlo_module).status());
 
-    TF_RETURN_IF_ERROR(gpu::FusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool, gpu_device_info,
-                                      symbolic_expr_context)
+    TF_RETURN_IF_ERROR(gpu::FusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool,
+                                           gpu_device_info, symbolic_expr_context)
                            .Run(hlo_module, {HloInstruction::kMainExecutionThread})
                            .status());
 
@@ -2256,7 +2257,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
 
 #ifdef NPU_AUTO_FUSE_ENABLED
     if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
-        NpuLog::Print(NpuLog::Level::INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
+        npu::Log::Print(npu::Log::Level::INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
         AscirBackend ascirBackend;
         AscirBackendOptions ascirBackendOptions;
         ascirBackendOptions.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
@@ -2267,7 +2268,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
     // hlo instuction融合成一条语句以保证进thunk生成时
     // 和当前通过auto fuse融合成的一个算子相匹配(未来应该是通过npu的pass来实现融合)
     if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
-        NpuLog::Print(NpuLog::Level::INFO, "Npu auto fuse switch is set open, run fusion pass.");
+        npu::Log::Print(npu::Log::Level::INFO, "Npu auto fuse switch is set open, run fusion pass.");
         /* 实现所有instruction融合成一条语句(仅用于调试) 开始 */
         // Add super fusion pass for NPU
         HloPassPipeline super_fusion_pipeline("super-fusion");

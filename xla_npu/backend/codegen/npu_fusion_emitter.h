@@ -1,5 +1,5 @@
-#ifndef BACKEND_NPU_FUSION_EMITTER_H_
-#define BACKEND_NPU_FUSION_EMITTER_H_
+#ifndef XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_
+#define XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_
 
 #include <array>
 #include <cstddef>
@@ -26,7 +26,7 @@
 #include "xla/service/llvm_ir/ir_array.h"
 #include "xla/shape.h"
 #include "xla/stream_executor/device_description.h"
-#include "xla/xla_npu/backend/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
 namespace xla {
@@ -108,4 +108,4 @@ class NpuFusionInterface {
 
 }  // namespace xla
 
-#endif  // BACKEND_NPU_FUSION_EMITTER_H_
+#endif  // XLA_XLA_NPU_BACKEND_CODEGEN_NPU_FUSION_EMITTER_H_
