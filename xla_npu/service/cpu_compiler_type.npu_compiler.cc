@@ -1053,7 +1053,7 @@ absl::Status NpuCompiler::RunHloPassesAfterLayoutAssn(HloModule* module, bool is
 
 absl::Status NpuCompiler::RunHloPasses(HloModule* module, bool is_aot_compile, llvm::TargetMachine* target_machine,
                                        const CompileOptions& compile_options) {
-    npu::Log::Print(npu::Log::Level::DEBUG, "Run npu hlo pass.");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Run npu hlo pass.");
 
     HloPassPipeline pipeline("npu pass");
     // 清除无效HLO指令
@@ -1902,7 +1902,7 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuCompiler::CompileNpuExecutable
 absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_ptr<HloModule> module,
                                                                     [[maybe_unused]] se::StreamExecutor* stream_exec,
                                                                     const CompileOptions& options) {
-    npu::Log::Print(npu::Log::Level::DEBUG, "Run npu llvm compile(contains thunks generate).");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Run npu llvm compile(contains thunks generate).");
 
     // // 确保set device(仅适用于单卡,多卡场景需要重新设计流程)
     // stream_exec->Init();

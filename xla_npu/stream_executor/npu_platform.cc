@@ -26,14 +26,13 @@ namespace stream_executor {
 NpuPlatform::NpuPlatform() : name_(xla::NpuConstant::platformName) {}
 
 NpuPlatform::~NpuPlatform() {
-    npu::Log::Print(npu::Log::Level::INFO, "Finalize platform for '%s'.", name_);
+    NPU_LOG_FORMAT_PRINT(INFO, "Finalize platform for '%s'.", name_);
     if (initialized_) {
         auto ret = npu::aclFinalize();
         if (ret != ACL_SUCCESS) {
-            npu::Log::Print(npu::Log::Level::ERROR, "Finalize platform for '%s' failed, error code %d", name_,
-                                 ret);
+            NPU_LOG_FORMAT_PRINT(ERROR, "Finalize platform for '%s' failed, error code %d", name_, ret);
         } else {
-            npu::Log::Print(npu::Log::Level::INFO, "Finalize platform for '%s' success.", name_);
+            NPU_LOG_FORMAT_PRINT(INFO, "Finalize platform for '%s' success.", name_);
         }
 
         initialized_ = false;
@@ -47,13 +46,13 @@ bool NpuPlatform::Initialized() const { return initialized_; }
 absl::Status NpuPlatform::Initialize() {
     aclError acl_status = npu::aclInit(nullptr);
     if (acl_status != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Init platform for '%s' failed.", name_);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Init platform for '%s' failed.", name_);
         return absl::UnavailableError("Acl init failed.");
     }
 
     initialized_ = true;
 
-    npu::Log::Print(npu::Log::Level::INFO, "Init platform for '%s' success.", name_);
+    NPU_LOG_FORMAT_PRINT(INFO, "Init platform for '%s' success.", name_);
     return absl::OkStatus();
 }
 
@@ -61,12 +60,11 @@ int NpuPlatform::VisibleDeviceCount() const {
     uint32_t device_count = 0;
     aclError acl_status = npu::aclrtGetDeviceCount(&device_count);
     if (acl_status != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Get device count for '%s' failed.", name_);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Get device count for '%s' failed.", name_);
         return 0;
     }
 
-    npu::Log::Print(npu::Log::Level::INFO, "Get device count for '%s' success, total device num is %d.",
-                         name_, device_count);
+    NPU_LOG_FORMAT_PRINT(INFO, "Get device count for '%s' success, total device num is %d.", name_, device_count);
     return device_count;
 }
 

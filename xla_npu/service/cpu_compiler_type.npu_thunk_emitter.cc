@@ -258,51 +258,48 @@ absl::StatusOr<NpuThunkSequence> NpuThunkEmitter::EmitHloComputation(const HloCo
             absl::StrCat("Computation ", computation->name(), " must be scheduled to emit thunks"));
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "convert hlo instruction to thunk sequence");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "convert hlo instruction to thunk sequence");
     int id = 0;
     const HloInstructionSequence& sequence = schedule.sequence(computation);
     for (HloInstruction* instr : sequence.instructions()) {
         // ========== 打印instr的完整信息 ==========
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
-        npu::Log::Print(npu::Log::Level::DEBUG, "[FULL Info for HloInstruction %d] ", id++);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "[FULL Info for HloInstruction %d] ", id++);
         HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
         std::string detailed_str = instr->ToString(options);
-        npu::Log::Print(npu::Log::Level::DEBUG, detailed_str);
-        npu::Log::Print(npu::Log::Level::DEBUG, "----------------------------------------");
+        NPU_LOG_FORMAT_PRINT(DEBUG, detailed_str);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "----------------------------------------");
 
         TF_ASSIGN_OR_RETURN(NpuThunkSequence instr_thunks, EmitHloInstruction(instr));
 
         // 遍历打印每个Thunk的信息
         if (instr_thunks.size() == 0) {
-            npu::Log::Print(npu::Log::Level::DEBUG, "No Thunk sequence");
+            NPU_LOG_FORMAT_PRINT(DEBUG, "No Thunk sequence");
         } else {
-            npu::Log::Print(npu::Log::Level::DEBUG, "Thunk sequence size is %d", instr_thunks.size());
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Thunk sequence size is %d", instr_thunks.size());
         }
         for (size_t i = 0; i < instr_thunks.size(); ++i) {
             const auto& thunk = instr_thunks[i];
-            npu::Log::Print(npu::Log::Level::DEBUG, "  ----------------------------------------");
-            npu::Log::Print(npu::Log::Level::DEBUG, "  Thunk %d Info: ", i);
+            NPU_LOG_FORMAT_PRINT(DEBUG, "  ----------------------------------------");
+            NPU_LOG_FORMAT_PRINT(DEBUG, "  Thunk %d Info: ", i);
             // 打印Thunk的具体类型
-            npu::Log::Print(npu::Log::Level::DEBUG, "    Thunk Type (raw): %s",
-                            tsl::port::Demangle(typeid(*thunk).name()));
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    Thunk Type (raw): %s", tsl::port::Demangle(typeid(*thunk).name()));
             // 打印Thunk对象的内存地址
-            npu::Log::Print(npu::Log::Level::DEBUG, "    Thunk Memory Address: %p", thunk.get());
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    Thunk Memory Address: %p", thunk.get());
             if (auto kernel_thunk = dynamic_cast<const NpuKernelThunkBase*>(thunk.get())) {
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Op Code: %v", kernel_thunk->info().op_code);
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Op Name: %s", kernel_thunk->info().op_name);
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Kernel Name: %s", kernel_thunk->kernel_name().data());
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Num Work Groups: %s",
-                                absl::StrFormat("%v", kernel_thunk->num_workgroups()));
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Num Arguments: %d",
-                                kernel_thunk->arguments_buffers().size());
-                npu::Log::Print(npu::Log::Level::DEBUG, "    Num Results: %d", kernel_thunk->results_buffers().size());
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Op Code: %v", kernel_thunk->info().op_code);
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Op Name: %s", kernel_thunk->info().op_name);
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Kernel Name: %s", kernel_thunk->kernel_name().data());
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Num Work Groups: %s",
+                                     absl::StrFormat("%v", kernel_thunk->num_workgroups()));
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Num Arguments: %d", kernel_thunk->arguments_buffers().size());
+                NPU_LOG_FORMAT_PRINT(DEBUG, "    Num Results: %d", kernel_thunk->results_buffers().size());
                 if (kernel_thunk->min_alignment().has_value()) {
-                    npu::Log::Print(npu::Log::Level::DEBUG, "    Min Alignment: %d bytes",
-                                    kernel_thunk->min_alignment().value());
+                    NPU_LOG_FORMAT_PRINT(DEBUG, "    Min Alignment: %d bytes", kernel_thunk->min_alignment().value());
                 }
             }
         }
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
 
         thunks.Append(std::move(instr_thunks));
     }

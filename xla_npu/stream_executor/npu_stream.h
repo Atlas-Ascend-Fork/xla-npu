@@ -23,21 +23,8 @@ class NpuStream : public StreamCommon {
     ~NpuStream() override;
 
     absl::Status Init();
-    // absl::StatusOr<aclrtStream> Get() const {
-    //     if (stream_init_) {
-    //         return stream_;
-    //     } else {
-    //         return absl::UnavailableError(absl::StrCat("Npu stream need to be init before use."));
-    //     }
-    // }
 
-    PlatformSpecificHandle platform_specific_handle() const override {
-        if (stream_init_) {
-            return {stream_};
-        } else {
-            return {};
-        }
-    }
+    PlatformSpecificHandle platform_specific_handle() const override;
 
     absl::Status BlockHostUntilDone() override;
 

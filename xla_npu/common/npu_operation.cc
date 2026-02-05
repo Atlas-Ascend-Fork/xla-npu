@@ -8,12 +8,12 @@ namespace xla {
 absl::Status NpuOperation::SetDevice(int device_id) {
     aclError ret = npu::aclrtSetDevice(device_id);
     if (ret != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Set device %d for '%s' failed, error code: %d", device_id,
-                        NpuConstant::platformName, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Set device %d for '%s' failed, error code: %d", device_id,
+                             NpuConstant::platformName, ret);
         return absl::InternalError(absl::StrFormat("Set device %d failed.", device_id));
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Set device %d for '%s' success.", device_id, NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Set device %d for '%s' success.", device_id, NpuConstant::platformName);
 
     return absl::OkStatus();
 }
@@ -21,12 +21,11 @@ absl::Status NpuOperation::SetDevice(int device_id) {
 absl::Status NpuOperation::CreateStream(aclrtStream* stream) {
     aclError ret = npu::aclrtCreateStream(stream);
     if (ret != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Create stream for '%s' failed. Error code: %d",
-                        NpuConstant::platformName, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Create stream for '%s' failed. Error code: %d", NpuConstant::platformName, ret);
         return absl::InternalError(absl::StrFormat("Create stream failed."));
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Create stream for '%s' success.", NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Create stream for '%s' success.", NpuConstant::platformName);
 
     return absl::OkStatus();
 }
@@ -34,11 +33,11 @@ absl::Status NpuOperation::CreateStream(aclrtStream* stream) {
 absl::Status NpuOperation::Malloc(void** new_device_addr, size_t size_bytes) {
     aclError ret = npu::aclrtMalloc(new_device_addr, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
     if (ret != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Allocate %d byte on npu failed, error code: %d", size_bytes, ret);
         return absl::InternalError(absl::StrFormat("Allocate %d byte on npu failed, error code: %d", size_bytes, ret));
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory allocated, addr %p, size %d", *new_device_addr, size_bytes);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", *new_device_addr, size_bytes);
 
     return absl::OkStatus();
 }
@@ -60,13 +59,12 @@ absl::Status NpuOperation::Memcpy(void* dst, void* src, size_t size_bytes, Memcp
 
     aclError ret = npu::aclrtMemcpy(dst, size_bytes, src, size_bytes, memcpyKind);
     if (ret != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "%s failed, dst addr %p, src addr %p, size bytes %d, error code: %d",
-                        descStr, dst, src, size_bytes, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "%s failed, dst addr %p, src addr %p, size bytes %d, error code: %d", descStr, dst,
+                             src, size_bytes, ret);
         return absl::InternalError("Acl memory copy failed.");
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "%s success, dst addr %p, src addr %p, size bytes %d", descStr, dst, src,
-                    size_bytes);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "%s success, dst addr %p, src addr %p, size bytes %d", descStr, dst, src, size_bytes);
 
     return absl::OkStatus();
 }

@@ -228,7 +228,7 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
 
     if (!module->has_schedule()) {
         const std::string err_msg = "Module need to be scheduled.";
-        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
         return absl::UnavailableError(err_msg);
     }
 

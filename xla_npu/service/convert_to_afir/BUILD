@@ -47,6 +47,8 @@ cc_library(
     hdrs = ["ascir_backend.h"],
     deps = [
         ":convert_to_afir",
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla:util",
         "//xla/hlo/ir:hlo",
         "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",

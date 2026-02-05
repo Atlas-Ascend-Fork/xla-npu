@@ -35,8 +35,18 @@ absl::Status NpuStream::Init() {
     return absl::OkStatus();
 }
 
+NpuStream::PlatformSpecificHandle NpuStream::platform_specific_handle() const {
+    if (stream_init_) {
+        return {stream_};
+    } else {
+        NPU_LOG_FORMAT_PRINT(WARN, "The stream '%s' has not been initialized, failing to obtain the stream handle.",
+                             GetName());
+        return {};
+    }
+}
+
 absl::Status NpuStream::BlockHostUntilDone() {
-    npu::Log::Print(npu::Log::Level::DEBUG, "Block host until stream '%s' done", GetName());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Block host until stream '%s' done", GetName());
     TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
     auto acl_ret = npu::aclrtSynchronizeStream(stream_);
@@ -62,8 +72,7 @@ absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src, 
         return absl::InternalError(
             absl::StrCat("Execute aclrtMemcpy d2h on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
-    npu::Log::Print(npu::Log::Level::DEBUG,
-                         "Npu memory copy d2h on stream '%s' success, dst cpu addr %p, src npu addr %p, size %d",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory copy d2h on stream '%s' success, dst cpu addr %p, src npu addr %p, size %d",
                          GetName(), host_dst, src_mem, size);
     return absl::OkStatus();
 }
@@ -77,8 +86,7 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const void* host_src, 
         return absl::InternalError(
             absl::StrCat("Execute aclrtMemcpy h2d on stream '%s' failed, error code: %d", GetName(), acl_ret));
     }
-    npu::Log::Print(npu::Log::Level::DEBUG,
-                         "Npu memory copy h2d on stream '%s' success, dst npu addr %p, src cpu addr %p, size %d",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory copy h2d on stream '%s' success, dst npu addr %p, src cpu addr %p, size %d",
                          GetName(), dst_mem, host_src, size);
     return absl::OkStatus();
 }
@@ -118,7 +126,7 @@ absl::Status NpuStream::RecordEvent(Event* event) {
 }
 
 absl::Status NpuStream::DoHostCallbackWithStatus(absl::AnyInvocable<absl::Status() &&> callback) {
-    npu::Log::Print(npu::Log::Level::DEBUG, "Execute host callback on stream '%s'", GetName());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Execute host callback on stream '%s'", GetName());
 
     return std::move(callback)();
 }
