@@ -41,6 +41,25 @@ BAZEL_VERSION="7.7.0"
 JAX_VERSION="0.8.1"
 XLA_COMMIT_ID="a7e58876b73dfa9bb6bc785f6981a332c133bb55"
 
+# 检测系统架构
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64|i686|i386)
+        ARCH_TYPE="x64"
+        JDK_ARCH="linux-x64"
+        BAZEL_ARCH="linux-x86_64"
+        ;;
+    aarch64|arm64)
+        ARCH_TYPE="aarch64"
+        JDK_ARCH="linux-aarch64"
+        BAZEL_ARCH="linux-arm64"
+        ;;
+    *)
+        echo "错误: 不支持的系统架构: $ARCH (仅支持 x86_64 和 aarch64)"
+        exit 1
+        ;;
+esac
+
 # 下载镜像配置
 JAVA_MIRROR="https://mirrors.huaweicloud.com/openjdk"
 BAZEL_MIRROR="https://mirrors.huaweicloud.com/bazel"
@@ -241,6 +260,7 @@ init_environment() {
     log_info "代码目录: $CODE_DIR"
     log_info "日志目录: $LOG_DIR"
     log_info "日志文件: $LOG_FILE"
+    log_info "系统架构: $ARCH ($ARCH_TYPE)"
     log_info "并行任务数: $PARALLEL_JOBS"
     log_info "安装 JAX: $([ "$INSTALL_JAX" = "1" ] && echo "是" || echo "否")"
 
@@ -293,9 +313,9 @@ install_java() {
         return 0
     fi
 
-    log_step "=== 安装 OpenJDK $JAVA_VERSION ==="
+    log_step "=== 安装 OpenJDK $JAVA_VERSION ($JDK_ARCH) ==="
 
-    local java_file="openjdk-${JAVA_VERSION}_linux-x64_bin.tar.gz"
+    local java_file="openjdk-${JAVA_VERSION}_${JDK_ARCH}_bin.tar.gz"
     local downloads_file="$DOWNLOADS_DIR/$java_file"
 
     # 检查下载的文件是否存在
@@ -345,9 +365,9 @@ install_bazel() {
         return 0
     fi
 
-    log_step "=== 安装 Bazel $BAZEL_VERSION ==="
+    log_step "=== 安装 Bazel $BAZEL_VERSION ($BAZEL_ARCH) ==="
 
-    local bazel_file="bazel_nojdk-${BAZEL_VERSION}-linux-x86_64"
+    local bazel_file="bazel_nojdk-${BAZEL_VERSION}-${BAZEL_ARCH}"
     local downloads_file="$DOWNLOADS_DIR/$bazel_file"
 
     # 检查下载的文件是否存在
@@ -490,7 +510,8 @@ build_xla() {
     fi
 
     # 编译
-    log_info "开始编译 XLA-NPU (这可能需要很长时间)..."
+    log_info "开始编译 XLA-NPU..."
+    log_info "首次编译需要下载依赖包，耗时会较长。如果网络不稳定出现下载失败，可以重复执行。"
     log_info "编译任务数: $PARALLEL_JOBS"
 
     bazel build \
@@ -983,8 +1004,8 @@ main_install() {
     local need_jdk=0
     local need_bazel=0
 
-    local jdk_file="openjdk-${JAVA_VERSION}_linux-x64_bin.tar.gz"
-    local bazel_file="bazel_nojdk-${BAZEL_VERSION}-linux-x86_64"
+    local jdk_file="openjdk-${JAVA_VERSION}_${JDK_ARCH}_bin.tar.gz"
+    local bazel_file="bazel_nojdk-${BAZEL_VERSION}-${BAZEL_ARCH}"
 
     # 检查 JDK（检查 downloads 目录）
     if [ ! -f "$temp_download_dir/$jdk_file" ] && [ "$FORCE_REINSTALL" != "1" ]; then
