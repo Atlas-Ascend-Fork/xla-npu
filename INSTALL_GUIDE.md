@@ -2,11 +2,7 @@
 
 ## 概述
 
-本文档介绍如何使用 `build_new.sh` 脚本安装 XLA-NPU。该脚本是一个简化版本，相比原版 `build.sh` 做了以下优化：
-
-1. **不安装 Python**：Python 作为系统要求，需要用户预先安装
-2. **使用 pip 安装 JAX**：不再编译安装 JAX，直接使用 `pip install jax==0.8.1`
-3. **使用华为镜像源**：所有下载使用华为镜像加速
+本文档介绍如何使用 `build.sh` 脚本安装 XLA-NPU。
 
 ## 系统要求
 
@@ -48,9 +44,6 @@ conda activate xla-npu
 python --version
 ```
 
-#### 方法三：从源码编译
-如果系统没有 Python 3.11+，可以参考旧版 `build.sh` 中的 Python 编译部分。
-
 ### 2. 安装基本工具
 ```bash
 sudo apt-get update
@@ -72,18 +65,18 @@ cd /path/to/xla-npu/install
 
 ### 2. 给脚本添加执行权限
 ```bash
-chmod +x build_new.sh
+chmod +x build.sh
 ```
 
 ### 3. 运行安装脚本
 ```bash
-./build_new.sh install
+./build.sh install
 ```
 
 或者，如果你使用 conda 环境：
 ```bash
 conda activate xla-npu
-./build_new.sh install
+./build.sh install
 ```
 
 ### 4. 设置环境变量
@@ -114,22 +107,22 @@ source ~/.bashrc
 
 #### 仅安装 XLA-NPU，不安装 JAX
 ```bash
-INSTALL_JAX=0 ./build_new.sh install
+INSTALL_JAX=0 ./build.sh install
 ```
 
 #### 强制重新安装所有步骤
 ```bash
-FORCE_REINSTALL=1 ./build_new.sh install
+FORCE_REINSTALL=1 ./build.sh install
 ```
 
 #### 自定义工作目录
 ```bash
-WORKSPACE=/opt/xla-npu ./build_new.sh install
+WORKSPACE=/opt/xla-npu ./build.sh install
 ```
 
 #### 指定并行编译任务数
 ```bash
-PARALLEL_JOBS=8 ./build_new.sh install
+PARALLEL_JOBS=8 ./build.sh install
 ```
 
 ## 验证安装
@@ -169,28 +162,18 @@ python -c "import jax; print(jax.__version__)"
 ```
 xla-npu/                          # 项目根目录
 ├── build/                        # 构建目录
-│   ├── build_new.sh             # 安装脚本
+│   ├── build.sh             # 安装脚本
 │   ├── xla_npu_env          # 环境变量文件
 │   ├── .install_state       # 安装状态文件
 │   ├── env/                     # 已安装的工具
 │   │   ├── java/                # OpenJDK 21
 │   │   └── bazel/               # Bazel 7.7.0
 │   ├── code/                    # 下载的代码
-│   │   ├── xla/                 # XLA 代码仓库
-│   │   └── logs/                # 安装日志
+│   │   └── xla/                 # XLA 代码仓库
+│   ├── logs/                    # 安装日志
 │   └── downloads/               # 下载的安装包（缓存）
 └── xla_npu/                      # NPU 实现代码（软链接目标）
 ```
-
-## 与原版 build.sh 的区别
-
-| 特性 | build.sh (原版) | build_new.sh (新版) |
-|------|-----------------|---------------------|
-| Python 安装 | 自动编译安装 Python 3.11.9 | 要求系统自带 Python >= 3.11 |
-| JAX 安装 | 从源码编译安装 | 使用 `pip install jax==0.8.1` |
-| 安装时间 | 较长（需编译 Python 和 JAX） | 较短（无需编译 Python 和 JAX） |
-| pip 源 | 默认 PyPI | 华为镜像源 |
-| 适用场景 | 需要完整隔离环境 | 系统已有合适的 Python |
 
 ## 常见问题
 
@@ -230,7 +213,7 @@ java.lang.OutOfMemoryError: Java heap space
 **解决方案**：
 减少并行编译任务数：
 ```bash
-PARALLEL_JOBS=4 ./build_new.sh install
+PARALLEL_JOBS=4 ./build.sh install
 ```
 
 ### 4. JAX 安装失败
@@ -260,7 +243,7 @@ python -m pip install -i https://mirrors.huaweicloud.com/repository/pypi/simple 
 sudo chown -R $USER:$USER /path/to/xla-npu
 
 # 或使用 sudo 运行脚本（不推荐）
-sudo ./build_new.sh install
+sudo ./build.sh install
 ```
 
 ## 卸载
@@ -268,12 +251,12 @@ sudo ./build_new.sh install
 ### 自动卸载
 ```bash
 cd /path/to/xla-npu/install
-./build_new.sh uninstall
+./build.sh uninstall
 ```
 
 ### 强制卸载（无需确认）
 ```bash
-FORCE_UNINSTALL=1 ./build_new.sh uninstall
+FORCE_UNINSTALL=1 ./build.sh uninstall
 ```
 
 ### 手动卸载
@@ -317,24 +300,24 @@ conda activate my-env
 source /path/to/venv/bin/activate
 
 # 运行安装
-./build_new.sh install
+./build.sh install
 ```
 
 ### 2. 断点续传
 脚本支持断点续传，如果安装过程中断，重新运行脚本会从上次中断的地方继续：
 ```bash
-./build_new.sh install
+./build.sh install
 ```
 
 如需从头开始：
 ```bash
-FORCE_REINSTALL=1 ./build_new.sh install
+FORCE_REINSTALL=1 ./build.sh install
 ```
 
 ### 3. 仅安装特定组件
 ```bash
 # 仅安装 XLA-NPU，不安装 JAX
-INSTALL_JAX=0 ./build_new.sh install
+INSTALL_JAX=0 ./build.sh install
 ```
 
 ## 日志和调试
@@ -351,7 +334,7 @@ cat build/logs/build_*.log | tail -100
 ### 启用详细输出
 ```bash
 # 使用 bash -x 运行脚本查看详细执行过程
-bash -x ./build_new.sh install
+bash -x ./build.sh install
 ```
 
 ## 技术支持
@@ -367,15 +350,15 @@ bash -x ./build_new.sh install
 
 | 命令 | 说明 |
 |------|------|
-| `./build_new.sh install` | 执行完整安装 |
-| `./build_new.sh uninstall` | 卸载 XLA-NPU |
-| `./build_new.sh help` | 显示帮助信息 |
+| `./build.sh install` | 执行完整安装 |
+| `./build.sh uninstall` | 卸载 XLA-NPU |
+| `./build.sh help` | 显示帮助信息 |
 
 ### 关键文件路径
 
 | 文件 | 路径 |
 |------|------|
-| 安装脚本 | `build/build_new.sh` |
+| 安装脚本 | `build/build.sh` |
 | 环境变量文件 | `build/xla_npu_env` |
 | 状态文件 | `build/.install_state` |
 | 安装日志 | `build/logs/build_*.log` |
@@ -384,7 +367,7 @@ bash -x ./build_new.sh install
 
 ## 版本信息
 
-- **脚本版本**: build_new.sh (简化版)
+- **脚本版本**: build.sh
 - **JAX 版本**: 0.8.1
 - **XLA Commit**: a7e58876b73dfa9bb6bc785f6981a332c133bb55
 - **Bazel 版本**: 7.7.0
