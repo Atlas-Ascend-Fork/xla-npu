@@ -8,7 +8,7 @@
 #   - 基本编译工具 (wget, curl, git, tar, xz)
 #
 # 使用方法:
-#   ./build_new.sh [install|uninstall|help]
+#   ./build.sh [install|uninstall|help]
 #   install  - 执行完整安装 (默认)
 #   uninstall- 卸载 XLA-NPU
 #   help     - 显示帮助信息
@@ -77,7 +77,7 @@ INSTALL_JAX=${INSTALL_JAX:-1}
 FORCE_REINSTALL=${FORCE_REINSTALL:-0}
 
 # 状态文件路径（放在 build 目录）
-STATE_FILE="$SCRIPT_DIR/.install_state_new"
+STATE_FILE="$SCRIPT_DIR/.install_state"
 
 # 日志文件
 LOG_DIR="$WORKSPACE/build/logs"
@@ -85,7 +85,7 @@ LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 INSTALL_DOC="$LOG_DIR/BUILD_DOCUMENTATION.md"
 
 # 环境变量文件（放在 build 目录）
-ENV_FILE="$SCRIPT_DIR/xla_npu_env_new"
+ENV_FILE="$SCRIPT_DIR/xla_npu_env"
 
 #################### 工具函数 ####################
 log_info() {
@@ -608,18 +608,18 @@ generate_documentation() {
 
 ### 环境变量
 
-安装脚本已自动生成环境变量配置文件: `build/xla_npu_env_new`
+安装脚本已自动生成环境变量配置文件: `build/xla_npu_env`
 
 要使环境变量生效，请执行:
 
 ```bash
-source build/xla_npu_env_new
+source build/xla_npu_env
 ```
 
 或者添加到 ~/.bashrc 以自动加载:
 
 ```bash
-echo 'source $(pwd)/build/xla_npu_env_new' >> ~/.bashrc
+echo 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -701,7 +701,7 @@ python -c "import jax; print(jax.__version__)"
 ### 自动卸载
 ```bash
 cd /home/code/xla/install
-./build_new.sh uninstall
+./build.sh uninstall
 ```
 
 ### 手动卸载
@@ -709,11 +709,11 @@ cd /home/code/xla/install
 #### 删除环境变量
 ```bash
 # 删除环境变量配置文件
-rm build/xla_npu_env_new
+rm build/xla_npu_env
 
 # 如果已添加到 ~/.bashrc，编辑删除相关行
 # 或执行：
-sed -i '/xla_npu_env_new/d' ~/.bashrc
+sed -i '/xla_npu_env/d' ~/.bashrc
 ```
 
 #### 删除代码和编译产物
@@ -826,10 +826,10 @@ uninstall_env() {
     fi
 
     # 提示用户手动清除 ~/.bashrc 中的配置（如果添加了）
-    if grep -q "xla_npu_env_new" "$HOME/.bashrc" 2>/dev/null; then
-        log_info "检测到 ~/.bashrc 中包含 xla_npu_env_new 配置"
+    if grep -q "xla_npu_env" "$HOME/.bashrc" 2>/dev/null; then
+        log_info "检测到 ~/.bashrc 中包含 xla_npu_env 配置"
         log_info "请手动编辑 ~/.bashrc 删除相关行，或执行："
-        log_info "  sed -i '/xla_npu_env_new/d' ~/.bashrc"
+        log_info "  sed -i '/xla_npu_env/d' ~/.bashrc"
     fi
 }
 
@@ -1126,10 +1126,10 @@ main_install() {
     echo -e "\033[32m========================================\033[0m"
     echo ""
     echo "请执行以下命令使环境变量生效:"
-    echo -e "\033[36msource build/xla_npu_env_new\033[0m"
+    echo -e "\033[36msource build/xla_npu_env\033[0m"
     echo ""
     echo "或者添加到 ~/.bashrc 以自动加载:"
-    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env_new' >> ~/.bashrc\033[0m"
+    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc\033[0m"
     echo ""
     echo "安装文档: $INSTALL_DOC"
     echo "安装日志: $LOG_FILE"
