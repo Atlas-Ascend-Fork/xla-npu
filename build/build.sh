@@ -2,8 +2,6 @@
 ################################################################################
 # XLA-NPU 自动安装脚本
 # 功能：自动安装和编译 XLA-NPU 及相关依赖，支持卸载
-# 作者：基于 /home/code/xla/install/install-guide.txt
-# 日期：$(date +%Y-%m-%d)
 #
 # 使用方法:
 #   ./build.sh [install|uninstall|help]
@@ -98,6 +96,36 @@ error_exit() {
     fi
     echo -e "\033[31m操作失败，请查看日志文件: $LOG_FILE\033[0m"
     exit 1
+}
+
+# 后台进程管理
+BG_PIDS=""
+
+# 添加后台进程 PID
+add_bg_pid() {
+    if [ -n "$1" ]; then
+        BG_PIDS="$BG_PIDS $1"
+    fi
+}
+
+# 清理所有后台进程
+cleanup_bg_processes() {
+    if [ -n "$BG_PIDS" ]; then
+        log_info "正在停止后台进程..."
+        for pid in $BG_PIDS; do
+            if kill -0 "$pid" 2>/dev/null; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+        BG_PIDS=""
+    fi
+}
+
+# 信号处理函数
+signal_handler() {
+    log_warn "接收到中断信号，正在清理..."
+    cleanup_bg_processes
+    exit 130
 }
 
 # 检查命令是否存在
@@ -388,12 +416,12 @@ install_python() {
     log_step "=== 检查 Python 环境 ==="
 
     # 先检查系统 Python 版本（无论是否设置 SKIP_PYTHON_INSTALL）
-    if check_command python3 || check_command python; then
+    if check_command python || check_command python3; then
         local system_python=""
-        if check_command python3; then
-            system_python="python3"
-        else
+        if check_command python; then
             system_python="python"
+        else
+            system_python="python3"
         fi
 
         log_info "检测到系统 Python: $($system_python --version 2>&1 | head -1)"
@@ -402,7 +430,7 @@ install_python() {
         local py_major=$($system_python -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "0")
         local py_minor=$($system_python -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
 
-        if [ "$py_major" -gt 3 ] || ([ "$py_major" -eq 3 ] && [ "$py_minor" -ge 11 ]); then
+        if [ "$py_major" -gt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -ge 11 ]; }; then
             log_info "系统 Python 版本满足要求 ($py_major.$py_minor >= 3.11)，跳过编译安装"
             PYTHON_CMD="$system_python"
             mark_step_done "install_python"
@@ -521,13 +549,37 @@ setup_env() {
 
     export PATH="$BAZEL_INSTALL_DIR:$PATH"
 
-    if [ "$SKIP_PYTHON_INSTALL" != "1" ]; then
-        export PATH="$PYTHON_INSTALL_DIR/Python-$PYTHON_VERSION:$PATH"
-        export LD_LIBRARY_PATH="$PYTHON_INSTALL_DIR/Python-$PYTHON_VERSION:$LD_LIBRARY_PATH"
+    # 检查是否安装了新的 Python
+    local python_dir="$PYTHON_INSTALL_DIR/Python-${PYTHON_VERSION}"
+    local installed_python=""
+    if [ -f "$python_dir/bin/python" ]; then
+        installed_python="$python_dir/bin/python"
+    elif [ -f "$python_dir/python" ]; then
+        installed_python="$python_dir"
     fi
 
-    # 生成环境变量配置文件
-    cat > "$ENV_FILE" << EOF
+    # 只有当编译安装了 Python 时，才添加到 PATH
+    if [ -n "$installed_python" ]; then
+        export PATH="$python_dir:$PATH"
+        export LD_LIBRARY_PATH="$python_dir:$LD_LIBRARY_PATH"
+
+        # 生成环境变量配置文件（包含 Python）
+        cat > "$ENV_FILE" << EOF
+# XLA-NPU 环境变量配置
+# 生成时间: $(date)
+# 使用方法: source build/xla_npu_env
+
+export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
+export PATH=\$JAVA_HOME/bin:\$PATH
+
+export PATH=$BAZEL_INSTALL_DIR:\$PATH
+
+export PATH=$python_dir:\$PATH
+export LD_LIBRARY_PATH=$python_dir:\$LD_LIBRARY_PATH
+EOF
+    else
+        # 使用系统/conda Python，不在环境变量中添加 Python 路径
+        cat > "$ENV_FILE" << EOF
 # XLA-NPU 环境变量配置
 # 生成时间: $(date)
 # 使用方法: source build/xla_npu_env
@@ -537,18 +589,11 @@ export PATH=\$JAVA_HOME/bin:\$PATH
 
 export PATH=$BAZEL_INSTALL_DIR:\$PATH
 EOF
-
-    if [ "$SKIP_PYTHON_INSTALL" != "1" ]; then
-        cat >> "$ENV_FILE" << EOF
-
-export PATH=$PYTHON_INSTALL_DIR/Python-$PYTHON_VERSION:\$PATH
-export LD_LIBRARY_PATH=$PYTHON_INSTALL_DIR/Python-$PYTHON_VERSION:\$LD_LIBRARY_PATH
-EOF
     fi
 
     log_info "环境变量已设置"
-    if [ "$SKIP_PYTHON_INSTALL" = "1" ]; then
-        log_info "使用系统/conda Python"
+    if [ -z "$installed_python" ]; then
+        log_info "使用系统/conda Python（未添加到环境变量）"
     fi
 
     log_info "环境变量配置文件: $ENV_FILE"
@@ -626,7 +671,8 @@ build_xla() {
         log_info "XLA 已配置 (backend=CPU)，跳过配置步骤"
     else
         log_info "配置 XLA (backend=CPU)..."
-        $PYTHON_CMD ./configure.py --backend=CPU || \
+        # 使用 python 命令而不是绝对路径，避免硬编码路径到配置文件
+        python ./configure.py --backend=CPU || \
             error_exit "XLA 配置失败" \
                 "1. 检查 Python 版本 >= 3.11\n2. 检查 JDK 版本\n3. 查看配置日志"
         # 标记配置完成
@@ -1162,9 +1208,30 @@ main_install() {
         log_info "Bazel 文件已存在，跳过下载: $bazel_file"
     fi
 
-    # 检查 Python（检查 downloads 目录）
+    # 检查 Python（检查 downloads 目录和系统版本）
     if [ "$SKIP_PYTHON_INSTALL" != "1" ]; then
-        if [ ! -f "$temp_download_dir/$python_file" ] && [ "$FORCE_REINSTALL" != "1" ]; then
+        # 先检查系统 Python 版本是否满足要求
+        local system_python_ok=0
+        if check_command python || check_command python3; then
+            local check_python_cmd=""
+            if check_command python; then
+                check_python_cmd="python"
+            else
+                check_python_cmd="python3"
+            fi
+
+            local py_major=$($check_python_cmd -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "0")
+            local py_minor=$($check_python_cmd -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
+
+            if [ "$py_major" -gt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -ge 11 ]; }; then
+                system_python_ok=1
+            fi
+        fi
+
+        # 如果系统 Python 满足要求，不需要下载
+        if [ $system_python_ok -eq 1 ]; then
+            log_info "系统 Python 满足要求，跳过下载: $python_file"
+        elif [ ! -f "$temp_download_dir/$python_file" ] && [ "$FORCE_REINSTALL" != "1" ]; then
             need_python=1
         elif [ "$FORCE_REINSTALL" = "1" ]; then
             need_python=1
@@ -1192,6 +1259,7 @@ main_install() {
         log_info "所有安装包已存在，跳过下载步骤"
     else
         log_info "开始下载 $download_count 个文件..."
+        log_info "按 Ctrl+C 可中断下载"
 
         # 启动并行下载 (直接后台运行，只下载需要的文件)
         local jdk_pid=""
@@ -1203,6 +1271,7 @@ main_install() {
                 "$JAVA_MIRROR/${JAVA_VERSION}/$jdk_file" \
                 -O "$jdk_file" &
             jdk_pid=$!
+            add_bg_pid $jdk_pid
         fi
 
         if [ $need_bazel -eq 1 ]; then
@@ -1210,6 +1279,7 @@ main_install() {
                 "$BAZEL_MIRROR/${BAZEL_VERSION}/$bazel_file" \
                 -O "$bazel_file" &
             bazel_pid=$!
+            add_bg_pid $bazel_pid
         fi
 
         if [ $need_python -eq 1 ]; then
@@ -1217,6 +1287,7 @@ main_install() {
                 "$PYTHON_MIRROR/${PYTHON_VERSION}/$python_file" \
                 -O "$python_file" &
             python_pid=$!
+            add_bg_pid $python_pid
         fi
 
         # 等待所有下载完成
@@ -1224,6 +1295,9 @@ main_install() {
         [ -n "$jdk_pid" ] && wait $jdk_pid 2>/dev/null || true
         [ -n "$bazel_pid" ] && wait $bazel_pid 2>/dev/null || true
         [ -n "$python_pid" ] && wait $python_pid 2>/dev/null || true
+
+        # 清理已完成的进程 PID
+        BG_PIDS=""
 
         # 额外等待确保文件写入完成
         sleep 1
@@ -1323,8 +1397,9 @@ main() {
     esac
 }
 
-# 捕获错误
-trap 'log_error "脚本执行失败 (行号: $LINENO)"; exit 1' ERR
+# 捕获错误和中断信号
+trap 'log_error "脚本执行失败 (行号: $LINENO)"; cleanup_bg_processes; exit 1' ERR
+trap signal_handler SIGINT SIGTERM
 
 # 执行主流程
 main "$@"
