@@ -89,12 +89,12 @@ conda activate xla-npu
 ### 4. 设置环境变量
 安装完成后，运行以下命令使环境变量生效：
 ```bash
-source ../build/xla_npu_env_new
+source ../build/xla_npu_env
 ```
 
 或者添加到 `~/.bashrc` 自动加载：
 ```bash
-echo "source $(pwd)/../build/xla_npu_env_new" >> ~/.bashrc
+echo "source $(pwd)/../build/xla_npu_env" >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -170,8 +170,8 @@ python -c "import jax; print(jax.__version__)"
 xla-npu/                          # 项目根目录
 ├── build/                        # 构建目录
 │   ├── build_new.sh             # 安装脚本
-│   ├── xla_npu_env_new          # 环境变量文件
-│   ├── .install_state_new       # 安装状态文件
+│   ├── xla_npu_env          # 环境变量文件
+│   ├── .install_state       # 安装状态文件
 │   ├── env/                     # 已安装的工具
 │   │   ├── java/                # OpenJDK 21
 │   │   └── bazel/               # Bazel 7.7.0
@@ -285,10 +285,10 @@ python -m pip uninstall -y jax jaxlib
 
 #### 2. 删除环境变量配置
 ```bash
-rm build/xla_npu_env_new
+rm build/xla_npu_env
 
 # 如果已添加到 ~/.bashrc
-sed -i '/xla_npu_env_new/d' ~/.bashrc
+sed -i '/xla_npu_env/d' ~/.bashrc
 ```
 
 #### 3. 删除编译产物和代码
@@ -376,8 +376,8 @@ bash -x ./build_new.sh install
 | 文件 | 路径 |
 |------|------|
 | 安装脚本 | `build/build_new.sh` |
-| 环境变量文件 | `build/xla_npu_env_new` |
-| 状态文件 | `build/.install_state_new` |
+| 环境变量文件 | `build/xla_npu_env` |
+| 状态文件 | `build/.install_state` |
 | 安装日志 | `build/logs/build_*.log` |
 | XLA 代码 | `build/code/xla/` |
 | XLA 产物 | `build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so` |

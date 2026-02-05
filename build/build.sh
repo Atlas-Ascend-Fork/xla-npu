@@ -396,7 +396,7 @@ setup_env() {
     cat > "$ENV_FILE" << EOF
 # XLA-NPU 环境变量配置
 # 生成时间: $(date)
-# 使用方法: source build/xla_npu_env_new
+# 使用方法: source build/xla_npu_env
 
 export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
 export PATH=\$JAVA_HOME/bin:\$PATH
@@ -1045,9 +1045,6 @@ main_install() {
         log_info "等待下载完成..."
         [ -n "$jdk_pid" ] && wait $jdk_pid 2>/dev/null || true
         [ -n "$bazel_pid" ] && wait $bazel_pid 2>/dev/null || true
-
-        # 清理已完成的进程 PID
-        BG_PIDS=""
 
         # 清理已完成的进程 PID
         BG_PIDS=""
