@@ -64,37 +64,37 @@ class NpuTool {
     }
 
     static void PrintHloModule(const HloModule* hlo_module, const std::string& title) {
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
-        npu::Log::Print(npu::Log::Level::DEBUG, "**** %s: ****", title);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "**** %s: ****", title);
         HloPrintOptions hloPrintOptions = GetDetailedPrintOptions();
-        npu::Log::Print(npu::Log::Level::DEBUG, hlo_module->ToString(hloPrintOptions));
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, hlo_module->ToString(hloPrintOptions));
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
     }
 
     static void PrintModuleOp(mlir::ModuleOp module, const std::string& title) {
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
         std::string result;
         llvm::raw_string_ostream os(result);
         module.print(os);
-        npu::Log::Print(npu::Log::Level::DEBUG, "**** %s: ****", title);
-        npu::Log::Print(npu::Log::Level::DEBUG, os.str());
-        npu::Log::Print(npu::Log::Level::DEBUG, "========================================");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "**** %s: ****", title);
+        NPU_LOG_FORMAT_PRINT(DEBUG, os.str());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
     }
 
     template <typename printDataType>
     static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr) {
-        npu::Log::Print(npu::Log::Level::DEBUG, title);
+        NPU_LOG_FORMAT_PRINT(DEBUG, title);
 
         std::vector<printDataType> resultData(size, 0);
         aclError ret = npu::aclrtMemcpy(resultData.data(), resultData.size() * sizeof(resultData[0]), deviceAddr,
                                         size * sizeof(resultData[0]), ACL_MEMCPY_DEVICE_TO_HOST);
 
         if (ret != ACL_SUCCESS) {
-            npu::Log::Print(npu::Log::Level::DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
             return;
         }
         for (int64_t i = 0; i < size; i++) {
-            npu::Log::Print(npu::Log::Level::DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
         }
     }
 
@@ -137,7 +137,7 @@ class NpuTool {
     static void PrintXlaShape(const Shape& xla_data_shape, std::string desc = "Xla tensor shape: ") {
         const auto& vector_shape = ConvertXlaShape2VectorShape(xla_data_shape);
         const auto& vector_shape_str = GetShapeString(vector_shape);
-        npu::Log::Print(npu::Log::Level::DEBUG, "%s%s", desc, vector_shape_str);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "%s%s", desc, vector_shape_str);
     }
 
     static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {

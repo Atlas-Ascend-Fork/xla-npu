@@ -53,7 +53,7 @@ absl::Status NpuCustomKernelThunk::Initialize(const InitializeParams& params) {
 absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) {
     if (params.stream == nullptr) {
         const std::string& errMsg = absl::StrFormat("Xla stream need to be created or init before execute npu thunk.");
-        npu::Log::Print(npu::Log::Level::ERROR, errMsg);
+        NPU_LOG_FORMAT_PRINT(ERROR, errMsg);
         return absl::InternalError(errMsg);
     }
 
@@ -66,15 +66,15 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
     int device_ordinal = executor->device_ordinal();
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "[%d] Launching %s as device kernel %s", device_ordinal,
-                    custom_kernel_.ToString(), kernel->name());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "[%d] Launching %s as device kernel %s", device_ordinal, custom_kernel_.ToString(),
+                         kernel->name());
 
     absl::InlinedVector<se::DeviceMemoryBase, 4> buffer_args;
     for (const BufferAllocation::Slice& arg : args_) {
         se::DeviceMemoryBase buf = params.buffer_allocations->GetDeviceAddress(arg);
         buffer_args.push_back(buf);
-        npu::Log::Print(npu::Log::Level::DEBUG, "[%d]  Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal,
-                        arg.index(), arg.offset(), buf.opaque(), buf.size());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "[%d]  Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
+                             arg.offset(), buf.opaque(), buf.size());
     }
 
     // if (VLOG_IS_ON(100)) {

@@ -1,5 +1,5 @@
-#ifndef REGISTER_FUNCTIONLOADER_H_
-#define REGISTER_FUNCTIONLOADER_H_
+#ifndef XLA_XLA_NPU_DEPENDENCY_TOOL_FUNCTION_LOADER_H_
+#define XLA_XLA_NPU_DEPENDENCY_TOOL_FUNCTION_LOADER_H_
 
 #include <dlfcn.h>
 
@@ -130,4 +130,4 @@ constexpr T GetDefaultError() {
 
 }  // namespace npu
 
-#endif  // REGISTER_FUNCTIONLOADER_H_
+#endif  // XLA_XLA_NPU_DEPENDENCY_TOOL_FUNCTION_LOADER_H_

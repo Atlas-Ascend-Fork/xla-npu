@@ -7,6 +7,7 @@ package(
 
 cc_library(
     name = "log",
+    srcs = ["log.cc"],
     hdrs = ["log.h"],
     deps = [
         "@com_google_absl//absl/strings:str_format",

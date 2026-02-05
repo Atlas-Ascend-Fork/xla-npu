@@ -28,7 +28,7 @@ static void RegisterNpuPlatform() {
     //           'NpuExecutable'->'ExecuteThunks'
     std::unique_ptr<stream_executor::Platform> platform(new stream_executor::NpuPlatform);
     stream_executor::PlatformManager::RegisterPlatform(std::move(platform));
-    npu::Log::Print(npu::Log::Level::INFO, "Resister platform for '%s'.", NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(INFO, "Resister platform for '%s'.", NpuConstant::platformName);
 }
 
 static void RegisterNpuCompiler() {
@@ -55,7 +55,7 @@ static void RegisterNpuCompiler() {
     Compiler::RegisterCompilerFactory(stream_executor::kNpuPlatformId, []() {
         return std::make_unique<NpuCompiler>(stream_executor::kNpuPlatformId, "", "");
     });
-    npu::Log::Print(npu::Log::Level::INFO, "Resister compiler for '%s'.", NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(INFO, "Resister compiler for '%s'.", NpuConstant::platformName);
 }
 
 static void RegisterNpuTransferManager() {
@@ -63,7 +63,7 @@ static void RegisterNpuTransferManager() {
     TransferManager::RegisterTransferManager(
         stream_executor::kNpuPlatformId,
         []() -> std::unique_ptr<xla::TransferManager> { return std::make_unique<NpuTransferManager>(); });
-    npu::Log::Print(npu::Log::Level::INFO, "Resister transfer manager for '%s'.", NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(INFO, "Resister transfer manager for '%s'.", NpuConstant::platformName);
 }
 
 static void RegisterNpuComputationPlacer() {
@@ -71,7 +71,7 @@ static void RegisterNpuComputationPlacer() {
     // 用于给多卡分配计算任务
     ComputationPlacer::RegisterComputationPlacer(stream_executor::kNpuPlatformId,
                                                  []() { return std::make_unique<ComputationPlacer>(); });
-    npu::Log::Print(npu::Log::Level::INFO, "Resister computation placer for '%s'.", NpuConstant::platformName);
+    NPU_LOG_FORMAT_PRINT(INFO, "Resister computation placer for '%s'.", NpuConstant::platformName);
 }
 
 void InitNpuSubModule() {

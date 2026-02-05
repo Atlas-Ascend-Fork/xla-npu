@@ -29,28 +29,16 @@ absl::Status NpuAutoFuseKernel::Load() {
     // 获取func
     GetTilingSizeFunc_ =
         reinterpret_cast<GetTilingSizeFunc>(registry[GetTilingFileName()]->Get(get_tiling_size_func_name));
-    if (GetTilingSizeFunc_ == nullptr) {
-        const std::string& err_msg =
-            absl::StrFormat("Get func %s from %s failed", get_tiling_size_func_name, GetTilingFileName());
-        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
-        return absl::InternalError(err_msg);
-    }
+    CHECK_COND_AND_PRINT_NPU_LOG(GetTilingSizeFunc_ == nullptr, "Get func %s from %s failed", get_tiling_size_func_name,
+                                 GetTilingFileName());
 
     TilingFunc_ = reinterpret_cast<TilingFunc>(registry[GetTilingFileName()]->Get(tiling_func_name));
-    if (TilingFunc_ == nullptr) {
-        const std::string& err_msg =
-            absl::StrFormat("Get func %s from %s failed", tiling_func_name, GetTilingFileName());
-        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
-        return absl::InternalError(err_msg);
-    }
+    CHECK_COND_AND_PRINT_NPU_LOG(TilingFunc_ == nullptr, "Get func %s from %s failed", tiling_func_name,
+                                 GetTilingFileName());
 
     LaunchFunc_ = reinterpret_cast<LaunchFunc>(registry[GetKernelFileName()]->Get(launch_func_name));
-    if (LaunchFunc_ == nullptr) {
-        const std::string& err_msg =
-            absl::StrFormat("Get func %s from %s failed", launch_func_name, GetKernelFileName());
-        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
-        return absl::InternalError(err_msg);
-    }
+    CHECK_COND_AND_PRINT_NPU_LOG(LaunchFunc_ == nullptr, "Get func %s from %s failed", launch_func_name,
+                                 GetKernelFileName());
 
     return absl::OkStatus();
 }
@@ -94,7 +82,7 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
         CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %d.", auto_fuse_ret);
     } else {
         const std::string& err_msg = absl::StrFormat("Get args failed.");
-        npu::Log::Print(npu::Log::Level::ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
     }
 

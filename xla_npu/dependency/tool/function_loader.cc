@@ -50,7 +50,7 @@ FunctionRegister* FunctionRegister::GetInstance() {
 void FunctionRegister::Register(const std::string& soName, std::unique_ptr<FunctionLoader>& libPtr) {
     std::lock_guard<std::mutex> lock(mu_);
     registry.emplace(soName, std::move(libPtr));
-    Log::Print(Log::Level::DEBUG, "Register lib name '%s'", soName);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Register lib name '%s'", soName);
 }
 
 void FunctionRegister::Register(const std::string& soName, const std::string& funcName) {
@@ -59,7 +59,7 @@ void FunctionRegister::Register(const std::string& soName, const std::string& fu
         throw std::runtime_error(soName + " library should register first.");
     }
     itr->second->Set(funcName);
-    Log::Print(Log::Level::DEBUG, "Register lib function '%s' in lib name '%s'", funcName, soName);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Register lib function '%s' in lib name '%s'", funcName, soName);
 }
 
 void* FunctionRegister::Get(const std::string& soName, const std::string& funcName) {

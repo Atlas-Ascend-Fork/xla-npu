@@ -94,11 +94,11 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     void* base = nullptr;
     aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
     if (ret != ACL_SUCCESS) {
-        npu::Log::Print(npu::Log::Level::ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
         return DeviceMemoryBase(nullptr, size);
     }
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
     return DeviceMemoryBase(base, size);
 }
 
@@ -106,8 +106,7 @@ void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
     // 保证当前线程执行过set device
     xla::NpuOperation::SetDevice(device_ordinal_);
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(),
-                         mem->size());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
     npu::aclrtFree(mem->opaque());
 }
 

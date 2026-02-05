@@ -79,8 +79,8 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map) {
     // TargetMachineOptionsProto target_machine_options) {
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Create NpuExecutable from a thunk sequence; module=%s, constants=%d",
-                    hlo_module->name(), constants.size());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Create NpuExecutable from a thunk sequence; module=%s, constants=%d",
+                         hlo_module->name(), constants.size());
 
     std::unique_ptr<NpuExecutable> executable(
         new NpuExecutable(std::move(hlo_module), std::move(hlo_profile_printer_data), std::move(hlo_profile_index_map),
@@ -152,17 +152,17 @@ static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(const BufferA
                                                                    absl::Span<const NpuConstantAllocation> constants,
                                                                    se::DeviceMemoryAllocator* memory_allocator,
                                                                    int device_ordinal) {
-    npu::Log::Print(npu::Log::Level::DEBUG, allocation.ToString());
+    NPU_LOG_FORMAT_PRINT(DEBUG, allocation.ToString());
     if (allocation
             .is_entry_computation_parameter()) {  // 用户输出参数内存分配,其生命周期由用户控制(在execute前已由jax调用过h2d)
         se::DeviceMemoryBase out =
             arguments[allocation.parameter_number()].Buffer(allocation.param_shape_index()).AsDeviceMemoryBase();
         CHECK_LE(allocation.size(), out.size()) << "Size mismatch on param " << allocation.parameter_number()
                                                 << " at shape index " << allocation.param_shape_index().ToString();
-        npu::Log::Print(npu::Log::Level::DEBUG, "Allocation is a parameter");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Allocation is a parameter");
         return MaybeOwningDeviceMemory{out};
     } else if (allocation.is_constant()) {  // 常量内存分配
-        npu::Log::Print(npu::Log::Level::DEBUG, "Allocation is a constant");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Allocation is a constant");
         if (allocation.index() < constants.size()) {
             // 原本cpu的常量内存分配逻辑是直接复用host上已有的常量内存地址,npu则不行,需要额外申请device内存并做一次h2d
             stream_executor::DeviceMemoryBase cpuMemoryBase = constants[allocation.index()].AsDeviceMemoryBase();
@@ -174,21 +174,20 @@ static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(const BufferA
 
             return MaybeOwningDeviceMemory(stream_executor::DeviceMemoryBase(new_device_addr, size_bytes));
         } else {
-            npu::Log::Print(npu::Log::Level::ERROR,
-                            "Allocation index %d is more than constants size %d, can't not allocate memory",
-                            allocation.index(), constants.size());
+            NPU_LOG_FORMAT_PRINT(ERROR, "Allocation index %d is more than constants size %d, can't not allocate memory",
+                                 allocation.index(), constants.size());
         }
         return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
     } else if (allocation.is_thread_local()) {  // 线程局部内存分配,通常由JIT内部管理
-        npu::Log::Print(npu::Log::Level::DEBUG, "Allocation is thread-local");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Allocation is thread-local");
         return MaybeOwningDeviceMemory{se::DeviceMemoryBase{}};
     }
 
     int64_t buffer_size = allocation.size();
     TF_ASSIGN_OR_RETURN(se::OwningDeviceMemory out,  // 普通内存分配,其生命周期由XLA管理
                         memory_allocator->Allocate(device_ordinal, buffer_size));
-    npu::Log::Print(npu::Log::Level::DEBUG, "Buffer allocated %d bytes for addr %p on npu device %d", buffer_size,
-                    out->opaque(), device_ordinal);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Buffer allocated %d bytes for addr %p on npu device %d", buffer_size, out->opaque(),
+                         device_ordinal);
 
     // Since the output buffer and all the temporary buffers were written into
     // by the JITed code, memory sanitizer has no way of knowing their memory was
@@ -201,8 +200,8 @@ static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(const BufferA
 absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> NpuExecutable::CreateBufferTable(
     se::DeviceMemoryAllocator* memory_allocator, int device_ordinal, absl::Span<ExecutionInput const> arguments) {
     std::vector<MaybeOwningDeviceMemory> buffers(assignment_->Allocations().size());
-    npu::Log::Print(npu::Log::Level::DEBUG, "Allocating %d allocations for module %s",
-                    assignment_->Allocations().size(), module().name());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Allocating %d allocations for module %s", assignment_->Allocations().size(),
+                         module().name());
     for (BufferAllocation::Index i = 0; i < assignment_->Allocations().size(); ++i) {
         const BufferAllocation& allocation = assignment_->GetAllocation(i);
         TF_ASSIGN_OR_RETURN(buffers[i],
@@ -211,7 +210,7 @@ absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> NpuExecutable::CreateBuffer
 
     // DEBUG INFO
     TF_ASSIGN_OR_RETURN(const BufferAllocation::Slice result_slice, assignment_->GetUniqueTopLevelOutputSlice());
-    npu::Log::Print(npu::Log::Level::DEBUG, "Result index: %d", result_slice.index());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Result index: %d", result_slice.index());
 
     return std::move(buffers);
 }
@@ -235,14 +234,14 @@ absl::Status NpuExecutable::ExecuteThunks(const ExecutableRunOptions* run_option
 
     NpuBufferAllocations allocations(buffers);
 
-    npu::Log::Print(npu::Log::Level::DEBUG, "Executing NPU thunks:");
-    npu::Log::Print(npu::Log::Level::DEBUG, "  Number of buffer allocations: %u", buffers.size());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Executing NPU thunks:");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Number of buffer allocations: %u", buffers.size());
     auto mem_printer = [](std::string* out, const MaybeOwningDeviceMemory& mem) {
         absl::StrAppend(out, absl::StrFormat("%p", mem.AsDeviceMemoryBase().opaque()));
     };
-    npu::Log::Print(npu::Log::Level::DEBUG, "  Buffer allocations: [%s]", absl::StrJoin(buffers, ", ", mem_printer));
-    npu::Log::Print(npu::Log::Level::DEBUG, "  Number of profile counters: %u", profile_counters_size);
-    npu::Log::Print(npu::Log::Level::DEBUG, "  Profile counters: %p", profile_counters);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Buffer allocations: [%s]", absl::StrJoin(buffers, ", ", mem_printer));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Number of profile counters: %u", profile_counters_size);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Profile counters: %p", profile_counters);
 
     // // Prepare for executing XLA program collectively.
     // TF_ASSIGN_OR_RETURN(Thunk::CollectiveExecuteParams collective_execute_params,
