@@ -21,6 +21,9 @@
 git clone https://gitcode.com/cann/xla-npu.git
 cd xla-npu
 
+# 添加可执行权限
+chmod +x ./build/build.sh
+
 # 运行自动安装脚本
 ./build/build.sh
 
