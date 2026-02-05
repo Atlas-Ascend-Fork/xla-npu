@@ -3,8 +3,12 @@
 # XLA-NPU 自动安装脚本
 # 功能：自动安装和编译 XLA-NPU 及相关依赖，支持卸载
 #
+# 系统要求:
+#   - Python >= 3.11 (系统自带或 conda 环境)
+#   - 基本编译工具 (wget, curl, git, tar, xz)
+#
 # 使用方法:
-#   ./build.sh [install|uninstall|help]
+#   ./build_new.sh [install|uninstall|help]
 #   install  - 执行完整安装 (默认)
 #   uninstall- 卸载 XLA-NPU
 #   help     - 显示帮助信息
@@ -26,40 +30,35 @@ ENV_DIR="$WORKSPACE/build/env"
 CODE_DIR="$WORKSPACE/build/code"
 DOWNLOADS_DIR="$WORKSPACE/build/downloads"
 JAVA_INSTALL_DIR="$ENV_DIR/java"
-PYTHON_INSTALL_DIR="$ENV_DIR/python"
 BAZEL_INSTALL_DIR="$ENV_DIR/bazel"
 XLA_CODE_DIR="$CODE_DIR/xla"
 # xla-npu 代码目录为脚本所在目录的父目录（用户已克隆）
 XLA_NPU_CODE_DIR="$XLA_NPU_ROOT_DIR"
-JAX_CODE_DIR="$CODE_DIR/jax"
 
 # 版本配置
 JAVA_VERSION="21"
-PYTHON_VERSION="3.11.9"
 BAZEL_VERSION="7.7.0"
-JAX_VERSION="jax-v0.8.1"
+JAX_VERSION="0.8.1"
 XLA_COMMIT_ID="a7e58876b73dfa9bb6bc785f6981a332c133bb55"
 
 # 下载镜像配置
 JAVA_MIRROR="https://mirrors.huaweicloud.com/openjdk"
 BAZEL_MIRROR="https://mirrors.huaweicloud.com/bazel"
-PYTHON_MIRROR="https://mirrors.huaweicloud.com/python"
+# 华为 pip 镜像源
+PIP_INDEX_URL="https://mirrors.huaweicloud.com/repository/pypi/simple"
+PIP_TRUSTED_HOST="mirrors.huaweicloud.com"
 
 # 并行编译任务数
 PARALLEL_JOBS=${PARALLEL_JOBS:-$(nproc)}
-MAKE_JOBS=${MAKE_JOBS:-$PARALLEL_JOBS}
 
 # 默认安装 JAX (1=安装, 0=不安装)
 INSTALL_JAX=${INSTALL_JAX:-1}
-
-# 跳过 Python 安装，使用系统/conda Python (1=跳过, 0=安装)
-SKIP_PYTHON_INSTALL=${SKIP_PYTHON_INSTALL:-0}
 
 # 断点续传：强制重新安装 (1=强制重新执行所有步骤, 0=启用断点续传)
 FORCE_REINSTALL=${FORCE_REINSTALL:-0}
 
 # 状态文件路径（放在 build 目录）
-STATE_FILE="$SCRIPT_DIR/.install_state"
+STATE_FILE="$SCRIPT_DIR/.install_state_new"
 
 # 日志文件
 LOG_DIR="$WORKSPACE/build/logs"
@@ -67,7 +66,7 @@ LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 INSTALL_DOC="$LOG_DIR/BUILD_DOCUMENTATION.md"
 
 # 环境变量文件（放在 build 目录）
-ENV_FILE="$SCRIPT_DIR/xla_npu_env"
+ENV_FILE="$SCRIPT_DIR/xla_npu_env_new"
 
 #################### 工具函数 ####################
 log_info() {
@@ -235,7 +234,6 @@ init_environment() {
     ensure_dir "$CODE_DIR"
     ensure_dir "$LOG_DIR"
     ensure_dir "$JAVA_INSTALL_DIR"
-    ensure_dir "$PYTHON_INSTALL_DIR"
     ensure_dir "$BAZEL_INSTALL_DIR"
 
     log_info "工作目录: $WORKSPACE"
@@ -260,17 +258,27 @@ init_environment() {
             "请先安装: sudo apt-get install ${missing_tools[*]}"
     fi
 
-    # 检查 Python
+    # 检查 Python (系统要求)
     PYTHON_CMD=$(check_python)
     if [ -z "$PYTHON_CMD" ]; then
         error_exit "未找到 Python" \
-            "请安装 Python 3.11+: conda install python=3.11 或 apt-get install python3.11"
+            "请安装 Python 3.11+: sudo apt-get install python3.11 或 conda install python=3.11"
     fi
 
     # 获取当前 Python 版本
     local current_py_version=$($PYTHON_CMD --version 2>&1 | head -1)
     log_info "检测到 Python: $current_py_version (命令: $PYTHON_CMD)"
 
+    # 检查 Python 版本是否满足要求 (>= 3.11)
+    local py_major=$($PYTHON_CMD -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "0")
+    local py_minor=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
+
+    if [ "$py_major" -lt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -lt 11 ]; }; then
+        error_exit "Python 版本不满足要求 (需要 >= 3.11, 当前 $py_major.$py_minor)" \
+            "请升级 Python: conda install python=3.11 或 sudo apt-get install python3.11"
+    fi
+
+    log_info "Python 版本满足要求 ($py_major.$py_minor >= 3.11)"
     log_info "环境初始化完成"
 }
 
@@ -374,171 +382,6 @@ install_bazel() {
     mark_step_done "install_bazel"
 }
 
-#################### 安装 Python ####################
-install_python() {
-    # 检查是否已完成
-    local python_dir="$PYTHON_INSTALL_DIR/Python-${PYTHON_VERSION}"
-
-    # 首先检查是否已完成（无论是否设置 SKIP_PYTHON_INSTALL）
-    if skip_if_done "install_python" "Python $PYTHON_VERSION"; then
-        # 已完成过安装，检查已安装的 Python
-        if [ "$SKIP_PYTHON_INSTALL" != "1" ]; then
-            # 需要编译安装 Python，检查是否已完成
-            # 检查两种情况：1. make install 后的 bin/python 2. 编译完成但未 install 的源码目录 python
-            local python_exe=""
-            if [ -f "$python_dir/bin/python" ]; then
-                python_exe="$python_dir/bin/python"
-            elif [ -f "$python_dir/python" ] && [ -f "$python_dir/libpython3.11.so" ]; then
-                # 检查编译完成但未 install 的情况
-                python_exe="$python_dir/python"
-            fi
-
-            # 如果找到 python 可执行文件，验证是否真正可用
-            if [ -n "$python_exe" ]; then
-                # 验证 Python 是否真的可用
-                local temp_ld_path="$LD_LIBRARY_PATH"
-                export LD_LIBRARY_PATH="$python_dir:$LD_LIBRARY_PATH"
-                if $python_exe --version >/dev/null 2>&1; then
-                    export PATH="$python_dir:$PATH"
-                    PYTHON_CMD="$python_exe"
-                    return 0
-                else
-                    export LD_LIBRARY_PATH="$temp_ld_path"
-                    log_warn "Python 可执行文件存在但不可用，将重新安装"
-                fi
-            fi
-        else
-            # 使用系统/conda Python
-            return 0
-        fi
-    fi
-
-    log_step "=== 检查 Python 环境 ==="
-
-    # 先检查系统 Python 版本（无论是否设置 SKIP_PYTHON_INSTALL）
-    if check_command python || check_command python3; then
-        local system_python=""
-        if check_command python; then
-            system_python="python"
-        else
-            system_python="python3"
-        fi
-
-        log_info "检测到系统 Python: $($system_python --version 2>&1 | head -1)"
-
-        # 检查 Python 版本是否满足要求 (>= 3.11)
-        local py_major=$($system_python -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "0")
-        local py_minor=$($system_python -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
-
-        if [ "$py_major" -gt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -ge 11 ]; }; then
-            log_info "系统 Python 版本满足要求 ($py_major.$py_minor >= 3.11)，跳过编译安装"
-            PYTHON_CMD="$system_python"
-            mark_step_done "install_python"
-            return 0
-        else
-            log_info "系统 Python 版本不满足要求 ($py_major.$py_minor < 3.11)，将编译安装 Python $PYTHON_VERSION"
-        fi
-    else
-        log_info "未检测到系统 Python，将编译安装 Python $PYTHON_VERSION"
-    fi
-
-    # 如果设置了跳过 Python 安装且系统 Python 不满足要求，则报错
-    if [ "$SKIP_PYTHON_INSTALL" = "1" ]; then
-        error_exit "SKIP_PYTHON_INSTALL=1 但系统 Python 版本不满足要求" \
-            "需要 Python >= 3.11\n解决方案: conda install python=3.11 或取消 SKIP_PYTHON_INSTALL"
-    fi
-
-    log_step "=== 安装 Python $PYTHON_VERSION ==="
-
-    # 安装编译依赖
-    log_info "安装 Python 编译依赖..."
-    if [ "$EUID" -eq 0 ] || check_command sudo; then
-        if [ "$EUID" -eq 0 ]; then
-            apt-get update -qq || log_warn "apt-get update 失败，继续"
-        fi
-        local sudo_cmd=""
-        [ "$EUID" -ne 0 ] && sudo_cmd="sudo"
-        $sudo_cmd apt-get install -y build-essential zlib1g-dev libncurses5-dev \
-            libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev \
-            libsqlite3-dev wget 2>/dev/null || \
-            log_warn "安装编译依赖失败，请确保已安装必要依赖"
-    else
-        log_warn "无 sudo 权限，跳过依赖安装，请确保已安装必要依赖"
-    fi
-
-    cd "$PYTHON_INSTALL_DIR" || error_exit "无法进入目录: $PYTHON_INSTALL_DIR"
-
-    local python_file="Python-${PYTHON_VERSION}.tar.xz"
-    local downloads_file="$DOWNLOADS_DIR/$python_file"
-
-    # 检查下载的文件是否存在
-    if [ ! -f "$downloads_file" ]; then
-        error_exit "Python 安装文件不存在: $downloads_file" \
-            "请先运行下载步骤或手动下载到该位置"
-    fi
-
-    # 从 downloads 目录复制文件
-    log_info "准备 Python 安装文件..."
-    if [ ! -f "$python_file" ] || [ "$downloads_file" -nt "$python_file" ]; then
-        cp "$downloads_file" "$python_file" || error_exit "复制 Python 文件失败"
-    fi
-
-    # 解压 Python 源码
-    log_info "解压 Python 源码..."
-    if [ ! -d "$python_dir" ]; then
-        xz -d "$python_file" || error_exit "解压 Python 源码失败 (xz)"
-        tar -xf "Python-${PYTHON_VERSION}.tar" || error_exit "解压 Python 源码失败 (tar)"
-        rm -f "Python-${PYTHON_VERSION}.tar"
-    else
-        log_info "Python 已解压，跳过"
-    fi
-
-    # 编译安装 Python
-    cd "$python_dir" || error_exit "无法进入目录: $python_dir"
-
-    # 检查是否已编译（通过检查编译产物）
-    local compiled_marker="$python_dir/libpython3.11.so"
-    if [ -f "$compiled_marker" ] && [ -f "$python_dir/python" ]; then
-        log_info "Python 已编译完成，跳过 configure 和 make"
-    else
-        # 需要编译
-        log_info "配置 Python 编译选项..."
-        local configure_cmd="./configure --enable-optimizations --with-lto --enable-shared"
-
-        # 使用 sudo 执行 configure（如果需要）
-        if [ "$EUID" -ne 0 ] && check_command sudo; then
-            log_info "使用 sudo 执行 configure..."
-            sudo $configure_cmd || \
-                error_exit "Python 配置失败" \
-                    "1. 检查编译依赖是否完整\n2. 查看配置日志: $python_dir/config.log"
-        else
-            $configure_cmd || \
-                error_exit "Python 配置失败" \
-                    "1. 检查编译依赖是否完整\n2. 查看配置日志: $python_dir/config.log"
-        fi
-
-        log_info "编译 Python (使用 $MAKE_JOBS 个并行任务)..."
-        make -j "$MAKE_JOBS" || error_exit "Python 编译失败" \
-            "1. 减少并行任务数: export MAKE_JOBS=8\n2. 检查磁盘空间\n3. 查看编译错误"
-    fi
-
-    # 设置环境变量
-    export PATH="$python_dir:$PATH"
-    export LD_LIBRARY_PATH="$python_dir:$LD_LIBRARY_PATH"
-
-    # 使用编译目录中的 Python
-    PYTHON_CMD="$python_dir/python"
-
-    # 验证安装
-    log_info "验证 Python 安装..."
-    if ! $PYTHON_CMD --version; then
-        error_exit "Python 安装验证失败" "检查 PATH 和 LD_LIBRARY_PATH 配置"
-    fi
-
-    log_info "Python 安装成功"
-    mark_step_done "install_python"
-}
-
 #################### 配置环境变量 ####################
 setup_env() {
     log_step "=== 配置环境变量 ==="
@@ -549,53 +392,19 @@ setup_env() {
 
     export PATH="$BAZEL_INSTALL_DIR:$PATH"
 
-    # 检查是否安装了新的 Python
-    local python_dir="$PYTHON_INSTALL_DIR/Python-${PYTHON_VERSION}"
-    local installed_python=""
-    if [ -f "$python_dir/bin/python" ]; then
-        installed_python="$python_dir/bin/python"
-    elif [ -f "$python_dir/python" ]; then
-        installed_python="$python_dir"
-    fi
-
-    # 只有当编译安装了 Python 时，才添加到 PATH
-    if [ -n "$installed_python" ]; then
-        export PATH="$python_dir:$PATH"
-        export LD_LIBRARY_PATH="$python_dir:$LD_LIBRARY_PATH"
-
-        # 生成环境变量配置文件（包含 Python）
-        cat > "$ENV_FILE" << EOF
+    # 生成环境变量配置文件
+    cat > "$ENV_FILE" << EOF
 # XLA-NPU 环境变量配置
 # 生成时间: $(date)
-# 使用方法: source build/xla_npu_env
-
-export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
-export PATH=\$JAVA_HOME/bin:\$PATH
-
-export PATH=$BAZEL_INSTALL_DIR:\$PATH
-
-export PATH=$python_dir:\$PATH
-export LD_LIBRARY_PATH=$python_dir:\$LD_LIBRARY_PATH
-EOF
-    else
-        # 使用系统/conda Python，不在环境变量中添加 Python 路径
-        cat > "$ENV_FILE" << EOF
-# XLA-NPU 环境变量配置
-# 生成时间: $(date)
-# 使用方法: source build/xla_npu_env
+# 使用方法: source build/xla_npu_env_new
 
 export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
 export PATH=\$JAVA_HOME/bin:\$PATH
 
 export PATH=$BAZEL_INSTALL_DIR:\$PATH
 EOF
-    fi
 
     log_info "环境变量已设置"
-    if [ -z "$installed_python" ]; then
-        log_info "使用系统/conda Python（未添加到环境变量）"
-    fi
-
     log_info "环境变量配置文件: $ENV_FILE"
 }
 
@@ -625,7 +434,7 @@ download_code() {
         git fetch || log_warn "git fetch 失败，继续使用本地代码"
     else
         log_info "克隆 XLA 代码仓库..."
-        git clone https://github.com/openxla/xla.git "$XLA_CODE_DIR" || \
+        git clone https://gitcode.com/GitHub_Trending/xl/xla.git "$XLA_CODE_DIR" || \
             error_exit "克隆 XLA 失败" \
                 "1. 检查网络连接\n2. 配置代理: git config --global http.proxy <proxy>\n3. 使用镜像源"
         cd "$XLA_CODE_DIR" || error_exit "无法进入目录: $XLA_CODE_DIR"
@@ -700,70 +509,59 @@ build_xla() {
     mark_step_done "build_xla"
 }
 
-#################### 编译安装 JAX ####################
+#################### 安装 JAX ####################
 install_jax() {
     # 检查是否已完成
-    if skip_if_done "install_jax" "编译安装 JAX"; then
+    if skip_if_done "install_jax" "安装 JAX"; then
         return 0
     fi
 
-    log_step "=== 编译安装 JAX ==="
+    log_step "=== 安装 JAX $JAX_VERSION ==="
 
-    ensure_dir "$CODE_DIR"
-    cd "$CODE_DIR" || error_exit "无法进入目录: $CODE_DIR"
-
-    # 下载 JAX 代码
-    if [ -d "$JAX_CODE_DIR" ]; then
-        log_info "JAX 代码目录已存在，更新代码..."
-        cd "$JAX_CODE_DIR" || error_exit "无法进入目录: $JAX_CODE_DIR"
-        git fetch || log_warn "git fetch 失败，继续使用本地代码"
-    else
-        log_info "克隆 JAX 代码仓库..."
-        git clone https://github.com/jax-ml/jax.git "$JAX_CODE_DIR" || \
-            error_exit "克隆 JAX 失败" \
-                "1. 检查网络连接\n2. 配置代理\n3. 使用镜像源"
-        cd "$JAX_CODE_DIR" || error_exit "无法进入目录: $JAX_CODE_DIR"
+    # 检查当前 JAX 版本
+    log_info "检查已安装的 JAX 版本..."
+    local current_jax_version=$($PYTHON_CMD -c "import jax; print(jax.__version__)" 2>/dev/null || echo "none")
+    if [ "$current_jax_version" = "$JAX_VERSION" ]; then
+        log_info "JAX $JAX_VERSION 已安装，跳过"
+        mark_step_done "install_jax"
+        return 0
     fi
 
-    # 切换到指定版本
-    log_info "切换 JAX 到版本: $JAX_VERSION"
-    git checkout "$JAX_VERSION" || \
-        error_exit "切换 JAX 版本失败" \
-            "检查版本标签是否存在: git tag -l | grep $JAX_VERSION"
-
-    # 编译 JAX
-    log_info "编译 JAX 和 jaxlib (使用本地 XLA)..."
-    $PYTHON_CMD build/build.py build --wheels=jaxlib,jax --local_xla_path="$XLA_CODE_DIR" || \
-        error_exit "JAX 编译失败" \
-            "1. 检查 XLA 编译产物\n2. 检查 Python 环境\n3. 查看编译错误日志"
+    log_info "使用 pip 安装 JAX $JAX_VERSION (华为镜像源)..."
 
     # 卸载旧版本 (如果存在)
-    log_info "卸载旧版本 JAX..."
-    $PYTHON_CMD -m pip uninstall -y jax jaxlib 2>/dev/null || true
-
-    # 安装 jaxlib
-    log_info "安装 jaxlib..."
-    local jaxlib_wheel=$(find "$JAX_CODE_DIR/dist" -name "jaxlib-*.whl" | head -1)
-    if [ -z "$jaxlib_wheel" ]; then
-        error_exit "找不到 jaxlib wheel 文件" "检查编译产物目录: $JAX_CODE_DIR/dist"
+    if [ "$current_jax_version" != "none" ]; then
+        log_info "卸载旧版本 JAX ($current_jax_version)..."
+        $PYTHON_CMD -m pip uninstall -y jax jaxlib 2>/dev/null || true
     fi
 
-    $PYTHON_CMD -m pip install "$jaxlib_wheel" || \
+    # 使用华为镜像源安装 JAX
+    $PYTHON_CMD -m pip install --upgrade pip || \
+        log_warn "升级 pip 失败，继续安装"
+
+    log_info "安装 jaxlib $JAX_VERSION..."
+    $PYTHON_CMD -m pip install -i "$PIP_INDEX_URL" \
+        --trusted-host "$PIP_TRUSTED_HOST" \
+        "jaxlib==$JAX_VERSION" || \
         error_exit "安装 jaxlib 失败" \
-            "1. 检查 pip 版本\n2. 使用 sudo 安装\n3. 检查 Python 环境"
+            "1. 检查网络连接\n2. 检查 Python 环境\n3. 查看错误日志"
 
-    # 安装 JAX
-    log_info "安装 JAX..."
-    cd "$JAX_CODE_DIR" || error_exit "无法进入目录: $JAX_CODE_DIR"
-    $PYTHON_CMD -m pip install -e . --no-deps || \
-        error_exit "安装 JAX 失败" "检查 pip 和 Python 环境"
+    log_info "安装 jax $JAX_VERSION..."
+    $PYTHON_CMD -m pip install -i "$PIP_INDEX_URL" \
+        --trusted-host "$PIP_TRUSTED_HOST" \
+        "jax==$JAX_VERSION" || \
+        error_exit "安装 jax 失败" \
+            "1. 检查网络连接\n2. 检查 Python 环境\n3. 查看错误日志"
 
-    # 安装可能的依赖
-    log_info "安装额外依赖..."
-    $PYTHON_CMD -m pip install ml_dtypes opt_einsum || \
-        log_warn "安装额外依赖失败，可能需要手动安装"
+    # 验证安装
+    log_info "验证 JAX 安装..."
+    local installed_version=$($PYTHON_CMD -c "import jax; print(jax.__version__)" 2>/dev/null)
+    if [ "$installed_version" = "$JAX_VERSION" ]; then
+        log_info "JAX $JAX_VERSION 安装成功"
+    else
+        error_exit "JAX 版本验证失败 (期望: $JAX_VERSION, 实际: $installed_version)"
+    fi
 
-    log_info "JAX 安装成功"
     mark_step_done "install_jax"
 }
 
@@ -774,6 +572,12 @@ generate_documentation() {
     cat > "$INSTALL_DOC" << 'EOF'
 # XLA-NPU 安装文档
 
+## 系统要求
+
+- **Python >= 3.11**: 必须预先安装（系统自带或 conda 环境）
+- **基本工具**: wget, curl, git, tar, xz
+- **编译工具**: 由脚本自动安装 (OpenJDK 21, Bazel 7.7.0)
+
 ## 环境配置
 
 ### 安装目录
@@ -783,18 +587,18 @@ generate_documentation() {
 
 ### 环境变量
 
-安装脚本已自动生成环境变量配置文件: `build/xla_npu_env`
+安装脚本已自动生成环境变量配置文件: `build/xla_npu_env_new`
 
 要使环境变量生效，请执行:
 
 ```bash
-source build/xla_npu_env
+source build/xla_npu_env_new
 ```
 
 或者添加到 ~/.bashrc 以自动加载:
 
 ```bash
-echo 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc
+echo 'source $(pwd)/build/xla_npu_env_new' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -826,35 +630,35 @@ python -c "import jax; print(jax.__version__)"
 - 位置: `bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so`
 - 可用于 JAX 插件加载
 
-### JAX 产物
-- jaxlib wheel 包
-- JAX 可编辑安装
+### JAX 安装
+- 通过 pip 安装到当前 Python 环境
+- 版本: 0.8.1
+- 使用华为镜像源
 
 ## 常见问题
 
-### 1. 网络问题
+### 1. Python 版本不满足要求
+**问题**: Python 版本 < 3.11
+
+**解决方案**:
+- 使用 conda: `conda install python=3.11`
+- 或使用系统包管理: `sudo apt-get install python3.11`
+
+### 2. 网络问题
 **问题**: 下载失败或速度慢
 
 **解决方案**:
 - 使用代理
 - 配置 Git 代理: `git config --global http.proxy <proxy_url>`
-- 使用国内镜像源
+- 使用国内镜像源（脚本默认使用华为镜像）
 
-### 2. 编译错误
+### 3. 编译错误
 **问题**: 编译过程中出现错误
 
 **解决方案**:
 - 减少并行任务数: `export PARALLEL_JOBS=8`
 - 检查磁盘空间
 - 查看详细日志
-
-### 3. Python 版本问题
-**问题**: Python 版本不满足要求
-
-**解决方案**:
-- XLA-JAX 需要 Python >= 3.11
-- 使用 conda: `conda install python=3.11`
-- 或使用脚本自动安装 Python 3.11.9 (设置 SKIP_PYTHON_INSTALL=0)
 
 ### 4. 权限问题
 **问题**: 安装时权限不足
@@ -863,12 +667,20 @@ python -c "import jax; print(jax.__version__)"
 - 使用 sudo 运行脚本
 - 或确保安装目录有写权限
 
+### 5. JAX 安装失败
+**问题**: pip install jax 失败
+
+**解决方案**:
+- 检查网络连接
+- 手动指定 pip 源
+- 使用虚拟环境隔离安装
+
 ## 卸载
 
 ### 自动卸载
 ```bash
 cd /home/code/xla/install
-./build.sh uninstall
+./build_new.sh uninstall
 ```
 
 ### 手动卸载
@@ -876,18 +688,17 @@ cd /home/code/xla/install
 #### 删除环境变量
 ```bash
 # 删除环境变量配置文件
-rm build/xla_npu_env
+rm build/xla_npu_env_new
 
 # 如果已添加到 ~/.bashrc，编辑删除相关行
 # 或执行：
-sed -i '/xla_npu_env/d' ~/.bashrc
+sed -i '/xla_npu_env_new/d' ~/.bashrc
 ```
 
 #### 删除代码和编译产物
 ```bash
 rm -rf $CODE_DIR/xla
 rm -rf $CODE_DIR/xla-npu
-rm -rf $CODE_DIR/jax
 ```
 
 #### 卸载 JAX
@@ -911,7 +722,7 @@ pip cache purge
 ## 支持
 
 如有问题，请查看:
-- 安装指南: `/home/code/xla/install/install-guide.txt`
+- 安装指南: `INSTALL_GUIDE_NEW.md`
 - 日志文件: `LOG_FILE`
 EOF
 
@@ -945,16 +756,6 @@ uninstall_jax() {
         fi
     else
         log_warn "Python 未找到，跳过 JAX 卸载"
-    fi
-
-    # 删除 JAX 代码目录
-    if [ -d "$JAX_CODE_DIR" ]; then
-        if confirm_action "是否删除 JAX 代码目录 ($JAX_CODE_DIR)?"; then
-            log_info "删除 JAX 代码目录..."
-            rm -rf "$JAX_CODE_DIR" || log_warn "删除 JAX 代码目录失败"
-        else
-            log_info "保留 JAX 代码目录"
-        fi
     fi
 }
 
@@ -1004,10 +805,10 @@ uninstall_env() {
     fi
 
     # 提示用户手动清除 ~/.bashrc 中的配置（如果添加了）
-    if grep -q "xla_npu_env" "$HOME/.bashrc" 2>/dev/null; then
-        log_info "检测到 ~/.bashrc 中包含 xla_npu_env 配置"
+    if grep -q "xla_npu_env_new" "$HOME/.bashrc" 2>/dev/null; then
+        log_info "检测到 ~/.bashrc 中包含 xla_npu_env_new 配置"
         log_info "请手动编辑 ~/.bashrc 删除相关行，或执行："
-        log_info "  sed -i '/xla_npu_env/d' ~/.bashrc"
+        log_info "  sed -i '/xla_npu_env_new/d' ~/.bashrc"
     fi
 }
 
@@ -1028,7 +829,7 @@ uninstall_tools() {
             rm -rf "$BAZEL_INSTALL_DIR" || log_warn "删除 Bazel 失败"
         fi
 
-        log_info "注意: conda Python 未被删除"
+        log_info "注意: Python 未被删除"
     else
         log_info "保留编译工具"
     fi
@@ -1126,40 +927,37 @@ XLA-NPU 安装脚本
     uninstall  - 卸载 XLA-NPU
     help       - 显示帮助信息
 
+系统要求:
+    Python >= 3.11 (必须预先安装)
+
 环境变量:
     WORKSPACE          - 工作目录 (默认: 脚本所在目录/workspace)
     PARALLEL_JOBS      - 并行任务数 (默认: nproc)
-    MAKE_JOBS          - make 并行数 (默认: PARALLEL_JOBS)
     INSTALL_JAX        - 是否安装 JAX (默认: 1, 设为 0 跳过)
-    SKIP_PYTHON_INSTALL- 跳过 Python 安装，使用系统/conda Python (默认: 0, 设为 1 启用)
     FORCE_REINSTALL    - 强制重新安装所有步骤 (默认: 0, 设为 1 启用)
     FORCE_UNINSTALL    - 强制卸载，无需确认 (默认: 0, 设为 1 启用)
-    SKIP_DOWNLOAD      - 跳过下载步骤 (默认: 0)
 
 示例:
-    # 完整安装 (包含 JAX)，使用 conda Python
-    SKIP_PYTHON_INSTALL=1 $0 install
-
-    # 完整安装 (包含 JAX)，编译 Python
-    $0 install
+    # 完整安装 (包含 JAX)
+    ./$0 install
 
     # 完整安装 (不包含 JAX)
-    INSTALL_JAX=0 $0 install
+    INSTALL_JAX=0 ./$0 install
 
     # 强制重新安装所有步骤 (跳过断点续传)
-    FORCE_REINSTALL=1 $0 install
+    FORCE_REINSTALL=1 ./$0 install
 
     # 自定义工作目录
-    WORKSPACE=/opt/xla $0 install
+    WORKSPACE=/opt/xla ./$0 install
 
     # 自定义并行数
-    PARALLEL_JOBS=16 $0 install
+    PARALLEL_JOBS=16 ./$0 install
 
     # 卸载 XLA-NPU
-    $0 uninstall
+    ./$0 uninstall
 
     # 强制卸载 (无需确认)
-    FORCE_UNINSTALL=1 $0 uninstall
+    FORCE_UNINSTALL=1 ./$0 uninstall
 EOF
 }
 
@@ -1184,11 +982,9 @@ main_install() {
     # 检查哪些文件需要下载（检查 downloads 目录）
     local need_jdk=0
     local need_bazel=0
-    local need_python=0
 
     local jdk_file="openjdk-${JAVA_VERSION}_linux-x64_bin.tar.gz"
     local bazel_file="bazel_nojdk-${BAZEL_VERSION}-linux-x86_64"
-    local python_file="Python-${PYTHON_VERSION}.tar.xz"
 
     # 检查 JDK（检查 downloads 目录）
     if [ ! -f "$temp_download_dir/$jdk_file" ] && [ "$FORCE_REINSTALL" != "1" ]; then
@@ -1208,38 +1004,6 @@ main_install() {
         log_info "Bazel 文件已存在，跳过下载: $bazel_file"
     fi
 
-    # 检查 Python（检查 downloads 目录和系统版本）
-    if [ "$SKIP_PYTHON_INSTALL" != "1" ]; then
-        # 先检查系统 Python 版本是否满足要求
-        local system_python_ok=0
-        if check_command python || check_command python3; then
-            local check_python_cmd=""
-            if check_command python; then
-                check_python_cmd="python"
-            else
-                check_python_cmd="python3"
-            fi
-
-            local py_major=$($check_python_cmd -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "0")
-            local py_minor=$($check_python_cmd -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
-
-            if [ "$py_major" -gt 3 ] || { [ "$py_major" -eq 3 ] && [ "$py_minor" -ge 11 ]; }; then
-                system_python_ok=1
-            fi
-        fi
-
-        # 如果系统 Python 满足要求，不需要下载
-        if [ $system_python_ok -eq 1 ]; then
-            log_info "系统 Python 满足要求，跳过下载: $python_file"
-        elif [ ! -f "$temp_download_dir/$python_file" ] && [ "$FORCE_REINSTALL" != "1" ]; then
-            need_python=1
-        elif [ "$FORCE_REINSTALL" = "1" ]; then
-            need_python=1
-        else
-            log_info "Python 文件已存在，跳过下载: $python_file"
-        fi
-    fi
-
     # 准备并行下载任务
     local download_count=0
     if [ $need_jdk -eq 1 ]; then
@@ -1248,10 +1012,6 @@ main_install() {
     fi
     if [ $need_bazel -eq 1 ]; then
         log_info "准备下载 Bazel..."
-        download_count=$((download_count + 1))
-    fi
-    if [ $need_python -eq 1 ]; then
-        log_info "准备下载 Python 源码..."
         download_count=$((download_count + 1))
     fi
 
@@ -1264,7 +1024,6 @@ main_install() {
         # 启动并行下载 (直接后台运行，只下载需要的文件)
         local jdk_pid=""
         local bazel_pid=""
-        local python_pid=""
 
         if [ $need_jdk -eq 1 ]; then
             wget --no-check-certificate -c --show-progress \
@@ -1282,19 +1041,13 @@ main_install() {
             add_bg_pid $bazel_pid
         fi
 
-        if [ $need_python -eq 1 ]; then
-            wget --no-check-certificate -c --show-progress \
-                "$PYTHON_MIRROR/${PYTHON_VERSION}/$python_file" \
-                -O "$python_file" &
-            python_pid=$!
-            add_bg_pid $python_pid
-        fi
-
         # 等待所有下载完成
         log_info "等待下载完成..."
         [ -n "$jdk_pid" ] && wait $jdk_pid 2>/dev/null || true
         [ -n "$bazel_pid" ] && wait $bazel_pid 2>/dev/null || true
-        [ -n "$python_pid" ] && wait $python_pid 2>/dev/null || true
+
+        # 清理已完成的进程 PID
+        BG_PIDS=""
 
         # 清理已完成的进程 PID
         BG_PIDS=""
@@ -1323,15 +1076,6 @@ main_install() {
         fi
     fi
 
-    if [ $need_python -eq 1 ]; then
-        if [ ! -f "$python_file" ] || [ ! -s "$python_file" ]; then
-            log_error "下载失败: $python_file"
-            download_failed=1
-        else
-            log_info "下载成功: $python_file"
-        fi
-    fi
-
     if [ $download_failed -eq 1 ]; then
         error_exit "部分文件下载失败" \
             "检查网络连接或手动下载文件到对应目录"
@@ -1340,7 +1084,6 @@ main_install() {
     # 安装组件
     install_java
     install_bazel
-    install_python
     setup_env
 
     # 下载代码
@@ -1349,7 +1092,7 @@ main_install() {
     # 编译 XLA
     build_xla
 
-    # 编译安装 JAX (默认安装)
+    # 安装 JAX (默认安装)
     if [ "$INSTALL_JAX" = "1" ]; then
         install_jax
     else
@@ -1365,10 +1108,10 @@ main_install() {
     echo -e "\033[32m========================================\033[0m"
     echo ""
     echo "请执行以下命令使环境变量生效:"
-    echo -e "\033[36msource build/xla_npu_env\033[0m"
+    echo -e "\033[36msource build/xla_npu_env_new\033[0m"
     echo ""
     echo "或者添加到 ~/.bashrc 以自动加载:"
-    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc\033[0m"
+    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env_new' >> ~/.bashrc\033[0m"
     echo ""
     echo "安装文档: $INSTALL_DOC"
     echo "安装日志: $LOG_FILE"
