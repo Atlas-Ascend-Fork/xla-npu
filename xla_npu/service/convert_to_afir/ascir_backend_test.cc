@@ -102,37 +102,54 @@ absl::Status RunTest(absl::string_view hlo_text,
   std::cout << "  ✅ Compilation successful!" << std::endl;
 
   std::cout << "\n[Step 4] Generated Files:" << std::endl;
-  std::cout << "  ASCIR file:      " << result.ascir_file << std::endl;
-  std::cout << "  Host file:       " << result.host_file << std::endl;
-  std::cout << "  Device file:     " << result.device_file << std::endl;
-  std::cout << "  Tiling data:      " << result.tiling_data_file << std::endl;
-  std::cout << "  Tiling size:     " << result.tiling_data.size() << " bytes" << std::endl;
+  std::cout << "  Total computations compiled: " << result.computation_results.size() << std::endl;
+
+  for (size_t i = 0; i < result.computation_results.size(); ++i) {
+    const auto& comp_result = result.computation_results[i];
+    std::cout << "\n  Computation " << (i + 1) << ": " << comp_result.computation_name << std::endl;
+    std::cout << "    Graph name:      " << comp_result.graph_name << std::endl;
+    std::cout << "    ASCIR file:      " << comp_result.ascir_file << std::endl;
+    std::cout << "    Host file:       " << comp_result.host_file << std::endl;
+    std::cout << "    Device file:     " << comp_result.device_file << std::endl;
+    std::cout << "    Tiling data:      " << comp_result.tiling_data_file << std::endl;
+    std::cout << "    Tiling size:     " << comp_result.tiling_data.size() << " bytes" << std::endl;
+  }
 
   // Verify files exist
   std::cout << "\n[Step 5] Verifying generated files..." << std::endl;
 
-  std::ifstream host_file(result.host_file);
-  std::ifstream device_file(result.device_file);
+  int total_files = 0;
+  int existing_files = 0;
 
-  if (host_file.good()) {
-    std::cout << "  ✅ Host file exists" << std::endl;
-  } else {
-    std::cout << "  ❌ Host file missing" << std::endl;
+  for (const auto& comp_result : result.computation_results) {
+    total_files += 3;  // host, device, tiling_data
+    std::ifstream host_file(comp_result.host_file);
+    std::ifstream device_file(comp_result.device_file);
+
+    if (host_file.good()) {
+      std::cout << "  ✅ Host file exists for " << comp_result.computation_name << std::endl;
+      existing_files++;
+    } else {
+      std::cout << "  ❌ Host file missing for " << comp_result.computation_name << std::endl;
+    }
+
+    if (device_file.good()) {
+      std::cout << "  ✅ Device file exists for " << comp_result.computation_name << std::endl;
+      existing_files++;
+    } else {
+      std::cout << "  ❌ Device file missing for " << comp_result.computation_name << std::endl;
+    }
+
+    if (!comp_result.tiling_data.empty()) {
+      std::cout << "  ✅ Tiling data generated for " << comp_result.computation_name
+                << " (" << comp_result.tiling_data.size() << " bytes)" << std::endl;
+      existing_files++;
+    } else {
+      std::cout << "  ❌ Tiling data missing for " << comp_result.computation_name << std::endl;
+    }
   }
 
-  if (device_file.good()) {
-    std::cout << "  ✅ Device file exists" << std::endl;
-  } else {
-    std::cout << "  ❌ Device file missing" << std::endl;
-  }
-
-  if (!result.tiling_data.empty()) {
-    std::cout << "  ✅ Tiling data generated ("
-              << result.tiling_data.size() << " bytes)" << std::endl;
-  } else {
-    std::cout << "  ❌ Tiling data missing" << std::endl;
-  }
-
+  std::cout << "\n  Files verified: " << existing_files << "/" << total_files << std::endl;
   std::cout << "\n=== Test Completed Successfully ===" << std::endl;
 
   return absl::OkStatus();
@@ -171,7 +188,7 @@ int main(int argc, char** argv) {
   } else {
     // Use default test HLO
     std::cout << "Using default test HLO" << std::endl;
-    hlo_text = kSimpleHLO;
+    hlo_text = kComplexHLO;
     source_desc = "built-in test";
   }
 

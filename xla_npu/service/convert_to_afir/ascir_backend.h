@@ -38,8 +38,11 @@ struct AscirBackendOptions {
   std::string soc_version = "Ascend910B1";
 };
 
-// Result of AscIR backend compilation
-struct AscirBackendResult {
+// Result of compiling a single HLO computation
+struct SingleComputationResult {
+  // Computation name
+  std::string computation_name;
+
   // Path to generated host file
   std::string host_file;
 
@@ -60,6 +63,12 @@ struct AscirBackendResult {
 
   // Tiling data bytes
   std::vector<uint8_t> tiling_data;
+};
+
+// Result of AscIR backend compilation
+struct AscirBackendResult {
+  // Results for each computation
+  std::vector<SingleComputationResult> computation_results;
 };
 
 // AscIR Backend Interface
@@ -93,7 +102,8 @@ class AscirBackend {
 
  private:
   // Step 1: Convert HLO to AFIR MLIR module (in-memory)
-  absl::StatusOr<std::string> ConvertHloToAfirModule(
+  // Returns a vector of AFIR strings, one per computation
+  absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(
       const HloModule& hlo_module,
       const AscirBackendOptions& options);
 
@@ -102,9 +112,10 @@ class AscirBackend {
       const std::string& afir_string,
       const AscirBackendOptions& options);
 
-  // Step 3: Call Ascend runtime to generate kernel
-  absl::StatusOr<AscirBackendResult> GenerateKernel(
+  // Step 3: Call Ascend runtime to generate kernel for a single computation
+  absl::StatusOr<SingleComputationResult> GenerateKernel(
       const std::string& ascir_text,
+      const std::string& computation_name,
       const AscirBackendOptions& options);
 };
 

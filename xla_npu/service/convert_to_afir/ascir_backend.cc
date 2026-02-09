@@ -17,9 +17,11 @@ limitations under the License.
 
 #include <cstdlib>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 // Python C API
@@ -136,80 +138,265 @@ absl::StatusOr<std::string> ExtractGraphName(const std::string& ascir_text) {
     return graph_name;
 }
 
+// Helper function to add axis information to ASCIR text
+// This is needed when converting individual computations that lack axis context
+std::string AddAxisInfoToAscir(const std::string& ascir_text, const std::vector<int64_t>& shape) {
+  std::string result = ascir_text;
+
+  // Find the asc_graph_attr section
+  size_t attr_pos = result.find("asc_graph_attr {");
+  if (attr_pos == std::string::npos) {
+    return result;  // No asc_graph_attr found, return as-is
+  }
+
+  // Find the closing brace of asc_graph_attr
+  size_t attr_end = result.find("}", attr_pos);
+  if (attr_end == std::string::npos) {
+    return result;
+  }
+
+  // Build axis information with proper id fields
+  std::string axis_info;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    // All axes need id field
+    axis_info += absl::StrFormat(
+        "  axis {\n"
+        "    id: %zu\n"
+        "    name: \"z%zu\"\n"
+        "    size: \"%lld\"\n"
+        "    align: \"1\"\n"
+        "    allow_unaligned_tail: true\n"
+        "  }\n",
+        i, i, shape[i]);
+  }
+
+  // Insert axis info before the closing brace
+  result.insert(attr_end, axis_info);
+
+  return result;
+}
+
+// Helper function to fix sched.axis for nodes that have axis_ids but missing sched.axis
+std::string FixNodeSchedAxis(const std::string& ascir_text) {
+  std::string result = ascir_text;
+
+  // Strategy: Count how many axis definitions are in asc_graph_attr
+  // Then for any node with sched that's missing axis, add all axes
+  size_t graph_attr_pos = result.find("asc_graph_attr {");
+  size_t num_axes = 0;
+
+  std::cerr << "[DEBUG] FixNodeSchedAxis: Starting to process ASCIR text" << std::endl;
+
+  if (graph_attr_pos != std::string::npos) {
+    // Find the end of asc_graph_attr (matching closing brace at start of line)
+    size_t graph_attr_end = result.find("\n}\n", graph_attr_pos);
+    if (graph_attr_end == std::string::npos) {
+      graph_attr_end = result.find("}\nasc_node", graph_attr_pos);
+    }
+
+    if (graph_attr_end != std::string::npos) {
+      std::string graph_attr_section = result.substr(graph_attr_pos, graph_attr_end - graph_attr_pos);
+
+      // Count axis definitions
+      size_t pos = 0;
+      while ((pos = graph_attr_section.find("axis {", pos)) != std::string::npos) {
+        num_axes++;
+        pos += 7;
+      }
+    }
+  }
+
+  std::cerr << "[DEBUG] Found " << num_axes << " axes in asc_graph_attr" << std::endl;
+
+  if (num_axes == 0) {
+    // Couldn't determine axis count, return as-is
+    std::cerr << "[DEBUG] No axes found, returning without modifications" << std::endl;
+    return result;
+  }
+
+  // Now find all sched sections that are missing axis and add it
+  size_t pos = 0;
+  size_t fixed_count = 0;
+  size_t total_sched = 0;
+
+  while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
+    total_sched++;
+    size_t sched_end = result.find("}", pos);
+    std::cerr << "[DEBUG] Found sched at position " << pos << ", sched_end at " << sched_end << std::endl;
+
+    if (sched_end == std::string::npos || sched_end > pos + 200) {
+      std::cerr << "[DEBUG] Skipping sched (invalid end)" << std::endl;
+      pos += 8;
+      continue;
+    }
+
+    // Extract the sched section content
+    std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
+    std::cerr << "[DEBUG] Sched content: [" << sched_content << "]" << std::endl;
+
+    // Check if this sched already has axis fields (but not loop_axis)
+    // We need to check for "axis:" at the start of a line (with whitespace)
+    bool has_axis_field = false;
+    size_t search_pos = 0;
+    while ((search_pos = sched_content.find("axis:", search_pos)) != std::string::npos) {
+      // Check if it's at start of line or preceded only by whitespace
+      if (search_pos == 0 || sched_content[search_pos - 1] == ' ' ||
+          sched_content[search_pos - 1] == '\t' || sched_content[search_pos - 1] == '\n') {
+        // Make sure it's not part of "loop_axis"
+        if (search_pos < 4 || sched_content.substr(search_pos - 4, 4) != "loop") {
+          has_axis_field = true;
+          break;
+        }
+      }
+      search_pos += 5;
+    }
+
+    if (!has_axis_field) {
+      std::cerr << "[DEBUG] This sched is missing axis, adding " << num_axes << " axes" << std::endl;
+      // This sched is missing axis, add all axes
+      std::string axis_fields;
+      for (size_t i = 0; i < num_axes; ++i) {
+        axis_fields += absl::StrFormat("      axis: %zu\n", i);
+      }
+
+      // Insert before the closing brace
+      result.insert(sched_end, axis_fields);
+      sched_end += axis_fields.length();
+      fixed_count++;
+
+      std::cerr << "[DEBUG] Fixed sched at position " << pos << ", added " << num_axes << " axes" << std::endl;
+    } else {
+      std::cerr << "[DEBUG] This sched already has axis fields" << std::endl;
+    }
+
+    pos = sched_end + 1;
+  }
+
+  std::cerr << "[DEBUG] Processed " << total_sched << " sched sections, fixed " << fixed_count << " nodes" << std::endl;
+
+  return result;
+}
+
 }  // namespace
 
 AscirBackend::AscirBackend() = default;
 
 AscirBackend::~AscirBackend() = default;
 
-absl::StatusOr<std::string> AscirBackend::ConvertHloToAfirModule(const HloModule& hlo_module,
-                                                                 const AscirBackendOptions& options) {
-    // Create MLIR context
+absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(
+    const HloModule& hlo_module,
+    const AscirBackendOptions& options) {
+  std::vector<std::string> afir_strings;
+
+  const HloComputation* entry = hlo_module.entry_computation();
+
+  // Only convert non-entry computations
+  for (const HloComputation* computation : hlo_module.computations()) {
+    if (computation == entry) {
+      std::cerr << "[INFO] Skipping entry computation: " << computation->name() << std::endl;
+      continue;
+    }
+
+    std::cerr << "[INFO] Converting non-entry computation: " << computation->name() << std::endl;
+
+    // Create MLIR context for this computation
     auto context = std::make_unique<mlir::MLIRContext>();
     context->loadDialect<mlir::func::FuncDialect>();
     context->loadDialect<mlir::arith::ArithDialect>();
     context->loadDialect<mlir::afir::AFIRDialect>();
 
-    // Convert HLO to AFIR
+    // Convert this single computation (with all its dependencies) to AFIR
     HloToAfirOptions afir_options;
     afir_options.preserve_names = true;
     afir_options.verify_module = true;
     afir_options.emit_afir_dialect = true;
 
-    TF_ASSIGN_OR_RETURN(auto mlir_module, ConvertHloToAfir(hlo_module, context.get(), afir_options));
+    TF_ASSIGN_OR_RETURN(
+        auto mlir_module,
+        ConvertHloComputationToAfir(*computation, hlo_module, context.get(), afir_options));
 
     // Serialize MLIR module to string immediately
     std::string afir_string;
     llvm::raw_string_ostream stream(afir_string);
     mlir_module->print(stream);
 
-    return afir_string;
+    afir_strings.push_back(afir_string);
+  }
+
+  std::cerr << "[INFO] Converted " << afir_strings.size() << " non-entry computations to AFIR" << std::endl;
+
+  return afir_strings;
 }
 
-absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(const std::string& afir_string,
-                                                             const AscirBackendOptions& options) {
-    // Create MLIR context for parsing AFIR
-    auto context = std::make_unique<mlir::MLIRContext>();
-    context->loadDialect<mlir::func::FuncDialect>();
-    context->loadDialect<mlir::arith::ArithDialect>();
-    context->loadDialect<mlir::afir::AFIRDialect>();
+absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(
+    const std::string& afir_string,
+    const AscirBackendOptions& options) {
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Starting conversion" << std::endl;
 
-    // Parse AFIR string to MLIR module
-    mlir::OwningOpRef<mlir::ModuleOp> module =
-        mlir::parseSourceString<mlir::ModuleOp>(llvm::StringRef(afir_string), context.get());
-    if (!module) {
-        return absl::InternalError("Failed to parse AFIR string");
-    }
+  // Create MLIR context for parsing AFIR
+  auto context = std::make_unique<mlir::MLIRContext>();
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Created MLIR context" << std::endl;
 
-    // Create temporary file for ASCIR output
-    std::string temp_ascir_file = absl::StrCat(options.output_dir, "/temp_output.ascir");
+  context->loadDialect<mlir::func::FuncDialect>();
+  context->loadDialect<mlir::arith::ArithDialect>();
+  context->loadDialect<mlir::afir::AFIRDialect>();
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Loaded dialects" << std::endl;
 
-    // Create PassManager to run the conversion pass
-    mlir::PassManager pm(context.get());
-    pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
+  // Parse AFIR string to MLIR module
+  mlir::OwningOpRef<mlir::ModuleOp> module = mlir::parseSourceString<mlir::ModuleOp>(
+      llvm::StringRef(afir_string), context.get());
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Parsed AFIR string" << std::endl;
 
-    // Capture stderr to get the output (since pass outputs to stderr by default)
-    // Save the original stderr
-    FILE* original_stderr = stderr;
-    fflush(stderr);
+  if (!module) {
+    return absl::InternalError("Failed to parse AFIR string");
+  }
 
-    // Redirect stderr to a file
-    FILE* temp_stderr = freopen(temp_ascir_file.c_str(), "w", stderr);
-    if (!temp_stderr) {
-        return absl::InternalError(absl::StrCat("Failed to open temp file: ", temp_ascir_file));
-    }
+  // Create temporary file for ASCIR output
+  std::string temp_ascir_file = absl::StrCat(options.output_dir, "/temp_output.ascir");
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Created temp file path: " << temp_ascir_file << std::endl;
 
-    // Run the pass
-    mlir::LogicalResult result = pm.run(*module);
+  // Create PassManager to run the conversion pass
+  mlir::PassManager pm(context.get());
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Created PassManager" << std::endl;
 
-    // Restore stderr
-    fflush(stderr);
-    stderr = original_stderr;
-    fclose(temp_stderr);
+  pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Added conversion pass" << std::endl;
 
-    if (mlir::failed(result)) {
-        return absl::InternalError("Failed to run AFIR to ASCIR conversion pass");
-    }
+  // Capture stderr to get the output (since pass outputs to stderr by default)
+  // Use dup2 to properly save and restore stderr
+  int stderr_fd = dup(fileno(stderr));
+  if (stderr_fd == -1) {
+    return absl::InternalError("Failed to duplicate stderr file descriptor");
+  }
+
+  std::cerr << "[DEBUG] ConvertAfirToAscir: About to redirect stderr" << std::endl;
+
+  // Redirect stderr to a file
+  FILE* temp_file = fopen(temp_ascir_file.c_str(), "w");
+  if (!temp_file) {
+    close(stderr_fd);
+    return absl::InternalError(absl::StrCat("Failed to open temp file: ", temp_ascir_file));
+  }
+
+  dup2(fileno(temp_file), fileno(stderr));
+
+  // Run the pass
+  mlir::LogicalResult result = pm.run(*module);
+
+  // Flush and close the temp file
+  fflush(stderr);
+  fclose(temp_file);
+
+  // Restore stderr using dup2
+  dup2(stderr_fd, fileno(stderr));
+  close(stderr_fd);
+
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Stderr restored" << std::endl;
+
+  if (mlir::failed(result)) {
+    return absl::InternalError("Failed to run AFIR to ASCIR conversion pass");
+  }
+  std::cerr << "[DEBUG] ConvertAfirToAscir: Pass succeeded" << std::endl;
 
     // Read the generated ASCIR file
     TF_ASSIGN_OR_RETURN(auto ascir_text, ReadFile(temp_ascir_file));
@@ -222,47 +409,62 @@ absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(const std::string& 
     return ascir_text;
 }
 
-absl::StatusOr<AscirBackendResult> AscirBackend::GenerateKernel(const std::string& ascir_text,
-                                                                const AscirBackendOptions& options) {
-    AscirBackendResult result;
+absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
+    const std::string& ascir_text,
+    const std::string& computation_name,
+    const AscirBackendOptions& options) {
+  SingleComputationResult result;
+  result.computation_name = computation_name;
 
-    // Extract graph_name from ascir text
-    TF_ASSIGN_OR_RETURN(auto graph_name, ExtractGraphName(ascir_text));
-    result.graph_name = graph_name;
-    std::cerr << "[DEBUG] Extracted graph_name: " << graph_name << std::endl;
+  // Extract graph_name from ascir text
+  TF_ASSIGN_OR_RETURN(auto graph_name, ExtractGraphName(ascir_text));
+  result.graph_name = graph_name;
+  std::cerr << "[DEBUG] Computation: " << computation_name
+            << ", Extracted graph_name: " << graph_name << std::endl;
 
-    // Save ASCIR to file for reference
-    std::string ascir_file = absl::StrCat(options.output_dir, "/graph.ascir");
-    TF_RETURN_IF_ERROR(WriteFile(ascir_text, ascir_file));
-    result.ascir_file = ascir_file;
+  // Create computation-specific output directory
+  std::string computation_output_dir =
+      absl::StrCat(options.output_dir, "/", computation_name);
+  std::string mkdir_cmd = absl::StrCat("mkdir -p ", computation_output_dir);
+  TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-    // Initialize Python interpreter
-    NPU_LOG_FORMAT_PRINT(DEBUG, "About to initialize Python interpreter...");
+  // Save ASCIR to file for reference (use graph_name as filename)
+  std::string ascir_file = absl::StrCat(computation_output_dir, "/", graph_name, ".ascir");
+  TF_RETURN_IF_ERROR(WriteFile(ascir_text, ascir_file));
+  result.ascir_file = ascir_file;
+  std::cerr << "[DEBUG] ASCIR saved to: " << ascir_file << std::endl;
 
+  // Initialize Python interpreter
+  std::cerr << "[DEBUG] About to initialize Python interpreter for " << computation_name << "..." << std::endl;
+  fflush(stderr);
+  if (!Py_IsInitialized()) {
+    Py_Initialize();
     if (!Py_IsInitialized()) {
-        Py_Initialize();
-        if (!Py_IsInitialized()) {
-            return absl::InternalError("Failed to initialize Python interpreter");
-        }
+      return absl::InternalError("Failed to initialize Python interpreter");
     }
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Python initialized successfully");
+  }
+  std::cerr << "[DEBUG] Python initialized successfully" << std::endl;
 
-    // Set environment variable for SOC version
-    std::string set_soc_cmd = absl::StrFormat("import os; os.environ['SOC_VERSION'] = '%s'", options.soc_version);
-    PyRun_SimpleString(set_soc_cmd.c_str());
+  // Set environment variable for SOC version
+  std::string set_soc_cmd = absl::StrFormat(
+      "import os; os.environ['SOC_VERSION'] = '%s'",
+      options.soc_version);
+  PyRun_SimpleString(set_soc_cmd.c_str());
 
-    // Add runtime path to Python path
-    const char* ascend_mlir_path = std::getenv("ASCEND_MLIR_PYTHON_PATH");
-    std::string runtime_path = ascend_mlir_path ? ascend_mlir_path : "";
-    if (runtime_path.empty()) {
-        return absl::InternalError(
-            "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
-            "Please set it to xla_npu/third_party/Ascend-MLIR/python");
-    }
-    std::cerr << "[DEBUG] Adding runtime path: " << runtime_path << std::endl;
-    std::string import_cmd = absl::StrFormat("import sys; sys.path.insert(0, '%s')", runtime_path);
-    PyRun_SimpleString(import_cmd.c_str());
-    std::cerr << "[DEBUG] Runtime path added" << std::endl;
+  // Add runtime path to Python path
+  const char* ascend_mlir_path = std::getenv("ASCEND_MLIR_PYTHON_PATH");
+  std::string runtime_path = ascend_mlir_path ? ascend_mlir_path : "";
+  if (runtime_path.empty()) {
+    return absl::InternalError(
+        "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
+        "Please set it to xla_npu/third_party/Ascend-MLIR/python");
+  }
+  std::cerr << "[DEBUG] Adding runtime path: " << runtime_path << std::endl;
+  std::string import_cmd = absl::StrFormat(
+      "import sys; sys.path.insert(0, '%s')",
+      runtime_path);
+  PyRun_SimpleString(import_cmd.c_str());
+  std::cerr << "[DEBUG] Runtime path added" << std::endl;
 
     // Import runtime module
     std::cerr << "[DEBUG] Importing runtime module..." << std::endl;
@@ -305,22 +507,24 @@ absl::StatusOr<AscirBackendResult> AscirBackend::GenerateKernel(const std::strin
         return absl::InternalError("Failed to get Path class");
     }
 
-    PyObject* output_dir_py = PyObject_CallFunction(path_class, "s", options.output_dir.c_str());
-    if (!output_dir_py) {
-        Py_DECREF(path_class);
-        Py_DECREF(ascgen_instance);
-        PyErr_Print();
-        return absl::InternalError("Failed to create Path object");
-    }
+  PyObject* output_dir_py = PyObject_CallFunction(
+      path_class, "s", computation_output_dir.c_str());
+  if (!output_dir_py) {
+    Py_DECREF(path_class);
+    Py_DECREF(ascgen_instance);
+    PyErr_Print();
+    return absl::InternalError("Failed to create Path object");
+  }
 
-    // Get compile_graph method
-    PyObject* compile_graph_method = PyObject_GetAttrString(ascgen_instance, "compile_graph");
-    if (!compile_graph_method) {
-        Py_DECREF(ascgen_instance);
-        Py_DECREF(output_dir_py);
-        PyErr_Print();
-        return absl::InternalError("Failed to get compile_graph method");
-    }
+  // Get compile_graph method
+  PyObject* compile_graph_method = PyObject_GetAttrString(
+      ascgen_instance, "compile_graph");
+  if (!compile_graph_method) {
+    Py_DECREF(ascgen_instance);
+    Py_DECREF(output_dir_py);
+    PyErr_Print();
+    return absl::InternalError("Failed to get compile_graph method");
+  }
 
     // Call compile_graph(graph_text, output_dir, graph_name)
     PyObject* args = PyTuple_New(3);
@@ -328,9 +532,10 @@ absl::StatusOr<AscirBackendResult> AscirBackend::GenerateKernel(const std::strin
     PyTuple_SetItem(args, 1, output_dir_py);  // Steals reference
     PyTuple_SetItem(args, 2, PyUnicode_FromString(graph_name.c_str()));
 
-    PyObject* compile_result = PyObject_CallObject(compile_graph_method, args);
-    Py_DECREF(args);
-    Py_DECREF(compile_graph_method);
+  PyObject* compile_result = PyObject_CallObject(
+      compile_graph_method, args);
+  Py_DECREF(args);
+  Py_DECREF(compile_graph_method);
 
     if (!compile_result) {
         Py_DECREF(ascgen_instance);
@@ -367,7 +572,7 @@ absl::StatusOr<AscirBackendResult> AscirBackend::GenerateKernel(const std::strin
         Py_DECREF(device_file_str_obj);
     }
 
-    // Extract host_tiling and tiling_def for calc_tiling_data
+    // Extract host_tiling and tiling_def for jit_compile
     PyObject* host_tiling_obj = PyTuple_GetItem(compile_result, 2);  // Borrowed
     PyObject* tiling_def_obj = PyTuple_GetItem(compile_result, 3);   // Borrowed
 
@@ -379,178 +584,203 @@ absl::StatusOr<AscirBackendResult> AscirBackend::GenerateKernel(const std::strin
         return absl::InternalError("host_tiling and tiling_def must be strings");
     }
 
-    // Increment references since we're using them in PyTuple_SetItem
-    Py_INCREF(tiling_def_obj);
+    // Increment references since we need them after compile_result is decref'd
     Py_INCREF(host_tiling_obj);
+    Py_INCREF(tiling_def_obj);
 
-    // Get calc_tiling_data method
-    PyObject* calc_tiling_method = PyObject_GetAttrString(ascgen_instance, "calc_tiling_data");
-    if (!calc_tiling_method) {
-        Py_DECREF(tiling_def_obj);
-        Py_DECREF(host_tiling_obj);
+    // Read device_file content for jit_compile (device_impl is not in compile_result)
+    std::string device_impl;
+    std::ifstream device_file_stream(result.device_file);
+    if (!device_file_stream.is_open()) {
         Py_DECREF(compile_result);
         Py_DECREF(ascgen_instance);
         Py_DECREF(path_class);
-        PyErr_Print();
-        return absl::InternalError("Failed to get calc_tiling_data method");
+        return absl::InternalError(absl::StrCat("Failed to open device_file: ", result.device_file));
     }
+    std::stringstream device_buffer;
+    device_buffer << device_file_stream.rdbuf();
+    device_impl = device_buffer.str();
+    device_file_stream.close();
 
-    // Call calc_tiling_data(tiling_def, host_tiling, output_dir)
-    PyObject* tiling_args = PyTuple_New(3);
-    PyTuple_SetItem(tiling_args, 0, tiling_def_obj);   // Steals reference
-    PyTuple_SetItem(tiling_args, 1, host_tiling_obj);  // Steals reference
+    std::cerr << "[DEBUG] Read device_file (" << result.device_file << ") size: " << device_impl.size() << std::endl;
+    std::cerr << "[DEBUG] Using host_tiling_obj and tiling_def_obj from memory" << std::endl;
 
-    // Create Path object for output_dir
-    PyObject* output_dir_py2 = PyObject_CallFunction(path_class, "s", options.output_dir.c_str());
-    if (!output_dir_py2) {
-        Py_DECREF(tiling_args);
-        Py_DECREF(calc_tiling_method);
-        Py_DECREF(compile_result);
-        Py_DECREF(ascgen_instance);
-        Py_DECREF(path_class);
-        PyErr_Print();
-        return absl::InternalError("Failed to create Path object for output_dir");
-    }
-    PyTuple_SetItem(tiling_args, 2, output_dir_py2);  // Steals reference
-
-    // Call the method
-    PyObject* tiling_result = PyObject_CallObject(calc_tiling_method, tiling_args);
-    Py_DECREF(tiling_args);
-    Py_DECREF(calc_tiling_method);
-
-    if (!tiling_result) {
-        Py_DECREF(compile_result);
-        Py_DECREF(ascgen_instance);
-        Py_DECREF(path_class);
-        PyErr_Print();
-        return absl::InternalError("Failed to call calc_tiling_data");
-    }
-
-    // Extract tiling data bytes
-    if (PyBytes_Check(tiling_result)) {
-        char* tiling_buffer;
-        Py_ssize_t tiling_size;
-        if (PyBytes_AsStringAndSize(tiling_result, &tiling_buffer, &tiling_size) == 0) {
-            result.tiling_data.assign(tiling_buffer, tiling_buffer + tiling_size);
-            result.tiling_data_file = absl::StrCat(options.output_dir, "/tiling_data.bin");
-
-            // Also save tiling data to file
-            std::ofstream tiling_file(result.tiling_data_file, std::ios::binary);
-            if (tiling_file) {
-                tiling_file.write(tiling_buffer, tiling_size);
-                tiling_file.close();
-            }
-        }
-    }
-
-    Py_DECREF(tiling_result);
+    // Clean up compile_result and related objects
     Py_DECREF(compile_result);
     Py_DECREF(ascgen_instance);
     Py_DECREF(path_class);
 
-    // Step 4: Compile device kernel using runtime.compile_kernel (Bisheng compiler)
-    // Re-import runtime module to get compile_kernel function
-    PyObject* runtime_module_compile = PyImport_ImportModule("runtime");
-    if (!runtime_module_compile) {
+    // Step 4: Compile device kernel using autofuse.compile_adapter.jit_compile
+    // Import autofuse.compile_adapter module
+    PyObject* autofuse_module = PyImport_ImportModule("autofuse.compile_adapter");
+    if (!autofuse_module) {
         PyErr_Print();
-        return absl::InternalError("Failed to import runtime module for compile_kernel");
+        return absl::InternalError("Failed to import autofuse.compile_adapter module");
     }
 
-    // Get compile_kernel function from runtime module
-    PyObject* compile_kernel_func = PyObject_GetAttrString(runtime_module_compile, "compile_kernel");
-    Py_DECREF(runtime_module_compile);
-    if (!compile_kernel_func) {
+    // Get jit_compile function from autofuse.compile_adapter module
+    PyObject* jit_compile_func = PyObject_GetAttrString(autofuse_module, "jit_compile");
+    Py_DECREF(autofuse_module);
+    if (!jit_compile_func) {
         PyErr_Print();
-        return absl::InternalError("Failed to get compile_kernel function from runtime");
+        return absl::InternalError("Failed to get jit_compile function from autofuse.compile_adapter");
     }
 
     // Check if it's callable
-    if (!PyCallable_Check(compile_kernel_func)) {
-        Py_DECREF(compile_kernel_func);
-        return absl::InternalError("compile_kernel is not callable");
+    if (!PyCallable_Check(jit_compile_func)) {
+        Py_DECREF(jit_compile_func);
+        return absl::InternalError("jit_compile is not callable");
     }
 
-    // Prepare positional arguments: src_file, output_dir, kernel_name
-    PyObject* kernel_args = PyTuple_New(3);
+    // Prepare output_file parameter
+    std::string output_file = absl::StrCat(options.output_dir, "/", graph_name, ".so");
+
+    // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True"]
+    // Based on test_ascir.py test_mode_0: jit_compile(tiling_def, host_impl, device_impl, [graph_name, output_file, output_path, "--force_unknown=True"])
+
+    // Prepare arguments list (4th parameter is a list)
+    PyObject* args_list = PyList_New(4);
+    if (!args_list) {
+        Py_DECREF(jit_compile_func);
+        return absl::InternalError("Failed to create args_list");
+    }
+
+    // Set list items
+    std::string graph_name_arg = absl::StrCat("--graph_name=", graph_name);
+    std::string output_file_arg = absl::StrCat("--output_file=", output_file);
+    std::string output_path_arg = absl::StrCat("--output_path=", options.output_dir);
+    const char* force_unknown_arg = "--force_unknown=True";
+
+    PyList_SetItem(args_list, 0, PyUnicode_FromString(graph_name_arg.c_str()));
+    PyList_SetItem(args_list, 1, PyUnicode_FromString(output_file_arg.c_str()));
+    PyList_SetItem(args_list, 2, PyUnicode_FromString(output_path_arg.c_str()));
+    PyList_SetItem(args_list, 3, PyUnicode_FromString(force_unknown_arg));
+
+    // Prepare positional arguments: tiling_def, host_impl, device_impl, args_list
+    PyObject* kernel_args = PyTuple_New(4);
     if (!kernel_args) {
-        Py_DECREF(compile_kernel_func);
+        Py_DECREF(args_list);
+        Py_DECREF(jit_compile_func);
         return absl::InternalError("Failed to create kernel_args tuple");
     }
 
     // Set tuple items (steals references)
-    PyObject* src_file_obj = PyUnicode_FromString(result.device_file.c_str());
-    if (!src_file_obj) {
-        Py_DECREF(kernel_args);
-        Py_DECREF(compile_kernel_func);
-        return absl::InternalError("Failed to create src_file string");
-    }
+    // Note: tiling_def_obj and host_tiling_obj already have their references incremented
+    // at line 383-384, so PyTuple_SetItem will steal those references correctly
 
-    PyObject* output_dir_obj = PyUnicode_FromString(options.output_dir.c_str());
-    if (!output_dir_obj) {
-        Py_DECREF(src_file_obj);
+    PyObject* device_impl_py = PyUnicode_FromString(device_impl.c_str());
+    if (!device_impl_py) {
+        Py_DECREF(tiling_def_obj);
+        Py_DECREF(host_tiling_obj);
+        Py_DECREF(args_list);
         Py_DECREF(kernel_args);
-        Py_DECREF(compile_kernel_func);
-        return absl::InternalError("Failed to create output_dir string");
-    }
-
-    PyObject* kernel_name_obj = PyUnicode_FromString(graph_name.c_str());
-    if (!kernel_name_obj) {
-        Py_DECREF(src_file_obj);
-        Py_DECREF(output_dir_obj);
-        Py_DECREF(kernel_args);
-        Py_DECREF(compile_kernel_func);
-        return absl::InternalError("Failed to create kernel_name string");
+        Py_DECREF(jit_compile_func);
+        return absl::InternalError("Failed to create device_impl string");
     }
 
     // PyTuple_SetItem steals the reference, so we don't decref separately
-    PyTuple_SetItem(kernel_args, 0, src_file_obj);
-    PyTuple_SetItem(kernel_args, 1, output_dir_obj);
-    PyTuple_SetItem(kernel_args, 2, kernel_name_obj);
+    PyTuple_SetItem(kernel_args, 0, tiling_def_obj);
+    PyTuple_SetItem(kernel_args, 1, host_tiling_obj);
+    PyTuple_SetItem(kernel_args, 2, device_impl_py);
+    PyTuple_SetItem(kernel_args, 3, args_list);
 
-    // Call compile_kernel(src_file, output_dir, kernel_name)
-    PyObject* kernel_result = PyObject_CallObject(compile_kernel_func, kernel_args);
+    std::cerr << "[DEBUG] Calling jit_compile with graph_name: " << graph_name << std::endl;
+    std::cerr << "[DEBUG] output_file: " << output_file << std::endl;
+    std::cerr << "[DEBUG] output_path: " << options.output_dir << std::endl;
+
+    // Call jit_compile(tiling_def, host_impl, device_impl, args_list)
+    PyObject* kernel_result = PyObject_CallObject(jit_compile_func, kernel_args);
     Py_DECREF(kernel_args);
-    Py_DECREF(compile_kernel_func);
+    Py_DECREF(jit_compile_func);
 
     if (!kernel_result) {
         PyErr_Print();
-        return absl::InternalError("Failed to call compile_kernel");
+        return absl::InternalError("Failed to call jit_compile");
     }
 
-    // Extract result: returns path to compiled binary
-    if (!PyUnicode_Check(kernel_result)) {
-        Py_DECREF(kernel_result);
-        return absl::InternalError("compile_kernel should return a string");
-    }
-
-    const char* device_binary_str = PyUnicode_AsUTF8(kernel_result);
-    if (!device_binary_str) {
-        Py_DECREF(kernel_result);
-        return absl::InternalError("Failed to convert result to string");
-    }
-
-    result.device_binary_file = device_binary_str;
+    // jit_compile returns None, the compiled .so file is at output_file path
     Py_DECREF(kernel_result);
+
+    // Set device_binary_file to the output .so file
+    result.device_binary_file = output_file;
+
+    std::cerr << "[DEBUG] jit_compile completed, output at: " << result.device_binary_file << std::endl;
 
     return result;
 }
 
-absl::StatusOr<AscirBackendResult> AscirBackend::Compile(const HloModule& hlo_module,
-                                                         const AscirBackendOptions& options) {
-    // Step 1: Convert HLO to AFIR (in-memory)
-    TF_ASSIGN_OR_RETURN(auto afir_string, ConvertHloToAfirModule(hlo_module, options));
+absl::StatusOr<AscirBackendResult> AscirBackend::Compile(
+    const HloModule& hlo_module,
+    const AscirBackendOptions& options) {
+  AscirBackendResult final_result;
+
+  // Step 1: Convert HLO to AFIR for each non-entry computation
+  TF_ASSIGN_OR_RETURN(auto afir_strings,
+                      ConvertHloToAfirModule(hlo_module, options));
 
     // Create output directory if it doesn't exist
     std::string mkdir_cmd = absl::StrCat("mkdir -p ", options.output_dir);
     TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-    // Step 2: Convert AFIR to AscIR (using Python script)
-    TF_ASSIGN_OR_RETURN(auto ascir_text, ConvertAfirToAscir(afir_string, options));
+  // Get entry computation to skip
+  const HloComputation* entry = hlo_module.entry_computation();
 
-    // Step 3: Generate kernel and tiling files using Ascend runtime
-    TF_ASSIGN_OR_RETURN(auto result, GenerateKernel(ascir_text, options));
+  // Process each non-entry computation
+  int idx = 0;
+  for (const HloComputation* computation : hlo_module.computations()) {
+    // Skip entry computation
+    if (computation == entry) {
+      continue;
+    }
 
-    return result;
+    const std::string& afir_string = afir_strings[idx];
+    const std::string computation_name = std::string(computation->name());
+
+    std::cerr << "[INFO] Processing computation " << (idx + 1)
+              << "/" << afir_strings.size()
+              << ": " << computation_name << std::endl;
+
+    std::cerr << "[DEBUG] About to call ConvertAfirToAscir for " << computation_name << std::endl;
+    std::cerr << "[DEBUG] AFIR string size: " << afir_string.size() << " bytes" << std::endl;
+
+    // Step 2: Convert AFIR to AscIR
+    TF_ASSIGN_OR_RETURN(auto ascir_text,
+                        ConvertAfirToAscir(afir_string, options));
+
+    std::cerr << "[DEBUG] ConvertAfirToAscir completed, ASCIR size: " << ascir_text.size() << " bytes" << std::endl;
+
+    // Extract shape information from computation's root instruction
+    // to add axis information to ASCIR
+    const HloInstruction* root = computation->root_instruction();
+    const Shape& root_shape = root->shape();
+    std::vector<int64_t> shape_dims;
+    if (root_shape.IsArray()) {
+      auto dims_span = root_shape.dimensions();
+      shape_dims.assign(dims_span.begin(), dims_span.end());
+    }
+
+    // Add axis information if shape is available
+    if (!shape_dims.empty()) {
+      ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
+      std::cerr << "[DEBUG] Added axis info for shape with " << shape_dims.size() << " dimensions" << std::endl;
+    }
+
+    // Fix sched.axis for nodes that have axis_ids but missing sched.axis
+    ascir_text = FixNodeSchedAxis(ascir_text);
+    std::cerr << "[DEBUG] Fixed sched.axis for nodes" << std::endl;
+
+    // Step 3: Generate kernel for this computation
+    TF_ASSIGN_OR_RETURN(auto comp_result,
+                        GenerateKernel(ascir_text, computation_name, options));
+
+    final_result.computation_results.push_back(std::move(comp_result));
+    idx++;
+  }
+
+  std::cerr << "[INFO] Successfully compiled " << final_result.computation_results.size()
+            << " computations" << std::endl;
+
+  return final_result;
 }
 
 }  // namespace xla

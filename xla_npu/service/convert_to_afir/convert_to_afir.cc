@@ -16,6 +16,8 @@ limitations under the License.
 #include "xla/xla_npu/service/convert_to_afir/convert_to_afir.h"
 
 #include <algorithm>
+#include <functional>
+#include <set>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -61,11 +63,12 @@ class HloToAfirConverter {
   // Convert the entire HLO module
   absl::Status Convert(const HloModule& hlo_module);
 
- private:
   // Convert a single HLO computation
   absl::StatusOr<mlir::func::FuncOp> ConvertComputation(
       const HloComputation& computation,
       bool is_entry);
+
+ private:
 
   // Convert a single HLO instruction
   absl::StatusOr<mlir::Value> ConvertInstruction(
@@ -1017,6 +1020,59 @@ ConvertHloToAfir(const HloModule& module,
 
   HloToAfirConverter converter(*mlir_module, context, options);
   TF_RETURN_IF_ERROR(converter.Convert(module));
+
+  if (options.verify_module) {
+    if (failed(mlir_module->verify())) {
+      return absl::InternalError("Generated AFIR module failed verification");
+    }
+  }
+
+  return mlir_module;
+}
+
+absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>>
+ConvertHloComputationToAfir(const HloComputation& computation,
+                           const HloModule& module,
+                           mlir::MLIRContext* context,
+                           const HloToAfirOptions& options) {
+  // Create MLIR module
+  mlir::OwningOpRef<mlir::ModuleOp> mlir_module =
+      mlir::ModuleOp::create(mlir::UnknownLoc::get(context));
+
+  HloToAfirConverter converter(*mlir_module, context, options);
+
+  // Collect all computations that this computation depends on
+  std::set<const HloComputation*> needed_computations;
+  std::function<void(const HloComputation*)> collect_dependencies =
+      [&](const HloComputation* comp) {
+        if (needed_computations.count(comp)) return;
+        needed_computations.insert(comp);
+
+        // Recursively collect fused and called computations
+        for (const HloInstruction* instruction : comp->instructions()) {
+          if (instruction->opcode() == HloOpcode::kFusion) {
+            collect_dependencies(instruction->fused_expression_root()->parent());
+          } else if (instruction->opcode() == HloOpcode::kCall ||
+                     instruction->opcode() == HloOpcode::kConditional) {
+            for (const HloComputation* called_comp : instruction->called_computations()) {
+              collect_dependencies(called_comp);
+            }
+          }
+        }
+      };
+
+  collect_dependencies(&computation);
+
+  // Convert all needed computations (non-entry first, then entry)
+  for (const HloComputation* comp : needed_computations) {
+    if (comp == &computation) continue;  // Skip entry computation for now
+    TF_ASSIGN_OR_RETURN(auto func,
+                        converter.ConvertComputation(*comp, /*is_entry=*/false));
+  }
+
+  // Convert entry computation last
+  TF_ASSIGN_OR_RETURN(auto func,
+                      converter.ConvertComputation(computation, /*is_entry=*/true));
 
   if (options.verify_module) {
     if (failed(mlir_module->verify())) {
