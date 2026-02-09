@@ -44,8 +44,9 @@ Platform::Id NpuPlatform::id() const { return kNpuPlatformId; }
 bool NpuPlatform::Initialized() const { return initialized_; }
 
 absl::Status NpuPlatform::Initialize() {
-    aclError acl_status = npu::aclInit(nullptr);
-    if (acl_status != ACL_SUCCESS) {
+    const char* acl_config_json_file_path = "acl.json";
+    aclError acl_ret = npu::aclInit(acl_config_json_file_path);
+    if (acl_ret != ACL_SUCCESS) {
         NPU_LOG_FORMAT_PRINT(ERROR, "Init platform for '%s' failed.", name_);
         return absl::UnavailableError("Acl init failed.");
     }
@@ -58,8 +59,8 @@ absl::Status NpuPlatform::Initialize() {
 
 int NpuPlatform::VisibleDeviceCount() const {
     uint32_t device_count = 0;
-    aclError acl_status = npu::aclrtGetDeviceCount(&device_count);
-    if (acl_status != ACL_SUCCESS) {
+    aclError acl_ret = npu::aclrtGetDeviceCount(&device_count);
+    if (acl_ret != ACL_SUCCESS) {
         NPU_LOG_FORMAT_PRINT(ERROR, "Get device count for '%s' failed.", name_);
         return 0;
     }

@@ -99,6 +99,7 @@ cc_library(
     hdrs = ["npu_custom_kernel_thunk.h"],
     deps = [
         ":npu_thunk",
+        "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/kernel:npu_custom_kernel",
 

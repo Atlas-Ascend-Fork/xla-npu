@@ -2256,14 +2256,14 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
     }};
 
 #ifdef NPU_AUTO_FUSE_ENABLED
-    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
-        NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
-        AscirBackend ascirBackend;
-        AscirBackendOptions ascirBackendOptions;
-        ascirBackendOptions.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
-            NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
-        TF_ASSIGN_OR_RETURN(auto AscirBackendResult, ascirBackend.Compile(*module.get(), ascirBackendOptions));
-    }
+    // if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
+    //     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
+    //     AscirBackend ascirBackend;
+    //     AscirBackendOptions ascirBackendOptions;
+    //     ascirBackendOptions.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
+    //         NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
+    //     TF_ASSIGN_OR_RETURN(auto AscirBackendResult, ascirBackend.Compile(*module.get(), ascirBackendOptions));
+    // }
 
     // hlo instuction融合成一条语句以保证进thunk生成时
     // 和当前通过auto fuse融合成的一个算子相匹配(未来应该是通过npu的pass来实现融合)

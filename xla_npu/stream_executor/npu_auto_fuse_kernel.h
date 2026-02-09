@@ -4,6 +4,7 @@
 #include "absl/status/status.h"
 #include "xla/stream_executor/kernel.h"
 #include "xla/stream_executor/stream_executor.h"
+// #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 
 namespace stream_executor {
@@ -23,13 +24,13 @@ class NpuAutoFuseKernel : public Kernel {
 
     absl::Status Load();
 
-    std::string GetTilingFileName() const { return "libhost_tiling"; }
-    std::string GetKernelFileName() const { return "kernel"; }
+    // 当前tiling函数文件和kernel文件链接在一起, 原本TilingFile为分开的afir编译目录下的"libhost_tiling.so"
+    std::string GetTilingFileName() const { return GetKernelFileName(); }
+    std::string GetKernelFileName() const { return "fusedMul"; } // main.1
 
    private:
     absl::Status Launch(const ThreadDim& thread_dims, const BlockDim& block_dims,
-                        const std::optional<ClusterDim>& cluster_dims, Stream* stream,
-                        const KernelArgs& args) override;
+                        const std::optional<ClusterDim>& cluster_dims, Stream* stream, const KernelArgs& args) override;
 
     StreamExecutor* executor_ = nullptr;
     unsigned arity_ = 0;  // number of formal parameters the kernel takes
@@ -42,6 +43,8 @@ class NpuAutoFuseKernel : public Kernel {
     GetTilingSizeFunc GetTilingSizeFunc_;
     TilingFunc TilingFunc_;
     LaunchFunc LaunchFunc_;
+
+    // aclrtFuncHandle func_handle_ = nullptr;
 
     std::string load_file_base_dir_;  // 编译生成的.o, .bin, .so后缀文件的根路径
     // 由于这里的库生命周期仅伴随单个融合算子,因此不使用functionLoader中的FunctionRegister类单例

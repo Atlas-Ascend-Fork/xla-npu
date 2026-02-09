@@ -24,6 +24,7 @@
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
@@ -66,15 +67,21 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
     int device_ordinal = executor->device_ordinal();
 
-    NPU_LOG_FORMAT_PRINT(DEBUG, "[%d] Launching %s as device kernel %s", device_ordinal, custom_kernel_.ToString(),
-                         kernel->name());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, launching %s as device kernel %s", device_ordinal,
+                         custom_kernel_.ToString(), kernel->name());
 
+    int id = 0;
     absl::InlinedVector<se::DeviceMemoryBase, 4> buffer_args;
     for (const BufferAllocation::Slice& arg : args_) {
         se::DeviceMemoryBase buf = params.buffer_allocations->GetDeviceAddress(arg);
         buffer_args.push_back(buf);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "[%d]  Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
+        NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d info before execute: ----", id);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
                              arg.offset(), buf.opaque(), buf.size());
+        NpuTool::PrintNpuDeviceMemoryValue<float>(
+            "  Value on device:", NpuTool::GetXlaShapeSize(thunk_info().param_shapes[id]), buf.opaque());
+
+        id++;
     }
 
     // if (VLOG_IS_ON(100)) {
@@ -87,8 +94,22 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
     se::KernelArgsDeviceMemoryArray args(buffer_args, custom_kernel_.shared_memory_bytes());
 
-    return kernel->Launch(custom_kernel_.thread_dims(), custom_kernel_.block_dims(), custom_kernel_.cluster_dims(),
-                          params.stream, args);
+    auto ret = kernel->Launch(custom_kernel_.thread_dims(), custom_kernel_.block_dims(), custom_kernel_.cluster_dims(),
+                              params.stream, args);
+
+    id = 0;
+    for (const BufferAllocation::Slice& arg : args_) {
+        se::DeviceMemoryBase buf = params.buffer_allocations->GetDeviceAddress(arg);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d info after execute: ----", id);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
+                             arg.offset(), buf.opaque(), buf.size());
+        NpuTool::PrintNpuDeviceMemoryValue<float>(
+            "  Value on device:", NpuTool::GetXlaShapeSize(thunk_info().param_shapes[id]), buf.opaque());
+
+        id++;
+    }
+
+    return ret;
 }
 
 NpuThunk::BufferUses NpuCustomKernelThunk::buffer_uses() const {

@@ -2,7 +2,7 @@ import os
 # os.environ['TC_CPP_MIN_LOG_LEVEL'] = '0'
 # os.environ['TF_CPP_MAX_VLOG_LEVEL'] = '99'  # 全局VLOG级别设为99
 # os.environ['TF_CPP_VMODULE'] = '*=99'      # 所有文件VLOG级别设为99
-os.environ['XLA_FLAGS'] = '--xla_dump_to=./xla_dump'      # 设置xla dump目录
+# os.environ['XLA_FLAGS'] = '--xla_dump_to=./xla_dump'      # 设置xla dump目录
 
 import numpy as np
 import jax

@@ -21,14 +21,18 @@ void* FunctionLoader::Get(const std::string& name) {
     if (this->handle == nullptr) {
         auto handle = dlopen(this->fileName.c_str(), this->flags);
         if (handle == nullptr) {
-            throw std::runtime_error(dlerror());
+            const std::string& err_msg = absl::StrFormat("Open lib '%s' failed, reason: %s", this->fileName, dlerror());
+            NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+            throw std::runtime_error(err_msg);
         }
         this->handle = handle;
     }
 
     auto itr = registry.find(name);
     if (itr == registry.end()) {
-        throw std::runtime_error("function(" + name + ") is not registered.");
+        const std::string& err_msg = absl::StrFormat("Lib or func '%s' is not registered.", name);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        throw std::runtime_error(err_msg);
     }
 
     if (itr->second != nullptr) {
@@ -37,8 +41,11 @@ void* FunctionLoader::Get(const std::string& name) {
 
     auto func = dlsym(this->handle, name.c_str());
     if (func == nullptr) {
-        throw std::runtime_error("function(" + name + ") can't be called.");
+        const std::string& err_msg = absl::StrFormat("Can't find func %s in %s.", name, this->fileName);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        throw std::runtime_error(err_msg);
     }
+
     this->registry[name] = func;
     return func;
 }
@@ -47,6 +54,7 @@ FunctionRegister* FunctionRegister::GetInstance() {
     static FunctionRegister instance;
     return &instance;
 }
+
 void FunctionRegister::Register(const std::string& soName, std::unique_ptr<FunctionLoader>& libPtr) {
     std::lock_guard<std::mutex> lock(mu_);
     registry.emplace(soName, std::move(libPtr));

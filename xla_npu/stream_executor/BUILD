@@ -85,6 +85,7 @@ cc_library(
     srcs = ["npu_auto_fuse_kernel.cc"],
     hdrs = ["npu_auto_fuse_kernel.h"],
     deps = [
+        # "//xla/xla_npu/dependency/interface:acl_interface",
         "//xla/xla_npu/dependency/tool:function_loader",
         "//xla/xla_npu/dependency/tool:log",
 
