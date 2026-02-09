@@ -337,6 +337,8 @@ std::string AFIRToASCIRTextPass::generateGraphAttr(Attribute graphAttr) {
     }
     os << "    name: \"" << name << "\"\n";
     os << "    size: \"" << size << "\"\n";
+    // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
+    // 老版本cann包定义为int32类型（不需要加双引号）
     os << "    align: " << align << "\n";
     os << "    allow_unaligned_tail: true\n";
     os << "  }\n";

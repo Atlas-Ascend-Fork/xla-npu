@@ -104,13 +104,14 @@ absl::Status RunTest(absl::string_view hlo_text,
   std::cout << "\n[Step 4] Generated Files:" << std::endl;
   std::cout << "  Total computations compiled: " << result.computation_results.size() << std::endl;
 
-  for (size_t i = 0; i < result.computation_results.size(); ++i) {
-    const auto& comp_result = result.computation_results[i];
-    std::cout << "\n  Computation " << (i + 1) << ": " << comp_result.computation_name << std::endl;
+  int idx = 0;
+  for (const auto& [computation_name, comp_result] : result.computation_results) {
+    std::cout << "\n  Computation " << (++idx) << ": " << comp_result.computation_name << std::endl;
     std::cout << "    Graph name:      " << comp_result.graph_name << std::endl;
     std::cout << "    ASCIR file:      " << comp_result.ascir_file << std::endl;
     std::cout << "    Host file:       " << comp_result.host_file << std::endl;
     std::cout << "    Device file:     " << comp_result.device_file << std::endl;
+    std::cout << "    Binary file:     " << comp_result.device_binary_file << std::endl;
     std::cout << "    Tiling data:      " << comp_result.tiling_data_file << std::endl;
     std::cout << "    Tiling size:     " << comp_result.tiling_data.size() << " bytes" << std::endl;
   }
@@ -121,10 +122,11 @@ absl::Status RunTest(absl::string_view hlo_text,
   int total_files = 0;
   int existing_files = 0;
 
-  for (const auto& comp_result : result.computation_results) {
-    total_files += 3;  // host, device, tiling_data
+  for (const auto& [computation_name, comp_result] : result.computation_results) {
+    total_files += 3;  // host, device, binary/tiling_data
     std::ifstream host_file(comp_result.host_file);
     std::ifstream device_file(comp_result.device_file);
+    std::ifstream binary_file(comp_result.device_binary_file);
 
     if (host_file.good()) {
       std::cout << "  ✅ Host file exists for " << comp_result.computation_name << std::endl;
@@ -140,12 +142,18 @@ absl::Status RunTest(absl::string_view hlo_text,
       std::cout << "  ❌ Device file missing for " << comp_result.computation_name << std::endl;
     }
 
-    if (!comp_result.tiling_data.empty()) {
-      std::cout << "  ✅ Tiling data generated for " << comp_result.computation_name
-                << " (" << comp_result.tiling_data.size() << " bytes)" << std::endl;
+    if (binary_file.good()) {
+      std::cout << "  ✅ Binary file exists for " << comp_result.computation_name
+                << " (" << comp_result.device_binary_file << ")" << std::endl;
       existing_files++;
     } else {
-      std::cout << "  ❌ Tiling data missing for " << comp_result.computation_name << std::endl;
+      std::cout << "  ❌ Binary file missing for " << comp_result.computation_name << std::endl;
+    }
+
+    // Note: tiling_data is optional when using jit_compile
+    if (!comp_result.tiling_data.empty()) {
+      std::cout << "  ℹ️  Tiling data also generated for " << comp_result.computation_name
+                << " (" << comp_result.tiling_data.size() << " bytes)" << std::endl;
     }
   }
 

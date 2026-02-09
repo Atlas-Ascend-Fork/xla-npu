@@ -47,17 +47,16 @@ cc_library(
     hdrs = ["ascir_backend.h"],
     deps = [
         ":convert_to_afir",
-        "//xla/xla_npu/dependency/tool:log",
-
         "//xla:util",
         "//xla/hlo/ir:hlo",
-        "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
         "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
         "@com_google_absl//absl/strings",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Parser",
         "@llvm-project//mlir:Pass",
-        "@python_3_11//:python_headers",
+        "@rules_python//python/cc:current_py_cc_headers",
     ],
     alwayslink = 1,
 )
@@ -66,11 +65,6 @@ cc_library(
 cc_binary(
     name = "ascir_backend_test",
     srcs = ["ascir_backend_test.cc"],
-    linkopts = [
-        "-L$(PYTHON_LIB_DIR)",
-        "-lpython3.11",
-        "-Wl,-rpath,$(PYTHON_LIB_DIR)",
-    ],
     deps = [
         ":ascir_backend",
         "//xla:util",
@@ -79,6 +73,7 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
+        "@rules_python//python/cc:current_py_cc_libs",
     ],
 )
 

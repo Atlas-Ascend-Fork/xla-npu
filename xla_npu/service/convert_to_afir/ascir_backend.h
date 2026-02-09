@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "absl/status/statusor.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -49,7 +50,7 @@ struct SingleComputationResult {
   // Path to generated device file
   std::string device_file;
 
-  // Path to compiled device kernel binary (.bin)
+  // Path to compiled device kernel and tiling so (.so)
   std::string device_binary_file;
 
   // Path to generated tiling data file
@@ -68,7 +69,7 @@ struct SingleComputationResult {
 // Result of AscIR backend compilation
 struct AscirBackendResult {
   // Results for each computation
-  std::vector<SingleComputationResult> computation_results;
+  std::unordered_map<std::string, SingleComputationResult> computation_results;
 };
 
 // AscIR Backend Interface
