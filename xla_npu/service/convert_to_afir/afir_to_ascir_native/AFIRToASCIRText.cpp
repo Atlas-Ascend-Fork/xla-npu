@@ -337,7 +337,7 @@ std::string AFIRToASCIRTextPass::generateGraphAttr(Attribute graphAttr) {
     }
     os << "    name: \"" << name << "\"\n";
     os << "    size: \"" << size << "\"\n";
-    os << "    align: \"" << align << "\"\n";
+    os << "    align: " << align << "\n";
     os << "    allow_unaligned_tail: true\n";
     os << "  }\n";
   }

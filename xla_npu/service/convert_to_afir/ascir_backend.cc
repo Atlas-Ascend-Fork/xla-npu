@@ -445,6 +445,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   }
   std::cerr << "[DEBUG] Python initialized successfully" << std::endl;
 
+  PyGILState_STATE gstate = PyGILState_Ensure();
   // Set environment variable for SOC version
   std::string set_soc_cmd = absl::StrFormat(
       "import os; os.environ['SOC_VERSION'] = '%s'",
@@ -706,6 +707,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
 
     std::cerr << "[DEBUG] jit_compile completed, output at: " << result.device_binary_file << std::endl;
 
+    PyGILState_Release(gstate);
     return result;
 }
 
