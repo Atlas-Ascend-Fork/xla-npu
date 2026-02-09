@@ -32,8 +32,16 @@ namespace se = ::stream_executor;  // NOLINT
 // define if it has to be zeroed first.
 class NpuCustomKernel {
    public:
-    NpuCustomKernel(NpuKernelConfig npu_kernel_config, std::string name, se::BlockDim block_dims,
+    NpuCustomKernel(std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr, std::string name, se::BlockDim block_dims,
                     size_t shared_memory_bytes);
+
+    // 显式禁用复制操作，因为kernel_spec_中的指针指向npu_kernel_config_
+    NpuCustomKernel(const NpuCustomKernel&) = delete;
+    NpuCustomKernel& operator=(const NpuCustomKernel&) = delete;
+
+    // 自定义移动操作，确保移动后kernel_spec_中的指向npu_kernel_config_的指针保持正确
+    NpuCustomKernel(NpuCustomKernel&&) noexcept;
+    NpuCustomKernel& operator=(NpuCustomKernel&&) noexcept;
 
     // NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
     //                 se::ThreadDim thread_dims, size_t shared_memory_bytes);
@@ -55,19 +63,18 @@ class NpuCustomKernel {
 
     std::string ToString() const;
 
-    NpuKernelConfig npu_kernel_config() const { return npu_kernel_config_; }
+    NpuKernelConfig* npu_kernel_config_ptr() { return npu_kernel_config_ptr_.get(); }
 
    private:
+    // 注意：npu_kernel_config_ptr_ 必须在 kernel_spec_ 之前声明，
+    // 因为 kernel_spec_ 的初始化依赖 npu_kernel_config_ptr_
+    std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr_;
     std::string name_;
     se::KernelLoaderSpec kernel_spec_;
     se::BlockDim block_dims_;
     se::ThreadDim thread_dims_;
     std::optional<se::ClusterDim> cluster_dims_ = std::nullopt;
     size_t shared_memory_bytes_;
-    // kernel_spec中的InProcessSymbol类型payload指向此数据结构,
-    // 需要保证使用这个payload时,这个NpuCustomKernel变量生命周期还存在,因此需要保证所有使用NpuCustomKernel的地方都是右值传递
-    // 此设计为了兼容xla框架通过kernel_spec_传递参数创建具体执行的kernel
-    NpuKernelConfig npu_kernel_config_;
 };
 
 }  // namespace xla

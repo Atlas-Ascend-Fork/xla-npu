@@ -1221,12 +1221,12 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     // TF_ASSIGN_OR_RETURN(auto thunk, BuildCustomKernelThunkForFusion(ir_emitter_context, fusion,
     //                                                                 std::move(kernels[config.kernel_index()])));
 
-    NpuKernelConfig npu_kernel_config;
-    npu_kernel_config.npu_kernel_type = NpuKernelConfig::NpuKernelType::FUSION;
+    auto npu_kernel_config_ptr = std::make_unique<NpuKernelConfig>();
+    npu_kernel_config_ptr->npu_kernel_type = NpuKernelConfig::NpuKernelType::FUSION;
     const std::string name = "auto_fuse_kernel";
-    se::BlockDim block_dims(1);
+    se::BlockDim block_dims(1); // autofuse算子的block dim由tiling计算得到,不使用这里设置的值
     size_t shared_memory_bytes = 0;
-    NpuCustomKernel kernel(npu_kernel_config, name, block_dims, shared_memory_bytes);
+    NpuCustomKernel kernel(std::move(npu_kernel_config_ptr), name, block_dims, shared_memory_bytes);
     TF_ASSIGN_OR_RETURN(auto thunk, BuildCustomKernelThunkForFusion(ir_emitter_context, fusion, std::move(kernel)));
 
     NpuFusionEmissionResult result;

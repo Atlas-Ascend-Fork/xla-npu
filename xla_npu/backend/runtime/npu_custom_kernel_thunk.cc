@@ -67,7 +67,8 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
     int device_ordinal = executor->device_ordinal();
 
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, launching %s as device kernel %s", device_ordinal,
+    NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, launching %s as npu fusion kernel %s", device_ordinal,
                          custom_kernel_.ToString(), kernel->name());
 
     int id = 0;

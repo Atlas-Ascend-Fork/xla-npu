@@ -6,7 +6,7 @@ namespace xla {
 class NpuKernelConfig {
    public:
     enum class NpuKernelType {
-        FUSION,
+        FUSION = 0,
     };
 
     NpuKernelType npu_kernel_type;
