@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//xla:internal"])
 
 licenses(["notice"])  # Apache 2.0
 
@@ -37,7 +37,6 @@ cc_library(
         "@llvm-project//mlir:MathDialect",
         "@llvm-project//mlir:Support",
     ],
-    alwayslink = 1,
 )
 
 # AscIR backend library
@@ -47,6 +46,8 @@ cc_library(
     hdrs = ["ascir_backend.h"],
     deps = [
         ":convert_to_afir",
+        "//xla/xla_npu/service/kernel:npu_compile_result",
+
         "//xla:util",
         "//xla/hlo/ir:hlo",
         "//xla/xla_npu/dependency/external:AFIRHeaders",
@@ -58,7 +59,7 @@ cc_library(
         "@llvm-project//mlir:Pass",
         "@rules_python//python/cc:current_py_cc_headers",
     ],
-    alwayslink = 1,
+    linkstatic = True, # 不向外部传递依赖
 )
 
 # Binary test for AscIR backend

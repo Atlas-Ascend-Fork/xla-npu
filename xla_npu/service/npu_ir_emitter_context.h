@@ -30,6 +30,7 @@
 // #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
+#include "xla/xla_npu/service/kernel/npu_compile_result.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
@@ -54,11 +55,13 @@ namespace xla {
 // assignment and the name uniquer.
 class NpuIrEmitterContext {
    public:
-    NpuIrEmitterContext(const HloModule* hlo_module, const BufferAssignment* buffer_assignment,
+    NpuIrEmitterContext(const NpuCompileResult& npu_compile_result, const HloModule* hlo_module,
+                        const BufferAssignment* buffer_assignment,
                         const NpuExecutionStreamAssignment* execution_stream_assignment, std::string platform_name,
                         const se::DeviceDescription& gpu_device_info, mlir::MLIRContext* mlir_context,
                         llvm::Module* llvm_module, llvm::Module* llvm_module_constants, bool emit_kernels)
-        : hlo_module_(hlo_module),
+        : npu_compile_result_(npu_compile_result),
+          hlo_module_(hlo_module),
           buffer_assignment_(buffer_assignment),
           execution_stream_assignment_(execution_stream_assignment),
           platform_name_(std::move(platform_name)),
@@ -71,6 +74,8 @@ class NpuIrEmitterContext {
     // Disallow copy and assign.
     NpuIrEmitterContext(const NpuIrEmitterContext&) = delete;
     NpuIrEmitterContext& operator=(const NpuIrEmitterContext&) = delete;
+
+    NpuCompileResult GetNpuCompileResult() const { return npu_compile_result_; }
 
     // Simple accessors.
     const HloModule& hlo_module() const { return *hlo_module_; }
@@ -126,6 +131,8 @@ class NpuIrEmitterContext {
     NpuThunkId GetNextThunkId() { return thunk_id_generator_.GetNextThunkId(); }
 
    private:
+    NpuCompileResult npu_compile_result_;
+
     const HloModule* hlo_module_;
     const BufferAssignment* buffer_assignment_;
     const NpuExecutionStreamAssignment* execution_stream_assignment_;

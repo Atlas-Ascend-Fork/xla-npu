@@ -62,14 +62,12 @@ absl::Status NpuExecutor::Init() {
 }
 
 absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(const KernelLoaderSpec& spec) {
-    // TODO 修复NpuKernelConfig传递不过来的问题
     CHECK_COND_AND_PRINT_NPU_LOG(!spec.has_in_process_symbol(), "In process symbol when load kernel is empty");
     auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(spec.in_process_symbol().value().symbol);
     switch (npu_kernel_config_ptr->npu_kernel_type) {
         case xla::NpuKernelConfig::NpuKernelType::FUSION:
-            auto root_dir = xla::NpuConfig::GetInstance().GetTypedValue<std::string>(
-                xla::NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
-            auto kernel = std::make_unique<stream_executor::NpuAutoFuseKernel>(root_dir, this);
+            auto kernel = std::make_unique<stream_executor::NpuAutoFuseKernel>(
+                npu_kernel_config_ptr->npu_artifact_info.dir, npu_kernel_config_ptr->npu_artifact_info.name, this);
             TF_RETURN_IF_ERROR(kernel->Load());
             return std::move(kernel);
     }

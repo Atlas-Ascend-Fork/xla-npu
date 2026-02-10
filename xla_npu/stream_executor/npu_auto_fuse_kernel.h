@@ -11,8 +11,9 @@ namespace stream_executor {
 
 class NpuAutoFuseKernel : public Kernel {
    public:
-    explicit NpuAutoFuseKernel(const std::string& load_file_base_dir, StreamExecutor* executor)
-        : load_file_base_dir_(load_file_base_dir), executor_(executor) {}
+    explicit NpuAutoFuseKernel(const std::string& load_file_base_dir, const std::string& kernel_name,
+                               StreamExecutor* executor)
+        : load_file_base_dir_(load_file_base_dir), kernel_name_(kernel_name), executor_(executor) {}
 
     void set_arity(unsigned arity) { arity_ = arity; }
     unsigned Arity() const override { return arity_; }
@@ -26,7 +27,7 @@ class NpuAutoFuseKernel : public Kernel {
 
     // 当前tiling函数文件和kernel文件链接在一起, 原本TilingFile为分开的afir编译目录下的"libhost_tiling.so"
     std::string GetTilingFileName() const { return GetKernelFileName(); }
-    std::string GetKernelFileName() const { return "fusedMul"; } // main.1
+    std::string GetKernelFileName() const { return kernel_name_; }
 
    private:
     absl::Status Launch(const ThreadDim& thread_dims, const BlockDim& block_dims,
@@ -47,6 +48,7 @@ class NpuAutoFuseKernel : public Kernel {
     // aclrtFuncHandle func_handle_ = nullptr;
 
     std::string load_file_base_dir_;  // 编译生成的.o, .bin, .so后缀文件的根路径
+    std::string kernel_name_;
     // 由于这里的库生命周期仅伴随单个融合算子,因此不使用functionLoader中的FunctionRegister类单例
     std::unordered_map<std::string, std::unique_ptr<npu::FunctionLoader>> registry;
 };

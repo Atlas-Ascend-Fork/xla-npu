@@ -8,9 +8,17 @@ package(
 )
 
 cc_library(
+    name = "npu_compile_result",
+    hdrs = ["npu_compile_result.h"],
+    deps = [
+    ],
+)
+
+cc_library(
     name = "npu_kernel_config",
     hdrs = ["npu_kernel_config.h"],
     deps = [
+        ":npu_compile_result",
     ],
 )
 

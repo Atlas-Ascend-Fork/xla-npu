@@ -47,8 +47,8 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:Core",
+        # "@llvm-project//llvm:Support",
         "@tsl//tsl/platform:logging",
     ],
 )
@@ -102,8 +102,8 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:Core",
+        # "@llvm-project//llvm:Support",
         "@tsl//tsl/platform:protobuf",
     ],
 )
@@ -180,7 +180,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:Support",
     ],
 )
 
@@ -200,7 +200,7 @@ cc_library(
         "//xla/stream_executor:device_description_proto_cc",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:Support",
     ],
 )
 
@@ -235,6 +235,7 @@ cc_library(
         ":npu_executable",
         "//xla/xla_npu/backend/runtime:npu_thunk_id",
         "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/service/kernel:npu_compile_result",
 
         # "//xla/service/gpu:gpu_constants",
         # "//xla/service/gpu:gpu_executable",
@@ -254,10 +255,10 @@ cc_library(
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:string_view",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:TargetParser",
-        "@llvm-project//llvm:ir_headers",
-        "@llvm-project//mlir:IR",
+        # "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:TargetParser",
+        # "@llvm-project//llvm:ir_headers",
+        # "@llvm-project//mlir:IR",
     ],
 )
 
@@ -300,8 +301,8 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:Core",
+        # "@llvm-project//llvm:Support",
         "@tsl//tsl/platform:errors",
         "@tsl//tsl/platform:fingerprint",
         "@tsl//tsl/platform:statusor",
@@ -457,20 +458,20 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:Linker",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:ir_headers",
-        "@llvm-project//mlir:AsmParser",
-        "@llvm-project//mlir:BuiltinToLLVMIRTranslation",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:LLVMDialect",
-        "@llvm-project//mlir:LLVMToLLVMIRTranslation",
-        "@llvm-project//mlir:MemRefTransforms",
-        "@llvm-project//mlir:NVVMToLLVMIRTranslation",
-        "@llvm-project//mlir:Parser",
-        "@llvm-project//mlir:ROCDLToLLVMIRTranslation",
-        "@llvm-project//mlir:Support",
-        "@llvm-project//mlir:ToLLVMIRTranslation",
+        # "@llvm-project//llvm:Linker",
+        # "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:ir_headers",
+        # "@llvm-project//mlir:AsmParser",
+        # "@llvm-project//mlir:BuiltinToLLVMIRTranslation",
+        # "@llvm-project//mlir:IR",
+        # "@llvm-project//mlir:LLVMDialect",
+        # "@llvm-project//mlir:LLVMToLLVMIRTranslation",
+        # "@llvm-project//mlir:MemRefTransforms",
+        # "@llvm-project//mlir:NVVMToLLVMIRTranslation",
+        # "@llvm-project//mlir:Parser",
+        # "@llvm-project//mlir:ROCDLToLLVMIRTranslation",
+        # "@llvm-project//mlir:Support",
+        # "@llvm-project//mlir:ToLLVMIRTranslation",
         "@triton//:TritonDialects",
         "@tsl//tsl/platform",
         "@tsl//tsl/platform:casts",
@@ -486,11 +487,17 @@ cc_library(
     hdrs = [
         "npu_compile_module_to_llvm_ir.h",
     ],
+    copts = select({
+        ":npu_auto_fuse_enabled": ["-DNPU_AUTO_FUSE_ENABLED=1"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":npu_alias_info",
         ":npu_execution_stream_assignment",
         ":npu_ir_emitter_context",
         ":npu_ir_emitter_unnested",
+        "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
 
         # "//xla/service/gpu:alias_info",
@@ -542,7 +549,12 @@ cc_library(
         "@tsl//tsl/platform:path",
         "@tsl//tsl/profiler/lib:scoped_annotation",
         "@tsl//tsl/profiler/lib:traceme",
-    ],
+    ] + select({
+        # 一定要保证对ascir_backend的依赖在所有@llvm-project依赖之后(包含间接依赖),
+        # 否则会出现运行时coredump,报错堆栈在mlir::DialectRegistry函数附近
+        ":npu_auto_fuse_enabled": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -644,23 +656,12 @@ cc_library(
     hdrs = [
         "npu_compiler.h",
     ],
-    # 仅当开关开启时，定义宏 NPU_AUTO_FUSE_ENABLED
     copts = select({
         ":npu_auto_fuse_enabled": ["-DNPU_AUTO_FUSE_ENABLED=1"],
         "//conditions:default": [],
     }),
     deps = [
-        ":npu_alias_info",
-        ":npu_ir_emitter_context",
-        ":npu_executable",
-        ":npu_execution_stream_assignment",
-        ":npu_compile_module_to_llvm_ir",
-        ":npu_ir_emitter_unnested",
-        "//xla/xla_npu/common:npu_config",
-        "//xla/xla_npu/common:npu_tool",
-        "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/service/transform:npu_super_fusion",
-
+        # 为了解决afir依赖导致的coredump问题,务必保证这段gpu的依赖在最前面
         "//xla/service/gpu:alias_info",
         # "//xla/service/gpu:compile_module_to_llvm_ir",
         # "//xla/service/gpu:conv_layout_normalization",
@@ -689,6 +690,18 @@ cc_library(
         # "//xla/service/gpu:reduction_utils",
         # "//xla/service/gpu:stream_executor_util",
 
+        ":npu_alias_info",
+        ":npu_ir_emitter_context",
+        ":npu_executable",
+        ":npu_execution_stream_assignment",
+        ":npu_ir_emitter_unnested",
+        "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/common:npu_tool",
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service/transform:npu_super_fusion",
+
+        ":npu_compile_module_to_llvm_ir", # 务必不要修改此依赖的相对顺序
+        
         "//xla:autotune_results_proto_cc",
         "//xla:debug_options_flags",
         "//xla:shape_util",
@@ -913,8 +926,8 @@ cc_library(
         # "//xla/service/gpu/transforms/collectives:gpu_all_reduce_combiner",
         # "//xla/service/gpu/transforms/collectives:gpu_collective_combiner_utils",
         # "//xla/service/gpu/transforms/collectives:gpu_reduce_scatter_combiner",
-        "//xla/service/llvm_ir:llvm_command_line_options",
-        "//xla/service/llvm_ir:llvm_util",
+        # "//xla/service/llvm_ir:llvm_command_line_options",
+        # "//xla/service/llvm_ir:llvm_util",
         "//xla/service/spmd:collective_permute_motion",
         "//xla/service/spmd:schedule_aware_collective_ops_cse",
         "//xla/service/spmd/shardy:shardy_xla_pass",
@@ -947,17 +960,17 @@ cc_library(
         "@com_google_absl//absl/types:span",
         "@com_google_absl//absl/types:variant",
         "@com_google_protobuf//:protobuf",
-        "@llvm-project//llvm:AsmParser",
-        "@llvm-project//llvm:BitReader",
-        "@llvm-project//llvm:BitWriter",
-        "@llvm-project//llvm:Core",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:TargetParser",
-        "@llvm-project//llvm:TransformUtils",
-        "@llvm-project//mlir:FuncDialect",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:Support",
+        # "@llvm-project//llvm:AsmParser",
+        # "@llvm-project//llvm:BitReader",
+        # "@llvm-project//llvm:BitWriter",
+        # "@llvm-project//llvm:Core",
+        # "@llvm-project//llvm:Support",
+        # "@llvm-project//llvm:TargetParser",
+        # "@llvm-project//llvm:TransformUtils",
+        # "@llvm-project//mlir:FuncDialect",
+        # "@llvm-project//mlir:IR",
+        # "@llvm-project//mlir:Pass",
+        # "@llvm-project//mlir:Support",
         "@tsl//tsl/platform:casts",
         "@tsl//tsl/platform:env",
         "@tsl//tsl/platform:errors",
@@ -969,10 +982,7 @@ cc_library(
         "@tsl//tsl/platform:statusor",
         "@tsl//tsl/profiler/lib:scoped_annotation",
         "@tsl//tsl/profiler/lib:traceme",
-    ] + select({
-        ":npu_auto_fuse_enabled": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
-        "//conditions:default": [],
-    }),
+    ],
 )
 
 cc_library(

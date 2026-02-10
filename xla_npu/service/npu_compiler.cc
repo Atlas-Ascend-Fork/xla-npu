@@ -314,10 +314,6 @@
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 #include "xla/xla_npu/service/transform/npu_super_fusion.h"
 
-#ifdef NPU_AUTO_FUSE_ENABLED
-#include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
-#endif
-
 namespace xla {
 
 namespace {
@@ -2269,18 +2265,6 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
     tsl::profiler::ScopedAnnotation backend_annotation{[&] {
         return absl::StrFormat("XlaCompileBackend:#module=%s,program_id=%d#", module->name(), module->unique_id());
     }};
-
-#ifdef NPU_AUTO_FUSE_ENABLED
-    // // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
-    // if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
-    //     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
-    //     AscirBackend ascirBackend;
-    //     AscirBackendOptions ascirBackendOptions;
-    //     ascirBackendOptions.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
-    //         NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR);
-    //     TF_ASSIGN_OR_RETURN(auto AscirBackendResult, ascirBackend.Compile(*module.get(), ascirBackendOptions));
-    // }
-#endif
 
     // RecordGpuCompilerStacktrace();
 

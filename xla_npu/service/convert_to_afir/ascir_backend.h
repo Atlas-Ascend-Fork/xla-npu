@@ -17,59 +17,54 @@ limitations under the License.
 #define XLA_XLA_NPU_SERVICE_CONVERT_TO_AFIR_ASCIR_BACKEND_H_
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "absl/status/statusor.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "xla/hlo/ir/hlo_module.h"
+#include "xla/xla_npu/service/kernel/npu_compile_result.h"
 
 namespace xla {
 
 // Configuration for AscIR backend compilation
 struct AscirBackendOptions {
-  // Output directory for generated files
-  std::string output_dir = "./ascir_output";
+    // Output directory for generated files
+    std::string output_dir = "./ascir_output";
 
-  // Whether to preserve intermediate files
-  bool preserve_intermediates = true;
+    // Whether to preserve intermediate files
+    bool preserve_intermediates = true;
 
-  // SOC version (e.g., "Ascend910B1")
-  std::string soc_version = "Ascend910B1";
+    // SOC version (e.g., "Ascend910B1")
+    std::string soc_version = "Ascend910B1";
 };
 
 // Result of compiling a single HLO computation
 struct SingleComputationResult {
-  // Computation name
-  std::string computation_name;
+    // Computation name
+    std::string computation_name;
 
-  // Path to generated host file
-  std::string host_file;
+    // Path to generated host file
+    std::string host_file;
 
-  // Path to generated device file
-  std::string device_file;
+    // Path to generated device file
+    std::string device_file;
 
-  // Path to compiled device kernel and tiling so (.so)
-  std::string device_binary_file;
+    // Path to compiled device kernel and tiling so (.so)
+    std::string device_binary_file;
 
-  // Path to generated tiling data file
-  std::string tiling_data_file;
+    // Path to generated tiling data file
+    std::string tiling_data_file;
 
-  // Path to generated ascir protobuf text file
-  std::string ascir_file;
+    // Path to generated ascir protobuf text file
+    std::string ascir_file;
 
-  // Graph name extracted from ascir text
-  std::string graph_name;
+    // Graph name extracted from ascir text
+    std::string graph_name;
 
-  // Tiling data bytes
-  std::vector<uint8_t> tiling_data;
-};
-
-// Result of AscIR backend compilation
-struct AscirBackendResult {
-  // Results for each computation
-  std::unordered_map<std::string, SingleComputationResult> computation_results;
+    // Tiling data bytes
+    std::vector<uint8_t> tiling_data;
 };
 
 // AscIR Backend Interface
@@ -83,41 +78,36 @@ struct AscirBackendResult {
 // Usage example:
 //   AscirBackend backend;
 //   AscirBackendOptions options;
-//   AscirBackendResult result = backend.Compile(*hlo_module, options);
+//   NpuCompileResult result = backend.Compile(*hlo_module, options);
 class AscirBackend {
- public:
-  AscirBackend();
-  ~AscirBackend();
+   public:
+    AscirBackend();
+    ~AscirBackend();
 
-  // Compile an HLO module to AscIR kernel
-  //
-  // Args:
-  //   hlo_module: The HLO module to compile
-  //   options: Compilation options
-  //
-  // Returns:
-  //   AscirBackendResult containing paths to generated files
-  absl::StatusOr<AscirBackendResult> Compile(
-      const HloModule& hlo_module,
-      const AscirBackendOptions& options = AscirBackendOptions());
+    // Compile an HLO module to AscIR kernel
+    //
+    // Args:
+    //   hlo_module: The HLO module to compile
+    //   options: Compilation options
+    //
+    // Returns:
+    //   NpuCompileResult containing paths to generated files
+    absl::StatusOr<NpuCompileResult> Compile(const HloModule& hlo_module,
+                                               const AscirBackendOptions& options = AscirBackendOptions());
 
- private:
-  // Step 1: Convert HLO to AFIR MLIR module (in-memory)
-  // Returns a vector of AFIR strings, one per computation
-  absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(
-      const HloModule& hlo_module,
-      const AscirBackendOptions& options);
+   private:
+    // Step 1: Convert HLO to AFIR MLIR module (in-memory)
+    // Returns a vector of AFIR strings, one per computation
+    absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(const HloModule& hlo_module,
+                                                                    const AscirBackendOptions& options);
 
-  // Step 2: Call Python script to convert AFIR to AscIR
-  absl::StatusOr<std::string> ConvertAfirToAscir(
-      const std::string& afir_string,
-      const AscirBackendOptions& options);
+    // Step 2: Call Python script to convert AFIR to AscIR
+    absl::StatusOr<std::string> ConvertAfirToAscir(const std::string& afir_string, const AscirBackendOptions& options);
 
-  // Step 3: Call Ascend runtime to generate kernel for a single computation
-  absl::StatusOr<SingleComputationResult> GenerateKernel(
-      const std::string& ascir_text,
-      const std::string& computation_name,
-      const AscirBackendOptions& options);
+    // Step 3: Call Ascend runtime to generate kernel for a single computation
+    absl::StatusOr<SingleComputationResult> GenerateKernel(const std::string& ascir_text,
+                                                           const std::string& computation_name,
+                                                           const AscirBackendOptions& options);
 };
 
 }  // namespace xla

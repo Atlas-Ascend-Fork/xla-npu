@@ -15,13 +15,14 @@ limitations under the License.
 
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
 
+#include <unistd.h>
+
 #include <cstdlib>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 // Python C API
@@ -141,142 +142,142 @@ absl::StatusOr<std::string> ExtractGraphName(const std::string& ascir_text) {
 // Helper function to add axis information to ASCIR text
 // This is needed when converting individual computations that lack axis context
 std::string AddAxisInfoToAscir(const std::string& ascir_text, const std::vector<int64_t>& shape) {
-  std::string result = ascir_text;
+    std::string result = ascir_text;
 
-  // Find the asc_graph_attr section
-  size_t attr_pos = result.find("asc_graph_attr {");
-  if (attr_pos == std::string::npos) {
-    return result;  // No asc_graph_attr found, return as-is
-  }
+    // Find the asc_graph_attr section
+    size_t attr_pos = result.find("asc_graph_attr {");
+    if (attr_pos == std::string::npos) {
+        return result;  // No asc_graph_attr found, return as-is
+    }
 
-  // Find the closing brace of asc_graph_attr
-  size_t attr_end = result.find("}", attr_pos);
-  if (attr_end == std::string::npos) {
+    // Find the closing brace of asc_graph_attr
+    size_t attr_end = result.find("}", attr_pos);
+    if (attr_end == std::string::npos) {
+        return result;
+    }
+
+    // Build axis information with proper id fields
+    std::string axis_info;
+    for (size_t i = 0; i < shape.size(); ++i) {
+        // All axes need id field
+        // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
+        // 老版本cann包定义为int32类型（不需要加双引号）
+        axis_info += absl::StrFormat(
+            "  axis {\n"
+            "    id: %zu\n"
+            "    name: \"z%zu\"\n"
+            "    size: \"%lld\"\n"
+            "    align: 1\n"
+            "    allow_unaligned_tail: true\n"
+            "  }\n",
+            i, i, shape[i]);
+    }
+
+    // Insert axis info before the closing brace
+    result.insert(attr_end, axis_info);
+
     return result;
-  }
-
-  // Build axis information with proper id fields
-  std::string axis_info;
-  for (size_t i = 0; i < shape.size(); ++i) {
-    // All axes need id field
-    // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
-    // 老版本cann包定义为int32类型（不需要加双引号）
-    axis_info += absl::StrFormat(
-        "  axis {\n"
-        "    id: %zu\n"
-        "    name: \"z%zu\"\n"
-        "    size: \"%lld\"\n"
-        "    align: 1\n"
-        "    allow_unaligned_tail: true\n"
-        "  }\n",
-        i, i, shape[i]);
-  }
-
-  // Insert axis info before the closing brace
-  result.insert(attr_end, axis_info);
-
-  return result;
 }
 
 // Helper function to fix sched.axis for nodes that have axis_ids but missing sched.axis
 std::string FixNodeSchedAxis(const std::string& ascir_text) {
-  std::string result = ascir_text;
+    std::string result = ascir_text;
 
-  // Strategy: Count how many axis definitions are in asc_graph_attr
-  // Then for any node with sched that's missing axis, add all axes
-  size_t graph_attr_pos = result.find("asc_graph_attr {");
-  size_t num_axes = 0;
+    // Strategy: Count how many axis definitions are in asc_graph_attr
+    // Then for any node with sched that's missing axis, add all axes
+    size_t graph_attr_pos = result.find("asc_graph_attr {");
+    size_t num_axes = 0;
 
-  NPU_LOG_PRINT(DEBUG, "FixNodeSchedAxis: Starting to process ASCIR text");
+    NPU_LOG_PRINT(DEBUG, "FixNodeSchedAxis: Starting to process ASCIR text");
 
-  if (graph_attr_pos != std::string::npos) {
-    // Find the end of asc_graph_attr (matching closing brace at start of line)
-    size_t graph_attr_end = result.find("\n}\n", graph_attr_pos);
-    if (graph_attr_end == std::string::npos) {
-      graph_attr_end = result.find("}\nasc_node", graph_attr_pos);
-    }
-
-    if (graph_attr_end != std::string::npos) {
-      std::string graph_attr_section = result.substr(graph_attr_pos, graph_attr_end - graph_attr_pos);
-
-      // Count axis definitions
-      size_t pos = 0;
-      while ((pos = graph_attr_section.find("axis {", pos)) != std::string::npos) {
-        num_axes++;
-        pos += 7;
-      }
-    }
-  }
-
-  NPU_LOG_FORMAT_PRINT(DEBUG, "Found %d axes in asc_graph_attr", num_axes);
-
-  if (num_axes == 0) {
-    // Couldn't determine axis count, return as-is
-    NPU_LOG_PRINT(DEBUG, "No axes found, returning without modifications");
-    return result;
-  }
-
-  // Now find all sched sections that are missing axis and add it
-  size_t pos = 0;
-  size_t fixed_count = 0;
-  size_t total_sched = 0;
-
-  while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
-    total_sched++;
-    size_t sched_end = result.find("}", pos);
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Found sched at position %d, sched_end at %d", pos, sched_end);
-
-    if (sched_end == std::string::npos || sched_end > pos + 200) {
-      NPU_LOG_PRINT(DEBUG, "Skipping sched (invalid end)");
-      pos += 8;
-      continue;
-    }
-
-    // Extract the sched section content
-    std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Sched content: [%s]", sched_content.c_str());
-
-    // Check if this sched already has axis fields (but not loop_axis)
-    // We need to check for "axis:" at the start of a line (with whitespace)
-    bool has_axis_field = false;
-    size_t search_pos = 0;
-    while ((search_pos = sched_content.find("axis:", search_pos)) != std::string::npos) {
-      // Check if it's at start of line or preceded only by whitespace
-      if (search_pos == 0 || sched_content[search_pos - 1] == ' ' ||
-          sched_content[search_pos - 1] == '\t' || sched_content[search_pos - 1] == '\n') {
-        // Make sure it's not part of "loop_axis"
-        if (search_pos < 4 || sched_content.substr(search_pos - 4, 4) != "loop") {
-          has_axis_field = true;
-          break;
+    if (graph_attr_pos != std::string::npos) {
+        // Find the end of asc_graph_attr (matching closing brace at start of line)
+        size_t graph_attr_end = result.find("\n}\n", graph_attr_pos);
+        if (graph_attr_end == std::string::npos) {
+            graph_attr_end = result.find("}\nasc_node", graph_attr_pos);
         }
-      }
-      search_pos += 5;
+
+        if (graph_attr_end != std::string::npos) {
+            std::string graph_attr_section = result.substr(graph_attr_pos, graph_attr_end - graph_attr_pos);
+
+            // Count axis definitions
+            size_t pos = 0;
+            while ((pos = graph_attr_section.find("axis {", pos)) != std::string::npos) {
+                num_axes++;
+                pos += 7;
+            }
+        }
     }
 
-    if (!has_axis_field) {
-      NPU_LOG_FORMAT_PRINT(DEBUG, "This sched is missing axis, adding %d axes", num_axes);
-      // This sched is missing axis, add all axes
-      std::string axis_fields;
-      for (size_t i = 0; i < num_axes; ++i) {
-        axis_fields += absl::StrFormat("      axis: %zu\n", i);
-      }
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Found %d axes in asc_graph_attr", num_axes);
 
-      // Insert before the closing brace
-      result.insert(sched_end, axis_fields);
-      sched_end += axis_fields.length();
-      fixed_count++;
-
-      NPU_LOG_FORMAT_PRINT(DEBUG, "Fixed sched at position %d, added %d axes", pos, num_axes);
-    } else {
-      NPU_LOG_PRINT(DEBUG, "This sched already has axis fields");
+    if (num_axes == 0) {
+        // Couldn't determine axis count, return as-is
+        NPU_LOG_PRINT(DEBUG, "No axes found, returning without modifications");
+        return result;
     }
 
-    pos = sched_end + 1;
-  }
+    // Now find all sched sections that are missing axis and add it
+    size_t pos = 0;
+    size_t fixed_count = 0;
+    size_t total_sched = 0;
 
-  NPU_LOG_FORMAT_PRINT(DEBUG, "Processed %d sched sections, fixed %d nodes", total_sched, fixed_count);
+    while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
+        total_sched++;
+        size_t sched_end = result.find("}", pos);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Found sched at position %d, sched_end at %d", pos, sched_end);
 
-  return result;
+        if (sched_end == std::string::npos || sched_end > pos + 200) {
+            NPU_LOG_PRINT(DEBUG, "Skipping sched (invalid end)");
+            pos += 8;
+            continue;
+        }
+
+        // Extract the sched section content
+        std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Sched content: [%s]", sched_content.c_str());
+
+        // Check if this sched already has axis fields (but not loop_axis)
+        // We need to check for "axis:" at the start of a line (with whitespace)
+        bool has_axis_field = false;
+        size_t search_pos = 0;
+        while ((search_pos = sched_content.find("axis:", search_pos)) != std::string::npos) {
+            // Check if it's at start of line or preceded only by whitespace
+            if (search_pos == 0 || sched_content[search_pos - 1] == ' ' || sched_content[search_pos - 1] == '\t' ||
+                sched_content[search_pos - 1] == '\n') {
+                // Make sure it's not part of "loop_axis"
+                if (search_pos < 4 || sched_content.substr(search_pos - 4, 4) != "loop") {
+                    has_axis_field = true;
+                    break;
+                }
+            }
+            search_pos += 5;
+        }
+
+        if (!has_axis_field) {
+            NPU_LOG_FORMAT_PRINT(DEBUG, "This sched is missing axis, adding %d axes", num_axes);
+            // This sched is missing axis, add all axes
+            std::string axis_fields;
+            for (size_t i = 0; i < num_axes; ++i) {
+                axis_fields += absl::StrFormat("      axis: %zu\n", i);
+            }
+
+            // Insert before the closing brace
+            result.insert(sched_end, axis_fields);
+            sched_end += axis_fields.length();
+            fixed_count++;
+
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Fixed sched at position %d, added %d axes", pos, num_axes);
+        } else {
+            NPU_LOG_PRINT(DEBUG, "This sched already has axis fields");
+        }
+
+        pos = sched_end + 1;
+    }
+
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Processed %d sched sections, fixed %d nodes", total_sched, fixed_count);
+
+    return result;
 }
 
 }  // namespace
@@ -285,122 +286,117 @@ AscirBackend::AscirBackend() = default;
 
 AscirBackend::~AscirBackend() = default;
 
-absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(
-    const HloModule& hlo_module,
-    const AscirBackendOptions& options) {
-  std::vector<std::string> afir_strings;
+absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(const HloModule& hlo_module,
+                                                                              const AscirBackendOptions& options) {
+    std::vector<std::string> afir_strings;
 
-  const HloComputation* entry = hlo_module.entry_computation();
+    const HloComputation* entry = hlo_module.entry_computation();
 
-  // Only convert non-entry computations
-  for (const HloComputation* computation : hlo_module.computations()) {
-    if (computation == entry) {
-      NPU_LOG_FORMAT_PRINT(INFO, "Skipping entry computation: %s",
-                           std::string(computation->name()).c_str());
-      continue;
+    // Only convert non-entry computations
+    for (const HloComputation* computation : hlo_module.computations()) {
+        if (computation == entry) {
+            NPU_LOG_FORMAT_PRINT(INFO, "Skipping entry computation: %s", std::string(computation->name()).c_str());
+            continue;
+        }
+
+        NPU_LOG_FORMAT_PRINT(INFO, "Converting non-entry computation: %s", std::string(computation->name()).c_str());
+
+        // Create MLIR context for this computation
+        auto context = std::make_unique<mlir::MLIRContext>();
+        context->loadDialect<mlir::func::FuncDialect>();
+        context->loadDialect<mlir::arith::ArithDialect>();
+        context->loadDialect<mlir::afir::AFIRDialect>();
+
+        // Convert this single computation (with all its dependencies) to AFIR
+        HloToAfirOptions afir_options;
+        afir_options.preserve_names = true;
+        afir_options.verify_module = true;
+        afir_options.emit_afir_dialect = true;
+
+        TF_ASSIGN_OR_RETURN(auto mlir_module,
+                            ConvertHloComputationToAfir(*computation, hlo_module, context.get(), afir_options));
+
+        // Serialize MLIR module to string immediately
+        std::string afir_string;
+        llvm::raw_string_ostream stream(afir_string);
+        mlir_module->print(stream);
+
+        afir_strings.push_back(afir_string);
     }
 
-    NPU_LOG_FORMAT_PRINT(INFO, "Converting non-entry computation: %s",
-                         std::string(computation->name()).c_str());
+    NPU_LOG_FORMAT_PRINT(INFO, "Converted %d non-entry computations to AFIR", afir_strings.size());
 
-    // Create MLIR context for this computation
+    return afir_strings;
+}
+
+absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(const std::string& afir_string,
+                                                             const AscirBackendOptions& options) {
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Starting conversion");
+
+    // Create MLIR context for parsing AFIR
     auto context = std::make_unique<mlir::MLIRContext>();
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Created MLIR context");
+
     context->loadDialect<mlir::func::FuncDialect>();
     context->loadDialect<mlir::arith::ArithDialect>();
     context->loadDialect<mlir::afir::AFIRDialect>();
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Loaded dialects");
 
-    // Convert this single computation (with all its dependencies) to AFIR
-    HloToAfirOptions afir_options;
-    afir_options.preserve_names = true;
-    afir_options.verify_module = true;
-    afir_options.emit_afir_dialect = true;
+    // Parse AFIR string to MLIR module
+    mlir::OwningOpRef<mlir::ModuleOp> module =
+        mlir::parseSourceString<mlir::ModuleOp>(llvm::StringRef(afir_string), context.get());
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Parsed AFIR string");
 
-    TF_ASSIGN_OR_RETURN(
-        auto mlir_module,
-        ConvertHloComputationToAfir(*computation, hlo_module, context.get(), afir_options));
+    if (!module) {
+        return absl::InternalError("Failed to parse AFIR string");
+    }
 
-    // Serialize MLIR module to string immediately
-    std::string afir_string;
-    llvm::raw_string_ostream stream(afir_string);
-    mlir_module->print(stream);
+    // Create temporary file for ASCIR output
+    std::string temp_ascir_file = absl::StrCat(options.output_dir, "/temp_output.ascir");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir: Created temp file path: %s", temp_ascir_file.c_str());
 
-    afir_strings.push_back(afir_string);
-  }
+    // Create PassManager to run the conversion pass
+    mlir::PassManager pm(context.get());
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Created PassManager");
 
-  NPU_LOG_FORMAT_PRINT(INFO, "Converted %d non-entry computations to AFIR", afir_strings.size());
+    pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Added conversion pass");
 
-  return afir_strings;
-}
+    // Capture stderr to get the output (since pass outputs to stderr by default)
+    // Use dup2 to properly save and restore stderr
+    int stderr_fd = dup(fileno(stderr));
+    if (stderr_fd == -1) {
+        return absl::InternalError("Failed to duplicate stderr file descriptor");
+    }
 
-absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(
-    const std::string& afir_string,
-    const AscirBackendOptions& options) {
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Starting conversion");
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: About to redirect stderr");
 
-  // Create MLIR context for parsing AFIR
-  auto context = std::make_unique<mlir::MLIRContext>();
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Created MLIR context");
+    // Redirect stderr to a file
+    FILE* temp_file = fopen(temp_ascir_file.c_str(), "w");
+    if (!temp_file) {
+        close(stderr_fd);
+        return absl::InternalError(absl::StrCat("Failed to open temp file: ", temp_ascir_file));
+    }
 
-  context->loadDialect<mlir::func::FuncDialect>();
-  context->loadDialect<mlir::arith::ArithDialect>();
-  context->loadDialect<mlir::afir::AFIRDialect>();
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Loaded dialects");
+    dup2(fileno(temp_file), fileno(stderr));
 
-  // Parse AFIR string to MLIR module
-  mlir::OwningOpRef<mlir::ModuleOp> module = mlir::parseSourceString<mlir::ModuleOp>(
-      llvm::StringRef(afir_string), context.get());
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Parsed AFIR string");
+    // Run the pass
+    mlir::LogicalResult result = pm.run(*module);
 
-  if (!module) {
-    return absl::InternalError("Failed to parse AFIR string");
-  }
+    // Flush and close the temp file
+    fflush(stderr);
+    fclose(temp_file);
 
-  // Create temporary file for ASCIR output
-  std::string temp_ascir_file = absl::StrCat(options.output_dir, "/temp_output.ascir");
-  NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir: Created temp file path: %s", temp_ascir_file.c_str());
-
-  // Create PassManager to run the conversion pass
-  mlir::PassManager pm(context.get());
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Created PassManager");
-
-  pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Added conversion pass");
-
-  // Capture stderr to get the output (since pass outputs to stderr by default)
-  // Use dup2 to properly save and restore stderr
-  int stderr_fd = dup(fileno(stderr));
-  if (stderr_fd == -1) {
-    return absl::InternalError("Failed to duplicate stderr file descriptor");
-  }
-
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: About to redirect stderr");
-
-  // Redirect stderr to a file
-  FILE* temp_file = fopen(temp_ascir_file.c_str(), "w");
-  if (!temp_file) {
+    // Restore stderr using dup2
+    dup2(stderr_fd, fileno(stderr));
     close(stderr_fd);
-    return absl::InternalError(absl::StrCat("Failed to open temp file: ", temp_ascir_file));
-  }
 
-  dup2(fileno(temp_file), fileno(stderr));
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Stderr restored");
 
-  // Run the pass
-  mlir::LogicalResult result = pm.run(*module);
-
-  // Flush and close the temp file
-  fflush(stderr);
-  fclose(temp_file);
-
-  // Restore stderr using dup2
-  dup2(stderr_fd, fileno(stderr));
-  close(stderr_fd);
-
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Stderr restored");
-
-  if (mlir::failed(result)) {
-    return absl::InternalError("Failed to run AFIR to ASCIR conversion pass");
-  }
-  NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Pass succeeded");
+    if (mlir::failed(result)) {
+        return absl::InternalError("Failed to run AFIR to ASCIR conversion pass");
+    }
+    NPU_LOG_PRINT(DEBUG, "ConvertAfirToAscir: Pass succeeded");
 
     // Read the generated ASCIR file
     TF_ASSIGN_OR_RETURN(auto ascir_text, ReadFile(temp_ascir_file));
@@ -413,63 +409,57 @@ absl::StatusOr<std::string> AscirBackend::ConvertAfirToAscir(
     return ascir_text;
 }
 
-absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
-    const std::string& ascir_text,
-    const std::string& computation_name,
-    const AscirBackendOptions& options) {
-  SingleComputationResult result;
-  result.computation_name = computation_name;
+absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::string& ascir_text,
+                                                                     const std::string& computation_name,
+                                                                     const AscirBackendOptions& options) {
+    SingleComputationResult result;
+    result.computation_name = computation_name;
 
-  // Extract graph_name from ascir text
-  TF_ASSIGN_OR_RETURN(auto graph_name, ExtractGraphName(ascir_text));
-  result.graph_name = graph_name;
-  NPU_LOG_FORMAT_PRINT(DEBUG, "Computation: %s, Extracted graph_name: %s",
-                       computation_name.c_str(), graph_name.c_str());
+    // Extract graph_name from ascir text
+    TF_ASSIGN_OR_RETURN(auto graph_name, ExtractGraphName(ascir_text));
+    result.graph_name = graph_name;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Computation: %s, Extracted graph_name: %s", computation_name.c_str(),
+                         graph_name.c_str());
 
-  // Create computation-specific output directory
-  std::string computation_output_dir =
-      absl::StrCat(options.output_dir, "/", computation_name);
-  std::string mkdir_cmd = absl::StrCat("mkdir -p ", computation_output_dir);
-  TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
+    // Create computation-specific output directory
+    std::string computation_output_dir = absl::StrCat(options.output_dir, "/", computation_name);
+    std::string mkdir_cmd = absl::StrCat("mkdir -p ", computation_output_dir);
+    TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-  // Save ASCIR to file for reference (use graph_name as filename)
-  std::string ascir_file = absl::StrCat(computation_output_dir, "/", graph_name, ".ascir");
-  TF_RETURN_IF_ERROR(WriteFile(ascir_text, ascir_file));
-  result.ascir_file = ascir_file;
-  NPU_LOG_FORMAT_PRINT(DEBUG, "ASCIR saved to: %s", ascir_file.c_str());
+    // Save ASCIR to file for reference (use graph_name as filename)
+    std::string ascir_file = absl::StrCat(computation_output_dir, "/", graph_name, ".ascir");
+    TF_RETURN_IF_ERROR(WriteFile(ascir_text, ascir_file));
+    result.ascir_file = ascir_file;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "ASCIR saved to: %s", ascir_file.c_str());
 
-  // Initialize Python interpreter
-  NPU_LOG_FORMAT_PRINT(DEBUG, "About to initialize Python interpreter for %s...", computation_name.c_str());
-  fflush(stderr);
-  if (!Py_IsInitialized()) {
-    Py_Initialize();
+    // Initialize Python interpreter
+    NPU_LOG_FORMAT_PRINT(DEBUG, "About to initialize Python interpreter for %s...", computation_name.c_str());
+    fflush(stderr);
     if (!Py_IsInitialized()) {
-      return absl::InternalError("Failed to initialize Python interpreter");
+        Py_Initialize();
+        if (!Py_IsInitialized()) {
+            return absl::InternalError("Failed to initialize Python interpreter");
+        }
     }
-  }
-  NPU_LOG_PRINT(DEBUG, "Python initialized successfully");
+    NPU_LOG_PRINT(DEBUG, "Python initialized successfully");
 
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  // Set environment variable for SOC version
-  std::string set_soc_cmd = absl::StrFormat(
-      "import os; os.environ['SOC_VERSION'] = '%s'",
-      options.soc_version);
-  PyRun_SimpleString(set_soc_cmd.c_str());
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    // Set environment variable for SOC version
+    std::string set_soc_cmd = absl::StrFormat("import os; os.environ['SOC_VERSION'] = '%s'", options.soc_version);
+    PyRun_SimpleString(set_soc_cmd.c_str());
 
-  // Add runtime path to Python path
-  const char* ascend_mlir_path = std::getenv("ASCEND_MLIR_PYTHON_PATH");
-  std::string runtime_path = ascend_mlir_path ? ascend_mlir_path : "";
-  if (runtime_path.empty()) {
-    return absl::InternalError(
-        "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
-        "Please set it to xla_npu/third_party/Ascend-MLIR/python");
-  }
-  NPU_LOG_FORMAT_PRINT(DEBUG, "Adding runtime path: %s", runtime_path.c_str());
-  std::string import_cmd = absl::StrFormat(
-      "import sys; sys.path.insert(0, '%s')",
-      runtime_path);
-  PyRun_SimpleString(import_cmd.c_str());
-  NPU_LOG_PRINT(DEBUG, "Runtime path added");
+    // Add runtime path to Python path
+    const char* ascend_mlir_path = std::getenv("ASCEND_MLIR_PYTHON_PATH");
+    std::string runtime_path = ascend_mlir_path ? ascend_mlir_path : "";
+    if (runtime_path.empty()) {
+        return absl::InternalError(
+            "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
+            "Please set it to xla_npu/third_party/Ascend-MLIR/python");
+    }
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Adding runtime path: %s", runtime_path.c_str());
+    std::string import_cmd = absl::StrFormat("import sys; sys.path.insert(0, '%s')", runtime_path);
+    PyRun_SimpleString(import_cmd.c_str());
+    NPU_LOG_PRINT(DEBUG, "Runtime path added");
 
     // Import runtime module
     NPU_LOG_PRINT(DEBUG, "Importing runtime module...");
@@ -512,24 +502,22 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
         return absl::InternalError("Failed to get Path class");
     }
 
-  PyObject* output_dir_py = PyObject_CallFunction(
-      path_class, "s", computation_output_dir.c_str());
-  if (!output_dir_py) {
-    Py_DECREF(path_class);
-    Py_DECREF(ascgen_instance);
-    PyErr_Print();
-    return absl::InternalError("Failed to create Path object");
-  }
+    PyObject* output_dir_py = PyObject_CallFunction(path_class, "s", computation_output_dir.c_str());
+    if (!output_dir_py) {
+        Py_DECREF(path_class);
+        Py_DECREF(ascgen_instance);
+        PyErr_Print();
+        return absl::InternalError("Failed to create Path object");
+    }
 
-  // Get compile_graph method
-  PyObject* compile_graph_method = PyObject_GetAttrString(
-      ascgen_instance, "compile_graph");
-  if (!compile_graph_method) {
-    Py_DECREF(ascgen_instance);
-    Py_DECREF(output_dir_py);
-    PyErr_Print();
-    return absl::InternalError("Failed to get compile_graph method");
-  }
+    // Get compile_graph method
+    PyObject* compile_graph_method = PyObject_GetAttrString(ascgen_instance, "compile_graph");
+    if (!compile_graph_method) {
+        Py_DECREF(ascgen_instance);
+        Py_DECREF(output_dir_py);
+        PyErr_Print();
+        return absl::InternalError("Failed to get compile_graph method");
+    }
 
     // Call compile_graph(graph_text, output_dir, graph_name)
     PyObject* args = PyTuple_New(3);
@@ -537,10 +525,9 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
     PyTuple_SetItem(args, 1, output_dir_py);  // Steals reference
     PyTuple_SetItem(args, 2, PyUnicode_FromString(graph_name.c_str()));
 
-  PyObject* compile_result = PyObject_CallObject(
-      compile_graph_method, args);
-  Py_DECREF(args);
-  Py_DECREF(compile_graph_method);
+    PyObject* compile_result = PyObject_CallObject(compile_graph_method, args);
+    Py_DECREF(args);
+    Py_DECREF(compile_graph_method);
 
     if (!compile_result) {
         Py_DECREF(ascgen_instance);
@@ -607,8 +594,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
     device_impl = device_buffer.str();
     device_file_stream.close();
 
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Read device_file (%s) size: %d",
-                         result.device_file.c_str(), device_impl.size());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Read device_file (%s) size: %d", result.device_file.c_str(), device_impl.size());
     NPU_LOG_PRINT(DEBUG, "Using host_tiling_obj and tiling_def_obj from memory");
 
     // Clean up compile_result and related objects
@@ -642,7 +628,8 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
     std::string output_file = absl::StrCat(options.output_dir, "/", graph_name, ".so");
 
     // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True"]
-    // Based on test_ascir.py test_mode_0: jit_compile(tiling_def, host_impl, device_impl, [graph_name, output_file, output_path, "--force_unknown=True"])
+    // Based on test_ascir.py test_mode_0: jit_compile(tiling_def, host_impl, device_impl, [graph_name, output_file,
+    // output_path, "--force_unknown=True"])
 
     // Prepare arguments list (4th parameter is a list)
     PyObject* args_list = PyList_New(4);
@@ -716,76 +703,74 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
     return result;
 }
 
-absl::StatusOr<AscirBackendResult> AscirBackend::Compile(
-    const HloModule& hlo_module,
-    const AscirBackendOptions& options) {
-  AscirBackendResult final_result;
+absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_module,
+                                                         const AscirBackendOptions& options) {
+    NpuCompileResult final_result;
 
-  // Step 1: Convert HLO to AFIR for each non-entry computation
-  TF_ASSIGN_OR_RETURN(auto afir_strings,
-                      ConvertHloToAfirModule(hlo_module, options));
+    // Step 1: Convert HLO to AFIR for each non-entry computation
+    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(hlo_module, options));
 
     // Create output directory if it doesn't exist
     std::string mkdir_cmd = absl::StrCat("mkdir -p ", options.output_dir);
     TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-  // Get entry computation to skip
-  const HloComputation* entry = hlo_module.entry_computation();
+    // Get entry computation to skip
+    const HloComputation* entry = hlo_module.entry_computation();
 
-  // Process each non-entry computation
-  int idx = 0;
-  for (const HloComputation* computation : hlo_module.computations()) {
-    // Skip entry computation
-    if (computation == entry) {
-      continue;
+    // Process each non-entry computation
+    int idx = 0;
+    for (const HloComputation* computation : hlo_module.computations()) {
+        // Skip entry computation
+        if (computation == entry) {
+            continue;
+        }
+
+        const std::string& afir_string = afir_strings[idx];
+        const std::string computation_name = std::string(computation->name());
+
+        NPU_LOG_FORMAT_PRINT(INFO, "Processing computation %d/%d: %s", idx + 1, afir_strings.size(),
+                             computation_name.c_str());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "About to call ConvertAfirToAscir for %s", computation_name.c_str());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "AFIR string size: %d bytes", afir_string.size());
+
+        // Step 2: Convert AFIR to AscIR
+        TF_ASSIGN_OR_RETURN(auto ascir_text, ConvertAfirToAscir(afir_string, options));
+
+        NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir completed, ASCIR size: %d bytes", ascir_text.size());
+
+        // Extract shape information from computation's root instruction
+        // to add axis information to ASCIR
+        const HloInstruction* root = computation->root_instruction();
+        const Shape& root_shape = root->shape();
+        std::vector<int64_t> shape_dims;
+        if (root_shape.IsArray()) {
+            auto dims_span = root_shape.dimensions();
+            shape_dims.assign(dims_span.begin(), dims_span.end());
+        }
+
+        // Add axis information if shape is available
+        if (!shape_dims.empty()) {
+            ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
+        }
+
+        // Fix sched.axis for nodes that have axis_ids but missing sched.axis
+        ascir_text = FixNodeSchedAxis(ascir_text);
+        NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
+
+        // Step 3: Generate kernel for this computation
+        TF_ASSIGN_OR_RETURN(auto comp_result, GenerateKernel(ascir_text, computation_name, options));
+
+        NpuArtifactInfo npu_artifact_info;
+        npu_artifact_info.name = computation_name;
+        npu_artifact_info.dir = options.output_dir;
+        final_result.artifact_infos[computation_name] = npu_artifact_info;   
+        idx++;
     }
 
-    const std::string& afir_string = afir_strings[idx];
-    const std::string computation_name = std::string(computation->name());
+    NPU_LOG_FORMAT_PRINT(INFO, "Successfully compiled %d computations", final_result.artifact_infos.size());
 
-    NPU_LOG_FORMAT_PRINT(INFO, "Processing computation %d/%d: %s",
-                         idx + 1, afir_strings.size(), computation_name.c_str());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "About to call ConvertAfirToAscir for %s", computation_name.c_str());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "AFIR string size: %d bytes", afir_string.size());
-
-    // Step 2: Convert AFIR to AscIR
-    TF_ASSIGN_OR_RETURN(auto ascir_text,
-                        ConvertAfirToAscir(afir_string, options));
-
-    NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir completed, ASCIR size: %d bytes", ascir_text.size());
-
-    // Extract shape information from computation's root instruction
-    // to add axis information to ASCIR
-    const HloInstruction* root = computation->root_instruction();
-    const Shape& root_shape = root->shape();
-    std::vector<int64_t> shape_dims;
-    if (root_shape.IsArray()) {
-      auto dims_span = root_shape.dimensions();
-      shape_dims.assign(dims_span.begin(), dims_span.end());
-    }
-
-    // Add axis information if shape is available
-    if (!shape_dims.empty()) {
-      ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
-      NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
-    }
-
-    // Fix sched.axis for nodes that have axis_ids but missing sched.axis
-    ascir_text = FixNodeSchedAxis(ascir_text);
-    NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
-
-    // Step 3: Generate kernel for this computation
-    TF_ASSIGN_OR_RETURN(auto comp_result,
-                        GenerateKernel(ascir_text, computation_name, options));
-
-    final_result.computation_results[computation_name] = std::move(comp_result);
-    idx++;
-  }
-
-  NPU_LOG_FORMAT_PRINT(INFO, "Successfully compiled %d computations",
-                       final_result.computation_results.size());
-
-  return final_result;
+    return final_result;
 }
 
 }  // namespace xla

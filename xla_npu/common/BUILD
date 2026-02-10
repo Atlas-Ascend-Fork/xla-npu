@@ -44,6 +44,7 @@ cc_library(
 
 cc_library(
     name = "npu_tool",
+    srcs = ["npu_tool.cc"],
     hdrs = ["npu_tool.h"],
     deps = [
         "//xla/xla_npu/dependency/interface:acl_interface",
@@ -52,6 +53,8 @@ cc_library(
 
         "//xla:shape_util",
         "//xla/hlo/ir:hlo",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
         "@llvm-project//mlir:IR",
     ],
 )

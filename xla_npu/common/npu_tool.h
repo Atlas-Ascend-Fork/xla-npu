@@ -164,6 +164,9 @@ class NpuTool {
 
         return tensor;
     }
+
+    // 生成不重复文件夹名（Abseil 实现）
+    static std::string generate_unique_folder_name_absl();
 };
 
 }  // namespace xla

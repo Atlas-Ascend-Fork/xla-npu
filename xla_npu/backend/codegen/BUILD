@@ -51,10 +51,11 @@ cc_library(
     srcs = ["npu_custom.cc"],
     hdrs = ["npu_custom.h"],
     deps = [
-        "//xla/xla_npu/backend/runtime:npu_custom_kernel_thunk",
         ":npu_fusion_emitter",
+        "//xla/xla_npu/backend/runtime:npu_custom_kernel_thunk",
         "//xla/xla_npu/backend/runtime:npu_thunk",
         "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service:npu_ir_emitter_context",
         "//xla/xla_npu/service/kernel:npu_custom_kernel",
         "//xla/xla_npu/service/kernel:npu_kernel_config",
