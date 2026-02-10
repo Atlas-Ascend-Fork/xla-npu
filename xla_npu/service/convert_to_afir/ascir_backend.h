@@ -101,10 +101,10 @@ class AscirBackend {
     absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(const HloModule& hlo_module,
                                                                     const AscirBackendOptions& options);
 
-    // Step 2: Call Python script to convert AFIR to AscIR
+    // Step 2: Convert AFIR to AscIR
     absl::StatusOr<std::string> ConvertAfirToAscir(const std::string& afir_string, const AscirBackendOptions& options);
 
-    // Step 3: Call Ascend runtime to generate kernel for a single computation
+    // Step 3: Call Ascend runtime to generate kernel and tiling for a single computation
     absl::StatusOr<SingleComputationResult> GenerateKernel(const std::string& ascir_text,
                                                            const std::string& computation_name,
                                                            const AscirBackendOptions& options);

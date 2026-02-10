@@ -66,6 +66,11 @@ cc_library(
 cc_binary(
     name = "ascir_backend_test",
     srcs = ["ascir_backend_test.cc"],
+    linkopts = [
+        "-L$(PYTHON_LIB_DIR)",
+        "-lpython$(PYTHON_VERSION)",
+        "-Wl,-rpath,$(PYTHON_LIB_DIR)",
+    ],
     deps = [
         ":ascir_backend",
         "//xla:util",
@@ -74,7 +79,6 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
-        "@rules_python//python/cc:current_py_cc_libs",
     ],
 )
 
