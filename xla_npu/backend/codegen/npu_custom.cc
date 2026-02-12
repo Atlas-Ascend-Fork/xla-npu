@@ -1233,7 +1233,7 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     auto npu_kernel_config_ptr = std::make_unique<NpuKernelConfig>();
     npu_kernel_config_ptr->npu_kernel_type = NpuKernelConfig::NpuKernelType::FUSION;
     npu_kernel_config_ptr->npu_artifact_info = artifact_infos[computation_name];
-    se::BlockDim block_dims(1);  // autofuse算子的block dim由tiling计算得到,不使用这里设置的值
+    se::BlockDim block_dims(0);  // autofuse算子的block dim由tiling计算得到,不使用这里设置的值
     size_t shared_memory_bytes = 0;
     NpuCustomKernel kernel(std::move(npu_kernel_config_ptr), computation_name, block_dims, shared_memory_bytes);
     TF_ASSIGN_OR_RETURN(auto thunk, BuildCustomKernelThunkForFusion(ir_emitter_context, fusion, std::move(kernel)));

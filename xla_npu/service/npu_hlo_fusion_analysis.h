@@ -26,13 +26,18 @@ class NpuHloFusionAnalysis {
     enum class EmitterFusionKind {
         kLoop,
         kCustomFusion,
-        kTriton,
         kReduction,
         kTranspose,
         kConcatenate,
         kScatter,
-        kCuDnn,
         kDynamicMemcpy,
+        // NPU ACLNN specific types (using kNpuAclnn prefix):
+        kNpuAclnnMatMul,      // NPU ACLNN matrix multiplication
+        kNpuAclnnSoftmax,     // NPU ACLNN softmax
+        kNpuAclnnLayerNorm,   // NPU ACLNN layer normalization
+        kNpuAclnnBatchMatMul, // NPU ACLNN batch matrix multiplication
+        kNpuAclnnGelu,        // NPU ACLNN GELU
+        kNpuAclnnConv2d,      // NPU ACLNN convolution
     };
 
     // Precomputed information about inputs (arguments) and outputs (roots) of the

@@ -699,6 +699,7 @@ cc_library(
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/transform:npu_super_fusion",
+        "//xla/xla_npu/service/transform:npu_fusion_passes",
 
         ":npu_compile_module_to_llvm_ir", # 务必不要修改此依赖的相对顺序
         

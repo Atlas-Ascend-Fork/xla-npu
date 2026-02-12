@@ -2,13 +2,13 @@
 
 #include <vector>
 
-#include "absl/log/log.h"
 #include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/hlo/transforms/simplifiers/hlo_dce.h"
 #include "xla/status_macros.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -31,11 +31,11 @@ absl::StatusOr<bool> NpuSuperFusion::RunImpl(HloModule* module,
 
     // Safety check: don't create overly large fusions that might cause issues
     if (to_fuse.size() > 50 || to_fuse.empty()) {
-        LOG(INFO) << "Not creating super fusion: instruction count = " << to_fuse.size();
+        NPU_LOG_FORMAT_PRINT(INFO, "Not creating super fusion: instruction count = %d", to_fuse.size());
         return false;
     }
 
-    LOG(INFO) << "Creating super fusion with " << to_fuse.size() << " instructions";
+    NPU_LOG_FORMAT_PRINT(INFO, "Creating super fusion with %d instructions", to_fuse.size());
 
     // Start fusion from the root instruction (which should be the final computation)
     // This ensures we capture all computation logic but keep inputs separate

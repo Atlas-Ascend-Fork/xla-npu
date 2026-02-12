@@ -302,6 +302,7 @@
 #include "xla/service/gpu/gpu_hlo_schedule.h"
 #include "xla/service/gpu/gpu_latency_hiding_scheduler.h"
 #include "xla/service/gpu/transforms/add_tracking_suffix_to_instruction_names.h"
+#include "xla/service/gpu/transforms/rename_fusions.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_tool.h"
@@ -312,6 +313,7 @@
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
+#include "xla/xla_npu/service/transform/npu_fusion_pipeline.h"
 #include "xla/xla_npu/service/transform/npu_super_fusion.h"
 
 namespace xla {
@@ -933,12 +935,12 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
                              SymbolicExprContext* symbolic_expr_context) {
     const se::DeviceDescription& gpu_device_info = gpu_target_config.device_description;
 
-    HloPassPipeline pre_fusion("pre-fusion");
+    HloPassPipeline pre_fusion("pre-npu-fusion");
     pre_fusion.AddPass<gpu::AddTrackingSuffixToInstructionNames>();
     TF_RETURN_IF_ERROR(pre_fusion.Run(hlo_module).status());
 
-    TF_RETURN_IF_ERROR(gpu::FusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool,
-                                           gpu_device_info, symbolic_expr_context)
+    TF_RETURN_IF_ERROR(NpuFusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool,
+                                         gpu_device_info, symbolic_expr_context)
                            .Run(hlo_module, {HloInstruction::kMainExecutionThread})
                            .status());
 
@@ -1701,20 +1703,20 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //                           autotune_results);
     // }
 
+    bool is_deviceless = true;
+    const se::DeviceDescription& device_description = gpu_target_config.device_description;
+    std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
+    TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
+                                         gpu_target_config, alias_info.get()));
+
+    MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
+        /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
+        /*default_thread_pool=*/options.thread_pool,
+        /*default_parallelism=*/tsl::port::MaxParallelism());
+    TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
+                                       ShapeSizeBytesFunction(), &symbolic_expr_context_));
+
     NpuTool::PrintHloModule(module.get(), "Xla hlo module after run no hlo pass");
-
-    // bool is_deviceless = true;
-    // const se::DeviceDescription& device_description = gpu_target_config.device_description;
-    // std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
-    // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
-    //                                      gpu_target_config, alias_info.get()));
-
-    // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
-    //     /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
-    //     /*default_thread_pool=*/options.thread_pool,
-    //     /*default_parallelism=*/tsl::port::MaxParallelism());
-    // TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
-    //                                    ShapeSizeBytesFunction(), &symbolic_expr_context_));
 
 #ifdef NPU_AUTO_FUSE_ENABLED
     // hlo instuction融合成一条语句以保证进thunk生成时

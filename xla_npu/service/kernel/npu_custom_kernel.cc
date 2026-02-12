@@ -81,17 +81,7 @@ NpuCustomKernel& NpuCustomKernel::operator=(NpuCustomKernel&& other) noexcept {
 //       shared_memory_bytes_(shared_memory_bytes) {}
 
 std::string NpuCustomKernel::ToString() const {
-    return "";
-
-    // std::string cluster_dims_str =
-    //     cluster_dims_.has_value()
-    //         ? absl::StrFormat("cluster: [%d, %d, %d]", cluster_dims_->x, cluster_dims_->y, cluster_dims_->z)
-    //         : "";
-    // return absl::StrFormat(
-    //     "%s grid: [%d, %d, %d] threads: [%d, %d, %d] %s "
-    //     "shared_memory: %d bytes",
-    //     name_, block_dims_.x, block_dims_.y, block_dims_.z, thread_dims_.x, thread_dims_.y, thread_dims_.z,
-    //     cluster_dims_str, shared_memory_bytes_);
+    return absl::StrFormat("%s block_dim: %d shared_memory: %d bytes", name_, block_dims_.x, shared_memory_bytes_);
 }
 
 }  // namespace xla
