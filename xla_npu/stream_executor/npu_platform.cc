@@ -44,7 +44,7 @@ Platform::Id NpuPlatform::id() const { return kNpuPlatformId; }
 bool NpuPlatform::Initialized() const { return initialized_; }
 
 absl::Status NpuPlatform::Initialize() {
-    const char* acl_config_json_file_path = "acl.json";
+    const char* acl_config_json_file_path = nullptr;
     aclError acl_ret = npu::aclInit(acl_config_json_file_path);
     if (acl_ret != ACL_SUCCESS) {
         NPU_LOG_FORMAT_PRINT(ERROR, "Init platform for '%s' failed.", name_);

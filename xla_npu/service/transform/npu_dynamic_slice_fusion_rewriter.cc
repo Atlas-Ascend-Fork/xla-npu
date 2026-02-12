@@ -127,7 +127,7 @@ absl::StatusOr<bool> NpuDynamicSliceFusionRewriter::RunImpl(
           // Found matching pattern - the pass would create fusion
           // For now, just log the detection as this is a simplified implementation
           NPU_LOG_FORMAT_PRINT(DEBUG, "NpuDynamicSliceFusionRewriter: detected dynamic slice pattern in custom call %s",
-                               instr->name().c_str());
+                               instr->name().data());
           changed = true;
         }
       }

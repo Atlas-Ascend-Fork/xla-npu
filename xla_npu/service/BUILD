@@ -2,6 +2,11 @@
 load("//xla/tsl/platform:rules_cc.bzl", "cc_library")
 load("//xla/tsl:tsl.default.bzl", "get_compatible_with_portable")
 
+load(
+    "//xla/tsl/platform:build_config.bzl",
+    "tf_proto_library",
+)
+
 load("//xla/tsl:tsl.bzl", "internal_visibility", "tsl_copts")
 load("//xla/tsl/mkl:build_defs.bzl", "if_graph_api", "if_onednn")
 load(
@@ -27,6 +32,17 @@ package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
     default_visibility = internal_visibility(["//xla:internal"]),
     licenses = ["notice"],
+)
+
+# NPU backend config protobuf - similar to GPU's backend_configs.proto
+tf_proto_library(
+    name = "backend_config",
+    srcs = ["npu_backend_config.proto"],
+    make_default_target_header_only = True,
+    protodeps = [
+        "//xla:xla_data_proto",
+        "//xla:autotuning_proto",
+    ],
 )
 
 cc_library(

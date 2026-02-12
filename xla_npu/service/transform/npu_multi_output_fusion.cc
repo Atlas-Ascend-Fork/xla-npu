@@ -144,7 +144,7 @@ absl::StatusOr<bool> NpuMultiOutputFusion::RunImpl(
             // For now, just log the detection as this is a simplified implementation
             // A full implementation would create the multi-output fusion here
             NPU_LOG_FORMAT_PRINT(DEBUG, "Potential multi-output fusion opportunity detected between %s and %s",
-                                 fusion1->name().c_str(), fusion2->name().c_str());
+                                 fusion1->name().data(), fusion2->name().data());
             changed = true;
             break;  // Only process one pair per iteration
           }

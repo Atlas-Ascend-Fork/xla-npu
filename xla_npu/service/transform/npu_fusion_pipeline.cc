@@ -39,6 +39,7 @@ limitations under the License.
 #include "xla/xla_npu/service/transform/npu_priority_fusion.h"
 #include "xla/xla_npu/service/transform/npu_multi_output_fusion.h"
 #include "xla/xla_npu/service/transform/npu_copy_fusion.h"
+#include "xla/xla_npu/service/transform/npu_gelu_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_dynamic_slice_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_fusion_dynamic_memcpy_rewriter.h"
 #include "xla/xla_npu/dependency/tool/log.h"
@@ -71,6 +72,10 @@ HloPassPipeline NpuFusionPipeline(
       /*per_second_rates=*/{},
       /*min_latencies_seconds=*/{},
       /*count_multiple_input_accesses=*/true};
+
+  // GELU fusion rewriter - identify and fuse GELU activation patterns
+  // Run BEFORE priority fusion to prevent GELU operations from being split into small fusions
+  fusion.AddPass<NpuGeluFusionRewriter>();
 
   // Priority fusion pass for NPU - independent implementation
   fusion.AddPass<NpuPriorityFusion>(thread_pool, npu_device_info,

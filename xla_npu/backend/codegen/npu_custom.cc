@@ -1225,6 +1225,7 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     const HloComputation* fused_computation = fusion.fused_instructions_computation();
     std::string computation_name =
         std::string(fused_computation->name());  // 此处kernel的名称为computation的名称,即calls后面跟的名称
+
     auto artifact_infos = ir_emitter_context.GetNpuCompileResult().artifact_infos;
 
     CHECK_COND_AND_PRINT_NPU_LOG(artifact_infos.count(computation_name) == 0,

@@ -86,9 +86,9 @@ HloInstruction* NpuPriorityFusion::Fuse(HloInstruction* producer,
                                         HloInstruction* consumer,
                                         bool use_multi_output_fusion) {
   NPU_LOG_FORMAT_PRINT(DEBUG, "NpuPriorityFusion: fusing %s (%s) into %s (%s)",
-                       producer->name().c_str(),
+                       producer->name().data(),
                        HloOpcodeString(producer->opcode()),
-                       consumer->name().c_str(),
+                       consumer->name().data(),
                        HloOpcodeString(consumer->opcode()));
 
   HloComputation* computation = consumer->parent();
@@ -101,11 +101,13 @@ HloInstruction* NpuPriorityFusion::Fuse(HloInstruction* producer,
         computation->AddInstruction(
             HloInstruction::CreateFusion(consumer->shape(), kind, consumer));
     absl::Status replace_status = consumer->ReplaceAllUsesWith(fusion_instruction);
-    CHECK_COND_AND_PRINT_NPU_LOG(!replace_status.ok(),
-                                 "Failed to replace uses of %s with fusion %s: %s",
-                                 consumer->name().c_str(),
-                                 fusion_instruction->name().c_str(),
-                                 replace_status.ToString().c_str());
+    if (!replace_status.ok()) {
+      NPU_LOG_FORMAT_PRINT(ERROR, "Failed to replace uses of %s with fusion %s: %s",
+                           consumer->name().data(),
+                           fusion_instruction->name().data(),
+                           replace_status.ToString().data());
+      return nullptr;
+    }
   } else if (kind != fusion_instruction->fusion_kind()) {
     fusion_instruction->set_fusion_kind(kind);
   }
@@ -124,15 +126,17 @@ HloInstruction* NpuPriorityFusion::Fuse(HloInstruction* producer,
   } else {
     if (use_multi_output_fusion) {
       fusion_instruction->FuseInstructionIntoMultiOutput(producer);
-      CHECK_COND_AND_PRINT_NPU_LOG(producer->user_count() != 0,
-                                   "Producer %s still has users after multi-output fusion, user_count=%d",
-                                   producer->name().c_str(),
-                                   producer->user_count());
+      if (producer->user_count() != 0) {
+        NPU_LOG_FORMAT_PRINT(ERROR, "Producer %s still has users after multi-output fusion, user_count=%d",
+                             producer->name().data(),
+                             producer->user_count());
+      }
       absl::Status remove_status = producer->parent()->RemoveInstruction(producer);
-      CHECK_COND_AND_PRINT_NPU_LOG(!remove_status.ok(),
-                                   "Failed to remove instruction %s: %s",
-                                   producer->name().c_str(),
-                                   remove_status.ToString().c_str());
+      if (!remove_status.ok()) {
+        NPU_LOG_FORMAT_PRINT(ERROR, "Failed to remove instruction %s: %s",
+                             producer->name().data(),
+                             remove_status.ToString().data());
+      }
     } else {
       fusion_instruction->FuseInstruction(producer);
     }
@@ -140,7 +144,7 @@ HloInstruction* NpuPriorityFusion::Fuse(HloInstruction* producer,
 
   if (fusion_instruction != consumer) {
     NPU_LOG_FORMAT_PRINT(DEBUG, "NpuPriorityFusion: created new fusion: %s",
-                         fusion_instruction->name().c_str());
+                         fusion_instruction->name().data());
   }
 
   return fusion_instruction;
@@ -224,7 +228,7 @@ absl::StatusOr<bool> NpuPriorityFusion::RunImpl(
         HloInstruction* fusion = Fuse(producer, consumer, /*use_multi_output_fusion=*/false);
         if (fusion != nullptr) {
           NPU_LOG_FORMAT_PRINT(DEBUG, "NpuPriorityFusion: successfully fused %s into %s",
-                               producer->name().c_str(), fusion->name().c_str());
+                               producer->name().data(), fusion->name().data());
           changed = true;
           break;  // Only process one pair per iteration
         }

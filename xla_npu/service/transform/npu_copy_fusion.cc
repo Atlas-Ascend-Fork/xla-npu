@@ -122,7 +122,7 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
     // Replace copies with get-tuple-element operations
     // Note: This is a simplified implementation
     NPU_LOG_FORMAT_PRINT(DEBUG, "NpuCopyFusion: eligible fusion %s with %d copies",
-                         hlo->name().c_str(), copies.size());
+                         hlo->name().data(), copies.size());
     changed = true;
   }
 

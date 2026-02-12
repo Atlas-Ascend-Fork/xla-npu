@@ -12,6 +12,7 @@ cc_library(
         ":npu_priority_fusion",
         ":npu_multi_output_fusion",
         ":npu_copy_fusion",
+        ":npu_gelu_fusion_rewriter",
         ":npu_dynamic_slice_fusion_rewriter",
         ":npu_fusion_dynamic_memcpy_rewriter",
     ],
@@ -23,6 +24,14 @@ cc_library(
     srcs = ["npu_fusion_pipeline.cc"],
     hdrs = ["npu_fusion_pipeline.h"],
     deps = [
+        ":npu_priority_fusion",
+        ":npu_multi_output_fusion",
+        ":npu_copy_fusion",
+        ":npu_gelu_fusion_rewriter",
+        ":npu_dynamic_slice_fusion_rewriter",
+        ":npu_fusion_dynamic_memcpy_rewriter",
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/service/gpu/transforms:variadic_op_splitter",
         "//xla/service/gpu/transforms:rename_fusions",
         "//xla/hlo/ir:hlo",
@@ -37,11 +46,6 @@ cc_library(
         "//xla/service:hlo_cse",
         "//xla/service:layout_assignment",
         "//xla/service:compilation_stats",
-        ":npu_priority_fusion",
-        ":npu_multi_output_fusion",
-        ":npu_copy_fusion",
-        ":npu_dynamic_slice_fusion_rewriter",
-        ":npu_fusion_dynamic_memcpy_rewriter",
         "@com_google_absl//absl/status",
     ],
 )
@@ -52,6 +56,8 @@ cc_library(
     srcs = ["npu_priority_fusion.cc"],
     hdrs = ["npu_priority_fusion.h"],
     deps = [
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/analysis:symbolic_expr",
@@ -68,6 +74,8 @@ cc_library(
     srcs = ["npu_multi_output_fusion.cc"],
     hdrs = ["npu_multi_output_fusion.h"],
     deps = [
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/analysis:hlo_dfs_reachability",
@@ -85,11 +93,30 @@ cc_library(
     srcs = ["npu_copy_fusion.cc"],
     hdrs = ["npu_copy_fusion.h"],
     deps = [
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/utils:hlo_traversal",
         "//xla/service:call_graph",
         "//xla/stream_executor:device_description",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+# NpuGeluFusionRewriter
+cc_library(
+    name = "npu_gelu_fusion_rewriter",
+    srcs = ["npu_gelu_fusion_rewriter.cc"],
+    hdrs = ["npu_gelu_fusion_rewriter.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/ir:backend_config",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/hlo/transforms/simplifiers:hlo_dce",
+        "//xla:shape_util",
         "@com_google_absl//absl/status",
     ],
 )
@@ -100,6 +127,8 @@ cc_library(
     srcs = ["npu_dynamic_slice_fusion_rewriter.cc"],
     hdrs = ["npu_dynamic_slice_fusion_rewriter.h"],
     deps = [
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/transforms/simplifiers:hlo_dce",
@@ -114,6 +143,8 @@ cc_library(
     srcs = ["npu_fusion_dynamic_memcpy_rewriter.cc"],
     hdrs = ["npu_fusion_dynamic_memcpy_rewriter.h"],
     deps = [
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "@com_google_absl//absl/status",
@@ -126,10 +157,12 @@ cc_library(
     srcs = ["npu_super_fusion.cc"],
     hdrs = ["npu_super_fusion.h"],
     deps = [
-        "@com_google_absl//absl/log:log",
+        "//xla/xla_npu/dependency/tool:log",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/transforms/simplifiers:hlo_dce",
         "//xla:status_macros",
+        "@com_google_absl//absl/log:log",
     ],
 )

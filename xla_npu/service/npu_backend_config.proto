@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package xla.npu_backend_config;
+
+import "xla/xla_data.proto";
+
+// Backend config for dot operation running through NPU library.
+message DotBackendConfig {
+  // Opaque algorithm number or identifier for the dot operation.
+  oneof algorithm {
+    int64 selected_algorithm = 1;
+  }
+
+  // Alpha scaling factor for the dot product output.
+  double alpha_real = 2;
+  double alpha_imag = 9;
+
+  // Beta scaling factor for adding a bias vector.
+  double beta = 3;
+
+  // Dot dimension numbers.
+  xla.DotDimensionNumbers dot_dimension_numbers = 7;
+
+  // Precision configuration for the dot operation.
+  xla.PrecisionConfig precision_config = 12;
+
+  // Epilogue parameter - similar to GPU's GemmBackendConfig::Epilogue
+  // This is used to fuse activation functions like GELU with the dot operation.
+  enum Epilogue {
+    DEFAULT = 0;     // Default behavior, no epilogue fusion
+    BIAS = 1;         // Add bias vector
+    RELU = 2;        // Apply ReLU activation
+    BIAS_RELU = 3;    // Add bias and apply ReLU
+    GELU = 4;         // Apply GELU activation
+    GELU_AUX = 5;     // Apply GELU and return auxiliary output
+    BIAS_GELU = 6;    // Add bias and apply GELU
+    BIAS_GELU_AUX = 7; // Add bias, apply GELU, and return auxiliary output
+    SILU = 8;         // Apply SiLU activation
+    BIAS_SILU = 9;    // Add bias and apply SiLU
+    SWISH = 10;       // Apply Swish activation
+    TANH = 11;        // Apply Tanh activation
+    SIGMOID = 12;     // Apply Sigmoid activation
+    SOFTMAX = 13;     // Apply Softmax
+  }
+
+  Epilogue epilogue = 13;
+
+  // Optional: LHS and RHS strides for sliced inputs.
+  optional int64 lhs_stride = 14;
+  optional int64 rhs_stride = 15;
+}
+
+// Backend config for a custom fusion (pre-compiled device kernel implementing a
+// fusion computation).
+message CustomFusionConfig {
+  string name = 1;
+
+  // When a custom fusion has multiple kernels, this field specifies which
+  // kernel to use. Default value is to select the first kernel, i.e.
+  // kernel_index = 0.
+  int32 kernel_index = 2;
+}
+
+// Backend config for NPU fusion operations.
+message FusionBackendConfig {
+  // kLoop, kInput, or kOutput (from HloInstruction::FusionKind), or custom string.
+  string kind = 1;
+
+  // Only valid when is a custom fusion.
+  CustomFusionConfig custom_fusion_config = 4;
+
+  reserved 3;
+}
+
+// Generic backend config for XLA:NPU.
+message BackendConfig {
+  oneof backend_config_oneof {
+    DotBackendConfig dot_backend_config = 1;
+    FusionBackendConfig fusion_backend_config = 2;
+  }
+}

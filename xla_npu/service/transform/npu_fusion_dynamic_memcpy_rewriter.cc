@@ -91,7 +91,7 @@ absl::StatusOr<bool> NpuFusionDynamicMemcpyRewriter::RunImpl(
         // Mark the fusion as a dynamic memcpy fusion
         // This annotation can be used during code generation
         NPU_LOG_FORMAT_PRINT(DEBUG, "NpuFusionDynamicMemcpyRewriter: detected dynamic memcpy pattern in fusion %s",
-                             instr->name().c_str());
+                             instr->name().data());
 
         // In a full implementation, we would set a backend config to mark this
         // as a dynamic memcpy fusion. For now, we just log the detection.

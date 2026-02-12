@@ -707,10 +707,8 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
                                                          const AscirBackendOptions& options) {
     NpuCompileResult final_result;
 
-  // Step 1: Convert HLO to AFIR for each non-entry computation
-  // 只处理非entry的computation（即融合片段），Entry Func里面的op都交由aclnn算子实现
-  TF_ASSIGN_OR_RETURN(auto afir_strings,
-                      ConvertHloToAfirModule(hlo_module, options));
+    // Step 1: Convert HLO to AFIR for each non-entry computation
+    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(hlo_module, options));
 
     // Create output directory if it doesn't exist
     std::string mkdir_cmd = absl::StrCat("mkdir -p ", options.output_dir);
@@ -766,7 +764,7 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
         NpuArtifactInfo npu_artifact_info;
         npu_artifact_info.name = computation_name;
         npu_artifact_info.dir = options.output_dir;
-        final_result.artifact_infos[computation_name] = npu_artifact_info;
+        final_result.artifact_infos[computation_name] = npu_artifact_info;   
         idx++;
     }
 
