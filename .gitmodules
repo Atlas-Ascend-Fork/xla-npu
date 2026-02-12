@@ -1,5 +1,8 @@
-# TODO 执行 git submodule update --init --recursive 不生效,问题待定位
-[submodule "xla_npu/dependency/external/Ascend-MLIR"]
-	path = xla_npu/dependency/external/Ascend-MLIR
+[submodule "xla_npu/dependency/external/afir/Ascend-MLIR"]
+	path = xla_npu/dependency/external/afir/Ascend-MLIR
 	url = https://gitcode.com/niuyuhu/Ascend-MLIR.git
 	branch = dev
+[submodule "xla_npu/dependency/external/npuir/AscendNPU-IR"]
+	path = xla_npu/dependency/external/npuir/AscendNPU-IR
+	url = https://gitcode.com/XDaoHong/AscendNPU-IR.git
+	branch = tmp

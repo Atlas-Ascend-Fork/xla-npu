@@ -28,8 +28,8 @@ cc_library(
     deps = [
         "//xla:util",
         "//xla/hlo/ir:hlo",
-        "//xla/xla_npu/dependency/external:AFIRDialect",
-        "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRDialect",
+        "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "@com_google_absl//absl/strings",
         "@llvm-project//mlir:ArithDialect",
         "@llvm-project//mlir:FuncDialect",
@@ -50,7 +50,7 @@ cc_library(
 
         "//xla:util",
         "//xla/hlo/ir:hlo",
-        "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
         "@com_google_absl//absl/strings",
@@ -90,7 +90,7 @@ cc_binary(
         ":convert_to_afir",
         "//xla/hlo/ir:hlo",
         "//xla/tools:hlo_module_loader",
-        "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
     ],

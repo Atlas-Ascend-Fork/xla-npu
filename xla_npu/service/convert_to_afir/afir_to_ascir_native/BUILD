@@ -47,8 +47,8 @@ cc_library(
     includes = [".."],
     deps = [
         ":passes_inc_gen",
-        "//xla/xla_npu/dependency/external:AFIRDialect",
-        "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRDialect",
+        "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:CastInterfaces",
         "@llvm-project//mlir:FuncDialect",
@@ -64,8 +64,8 @@ cc_binary(
     srcs = ["afir_to_ascir_native_test.cc"],
     deps = [
         ":AFIRToASCIRTextNative",
-        "//xla/xla_npu/dependency/external:AFIRDialect",
-        "//xla/xla_npu/dependency/external:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRDialect",
+        "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
