@@ -175,10 +175,18 @@ absl::StatusOr<mlir::func::FuncOp> HloToAfirConverter::ConvertComputation(
   // Set insertion point to module body before creating function
   builder_.setInsertionPointToEnd(getModule().getBody());
 
+  // Replace all '.' with '_' in computation name for funcOp
+  std::string func_name = std::string(computation.name());
+  size_t pos = 0;
+  while ((pos = func_name.find('.', pos)) != std::string::npos) {
+    func_name.replace(pos, 1, "_");
+    pos++;
+  }
+
   // Create function
   mlir::func::FuncOp func = builder_.create<mlir::func::FuncOp>(
       loc,
-      computation.name(),
+      func_name,
       func_type);
 
   function_map_[&computation] = func;
