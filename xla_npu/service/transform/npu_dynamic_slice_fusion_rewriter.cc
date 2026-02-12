@@ -40,107 +40,106 @@ constexpr absl::string_view kNpuAclnnBatchMatMul = "__npu_aclnn_batch_matmul";
 
 // Check if an instruction is a legal address computation operand
 bool IsLegalAddressComputationOperand(HloInstruction* instr) {
- switch (instr->opcode()) {
-    case HloOpcode::kSlice:
-    case HloOpcode::kDynamicSlice:
-    case HloOpcode::kDynamicUpdateSlice:
-    case HloOpcode::kTranspose:
-    case HloOpcode::kBitcast:
-    case HloOpcode::kReshape:
-    case HloOpcode::kBroadcast:
-    case HloOpcode::kConstant:
-      return true;
-    default:
-      return false;
-  }
+    switch (instr->opcode()) {
+        case HloOpcode::kSlice:
+        case HloOpcode::kDynamicSlice:
+        case HloOpcode::kDynamicUpdateSlice:
+        case HloOpcode::kTranspose:
+        case HloOpcode::kBitcast:
+        case HloOpcode::kReshape:
+        case HloOpcode::kBroadcast:
+        case HloOpcode::kConstant:
+            return true;
+        default:
+            return false;
+    }
 }
 
 // Check if a slice operation has a slice size of 1 along the leading dimension
 bool IsUnitSliceInTheLeadingDimension(const HloInstruction* slice) {
-  if (slice->opcode() != HloOpcode::kSlice) {
+    if (slice->opcode() != HloOpcode::kSlice) {
+        return false;
+    }
+
+    const Shape& input_shape = slice->operand(0)->shape();
+    const Shape& output_shape = slice->shape();
+
+    // Check both have the same rank
+    if (input_shape.dimensions_size() != output_shape.dimensions_size()) {
+        return false;
+    }
+
+    // Skip scalar shapes
+    if (input_shape.dimensions_size() == 0) {
+        return false;
+    }
+
+    // Check the first dimension is sliced to size 1
+    if (output_shape.dimensions(0) == 1 && input_shape.dimensions(0) > 1) {
+        return true;
+    }
+
     return false;
-  }
-
-  const Shape& input_shape = slice->operand(0)->shape();
-  const Shape& output_shape = slice->shape();
-
-  // Check both have the same rank
-  if (input_shape.dimensions_size() != output_shape.dimensions_size()) {
-    return false;
-  }
-
-  // Skip scalar shapes
-  if (input_shape.dimensions_size() == 0) {
-    return false;
-  }
-
-  // Check the first dimension is sliced to size 1
-  if (output_shape.dimensions(0) == 1 && input_shape.dimensions(0) > 1) {
-    return true;
-  }
-
-  return false;
 }
 
 }  // namespace
 
 absl::StatusOr<bool> NpuDynamicSliceFusionRewriter::RunImpl(
-    HloModule* module,
-    const absl::flat_hash_set<absl::string_view>& execution_threads) {
-  bool changed = false;
+    HloModule* module, const absl::flat_hash_set<absl::string_view>& execution_threads) {
+    bool changed = false;
 
-  // Process each computation
-  auto all_computations = module->computations(execution_threads);
-  for (HloComputation* computation : all_computations) {
-    if (computation->IsFusionComputation()) {
-      continue;
-    }
-
-    // Collect all custom calls first
-    std::vector<HloInstruction*> custom_calls;
-    for (HloInstruction* instr : computation->instructions()) {
-      if (instr->opcode() == HloOpcode::kCustomCall) {
-        custom_calls.push_back(instr);
-      }
-    }
-
-    // Try to match and rewrite each custom call
-    for (HloInstruction* instr : custom_calls) {
-      // Only process custom calls targeting NPU ACLNN operations
-      absl::string_view target = instr->custom_call_target();
-      if (target == kNpuAclnnMatMul || target == kNpuAclnnBatchMatMul) {
-        // Check if all operands are legal address computation operands
-        bool all_legal = true;
-        bool has_slice_operand = false;
-
-        for (HloInstruction* operand : instr->operands()) {
-          if (!IsLegalAddressComputationOperand(operand)) {
-            all_legal = false;
-            break;
-          }
-          if (!has_slice_operand && operand->opcode() == HloOpcode::kSlice) {
-            has_slice_operand |= IsUnitSliceInTheLeadingDimension(operand);
-          }
+    // Process each computation
+    auto all_computations = module->computations(execution_threads);
+    for (HloComputation* computation : all_computations) {
+        if (computation->IsFusionComputation()) {
+            continue;
         }
 
-        if (all_legal && has_slice_operand) {
-          // Found matching pattern - the pass would create fusion
-          // For now, just log the detection as this is a simplified implementation
-          NPU_LOG_FORMAT_PRINT(DEBUG, "NpuDynamicSliceFusionRewriter: detected dynamic slice pattern in custom call %s",
-                               instr->name().data());
-          changed = true;
+        // Collect all custom calls first
+        std::vector<HloInstruction*> custom_calls;
+        for (HloInstruction* instr : computation->instructions()) {
+            if (instr->opcode() == HloOpcode::kCustomCall) {
+                custom_calls.push_back(instr);
+            }
         }
-      }
+
+        // Try to match and rewrite each custom call
+        for (HloInstruction* instr : custom_calls) {
+            // Only process custom calls targeting NPU ACLNN operations
+            absl::string_view target = instr->custom_call_target();
+            if (target == kNpuAclnnMatMul || target == kNpuAclnnBatchMatMul) {
+                // Check if all operands are legal address computation operands
+                bool all_legal = true;
+                bool has_slice_operand = false;
+
+                for (HloInstruction* operand : instr->operands()) {
+                    if (!IsLegalAddressComputationOperand(operand)) {
+                        all_legal = false;
+                        break;
+                    }
+                    if (!has_slice_operand && operand->opcode() == HloOpcode::kSlice) {
+                        has_slice_operand |= IsUnitSliceInTheLeadingDimension(operand);
+                    }
+                }
+
+                if (all_legal && has_slice_operand) {
+                    // Found matching pattern - the pass would create fusion
+                    // For now, just log the detection as this is a simplified implementation
+                    NPU_LOG_FORMAT_PRINT(
+                        DEBUG, "NpuDynamicSliceFusionRewriter: detected dynamic slice pattern in custom call %s",
+                        instr->name().data());
+                    changed = true;
+                }
+            }
+        }
     }
-  }
 
-  // Run DCE once at the module level to clean up unused instructions
-  HloDCE dce;
-  TF_ASSIGN_OR_RETURN(bool dce_changed,
-                      dce.Run(module, execution_threads));
-  changed = changed || dce_changed;
+    // Run DCE once at the module level to clean up unused instructions
+    HloDCE dce;
+    TF_ASSIGN_OR_RETURN(bool dce_changed, dce.Run(module, execution_threads));
+    changed = changed || dce_changed;
 
-  return changed;
+    return changed;
 }
 
 }  // namespace xla

@@ -37,15 +37,14 @@ namespace xla {
 // single fusion instruction with kLoop fusion kind, and a log message is printed
 // showing the fused instruction.
 class NpuGeluFusionRewriter : public HloModulePass {
- public:
-  NpuGeluFusionRewriter() = default;
+   public:
+    NpuGeluFusionRewriter() = default;
 
-  absl::string_view name() const override { return "npu-gelu-fusion-rewriter"; }
+    absl::string_view name() const override { return "npu-gelu-fusion-rewriter"; }
 
- protected:
-  absl::StatusOr<bool> RunImpl(
-      HloModule* module,
-      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+   protected:
+    absl::StatusOr<bool> RunImpl(HloModule* module,
+                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 };
 
 }  // namespace xla

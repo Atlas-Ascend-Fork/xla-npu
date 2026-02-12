@@ -28,15 +28,12 @@ namespace xla {
 // Detects fusions that can be emitted using DynamicMemcpyFusion and annotates
 // them accordingly.
 class NpuFusionDynamicMemcpyRewriter : public HloModulePass {
- public:
-  absl::string_view name() const override {
-    return "npu-fusion-dynamic-memcpy-rewriter";
-  }
+   public:
+    absl::string_view name() const override { return "npu-fusion-dynamic-memcpy-rewriter"; }
 
- protected:
-  absl::StatusOr<bool> RunImpl(
-      HloModule* module,
-      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+   protected:
+    absl::StatusOr<bool> RunImpl(HloModule* module,
+                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 };
 
 }  // namespace xla

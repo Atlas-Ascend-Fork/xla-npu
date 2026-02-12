@@ -36,71 +36,69 @@ namespace {
 // operation followed by get-tuple-elements. This pattern is suitable for
 // dynamic memcpy optimization on NPU.
 bool IsDynamicMemcpyPattern(HloInstruction* fusion) {
-  if (fusion->opcode() != HloOpcode::kFusion) {
-    return false;
-  }
-
-  HloComputation* comp = fusion->fused_instructions_computation();
-
-  // Get the root instruction
-  HloInstruction* root = comp->root_instruction();
-
-  // Simple pattern: fusion contains mostly copy/dynamic-slice/gte operations
-  // This is a simplified check that can be enhanced
-  bool has_dynamic_slice = false;
-  bool has_copy = false;
-
-  for (HloInstruction* instr : comp->instructions()) {
-    if (HloPredicateIsOp<HloOpcode::kDynamicSlice,
-                         HloOpcode::kDynamicUpdateSlice,
-                         HloOpcode::kSlice>(instr)) {
-      has_dynamic_slice = true;
-    } else if (HloPredicateIsOp<HloOpcode::kCopy>(instr)) {
-      has_copy = true;
+    if (fusion->opcode() != HloOpcode::kFusion) {
+        return false;
     }
-  }
 
-  return has_dynamic_slice || has_copy;
+    HloComputation* comp = fusion->fused_instructions_computation();
+
+    // Get the root instruction
+    HloInstruction* root = comp->root_instruction();
+
+    // Simple pattern: fusion contains mostly copy/dynamic-slice/gte operations
+    // This is a simplified check that can be enhanced
+    bool has_dynamic_slice = false;
+    bool has_copy = false;
+
+    for (HloInstruction* instr : comp->instructions()) {
+        if (HloPredicateIsOp<HloOpcode::kDynamicSlice, HloOpcode::kDynamicUpdateSlice, HloOpcode::kSlice>(instr)) {
+            has_dynamic_slice = true;
+        } else if (HloPredicateIsOp<HloOpcode::kCopy>(instr)) {
+            has_copy = true;
+        }
+    }
+
+    return has_dynamic_slice || has_copy;
 }
 
 }  // namespace
 
 absl::StatusOr<bool> NpuFusionDynamicMemcpyRewriter::RunImpl(
-    HloModule* module,
-    const absl::flat_hash_set<absl::string_view>& execution_threads) {
-  bool changed = false;
+    HloModule* module, const absl::flat_hash_set<absl::string_view>& execution_threads) {
+    bool changed = false;
 
-  // Process each computation
-  auto all_computations = module->computations(execution_threads);
-  for (HloComputation* computation : all_computations) {
-    if (computation->IsFusionComputation()) {
-      continue;
+    // Process each computation
+    auto all_computations = module->computations(execution_threads);
+    for (HloComputation* computation : all_computations) {
+        if (computation->IsFusionComputation()) {
+            continue;
+        }
+
+        // Collect all fusion instructions first
+        std::vector<HloInstruction*> fusion_instructions;
+        for (HloInstruction* instr : computation->instructions()) {
+            if (instr->opcode() == HloOpcode::kFusion) {
+                fusion_instructions.push_back(instr);
+            }
+        }
+
+        // Check if any fusion matches the dynamic memcpy pattern
+        for (HloInstruction* instr : fusion_instructions) {
+            if (IsDynamicMemcpyPattern(instr)) {
+                // Mark the fusion as a dynamic memcpy fusion
+                // This annotation can be used during code generation
+                NPU_LOG_FORMAT_PRINT(DEBUG,
+                                     "NpuFusionDynamicMemcpyRewriter: detected dynamic memcpy pattern in fusion %s",
+                                     instr->name().data());
+
+                // In a full implementation, we would set a backend config to mark this
+                // as a dynamic memcpy fusion. For now, we just log the detection.
+                changed = true;
+            }
+        }
     }
 
-    // Collect all fusion instructions first
-    std::vector<HloInstruction*> fusion_instructions;
-    for (HloInstruction* instr : computation->instructions()) {
-      if (instr->opcode() == HloOpcode::kFusion) {
-        fusion_instructions.push_back(instr);
-      }
-    }
-
-    // Check if any fusion matches the dynamic memcpy pattern
-    for (HloInstruction* instr : fusion_instructions) {
-      if (IsDynamicMemcpyPattern(instr)) {
-        // Mark the fusion as a dynamic memcpy fusion
-        // This annotation can be used during code generation
-        NPU_LOG_FORMAT_PRINT(DEBUG, "NpuFusionDynamicMemcpyRewriter: detected dynamic memcpy pattern in fusion %s",
-                             instr->name().data());
-
-        // In a full implementation, we would set a backend config to mark this
-        // as a dynamic memcpy fusion. For now, we just log the detection.
-        changed = true;
-      }
-    }
-  }
-
-  return changed;
+    return changed;
 }
 
 }  // namespace xla

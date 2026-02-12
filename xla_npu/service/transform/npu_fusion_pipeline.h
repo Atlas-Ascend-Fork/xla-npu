@@ -20,20 +20,18 @@ limitations under the License.
 #include "xla/hlo/pass/hlo_pass_pipeline.h"
 #include "xla/service/hlo_cost_analysis.h"
 #include "xla/stream_executor/device_description.h"
-#include "xla/xla.pb.h"
 #include "xla/tsl/platform/threadpool.h"
+#include "xla/xla.pb.h"
 
 namespace xla {
 
 // Function wrapper around the (non-horizontal) XLA NPU fusion pipeline.
 // Thread pool may be nullptr.
 // This is the NPU-specific version, independent of the GPU implementation.
-HloPassPipeline NpuFusionPipeline(
-    const DebugOptions& debug_options,
-    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-    tsl::thread::ThreadPool* thread_pool,
-    const se::DeviceDescription& npu_device_info,
-    SymbolicExprContext* symbolic_expr_context);
+HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
+                                  HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+                                  tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
+                                  SymbolicExprContext* symbolic_expr_context);
 
 }  // namespace xla
 

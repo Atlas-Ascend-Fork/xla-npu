@@ -762,7 +762,8 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
         TF_ASSIGN_OR_RETURN(auto comp_result, GenerateKernel(ascir_text, computation_name, options));
 
         NpuArtifactInfo npu_artifact_info;
-        npu_artifact_info.name = computation_name;
+        // 使用graph名作为产物前缀名称,目前这个命名是基于computation name,将其中.替换为_
+        npu_artifact_info.name = comp_result.graph_name;
         npu_artifact_info.dir = options.output_dir;
         final_result.artifact_infos[computation_name] = npu_artifact_info;   
         idx++;

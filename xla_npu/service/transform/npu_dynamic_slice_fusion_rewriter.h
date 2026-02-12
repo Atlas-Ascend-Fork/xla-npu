@@ -55,21 +55,17 @@ namespace xla {
 //  }
 //
 class NpuDynamicSliceFusionRewriter : public HloModulePass {
- public:
-  absl::string_view name() const override {
-    return "npu-dynamic-slice-fusion-rewriter";
-  }
+   public:
+    absl::string_view name() const override { return "npu-dynamic-slice-fusion-rewriter"; }
 
-  explicit NpuDynamicSliceFusionRewriter(std::string platform_name)
-      : platform_name_(std::move(platform_name)) {}
+    explicit NpuDynamicSliceFusionRewriter(std::string platform_name) : platform_name_(std::move(platform_name)) {}
 
- protected:
-  absl::StatusOr<bool> RunImpl(
-      HloModule* module,
-      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+   protected:
+    absl::StatusOr<bool> RunImpl(HloModule* module,
+                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
- private:
-  std::string platform_name_;
+   private:
+    std::string platform_name_;
 };
 
 }  // namespace xla
