@@ -74,7 +74,7 @@
 
 #if NPU_AUTO_FUSE_BACKEND == 1
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
-# elif NPU_AUTO_FUSE_BACKEND == 2
+#elif NPU_AUTO_FUSE_BACKEND == 2
 #include "xla/xla_npu/service/convert_to_npuir/npuir_backend.h"
 #endif
 
@@ -295,7 +295,7 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
                                                   output_sub_dir_name;
         TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(*hlo_module, ascir_backend_compile_option));
     }
-# elif NPU_AUTO_FUSE_BACKEND == 2
+#elif NPU_AUTO_FUSE_BACKEND == 2
     if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
         NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
         mlir::hfusion::GraphGenTester::test();
