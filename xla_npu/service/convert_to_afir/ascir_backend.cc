@@ -14,25 +14,21 @@ limitations under the License.
 ==============================================================================*/
 
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
+#include "xla/xla_npu/service/convert_to_afir/python_gil_guard.h"
 
 #include <unistd.h>
 
-#include <cstdlib>
 #include <fstream>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
-// Python C API
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "absl/strings/string_view.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -158,19 +154,33 @@ std::string AddAxisInfoToAscir(const std::string& ascir_text, const std::vector<
 
     // Build axis information with proper id fields
     std::string axis_info;
+    // Check if using old CANN style (int32 for align parameter)
+    bool use_old_cann_style = NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::USE_OLD_CANN_STYLE);
     for (size_t i = 0; i < shape.size(); ++i) {
         // All axes need id field
         // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
         // 老版本cann包定义为int32类型（不需要加双引号）
-        axis_info += absl::StrFormat(
-            "  axis {\n"
-            "    id: %zu\n"
-            "    name: \"z%zu\"\n"
-            "    size: \"%lld\"\n"
-            "    align: 1\n"
-            "    allow_unaligned_tail: true\n"
-            "  }\n",
-            i, i, shape[i]);
+        if (use_old_cann_style) {
+            axis_info += absl::StrFormat(
+                "  axis {\n"
+                "    id: %zu\n"
+                "    name: \"z%zu\"\n"
+                "    size: \"%lld\"\n"
+                "    align: 1\n"
+                "    allow_unaligned_tail: true\n"
+                "  }\n",
+                i, i, shape[i]);
+        } else {
+            axis_info += absl::StrFormat(
+                "  axis {\n"
+                "    id: %zu\n"
+                "    name: \"z%zu\"\n"
+                "    size: \"%lld\"\n"
+                "    align: \"1\"\n"
+                "    allow_unaligned_tail: true\n"
+                "  }\n",
+                i, i, shape[i]);
+        }
     }
 
     // Insert axis info before the closing brace
@@ -281,7 +291,6 @@ std::string FixNodeSchedAxis(const std::string& ascir_text) {
 }
 
 }  // namespace
-
 AscirBackend::AscirBackend() = default;
 
 AscirBackend::~AscirBackend() = default;
@@ -443,7 +452,9 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
     }
     NPU_LOG_PRINT(DEBUG, "Python initialized successfully");
 
-    PyGILState_STATE gstate = PyGILState_Ensure();
+    // Use RAII guard to ensure GIL is always released
+    PyGILStateGuard gil_guard;
+
     // Set environment variable for SOC version
     std::string set_soc_cmd = absl::StrFormat("import os; os.environ['SOC_VERSION'] = '%s'", options.soc_version);
     PyRun_SimpleString(set_soc_cmd.c_str());
@@ -519,15 +530,24 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
         return absl::InternalError("Failed to get compile_graph method");
     }
 
-    // Call compile_graph(graph_text, output_dir, graph_name)
+    // Call compile_graph(graph_text, output_dir, graph_name) with timeout
     PyObject* args = PyTuple_New(3);
     PyTuple_SetItem(args, 0, PyUnicode_FromString(ascir_text.c_str()));
     PyTuple_SetItem(args, 1, output_dir_py);  // Steals reference
     PyTuple_SetItem(args, 2, PyUnicode_FromString(graph_name.c_str()));
 
-    PyObject* compile_result = PyObject_CallObject(compile_graph_method, args);
+    // Use SafePythonCall with timeout (default 600 seconds = 10 min)
+    std::atomic<bool> compile_timed_out{false};
+    PyObject* compile_result = SafePythonCall(compile_graph_method, args, "compile_graph",
+                                               &compile_timed_out, 600);
     Py_DECREF(args);
     Py_DECREF(compile_graph_method);
+
+    if (compile_timed_out.load(std::memory_order_acquire)) {
+        Py_DECREF(ascgen_instance);
+        NPU_LOG_FORMAT_PRINT(ERROR, "compile_graph timed out for computation %s", computation_name.c_str());
+        return absl::InternalError(absl::StrCat("compile_graph timed out for computation: ", computation_name));
+    }
 
     if (!compile_result) {
         Py_DECREF(ascgen_instance);
@@ -681,10 +701,18 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
     NPU_LOG_FORMAT_PRINT(DEBUG, "output_file: %s", output_file.c_str());
     NPU_LOG_FORMAT_PRINT(DEBUG, "output_path: %s", options.output_dir.c_str());
 
-    // Call jit_compile(tiling_def, host_impl, device_impl, args_list)
-    PyObject* kernel_result = PyObject_CallObject(jit_compile_func, kernel_args);
+    // Call jit_compile(tiling_def, host_impl, device_impl, args_list) with timeout
+    // Use SafePythonCall with timeout (default 600 seconds = 10 min)
+    std::atomic<bool> jit_timed_out{false};
+    PyObject* kernel_result = SafePythonCall(jit_compile_func, kernel_args, "jit_compile",
+                                              &jit_timed_out, 600);
     Py_DECREF(kernel_args);
     Py_DECREF(jit_compile_func);
+
+    if (jit_timed_out.load(std::memory_order_acquire)) {
+        NPU_LOG_FORMAT_PRINT(ERROR, "jit_compile timed out for computation %s", computation_name.c_str());
+        return absl::InternalError(absl::StrCat("jit_compile timed out for computation: ", computation_name));
+    }
 
     if (!kernel_result) {
         PyErr_Print();
@@ -699,7 +727,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
 
     NPU_LOG_FORMAT_PRINT(DEBUG, "jit_compile completed, output at: %s", result.device_binary_file.c_str());
 
-    PyGILState_Release(gstate);
+    // PyGILStateGuard destructor will automatically release GIL here
     return result;
 }
 

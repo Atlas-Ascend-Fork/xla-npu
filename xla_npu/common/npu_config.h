@@ -10,7 +10,7 @@ namespace xla {
 // npu动态配置读取类
 class NpuConfig {
    public:
-    enum class Key { NPU_AUTO_FUSE_SWITCH, NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR };
+    enum class Key { NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR, USE_OLD_CANN_STYLE };
     enum class Type { STRING, BOOL };
     using ConfigValue = std::variant<std::string, bool>;
     struct Desc {

@@ -17,6 +17,22 @@ package(default_visibility = ["//xla:internal"])
 licenses(["notice"])  # Apache 2.0
 
 # ============================================================================
+# Python GIL and Timeout Protection
+# ============================================================================
+
+cc_library(
+    name = "python_gil_guard",
+    srcs = ["python_gil_guard.cc"],
+    hdrs = ["python_gil_guard.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "@com_google_absl//absl/strings",
+        "@rules_python//python/cc:current_py_cc_headers",
+    ],
+    linkstatic = True,
+)
+
+# ============================================================================
 # HLO to AFIR Converter
 # ============================================================================
 
@@ -46,6 +62,8 @@ cc_library(
     hdrs = ["ascir_backend.h"],
     deps = [
         ":convert_to_afir",
+        ":python_gil_guard",
+        "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/service/kernel:npu_compile_result",
 
         "//xla:util",

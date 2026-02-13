@@ -8,9 +8,9 @@ namespace xla {
 
 NpuConfig::NpuConfig()
     : key_desc_map_{
-          {Key::NPU_AUTO_FUSE_SWITCH, {"NPU_AUTO_FUSE_SWITCH", ConfigValue(false), Type::BOOL}},
           {Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR,
            {"NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR", ConfigValue(std::string("")), Type::STRING}},
+          {Key::USE_OLD_CANN_STYLE, {"USE_OLD_CANN_STYLE", ConfigValue(false), Type::BOOL}},
       } {}
 
 void NpuConfig::Init() {
