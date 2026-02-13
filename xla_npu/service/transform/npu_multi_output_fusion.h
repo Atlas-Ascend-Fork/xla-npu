@@ -49,6 +49,10 @@ class NpuMultiOutputFusion : public HloModulePass {
                                  const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
    private:
+    void RecomputeReachability();
+    bool FuseSiblings(HloInstruction* parent, HloCostAnalysis* cost_analysis);
+    absl::StatusOr<bool> DoMultiOutputFusion();
+
     const se::DeviceDescription& device_description_;
     HloCostAnalysis::ShapeSizeFunction shape_size_function_;
     SymbolicExprContext* symbolic_expr_context_;

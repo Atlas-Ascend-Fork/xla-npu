@@ -25,8 +25,6 @@ limitations under the License.
 #include "xla/hlo/pass/hlo_pass_pipeline.h"
 #include "xla/hlo/transforms/simplifiers/hlo_dce.h"
 #include "xla/service/cpu_gpu_shape_verifier.h"
-#include "xla/service/gpu/transforms/rename_fusions.h"
-#include "xla/service/gpu/transforms/variadic_op_splitter.h"
 #include "xla/service/hlo_cost_analysis.h"
 #include "xla/service/hlo_cse.h"
 #include "xla/service/hlo_verifier.h"
@@ -40,9 +38,11 @@ limitations under the License.
 #include "xla/xla_npu/service/transform/npu_copy_fusion.h"
 #include "xla/xla_npu/service/transform/npu_dynamic_slice_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_fusion_dynamic_memcpy_rewriter.h"
+#include "xla/xla_npu/service/transform/npu_fusion_wrapper.h"
 #include "xla/xla_npu/service/transform/npu_gelu_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_multi_output_fusion.h"
 #include "xla/xla_npu/service/transform/npu_priority_fusion.h"
+#include "xla/xla_npu/service/transform/npu_rename_fusions.h"
 
 namespace xla {
 
@@ -51,11 +51,6 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
                                   tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
                                   SymbolicExprContext* symbolic_expr_context) {
     HloPassFix<HloPassPipeline> fusion("npu-fusion");
-
-    // We try to split variadic ops with many parameters into several such ops
-    // to avoid exceeding the parameter space. Reuse GPU implementation as it's
-    // pure HLO manipulation (not GPU-specific).
-    fusion.AddPass<gpu::VariadicOpSplitter>();
 
     HloVerifierOpts opts = HloVerifierOpts().MakeLayoutSensitive().WithInstructionCanChangeLayout(
         LayoutAssignment::InstructionCanChangeLayout);
@@ -100,9 +95,14 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
     // Fusion dynamic memcpy rewriter for NPU
     fusion.AddPass<NpuFusionDynamicMemcpyRewriter>();
 
-    // Rename fusions - reuse GPU implementation as it's pure HLO manipulation
-    fusion.AddPass<gpu::RenameFusions>();
+    // DISABLED: Fusion wrapper - causes NPU runtime error 507057 (Synchronize stream failed)
+    // TODO: Fix NpuFusionWrapper to generate correct NPU fusion graph
+    // fusion.AddPass<NpuFusionWrapper>(npu_device_info);
 
+    // Rename fusions - use NPU implementation for completeness
+    fusion.AddPass<NpuRenameFusions>();
+
+    // Final HloDCE pass
     fusion.AddPass<HloDCE>();
 
     return std::move(fusion);

@@ -1,7 +1,7 @@
 /* Copyright 2025 The OpenXLA Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
+you may not use this file except in compliance with the License
 You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
@@ -21,12 +21,13 @@ limitations under the License.
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "xla/hlo/ir/backend_config.h"
 #include "xla/hlo/ir/hlo_casting_utils.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/status_macros.h"
-#include "xla/tsl/platform/errors.h"
 #include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/service/npu_backend_config.pb.h"
 
 namespace xla {
 
@@ -42,23 +43,48 @@ bool IsDynamicMemcpyPattern(HloInstruction* fusion) {
 
     HloComputation* comp = fusion->fused_instructions_computation();
 
-    // Get the root instruction
-    HloInstruction* root = comp->root_instruction();
-
-    // Simple pattern: fusion contains mostly copy/dynamic-slice/gte operations
-    // This is a simplified check that can be enhanced
+    // Count operations in the fusion
+    int64_t instruction_count = 0;
     bool has_dynamic_slice = false;
+    bool has_slice = false;
     bool has_copy = false;
+    bool has_only_simple_ops = true;
 
     for (HloInstruction* instr : comp->instructions()) {
-        if (HloPredicateIsOp<HloOpcode::kDynamicSlice, HloOpcode::kDynamicUpdateSlice, HloOpcode::kSlice>(instr)) {
+        if (instr->opcode() == HloOpcode::kParameter) {
+            continue;
+        }
+        instruction_count++;
+
+        // Check for slice operations
+        if (HloPredicateIsOp<HloOpcode::kDynamicSlice, HloOpcode::kDynamicUpdateSlice>(instr)) {
             has_dynamic_slice = true;
+        } else if (HloPredicateIsOp<HloOpcode::kSlice>(instr)) {
+            has_slice = true;
         } else if (HloPredicateIsOp<HloOpcode::kCopy>(instr)) {
             has_copy = true;
+        } else if (!HloPredicateIsOp<HloOpcode::kBitcast, HloOpcode::kGetTupleElement, HloOpcode::kTuple>(instr)) {
+            // If there are other operations, this is not a simple memcpy pattern
+            has_only_simple_ops = false;
         }
     }
 
-    return has_dynamic_slice || has_copy;
+    // Must have at least one slice-related operation
+    if (!has_dynamic_slice && !has_slice && !has_copy) {
+        return false;
+    }
+
+    // All non-parameter operations should be slice/copy or simple data movement ops
+    if (!has_only_simple_ops) {
+        return false;
+    }
+
+    // Should be a relatively small fusion (simple memcpy pattern)
+    if (instruction_count > 10) {
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace
@@ -83,16 +109,24 @@ absl::StatusOr<bool> NpuFusionDynamicMemcpyRewriter::RunImpl(
         }
 
         // Check if any fusion matches the dynamic memcpy pattern
-        for (HloInstruction* instr : fusion_instructions) {
-            if (IsDynamicMemcpyPattern(instr)) {
-                // Mark the fusion as a dynamic memcpy fusion
-                // This annotation can be used during code generation
+        for (HloInstruction* fusion_instr : fusion_instructions) {
+            if (IsDynamicMemcpyPattern(fusion_instr)) {
+                // Mark the fusion as a dynamic memcpy fusion using NPU backend config
                 NPU_LOG_FORMAT_PRINT(DEBUG,
                                      "NpuFusionDynamicMemcpyRewriter: detected dynamic memcpy pattern in fusion %s",
-                                     instr->name().data());
+                                     fusion_instr->name().data());
 
-                // In a full implementation, we would set a backend config to mark this
-                // as a dynamic memcpy fusion. For now, we just log the detection.
+                // Set NPU backend config to mark this as a dynamic memcpy fusion
+                npu_backend_config::BackendConfig backend_config;
+                auto* fusion_config = backend_config.mutable_fusion_backend_config();
+                fusion_config->set_kind("__dynamic_memcpy");
+
+                TF_RETURN_IF_ERROR(fusion_instr->set_backend_config(backend_config));
+
+                NPU_LOG_FORMAT_PRINT(INFO,
+                                     "NpuFusionDynamicMemcpyRewriter: set backend_config for fusion %s as __dynamic_memcpy",
+                                     fusion_instr->name().data());
+
                 changed = true;
             }
         }
