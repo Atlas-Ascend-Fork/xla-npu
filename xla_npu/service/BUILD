@@ -19,11 +19,19 @@ load(
 )
 load("//xla/tsl/xnnpack:build_defs.bzl", "if_ynnpack")
 
-# 控制npu afir条件编译
+# 条件编译: afir 1, npuir 2 
 config_setting(
-    name = "npu_auto_fuse_enabled",
+    name = "npu_auto_fuse_backend_afir",
     define_values = {
-        "NPU_AUTO_FUSE_ENABLED": "1",  # 仅当环境变量值为1时匹配
+        "NPU_AUTO_FUSE_BACKEND": "1",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "npu_auto_fuse_backend_npuir",
+    define_values = {
+        "NPU_AUTO_FUSE_BACKEND": "2",
     },
     visibility = ["//visibility:public"],
 )
@@ -504,8 +512,9 @@ cc_library(
         "npu_compile_module_to_llvm_ir.h",
     ],
     copts = select({
-        ":npu_auto_fuse_enabled": ["-DNPU_AUTO_FUSE_ENABLED=1"],
-        "//conditions:default": [],
+        ":npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
+        ":npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
+        "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
     }),
     deps = [
         ":npu_alias_info",
@@ -568,7 +577,8 @@ cc_library(
     ] + select({
         # 一定要保证对ascir_backend的依赖在所有@llvm-project依赖之后(包含间接依赖),
         # 否则会出现运行时coredump,报错堆栈在mlir::DialectRegistry函数附近
-        ":npu_auto_fuse_enabled": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
+        ":npu_auto_fuse_backend_afir": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
+        ":npu_auto_fuse_backend_npuir": ["//xla/xla_npu/service/convert_to_npuir:npuir_backend"],
         "//conditions:default": [],
     }),
 )
@@ -673,8 +683,9 @@ cc_library(
         "npu_compiler.h",
     ],
     copts = select({
-        ":npu_auto_fuse_enabled": ["-DNPU_AUTO_FUSE_ENABLED=1"],
-        "//conditions:default": [],
+        ":npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
+        ":npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
+        "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
     }),
     deps = [
         # 为了解决afir依赖导致的coredump问题,务必保证这段gpu的依赖在最前面

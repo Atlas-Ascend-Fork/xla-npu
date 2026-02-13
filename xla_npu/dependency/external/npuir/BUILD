@@ -287,23 +287,3 @@ cc_library(
         "@llvm-project//mlir:MathDialect",
     ],
 )
-
-cc_library(
-    name = "npuir",
-    hdrs = [
-        "npuir.h",
-    ],
-    srcs = [
-        "npuir.cc",
-    ],
-    deps = [
-        ":mlir-headers-hfusion",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:FunctionInterfaces",
-        "@llvm-project//mlir:FuncDialect",
-        "@llvm-project//mlir:CAPIIR",
-        "@llvm-project//mlir:CAPIArith",
-        "@llvm-project//mlir:LinalgDialect",
-    ],
-)

@@ -72,8 +72,10 @@
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 
-#ifdef NPU_AUTO_FUSE_ENABLED
+#if NPU_AUTO_FUSE_BACKEND == 1
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
+# elif NPU_AUTO_FUSE_BACKEND == 2
+#include "xla/xla_npu/service/convert_to_npuir/npuir_backend.h"
 #endif
 
 namespace xla {
@@ -281,7 +283,7 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
             << hlo_module->GetFingerprint128();
 
     NpuCompileResult npu_compile_result;
-#ifdef NPU_AUTO_FUSE_ENABLED
+#if NPU_AUTO_FUSE_BACKEND == 1
     // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
     if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
         NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
@@ -292,6 +294,11 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
                                                       NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR) +
                                                   output_sub_dir_name;
         TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(*hlo_module, ascir_backend_compile_option));
+    }
+# elif NPU_AUTO_FUSE_BACKEND == 2
+    if (NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::NPU_AUTO_FUSE_SWITCH)) {
+        NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
+        mlir::hfusion::GraphGenTester::test();
     }
 #endif
 

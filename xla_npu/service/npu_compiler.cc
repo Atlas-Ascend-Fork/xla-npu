@@ -1705,7 +1705,7 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
 
     NpuTool::PrintHloModule(module.get(), "Xla hlo module after run no hlo pass");
 
-#ifdef NPU_AUTO_FUSE_ENABLED
+#if NPU_AUTO_FUSE_BACKEND > 0
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");
 
     bool is_deviceless = true;
