@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
-#include "xla/xla_npu/service/convert_to_afir/python_gil_guard.h"
 
 #include <unistd.h>
 
@@ -28,7 +27,6 @@ limitations under the License.
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "xla/xla_npu/common/npu_config.h"
 #include "absl/strings/string_view.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -37,8 +35,10 @@ limitations under the License.
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/convert_to_afir/convert_to_afir.h"
+#include "xla/xla_npu/service/convert_to_afir/python_gil_guard.h"
 
 // Ascend-MLIR AFIR Dialect and Conversion
 #include "Conversion/AFIRToASCIRText/AFIRToASCIRText.h"
@@ -538,8 +538,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
 
     // Use SafePythonCall with timeout (default 600 seconds = 10 min)
     std::atomic<bool> compile_timed_out{false};
-    PyObject* compile_result = SafePythonCall(compile_graph_method, args, "compile_graph",
-                                               &compile_timed_out, 600);
+    PyObject* compile_result = SafePythonCall(compile_graph_method, args, "compile_graph", &compile_timed_out, 600);
     Py_DECREF(args);
     Py_DECREF(compile_graph_method);
 
@@ -704,8 +703,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
     // Call jit_compile(tiling_def, host_impl, device_impl, args_list) with timeout
     // Use SafePythonCall with timeout (default 600 seconds = 10 min)
     std::atomic<bool> jit_timed_out{false};
-    PyObject* kernel_result = SafePythonCall(jit_compile_func, kernel_args, "jit_compile",
-                                              &jit_timed_out, 600);
+    PyObject* kernel_result = SafePythonCall(jit_compile_func, kernel_args, "jit_compile", &jit_timed_out, 600);
     Py_DECREF(kernel_args);
     Py_DECREF(jit_compile_func);
 
@@ -732,7 +730,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
 }
 
 absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_module,
-                                                         const AscirBackendOptions& options) {
+                                                       const AscirBackendOptions& options) {
     NpuCompileResult final_result;
 
     // Step 1: Convert HLO to AFIR for each non-entry computation
@@ -793,7 +791,7 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
         // 使用graph名作为产物前缀名称,目前这个命名是基于computation name,将其中.替换为_
         npu_artifact_info.name = comp_result.graph_name;
         npu_artifact_info.dir = options.output_dir;
-        final_result.artifact_infos[computation_name] = npu_artifact_info;   
+        final_result.artifact_infos[computation_name] = npu_artifact_info;
         idx++;
     }
 

@@ -289,9 +289,9 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     AscirBackend ascir_backend;
     AscirBackendOptions ascir_backend_compile_option;
     const auto& output_sub_dir_name = NpuTool::generate_unique_folder_name_absl();
-    ascir_backend_compile_option.output_dir = NpuConfig::GetInstance().GetTypedValue<std::string>(
-                                                  NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR) +
-                                              output_sub_dir_name;
+    ascir_backend_compile_option.output_dir =
+        NpuConfig::GetInstance().GetTypedValue<std::string>(NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR) +
+        output_sub_dir_name;
     TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(*hlo_module, ascir_backend_compile_option));
 #elif NPU_AUTO_FUSE_BACKEND == 2
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");

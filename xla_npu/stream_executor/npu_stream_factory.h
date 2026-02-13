@@ -36,10 +36,10 @@ class NpuStreamFactoryRegistrar {
 #define REGISTER_NPU_STREAM_FACTORY(factory, priority) \
     INTERNAL_REGISTER_NPU_STREAM_FACTORY(factory, priority, __COUNTER__)
 
-#define INTERNAL_REGISTER_NPU_STREAM_FACTORY(factory, priority, ctr)   \
-    static ::stream_executor::NpuStreamFactoryRegistrar<factory> \
-    INTERNAL_REGISTER_LOCAL_NPU_STREAM_FACTORY_NAME(ctr) {             \
-        priority                                                        \
+#define INTERNAL_REGISTER_NPU_STREAM_FACTORY(factory, priority, ctr)                                              \
+    static ::stream_executor::NpuStreamFactoryRegistrar<factory> INTERNAL_REGISTER_LOCAL_NPU_STREAM_FACTORY_NAME( \
+        ctr) {                                                                                                    \
+        priority                                                                                                  \
     }
 
 // __COUNTER__ must go through another macro to be properly expanded

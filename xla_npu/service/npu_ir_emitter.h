@@ -82,15 +82,13 @@ class NpuIrEmitter : public DfsHloVisitorWithDefault, public IrBuilderMixin<NpuI
     // it valid only within the IR that implements consumer.  If you are
     // implementing an HLO and want to get its own output buffer, call
     // GetIrArray(hlo, hlo).
-    llvm_ir::IrArray GetIrArray(const HloInstruction& inst,
-                                const HloInstruction& consumer,
+    llvm_ir::IrArray GetIrArray(const HloInstruction& inst, const HloInstruction& consumer,
                                 const ShapeIndex& shape_index = {}) {
-      return bindings_.GetIrArray(inst, consumer, shape_index);
+        return bindings_.GetIrArray(inst, consumer, shape_index);
     }
     // A convenient helper for calling NpuHloToIrBindings::GetBasePointer.
-    llvm::Value* GetBasePointer(const HloInstruction& inst,
-                                ShapeIndexView shape_index = {}) const {
-      return bindings_.GetBasePointer(inst, shape_index);
+    llvm::Value* GetBasePointer(const HloInstruction& inst, ShapeIndexView shape_index = {}) const {
+        return bindings_.GetBasePointer(inst, shape_index);
     }
 
     // Generates the IrArray for each output of an hlo instruction and returns

@@ -40,7 +40,7 @@ class NpuStream : public StreamCommon {
 
    private:
     int device_ordinal_;
-    aclrtStream stream_; // aclrtStream = void*
+    aclrtStream stream_;  // aclrtStream = void*
     bool stream_init_ = false;
 };
 
