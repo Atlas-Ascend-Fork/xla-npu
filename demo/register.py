@@ -39,14 +39,16 @@ try:
 
     x1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
     print(f"input array: {x1}")
+    x2 = x1 + 1
+    print(f"input array: {x2}")
 
     # 定义多融合算子场景的函数 (单参数输入)
-    def multi_fusion_func(x1):
-        y = jax.nn.tanh(x1)*x1 + jax.nn.gelu(x1)*x1 + jax.nn.relu(x1)*x1
+    def multi_fusion_func(x1, x2):
+        y =  jax.nn.gelu(x1) + jax.nn.relu(x2)
         return y
 
     func = jax.jit(multi_fusion_func)
-    y = func(x1)
+    y = func(x1, x2)
     result = y.block_until_ready()
     print(f"output array: {result}")
 

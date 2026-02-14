@@ -95,12 +95,14 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
                                        const std::optional<ClusterDim>& cluster_dims, Stream* stream,
                                        const KernelArgs& args) {
     // thread_dims, cluster_dims not use
+    NPU_LOG_FORMAT_PRINT(INFO, "NpuAutoFuseKernel::Launch called");
 
     CHECK_COND_AND_PRINT_NPU_LOG(stream == nullptr, "Stream need to be created or init before execute npu thunk.");
     auto stream_handle = stream->platform_specific_handle();
     CHECK_COND_AND_PRINT_NPU_LOG(stream_handle.stream == nullptr,
                                  "Acl stream need to be created or init before execute npu thunk.");
     auto acl_stream = stream_handle.stream;
+    NPU_LOG_FORMAT_PRINT(INFO, "  acl_stream=%p", acl_stream);
 
     size_t tiling_size = GetTilingSizeFunc_();
     std::vector<uint8_t> tiling_data_holder(tiling_size);
@@ -110,6 +112,8 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
     uint32_t block_dim;
     uint32_t auto_fuse_ret = TilingFunc_(tiling_data, &workspace_size, &block_dim, nullptr);
     CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Tiling failed, error code: %d.", auto_fuse_ret);
+    NPU_LOG_FORMAT_PRINT(INFO, "  tiling_size=%zu", tiling_size);
+    NPU_LOG_FORMAT_PRINT(INFO, "  TilingFunc_ workspace_size=%u, block_dim=%u", workspace_size, block_dim);
 
     void* workspace = nullptr;
     if (workspace_size > 0) {
@@ -118,17 +122,29 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
         workspace = workspace_memory->opaque();
         CHECK_COND_AND_PRINT_NPU_LOG(workspace == nullptr, "Failed to allocate %d bytes for workspace.",
                                      workspace_size);
+        NPU_LOG_FORMAT_PRINT(INFO, "  workspace allocated: %p, size=%u", workspace, workspace_size);
+    } else {
+        NPU_LOG_FORMAT_PRINT(INFO, "  workspace_size=%u, no workspace allocated", workspace_size);
     }
 
     // TODO 参考cuda_kernel,使用KernelLoaderSpec中传递进来的pack函数进行参数封装
     if (auto* args_ptr = DynCast<KernelArgsDeviceMemoryArray>(&args)) {
+        NPU_LOG_FORMAT_PRINT(INFO, "  args_ptr=%p, number_of_arguments=%zu", args_ptr, args_ptr->number_of_arguments());
         int32_t input_param_num = args_ptr->number_of_arguments() - 1;
         int32_t output_param_num = 1;  // 当前写死为1
-        void* input_param_addr = const_cast<void*>(args_ptr->device_memory_ptr(0));
+        // 创建连续的输入参数指针数组，确保8字节对齐
+        std::vector<void*> input_param_addrs(input_param_num);
+        for (int32_t i = 0; i < input_param_num; ++i) {
+            input_param_addrs[i] = const_cast<void*>(args_ptr->device_memory_ptr(i));
+        }
         void* output_param_addr =
             const_cast<void*>(args_ptr->device_memory_ptr(args_ptr->number_of_arguments() - 1));  // 默认取最后一个
+        NPU_LOG_FORMAT_PRINT(INFO, "  input_param_num=%d, output_param_num=%d", input_param_num, output_param_num);
+        NPU_LOG_FORMAT_PRINT(INFO, "  input_param_addrs=%p, output_param_addr=%p", input_param_addrs.data(),
+                             output_param_addr);
+        NPU_LOG_FORMAT_PRINT(INFO, "  tiling_data=%p", tiling_data);
 
-        auto_fuse_ret = LaunchFunc_(block_dim, acl_stream, &input_param_addr, input_param_num, &output_param_addr,
+        auto_fuse_ret = LaunchFunc_(block_dim, acl_stream, input_param_addrs.data(), input_param_num, &output_param_addr,
                                     output_param_num, workspace, tiling_data);
         CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %d.", auto_fuse_ret);
 
@@ -185,13 +201,13 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
         // %d.", acl_ret);
         /* acl kernel launch 执行方式 - 结束 */
     } else {
-        const std::string& err_msg = absl::StrFormat("Get args failed.");
-        NPU_LOG_PRINT(ERROR, err_msg);
-        return absl::InternalError(err_msg);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Get args failed.");
+        return absl::InternalError("Get args failed.");
     }
 
     TF_RETURN_IF_ERROR(stream->BlockHostUntilDone());  // TODO 所有算子下发完了再同步
 
+    NPU_LOG_FORMAT_PRINT(INFO, "  NpuAutoFuseKernel::Launch completed successfully");
     return absl::OkStatus();
 }
 
