@@ -34,7 +34,8 @@ class NpuThunkPassInterface {
 
     virtual absl::StatusOr<bool> Run(NpuSequentialThunk* root_thunk, const DebugOptions& debug_options,
                                      const HloModule* absl_nullable hlo_module,
-                                     const se::DeviceDescription& device_info, NpuThunkPassBufferAllocator& allocator) = 0;
+                                     const se::DeviceDescription& device_info,
+                                     NpuThunkPassBufferAllocator& allocator) = 0;
 
     virtual absl::string_view name() const = 0;
 };

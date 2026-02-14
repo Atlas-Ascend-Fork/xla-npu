@@ -2,11 +2,11 @@
 #define TRANSFORMS_MAIR_PASSES_H_
 #include <memory>
 
-#include "mlir/Pass/Pass.h"        // from @llvm-project
+#include "mlir/Pass/Pass.h"  // from @llvm-project
 
 namespace mlir {
 namespace air {
-    std::unique_ptr<Pass> createLegalizeStablehloToGePass();
+std::unique_ptr<Pass> createLegalizeStablehloToGePass();
 }  // namespace air
 }  // namespace mlir
 

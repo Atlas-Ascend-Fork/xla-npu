@@ -18,6 +18,8 @@ limitations under the License.
 #include <memory>
 #include <string>
 
+#include "Conversion/AFIRToASCIRText/AFIRToASCIRText.h"
+#include "Dialect/AFIR/AFIR.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -26,68 +28,64 @@ limitations under the License.
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
-#include "Dialect/AFIR/AFIR.h"
-#include "Conversion/AFIRToASCIRText/AFIRToASCIRText.h"
 
 ABSL_FLAG(std::string, input, "", "Input AFIR file path");
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+    absl::ParseCommandLine(argc, argv);
 
-  std::string input_file = absl::GetFlag(FLAGS_input);
-  if (input_file.empty()) {
-    std::cerr << "Error: Input file must be specified with --input flag" << std::endl;
-    return 1;
-  }
+    std::string input_file = absl::GetFlag(FLAGS_input);
+    if (input_file.empty()) {
+        std::cerr << "Error: Input file must be specified with --input flag" << std::endl;
+        return 1;
+    }
 
-  std::cout << "Loading AFIR from: " << input_file << std::endl;
+    std::cout << "Loading AFIR from: " << input_file << std::endl;
 
-  // Read AFIR file
-  std::ifstream ifs(input_file);
-  if (!ifs) {
-    std::cerr << "Error: Failed to open input file: " << input_file << std::endl;
-    return 1;
-  }
+    // Read AFIR file
+    std::ifstream ifs(input_file);
+    if (!ifs) {
+        std::cerr << "Error: Failed to open input file: " << input_file << std::endl;
+        return 1;
+    }
 
-  std::string afir_string(
-      (std::istreambuf_iterator<char>(ifs)),
-      (std::istreambuf_iterator<char>()));
-  ifs.close();
+    std::string afir_string((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+    ifs.close();
 
-  std::cout << "  AFIR size: " << afir_string.size() << " bytes" << std::endl;
+    std::cout << "  AFIR size: " << afir_string.size() << " bytes" << std::endl;
 
-  // Create MLIR context and register dialects
-  auto context = std::make_unique<mlir::MLIRContext>();
-  context->getOrLoadDialect<mlir::afir::AFIRDialect>();
-  context->getOrLoadDialect<mlir::func::FuncDialect>();
-  context->getOrLoadDialect<mlir::arith::ArithDialect>();
+    // Create MLIR context and register dialects
+    auto context = std::make_unique<mlir::MLIRContext>();
+    context->getOrLoadDialect<mlir::afir::AFIRDialect>();
+    context->getOrLoadDialect<mlir::func::FuncDialect>();
+    context->getOrLoadDialect<mlir::arith::ArithDialect>();
 
-  // Parse AFIR string to MLIR module
-  std::cout << "Parsing AFIR..." << std::endl;
-  mlir::OwningOpRef<mlir::ModuleOp> module = mlir::parseSourceString<mlir::ModuleOp>(
-      llvm::StringRef(afir_string), context.get());
+    // Parse AFIR string to MLIR module
+    std::cout << "Parsing AFIR..." << std::endl;
+    mlir::OwningOpRef<mlir::ModuleOp> module =
+        mlir::parseSourceString<mlir::ModuleOp>(llvm::StringRef(afir_string), context.get());
 
-  if (!module) {
-    std::cerr << "Error: Failed to parse AFIR module" << std::endl;
-    return 1;
-  }
+    if (!module) {
+        std::cerr << "Error: Failed to parse AFIR module" << std::endl;
+        return 1;
+    }
 
-  std::cout << "  Parsed successfully" << std::endl;
+    std::cout << "  Parsed successfully" << std::endl;
 
-  // Create PassManager and add AFIR to ASCIR conversion pass
-  std::cout << "Converting AFIR to ASCIR..." << std::endl;
-  mlir::PassManager pm(context.get());
-  pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
+    // Create PassManager and add AFIR to ASCIR conversion pass
+    std::cout << "Converting AFIR to ASCIR..." << std::endl;
+    mlir::PassManager pm(context.get());
+    pm.addPass(mlir::afir::createConvertAFIRToASCIRTextPass());
 
-  // Run the pass
-  mlir::LogicalResult result = pm.run(*module);
+    // Run the pass
+    mlir::LogicalResult result = pm.run(*module);
 
-  if (mlir::failed(result)) {
-    std::cerr << "Error: Failed to run AFIR to ASCIR conversion pass" << std::endl;
-    return 1;
-  }
+    if (mlir::failed(result)) {
+        std::cerr << "Error: Failed to run AFIR to ASCIR conversion pass" << std::endl;
+        return 1;
+    }
 
-  std::cout << "  Conversion successful" << std::endl;
+    std::cout << "  Conversion successful" << std::endl;
 
-  return 0;
+    return 0;
 }

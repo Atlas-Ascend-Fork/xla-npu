@@ -27,8 +27,8 @@
 #include "xla/stream_executor/platform.h"
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/util.h"
-#include "xla/xla_npu/service/cpu_compiler_type.npu_thunk_emitter.h"
 #include "xla/xla_npu/service/cpu_compiler_type.npu_executable.h"
+#include "xla/xla_npu/service/cpu_compiler_type.npu_thunk_emitter.h"
 
 namespace mlir {
 class DialectRegistry;

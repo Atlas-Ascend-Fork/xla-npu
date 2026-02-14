@@ -15,143 +15,305 @@ limitations under the License.
 
 #include "xla/xla_npu/service/transform/npu_multi_output_fusion.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "xla/hlo/analysis/hlo_dfs_reachability.h"
+#include "xla/hlo/ir/hlo_casting_utils.h"
 #include "xla/hlo/ir/hlo_instruction.h"
+#include "xla/hlo/ir/hlo_instructions.h"
+#include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_opcode.h"
-#include "xla/hlo/transforms/simplifiers/hlo_dce.h"
+#include "xla/service/hlo_cost_analysis.h"
+#include "xla/service/hlo_graph_dumper.h"
+#include "xla/service/instruction_fusion.h"
 #include "xla/shape_util.h"
-#include "xla/status_macros.h"
 #include "xla/tsl/platform/errors.h"
-#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
 namespace {
 
-// Determine if a computation can be converted to a multi-output fusion.
-bool IsEligibleForMultiOutputFusion(HloComputation* computation) {
-    // Basic eligibility check:
-    // 1. Must have at least 2 root instructions (producing multiple outputs)
-    // 2. All root instructions must be element-wise or similar fusible ops
+constexpr int64_t MaxOperandsAndOutputsPerFusion() { return 96; }
 
-    if (computation->root_instruction()->opcode() != HloOpcode::kTuple) {
+// Check if operand is profitable for multi-output fusion
+bool IsProfitableOperand(HloInstruction* instr) {
+    return !ShapeUtil::IsEffectiveScalar(instr->shape());
+}
+
+// Check if two instructions are connected (one can reach the other)
+bool IsConnected(const HloInstruction* a, const HloInstruction* b,
+                 const HloDfsReachability& reachability) {
+    return reachability.IsConnected(a, b);
+}
+
+// Determine fusion priority for selecting fusion candidate
+int FusionPriority(const HloInstruction* instr) {
+    if (instr->IsMultiOutputFusion()) {
+        return 2;
+    }
+    if (HloPredicateIsOp<HloOpcode::kFusion>(instr)) {
+        return 1;
+    }
+    return 0;
+}
+
+// Determine the fusion kind to be used when fusing into consumer
+HloInstruction::FusionKind ChooseFusionKind(const HloInstruction* producer,
+                                            const HloInstruction* consumer) {
+    // For NPU, we use kLoop fusion by default
+    return HloInstruction::FusionKind::kLoop;
+}
+
+// Check if instruction is a valid candidate for sibling fusion
+bool IsSiblingFusionCandidate(const HloInstruction* instr) {
+    if (instr->users().empty()) return false;
+    // Only fusion instructions can be candidates
+    if (HloPredicateIsNotOp<HloOpcode::kFusion>(instr)) return false;
+    // Skip custom fusions
+    if (instr->IsCustomFusion()) return false;
+    // Multi-output fusions should have GTE users
+    if (instr->IsMultiOutputFusion()) {
+        return absl::c_all_of(instr->users(), HloPredicateIsOp<HloOpcode::kGetTupleElement>);
+    }
+    return true;
+}
+
+// Check if two sibling instructions can be fused together
+bool CanFuseSiblings(const HloInstruction& sibling1, const HloInstruction& sibling2,
+                     HloInstruction& parent, const HloDfsReachability& reachability,
+                     const se::DeviceDescription& device_description) {
+    // They must not be connected (no cycle)
+    if (IsConnected(&sibling1, &sibling2, reachability)) {
         return false;
     }
 
-    // Check if the tuple is from multiple GTE instructions
-    const HloInstruction* tuple_root = computation->root_instruction();
-
-    // Count how many outputs are actually used
-    int used_output_count = 0;
-    for (const HloInstruction* user : tuple_root->users()) {
-        if (user->opcode() == HloOpcode::kGetTupleElement) {
-            used_output_count++;
-        }
+    // Both must be fusion instructions
+    if (sibling1.opcode() != HloOpcode::kFusion ||
+        sibling2.opcode() != HloOpcode::kFusion) {
+        return false;
     }
 
-    // Need at least 2 distinct outputs to consider multi-output fusion
-    if (used_output_count < 2) {
+    // They must have compatible fusion kinds
+    if (sibling1.fusion_kind() != sibling2.fusion_kind()) {
+        return false;
+    }
+
+    // Simplified check: must fit in the parameter and output budget
+    int64_t total_params = sibling1.operand_count() + sibling2.operand_count();
+    if (total_params > MaxOperandsAndOutputsPerFusion()) {
         return false;
     }
 
     return true;
 }
 
-// Check if two instructions can be fused together into a multi-output fusion.
-bool CanFuseMultiOutput(HloInstruction* producer, HloInstruction* consumer,
-                        const se::DeviceDescription& device_description) {
-    // Both must be fusion instructions
-    if (producer->opcode() != HloOpcode::kFusion || consumer->opcode() != HloOpcode::kFusion) {
+// Check if producer-consumer fusion is valid
+bool ProducerCandidateIsFusible(const HloInstruction& producer,
+                                 const HloInstruction& consumer,
+                                 const HloDfsReachability& reachability,
+                                 const se::DeviceDescription& device_description) {
+    // Consumer must be a fusion instruction
+    if (consumer.opcode() != HloOpcode::kFusion) {
         return false;
     }
 
-    // They must have compatible fusion kinds
-    if (producer->fusion_kind() != consumer->fusion_kind()) {
+    // Skip custom fusions
+    if (consumer.IsCustomFusion()) {
         return false;
     }
 
-    // They must share some computation (producers in common)
-    // Simplified: check if they have any common non-parameter operands
-    absl::flat_hash_set<HloInstruction*> producer_operands;
-    for (HloInstruction* operand : producer->operands()) {
-        producer_operands.insert(operand);
+    // Producer must be fusible
+    if (!producer.IsFusible()) {
+        return false;
     }
 
-    for (HloInstruction* operand : consumer->operands()) {
-        if (producer->parent() != consumer->parent()) {
-            // Different parent computations - can't fuse
+    // Skip producer if it's a custom fusion
+    if (producer.opcode() == HloOpcode::kFusion && producer.IsCustomFusion()) {
+        return false;
+    }
+
+    // Check that no operand of consumer is reachable from producer (avoid cycles)
+    for (const auto* operand : consumer.operands()) {
+        if (&producer != operand && reachability.IsReachable(&producer, operand)) {
             return false;
         }
-        if (producer_operands.contains(operand)) {
-            // Found shared operand - good candidate for multi-output fusion
-            return true;
-        }
     }
 
-    // Also fuse if they share the same parent computation and are both loop fusions
-    // This is a simplified heuristic that can be refined
-    return (producer->fusion_kind() == HloInstruction::FusionKind::kLoop && producer->parent() == consumer->parent());
+    // Check parameter budget
+    int64_t total_params = consumer.operand_count() + producer.operand_count();
+    if (total_params > MaxOperandsAndOutputsPerFusion()) {
+        return false;
+    }
+
+    return true;
+}
+
+// Select the preferred fusion candidate from a list
+HloInstruction* SelectPreferredFusionCandidate(const std::vector<HloInstruction*>& candidates) {
+    if (candidates.empty()) {
+        return nullptr;
+    }
+    return *std::max_element(candidates.begin(), candidates.end(),
+                             [](const HloInstruction* a, const HloInstruction* b) {
+                                 return FusionPriority(a) < FusionPriority(b);
+                             });
 }
 
 }  // namespace
 
-absl::StatusOr<bool> NpuMultiOutputFusion::RunImpl(HloModule* module,
-                                                   const absl::flat_hash_set<absl::string_view>& execution_threads) {
-    bool changed = false;
+static HloComputation* computation_ = nullptr;
+static std::unique_ptr<HloDfsReachability> reachability_;
 
-    // Process each computation
-    auto all_computations = module->computations(execution_threads);
-    for (HloComputation* computation : all_computations) {
-        if (computation->IsFusionComputation()) {
-            continue;
-        }
+void NpuMultiOutputFusion::RecomputeReachability() {
+    reachability_ = HloDfsReachability::Build(computation_);
+}
 
-        // Build reachability graph
-        std::unique_ptr<HloDfsReachability> reachability = HloDfsReachability::Build(computation);
-
-        // Collect all fusion instructions
-        std::vector<HloInstruction*> fusion_instructions;
-        for (HloInstruction* instr : computation->instructions()) {
-            if (instr->opcode() == HloOpcode::kFusion) {
-                fusion_instructions.push_back(instr);
-            }
-        }
-
-        // Try to fuse compatible fusion instructions
-        for (auto it1 = fusion_instructions.begin(); it1 != fusion_instructions.end(); ++it1) {
-            for (auto it2 = std::next(it1); it2 != fusion_instructions.end(); ++it2) {
-                HloInstruction* fusion1 = *it1;
-                HloInstruction* fusion2 = *it2;
-
-                if (CanFuseMultiOutput(fusion1, fusion2, device_description_)) {
-                    // Check if one reaches the other to avoid creating cycles
-                    if (!reachability->IsConnected(fusion1, fusion2) && !reachability->IsConnected(fusion2, fusion1)) {
-                        // Found multi-output fusion opportunity
-                        // For now, just log the detection as this is a simplified implementation
-                        // A full implementation would create the multi-output fusion here
-                        NPU_LOG_FORMAT_PRINT(DEBUG,
-                                             "Potential multi-output fusion opportunity detected between %s and %s",
-                                             fusion1->name().data(), fusion2->name().data());
-                        changed = true;
-                        break;  // Only process one pair per iteration
-                    }
-                }
-            }
-        }
+bool NpuMultiOutputFusion::FuseSiblings(HloInstruction* parent, HloCostAnalysis* cost_analysis) {
+    if (!IsProfitableOperand(parent)) {
+        return false;
     }
 
-    // Run DCE once at the module level to clean up unused instructions
-    HloDCE dce;
-    TF_ASSIGN_OR_RETURN(bool dce_changed, dce.Run(module, execution_threads));
-    changed = changed || dce_changed;
+    bool changed = false;
+    std::vector<HloInstruction*> siblings;
 
+    // Only consider siblings that are fusion candidates
+    absl::c_copy_if(parent->users(), std::back_inserter(siblings),
+                    [](const HloInstruction* instr) {
+                        return IsSiblingFusionCandidate(instr);
+                    });
+
+    // Sort siblings by fusion priority
+    absl::c_stable_sort(siblings,
+                        [](const HloInstruction* a, const HloInstruction* b) {
+                            return FusionPriority(a) > FusionPriority(b);
+                        });
+
+    // Try to fuse siblings
+    for (auto i = siblings.begin(); i != siblings.end(); ++i) {
+        if ((*i)->opcode() != HloOpcode::kFusion) continue;
+
+        for (auto j = i + 1; j != siblings.end();) {
+            if ((*j)->opcode() != HloOpcode::kFusion) {
+                ++j;
+                continue;
+            }
+
+            if (!CanFuseSiblings(**i, **j, *parent, *reachability_, device_description_)) {
+                ++j;
+                continue;
+            }
+
+            // Fuse j into i
+            HloInstruction* remaining = *i;
+            HloInstruction* fused = *j;
+
+            TF_CHECK_OK(cost_analysis->RemoveInstruction(remaining));
+            TF_CHECK_OK(cost_analysis->RemoveInstruction(fused));
+
+            if (HloPredicateIsOp<HloOpcode::kFusion>(fused)) {
+                remaining->MergeFusionInstructionIntoMultiOutput(fused);
+            } else {
+                remaining->FuseInstructionIntoMultiOutput(fused);
+                CHECK_EQ(0, fused->user_count());
+                TF_CHECK_OK(computation_->RemoveInstruction(fused));
+            }
+
+            TF_CHECK_OK(cost_analysis->RevisitInstruction(remaining));
+            changed = true;
+            siblings.erase(j);
+            RecomputeReachability();
+        }
+    }
+    return changed;
+}
+
+absl::StatusOr<bool> NpuMultiOutputFusion::DoMultiOutputFusion() {
+    bool changed = false;
+    RecomputeReachability();
+
+    HloCostAnalysis cost_analysis({shape_size_function_,
+                                     /*per_second_rates=*/{},
+                                     /*min_latencies_seconds=*/{},
+                                     /*count_multiple_input_accesses=*/true});
+    TF_RETURN_IF_ERROR(computation_->Accept(&cost_analysis));
+
+    std::vector<HloInstruction*> defs_before_uses = computation_->MakeInstructionPostOrder();
+
+    // Traverse in uses-before-defs order (reverse post-order)
+    for (auto it = defs_before_uses.rbegin(); it != defs_before_uses.rend(); ++it) {
+        HloInstruction* producer = *it;
+
+        // Skip constants
+        if (HloPredicateIsOp<HloOpcode::kConstant>(producer)) continue;
+        if (producer->IsCustomFusion()) continue;
+
+        // First, fuse sibling consumers
+        if (FuseSiblings(/*parent=*/producer, &cost_analysis)) {
+            changed = true;
+        }
+
+        // Second, perform producer-consumer multi-output fusion
+        std::vector<HloInstruction*> fusion_candidates;
+        for (HloInstruction* consumer : producer->users()) {
+            // Only consider fusion instructions
+            if (HloPredicateIsNotOp<HloOpcode::kFusion>(consumer)) continue;
+
+            if (ProducerCandidateIsFusible(*producer, *consumer, *reachability_, device_description_)) {
+                fusion_candidates.push_back(consumer);
+            }
+        }
+
+        HloInstruction* consumer_for_fusion = SelectPreferredFusionCandidate(fusion_candidates);
+        if (consumer_for_fusion == nullptr) continue;
+
+        // Perform producer-consumer fusion
+        changed = true;
+        HloInstruction* input_fusion;
+
+        if (HloPredicateIsOp<HloOpcode::kFusion>(consumer_for_fusion)) {
+            input_fusion = consumer_for_fusion;
+        } else {
+            input_fusion = computation_->AddInstruction(HloInstruction::CreateFusion(
+                consumer_for_fusion->shape(),
+                ChooseFusionKind(producer, consumer_for_fusion),
+                consumer_for_fusion));
+            TF_CHECK_OK(computation_->ReplaceInstruction(consumer_for_fusion, input_fusion));
+        }
+
+        if (HloPredicateIsOp<HloOpcode::kFusion>(producer)) {
+            input_fusion->MergeFusionInstructionIntoMultiOutput(producer);
+        } else {
+            input_fusion->FuseInstructionIntoMultiOutput(producer);
+            CHECK_EQ(0, producer->user_count());
+            TF_CHECK_OK(computation_->RemoveInstruction(producer));
+        }
+
+        TF_RETURN_IF_ERROR(cost_analysis.RevisitInstruction(input_fusion));
+        RecomputeReachability();
+    }
+    return changed;
+}
+
+absl::StatusOr<bool> NpuMultiOutputFusion::RunImpl(
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
+    bool changed = false;
+    for (auto* computation : module->MakeNonfusionComputations()) {
+        computation_ = computation;
+        TF_ASSIGN_OR_RETURN(bool computation_changed, DoMultiOutputFusion());
+        changed |= computation_changed;
+    }
     return changed;
 }
 

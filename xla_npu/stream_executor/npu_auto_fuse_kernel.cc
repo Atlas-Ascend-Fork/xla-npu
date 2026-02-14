@@ -129,9 +129,8 @@ absl::Status NpuAutoFuseKernel::Launch(const ThreadDim& thread_dims, const Block
             const_cast<void*>(args_ptr->device_memory_ptr(args_ptr->number_of_arguments() - 1));  // 默认取最后一个
 
         auto_fuse_ret = LaunchFunc_(block_dim, acl_stream, &input_param_addr, input_param_num, &output_param_addr,
-                                 output_param_num, workspace, tiling_data);
-        CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %d.",
-                                     auto_fuse_ret);
+                                    output_param_num, workspace, tiling_data);
+        CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %d.", auto_fuse_ret);
 
         /* acl kernel launch 执行方式 - 开始 */
         // aclError acl_ret = ACL_SUCCESS;

@@ -29,19 +29,18 @@ limitations under the License.
 namespace xla {
 
 class ConvertToAfirTest : public HloTestBase {
- protected:
-  // Helper to run conversion and return the MLIR module
-  // Note: We use the API that creates its own context to avoid lifetime issues
-  absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertToAfir(
-      const HloModule& module,
-      const HloToAfirOptions& options = {}) {
-    return ConvertHloToAfir(module, options);
-  }
+   protected:
+    // Helper to run conversion and return the MLIR module
+    // Note: We use the API that creates its own context to avoid lifetime issues
+    absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertToAfir(const HloModule& module,
+                                                                    const HloToAfirOptions& options = {}) {
+        return ConvertHloToAfir(module, options);
+    }
 };
 
 // Test basic constant conversion
 TEST_F(ConvertToAfirTest, ConvertConstant) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule SimpleConstant
 
 ENTRY main {
@@ -50,16 +49,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test simple add operation
 TEST_F(ConvertToAfirTest, ConvertSimpleAdd) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule SimpleAdd
 
 ENTRY main {
@@ -69,19 +68,19 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
-  // Verify module has one function (the entry computation)
-  auto funcs = mlir_module->getOps<mlir::func::FuncOp>();
-  EXPECT_EQ(std::distance(funcs.begin(), funcs.end()), 1);
+    ASSERT_NE(mlir_module.get(), nullptr);
+    // Verify module has one function (the entry computation)
+    auto funcs = mlir_module->getOps<mlir::func::FuncOp>();
+    EXPECT_EQ(std::distance(funcs.begin(), funcs.end()), 1);
 }
 
 // Test multiple operations
 TEST_F(ConvertToAfirTest, ConvertMultipleOps) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule MultipleOps
 
 ENTRY main {
@@ -94,16 +93,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test integer operations
 TEST_F(ConvertToAfirTest, ConvertIntOps) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule IntOps
 
 ENTRY main {
@@ -113,16 +112,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test with verification enabled (default)
 TEST_F(ConvertToAfirTest, ConvertWithVerification) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule VerifiedModule
 
 ENTRY main {
@@ -132,19 +131,19 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  HloToAfirOptions options;
-  options.verify_module = true;
+    HloToAfirOptions options;
+    options.verify_module = true;
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test without verification
 TEST_F(ConvertToAfirTest, ConvertWithoutVerification) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule NoVerifyModule
 
 ENTRY main {
@@ -154,19 +153,19 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  HloToAfirOptions options;
-  options.verify_module = false;
+    HloToAfirOptions options;
+    options.verify_module = false;
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test name preservation option
 TEST_F(ConvertToAfirTest, PreserveNames) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule NamePreservation
 
 ENTRY main {
@@ -176,19 +175,19 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  HloToAfirOptions options;
-  options.preserve_names = true;
+    HloToAfirOptions options;
+    options.preserve_names = true;
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test name disabled
 TEST_F(ConvertToAfirTest, DisableNamePreservation) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule NoNamePreservation
 
 ENTRY main {
@@ -198,19 +197,19 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  HloToAfirOptions options;
-  options.preserve_names = false;
+    HloToAfirOptions options;
+    options.preserve_names = false;
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module, options));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test unsupported operation (should fail gracefully)
 TEST_F(ConvertToAfirTest, UnsupportedOperation) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule UnsupportedOp
 
 ENTRY main {
@@ -219,17 +218,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  auto result = ConvertToAfir(*module);
-  EXPECT_FALSE(result.ok());
-  EXPECT_THAT(result.status().message(),
-              ::testing::HasSubstr("Unsupported opcode"));
+    auto result = ConvertToAfir(*module);
+    EXPECT_FALSE(result.ok());
+    EXPECT_THAT(result.status().message(), ::testing::HasSubstr("Unsupported opcode"));
 }
 
 // Test tuple handling (basic structure, will be enhanced)
 TEST_F(ConvertToAfirTest, TupleResult) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule TupleResult
 
 ENTRY main {
@@ -239,16 +237,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  auto result = ConvertToAfir(*module);
-  // Tuples should be handled in ConvertShape
-  // This will fail in instruction conversion since we don't have tuple support yet
+    auto result = ConvertToAfir(*module);
+    // Tuples should be handled in ConvertShape
+    // This will fail in instruction conversion since we don't have tuple support yet
 }
 
 // Test array operations (shape > rank 0)
 TEST_F(ConvertToAfirTest, ArrayOperations) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule ArrayOps
 
 ENTRY main {
@@ -258,16 +256,16 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
+    TF_ASSERT_OK_AND_ASSIGN(auto mlir_module, ConvertToAfir(*module));
 
-  ASSERT_NE(mlir_module.get(), nullptr);
+    ASSERT_NE(mlir_module.get(), nullptr);
 }
 
 // Test multiple computations (nested computations)
 TEST_F(ConvertToAfirTest, NestedComputation) {
-  const char* hlo_text = R"(
+    const char* hlo_text = R"(
 HloModule NestedComp
 
 add {
@@ -283,11 +281,11 @@ ENTRY main {
 }
 )";
 
-  TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
+    TF_ASSERT_OK_AND_ASSIGN(auto module, ParseAndReturnVerifiedModule(hlo_text));
 
-  auto result = ConvertToAfir(*module);
-  // Will fail because we don't support call operations yet
-  // But tests that we handle nested computation structure
+    auto result = ConvertToAfir(*module);
+    // Will fail because we don't support call operations yet
+    // But tests that we handle nested computation structure
 }
 
 }  // namespace xla

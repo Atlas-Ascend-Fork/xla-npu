@@ -193,7 +193,8 @@ class NpuCompiler : public LLVMCompiler {
     // absl::StatusOr<BackendCompileResult> CompileAndLink(const HloModuleConfig& module_config,
     //                                                     NpuCompileModuleResults& compile_module_results,
     //                                                     const stream_executor::DeviceDescription& device_description,
-    //                                                     const CompileOptions& options, const HloModule* debug_module);
+    //                                                     const CompileOptions& options, const HloModule*
+    //                                                     debug_module);
 
     absl::StatusOr<BackendCompileResult> CompileSingleModule(
         const HloModuleConfig& module_config, const stream_executor::DeviceDescription& device_description,
@@ -231,7 +232,8 @@ class NpuCompiler : public LLVMCompiler {
     }
 
     // // Inserts and optimizes mandatory copies. Necessary for correctness.
-    // absl::Status RunPreSchedulingCopyInsertion(HloModule& hlo_module, const se::DeviceDescription& device_description,
+    // absl::Status RunPreSchedulingCopyInsertion(HloModule& hlo_module, const se::DeviceDescription&
+    // device_description,
     //                                            const NpuAliasInfo* alias_info);
 
     virtual absl::StatusOr<std::vector<uint8_t>> LinkModules(

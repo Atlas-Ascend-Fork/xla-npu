@@ -302,7 +302,7 @@
 #include "xla/service/gpu/gpu_hlo_schedule.h"
 #include "xla/service/gpu/gpu_latency_hiding_scheduler.h"
 #include "xla/service/gpu/transforms/add_tracking_suffix_to_instruction_names.h"
-#include "xla/service/gpu/transforms/rename_fusions.h"
+// #include "xla/service/gpu/transforms/rename_fusions.h"  // Using NPU rename_fusions instead
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_tool.h"
@@ -1702,8 +1702,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //   DumpToFileInDirOrStdout(*module, "", "autotune_results.pbtxt",
     //                           autotune_results);
     // }
-
-    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run no hlo pass");
 
 #if NPU_AUTO_FUSE_BACKEND > 0
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");

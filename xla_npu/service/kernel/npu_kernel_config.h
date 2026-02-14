@@ -2,6 +2,7 @@
 #define XLA_XLA_NPU_SERVICE_KERNEL_NPU_KERNEL_CONFIG_H_
 
 #include <string>
+
 #include "xla/xla_npu/service/kernel/npu_compile_result.h"
 
 namespace xla {

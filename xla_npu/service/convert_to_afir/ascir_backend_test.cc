@@ -62,132 +62,129 @@ ENTRY %main {
 }
 )";
 
-absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(
-    absl::string_view hlo_text,
-    const std::string& module_name = "test_module") {
-  xla::HloModuleConfig config;
-  xla::HloParserOptions options;
+absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(absl::string_view hlo_text,
+                                                               const std::string& module_name = "test_module") {
+    xla::HloModuleConfig config;
+    xla::HloParserOptions options;
 
-  return xla::ParseAndReturnUnverifiedModule(hlo_text, config, options);
+    return xla::ParseAndReturnUnverifiedModule(hlo_text, config, options);
 }
 
-absl::Status RunTest(absl::string_view hlo_text,
-                     const std::string& output_dir) {
-  std::cout << "=== HLO to AscIR Backend Test ===" << std::endl;
-  std::cout << "\n[Step 1] Parsing HLO text..." << std::endl;
+absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) {
+    std::cout << "=== HLO to AscIR Backend Test ===" << std::endl;
+    std::cout << "\n[Step 1] Parsing HLO text..." << std::endl;
 
-  // Parse HLO text to HloModule
-  TF_ASSIGN_OR_RETURN(auto hlo_module, ParseHloString(hlo_text));
+    // Parse HLO text to HloModule
+    TF_ASSIGN_OR_RETURN(auto hlo_module, ParseHloString(hlo_text));
 
-  std::cout << "  ✅ HLO module parsed: " << hlo_module->name() << std::endl;
-  std::cout << "     Computations: " << hlo_module->computation_count() << std::endl;
-  std::cout << "     Entry computation instructions: "
-            << hlo_module->entry_computation()->instruction_count() << std::endl;
+    std::cout << "  ✅ HLO module parsed: " << hlo_module->name() << std::endl;
+    std::cout << "     Computations: " << hlo_module->computation_count() << std::endl;
+    std::cout << "     Entry computation instructions: " << hlo_module->entry_computation()->instruction_count()
+              << std::endl;
 
-  std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
+    std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
 
-  xla::AscirBackendOptions options;
-  options.output_dir = output_dir;
-  options.preserve_intermediates = true;
-  options.soc_version = "Ascend910B1";
+    xla::AscirBackendOptions options;
+    options.output_dir = output_dir;
+    options.preserve_intermediates = true;
+    options.soc_version = "Ascend910B1";
 
-  std::cout << "  Output directory: " << options.output_dir << std::endl;
-  std::cout << "  SOC version: " << options.soc_version << std::endl;
+    std::cout << "  Output directory: " << options.output_dir << std::endl;
+    std::cout << "  SOC version: " << options.soc_version << std::endl;
 
-  std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
+    std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
 
-  xla::AscirBackend backend;
-  TF_ASSIGN_OR_RETURN(auto result, backend.Compile(*hlo_module, options));
+    xla::AscirBackend backend;
+    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(*hlo_module, options));
 
-  std::cout << "  ✅ Compilation successful!" << std::endl;
+    std::cout << "  ✅ Compilation successful!" << std::endl;
 
-  std::cout << "\n[Step 4] Generated Artifacts:" << std::endl;
-  std::cout << "  Total artifacts compiled: " << result.artifact_infos.size() << std::endl;
+    std::cout << "\n[Step 4] Generated Artifacts:" << std::endl;
+    std::cout << "  Total artifacts compiled: " << result.artifact_infos.size() << std::endl;
 
-  int idx = 0;
-  for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
-    std::cout << "\n  Artifact " << (++idx) << ": " << artifact_name << std::endl;
-    std::cout << "    Name:      " << artifact_info.name << std::endl;
-    std::cout << "    Directory: " << artifact_info.dir << std::endl;
-  }
-
-  // Verify directories exist
-  std::cout << "\n[Step 5] Verifying generated directories..." << std::endl;
-
-  int total_dirs = 0;
-  int existing_dirs = 0;
-
-  for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
-    total_dirs++;
-    std::string check_cmd = "test -d " + artifact_info.dir;
-    int dir_exists = (system(check_cmd.c_str()) == 0);
-
-    if (dir_exists) {
-      std::cout << "  ✅ Directory exists for " << artifact_name
-                << " (" << artifact_info.dir << ")" << std::endl;
-      existing_dirs++;
-    } else {
-      std::cout << "  ❌ Directory missing for " << artifact_name
-                << " (" << artifact_info.dir << ")" << std::endl;
+    int idx = 0;
+    for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
+        std::cout << "\n  Artifact " << (++idx) << ": " << artifact_name << std::endl;
+        std::cout << "    Name:      " << artifact_info.name << std::endl;
+        std::cout << "    Directory: " << artifact_info.dir << std::endl;
     }
-  }
 
-  std::cout << "\n  Directories verified: " << existing_dirs << "/" << total_dirs << std::endl;
-  std::cout << "\n=== Test Completed Successfully ===" << std::endl;
+    // Verify directories exist
+    std::cout << "\n[Step 5] Verifying generated directories..." << std::endl;
 
-  return absl::OkStatus();
+    int total_dirs = 0;
+    int existing_dirs = 0;
+
+    for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
+        total_dirs++;
+        std::string check_cmd = "test -d " + artifact_info.dir;
+        int dir_exists = (system(check_cmd.c_str()) == 0);
+
+        if (dir_exists) {
+            std::cout << "  ✅ Directory exists for " << artifact_name << " (" << artifact_info.dir << ")" << std::endl;
+            existing_dirs++;
+        } else {
+            std::cout << "  ❌ Directory missing for " << artifact_name << " (" << artifact_info.dir << ")"
+                      << std::endl;
+        }
+    }
+
+    std::cout << "\n  Directories verified: " << existing_dirs << "/" << total_dirs << std::endl;
+    std::cout << "\n=== Test Completed Successfully ===" << std::endl;
+
+    return absl::OkStatus();
 }
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+    absl::ParseCommandLine(argc, argv);
 
-  std::cout << "========================================" << std::endl;
-  std::cout << "HLO to AscIR Backend Test" << std::endl;
-  std::cout << "========================================" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "HLO to AscIR Backend Test" << std::endl;
+    std::cout << "========================================" << std::endl;
 
-  std::string hlo_text;
-  std::string source_desc;
+    std::string hlo_text;
+    std::string source_desc;
 
-  // Determine HLO source
-  if (!absl::GetFlag(FLAGS_hlo_file).empty()) {
-    // Read from file
-    std::string hlo_file = absl::GetFlag(FLAGS_hlo_file);
-    std::cout << "Reading HLO from file: " << hlo_file << std::endl;
+    // Determine HLO source
+    if (!absl::GetFlag(FLAGS_hlo_file).empty()) {
+        // Read from file
+        std::string hlo_file = absl::GetFlag(FLAGS_hlo_file);
+        std::cout << "Reading HLO from file: " << hlo_file << std::endl;
 
-    std::ifstream file(hlo_file);
-    if (!file.is_open()) {
-      std::cerr << "Error: Cannot open file: " << hlo_file << std::endl;
-      return EXIT_FAILURE;
+        std::ifstream file(hlo_file);
+        if (!file.is_open()) {
+            std::cerr << "Error: Cannot open file: " << hlo_file << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        hlo_text = buffer.str();
+        source_desc = absl::StrCat("file: ", hlo_file);
+    } else if (!absl::GetFlag(FLAGS_hlo_text).empty()) {
+        // Use provided HLO text
+        hlo_text = absl::GetFlag(FLAGS_hlo_text);
+        source_desc = "command line text";
+    } else {
+        // Use default test HLO
+        std::cout << "Using default test HLO" << std::endl;
+        hlo_text = kComplexHLO;
+        source_desc = "built-in test";
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    hlo_text = buffer.str();
-    source_desc = absl::StrCat("file: ", hlo_file);
-  } else if (!absl::GetFlag(FLAGS_hlo_text).empty()) {
-    // Use provided HLO text
-    hlo_text = absl::GetFlag(FLAGS_hlo_text);
-    source_desc = "command line text";
-  } else {
-    // Use default test HLO
-    std::cout << "Using default test HLO" << std::endl;
-    hlo_text = kComplexHLO;
-    source_desc = "built-in test";
-  }
+    std::cout << "HLO source: " << source_desc << std::endl;
+    std::cout << "HLO text length: " << hlo_text.length() << " bytes" << std::endl;
+    std::cout << std::endl;
 
-  std::cout << "HLO source: " << source_desc << std::endl;
-  std::cout << "HLO text length: " << hlo_text.length() << " bytes" << std::endl;
-  std::cout << std::endl;
+    // Run test
+    std::string output_dir = absl::GetFlag(FLAGS_output_dir);
 
-  // Run test
-  std::string output_dir = absl::GetFlag(FLAGS_output_dir);
+    auto status = RunTest(hlo_text, output_dir);
 
-  auto status = RunTest(hlo_text, output_dir);
+    if (!status.ok()) {
+        std::cerr << "\n❌ Test Failed: " << status.message() << std::endl;
+        return EXIT_FAILURE;
+    }
 
-  if (!status.ok()) {
-    std::cerr << "\n❌ Test Failed: " << status.message() << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
