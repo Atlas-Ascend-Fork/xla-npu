@@ -15,6 +15,13 @@ cc_library(
         ":npu_gelu_fusion_rewriter",
         ":npu_dynamic_slice_fusion_rewriter",
         ":npu_fusion_dynamic_memcpy_rewriter",
+        ":npu_gemm_fusion",
+        ":npu_custom_kernel_fusion_rewriter",
+        ":npu_nest_gemm_fusion",
+        ":npu_fusion_block_level_rewriter",
+        ":npu_gemm_fusion_swap_operands",
+        ":npu_fusion_dispatch_pipeline",
+        ":npu_hlo_printer_pass",
     ],
 )
 
@@ -32,6 +39,13 @@ cc_library(
         ":npu_fusion_dynamic_memcpy_rewriter",
         ":npu_fusion_wrapper",
         ":npu_rename_fusions",
+        ":npu_hlo_printer_pass",
+        ":npu_gemm_fusion",
+        ":npu_custom_kernel_fusion_rewriter",
+        ":npu_fusion_block_level_rewriter",
+        ":npu_nest_gemm_fusion",
+        ":npu_gemm_fusion_swap_operands",
+        ":npu_fusion_dispatch_pipeline",
         "//xla/xla_npu/dependency/tool:log",
 
         "//xla/hlo/ir:hlo",
@@ -46,6 +60,21 @@ cc_library(
         "//xla/service:hlo_cse",
         "//xla/service:layout_assignment",
         "//xla/service:compilation_stats",
+        "@com_google_absl//absl/status",
+        "@llvm-project//mlir:IR",
+    ],
+)
+
+# NpuHloPrinterPass
+cc_library(
+    name = "npu_hlo_printer_pass",
+    srcs = ["npu_hlo_printer_pass.cc"],
+    hdrs = ["npu_hlo_printer_pass.h"],
+    deps = [
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/xla_npu/common:npu_tool",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status",
     ],
 )
@@ -226,5 +255,146 @@ cc_library(
         "//xla/hlo/transforms/simplifiers:hlo_dce",
         "//xla:status_macros",
         "@com_google_absl//absl/log:log",
+    ],
+)
+
+# NpuGemmFusion
+cc_library(
+    name = "npu_gemm_fusion",
+    srcs = ["npu_gemm_fusion.cc"],
+    hdrs = ["npu_gemm_fusion.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/hlo/analysis:symbolic_expr",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/ir:backend_config",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/hlo/transforms/simplifiers:hlo_dce",
+        "//xla/service:hlo_cost_analysis",
+        "//xla/service:instruction_fusion",
+        "//xla/stream_executor:device_description",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:errors",
+        "@llvm-project//mlir:IR",
+    ],
+)
+
+# NpuCustomKernelFusionRewriter
+cc_library(
+    name = "npu_custom_kernel_fusion_rewriter",
+    srcs = ["npu_custom_kernel_fusion_rewriter.cc"],
+    hdrs = ["npu_custom_kernel_fusion_rewriter.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/ir:backend_config",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla:shape_util",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:errors",
+    ],
+)
+
+# NpuNestGemmFusion
+cc_library(
+    name = "npu_nest_gemm_fusion",
+    srcs = ["npu_nest_gemm_fusion.cc"],
+    hdrs = ["npu_nest_gemm_fusion.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/ir:backend_config",
+        "//xla/hlo/analysis:symbolic_expr",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/stream_executor:device_description",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:errors",
+    ],
+)
+
+# NpuFusionBlockLevelRewriter
+cc_library(
+    name = "npu_fusion_block_level_rewriter",
+    srcs = ["npu_fusion_block_level_rewriter.cc"],
+    hdrs = ["npu_fusion_block_level_rewriter.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/ir:backend_config",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla:shape_util",
+        "//xla/stream_executor:device_description",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:errors",
+    ],
+)
+
+# NpuGemmFusionSwapOperands
+cc_library(
+    name = "npu_gemm_fusion_swap_operands",
+    srcs = ["npu_gemm_fusion_swap_operands.cc"],
+    hdrs = ["npu_gemm_fusion_swap_operands.h"],
+    deps = [
+        "//xla/xla_npu/service:backend_config_cc",
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla:shape_util",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:errors",
+    ],
+)
+
+# NpuFusionDispatchPipeline
+cc_library(
+    name = "npu_fusion_dispatch_pipeline",
+    srcs = ["npu_fusion_dispatch_pipeline.cc"],
+    hdrs = ["npu_fusion_dispatch_pipeline.h"],
+    deps = [
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+        ":npu_custom_kernel_fusion_rewriter",
+        ":npu_fusion_block_level_rewriter",
+        ":npu_fusion_dynamic_memcpy_rewriter",
+        ":npu_gemm_fusion",
+        ":npu_gemm_fusion_swap_operands",
+        ":npu_nest_gemm_fusion",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/hlo/pass:hlo_pass_pipeline",
+        "//xla/hlo/analysis:symbolic_expr",
+        "//xla/hlo/transforms/simplifiers:hlo_dce",
+        "//xla/service:hlo_cost_analysis",
+        "//xla/service:hlo_cse",
+        "//xla/stream_executor:device_description",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "//xla/tsl/platform:status",
+        "@llvm-project//mlir:IR",
     ],
 )

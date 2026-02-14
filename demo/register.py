@@ -43,12 +43,12 @@ try:
     # print(x)
 
     x1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
-    x2 = np.array([[-1.0, -2.0, -3.0, -4.0], [-5.0, -6.0, -7.0, -8.0]])
+    # x2 = np.array([[-1.0, -2.0, -3.0, -4.0], [-5.0, -6.0, -7.0, -8.0]])
     print(f"input array 1: {x1}")
-    print(f"input array 2: {x2}")
+    # print(f"input array 2: {x2}")
 
-    func = jax.jit(lambda x1, x2: jax.nn.gelu(x1) + x2)
-    y = func(x1, x2)
+    func = jax.jit(lambda x1: jax.nn.gelu(x1) + x1)
+    y = func(x1)
     result = y.block_until_ready()
     print(f"output array: {result}")
 

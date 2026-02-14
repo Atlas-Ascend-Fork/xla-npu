@@ -1703,8 +1703,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //                           autotune_results);
     // }
 
-    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run no hlo pass");
-
 #if NPU_AUTO_FUSE_BACKEND > 0
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");
 

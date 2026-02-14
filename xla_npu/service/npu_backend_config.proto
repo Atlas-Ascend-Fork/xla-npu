@@ -61,6 +61,35 @@ message CustomFusionConfig {
   int32 kernel_index = 2;
 }
 
+// Backend config specifically for NPU GEMM fusion operations.
+message NpuGemmConfig {
+  // Whether to fuse bias addition after GEMM
+  bool has_bias = 1;
+
+  // Activation mode after GEMM
+  int32 activation_mode = 2;  // 0=none, 1=relu, 2=gelu, 3=sigmoid, 4=tanh
+
+  // Block sizes for NPU tiling
+  int32 block_m = 3;
+  int32 block_n = 4;
+  int32 block_k = 5;
+
+  // Whether to use NPU native layout (FRACTAL_NZ)
+  bool use_nz_layout = 6;
+}
+
+// Backend config for block-level fusion on NPU.
+message NpuBlockLevelConfig {
+  // Output tile sizes for each dimension
+  repeated int64 output_tile_sizes = 1;
+
+  // Number of blocks to use for parallel computation
+  int32 num_blocks = 2;
+
+  // Number of stages for pipelining optimization
+  int32 num_stages = 3;
+}
+
 // Backend config for NPU fusion operations.
 message FusionBackendConfig {
   // kLoop, kInput, or kOutput (from HloInstruction::FusionKind), or custom string.
@@ -69,12 +98,30 @@ message FusionBackendConfig {
   // Only valid when is a custom fusion.
   CustomFusionConfig custom_fusion_config = 4;
 
+  // Optional custom call target for NPU custom kernels
+  string custom_call_target = 5;
+
+  // NPU GEMM specific configuration (for __npu_aclnn_gemm kind)
+  NpuGemmConfig npu_gemm_config = 6;
+
+  // Block-level fusion configuration (for __npu_block kind)
+  NpuBlockLevelConfig block_config = 7;
+
   reserved 3;
 }
 
 // Generic backend config for XLA:NPU.
 message BackendConfig {
   oneof backend_config_oneof {
+    DotBackendConfig dot_backend_config = 1;
+    FusionBackendConfig fusion_backend_config = 2;
+  }
+}
+
+// Top-level backend config wrapper for NPU - matches the expected API usage in transforms.
+// This mirrors the GPU's GpuBackendConfig structure.
+message NpuBackendConfig {
+  oneof config {
     DotBackendConfig dot_backend_config = 1;
     FusionBackendConfig fusion_backend_config = 2;
   }
