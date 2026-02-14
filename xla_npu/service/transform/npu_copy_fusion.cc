@@ -26,6 +26,7 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/str_format.h"
 #include "xla/codegen/ir_emission_utils.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_opcode.h"

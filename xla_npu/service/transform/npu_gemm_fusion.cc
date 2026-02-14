@@ -222,7 +222,7 @@ absl::StatusOr<bool> NpuGemmFusion::FuseDotOperand(HloInstruction* dot,
         fusion_params.push_back(operand);
         builder.AddInstruction(HloInstruction::CreateParameter(
                 param_index, operand->shape(),
-                absl::StrCat("parameter_", param_index)));
+                absl::StrFormat("parameter_%d", param_index)));
         return true;
     }
 
@@ -231,7 +231,7 @@ absl::StatusOr<bool> NpuGemmFusion::FuseDotOperand(HloInstruction* dot,
     fusion_params.push_back(operand);
     builder.AddInstruction(HloInstruction::CreateParameter(
             param_index, operand->shape(),
-            absl::StrCat("parameter_", param_index)));
+            absl::StrFormat("parameter_%d", param_index)));
     return true;
 }
 
@@ -249,7 +249,7 @@ absl::StatusOr<bool> NpuGemmFusion::FuseDotOutput(HloInstruction* dot,
             fusion_params.push_back(const_cast<HloInstruction*>(next->operand(1)));
             builder.AddInstruction(HloInstruction::CreateParameter(
                     param_index, next->operand(1)->shape(),
-                    absl::StrCat("parameter_", param_index)));
+                    absl::StrFormat("parameter_%d", param_index)));
 
             std::vector<HloInstruction*> operands;
             for (int i = 0; i < current->operand_count(); ++i) {
@@ -269,7 +269,7 @@ absl::StatusOr<HloInstruction*> NpuGemmFusion::CreateDotFusion(
         const HloDotInstruction& dot, HloModule* module,
         const NpuGemmFusionConfig& config) {
     std::string fusion_name = absl::StrCat("npu_gemm_fusion_", dot.name());
-    HloComputation::Builder builder(absl::StrCat(fusion_name, "_computation"));
+    HloComputation::Builder builder(absl::StrCat("npu_gemm_fusion_", dot.name(), "_computation"));
 
     std::vector<HloInstruction*> fusion_params;
 
@@ -281,7 +281,7 @@ absl::StatusOr<HloInstruction*> NpuGemmFusion::CreateDotFusion(
         fusion_params.push_back(const_cast<HloInstruction*>(operand));
         HloInstruction* param = builder.AddInstruction(HloInstruction::CreateParameter(
                 param_index, operand->shape(),
-                absl::StrCat("parameter_", param_index)));
+                absl::StrFormat("parameter_%d", param_index)));
         new_operands.push_back(param);
     }
 

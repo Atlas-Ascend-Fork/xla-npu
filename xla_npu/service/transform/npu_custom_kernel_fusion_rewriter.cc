@@ -174,8 +174,8 @@ absl::StatusOr<HloInstruction*> NpuCustomKernelFusionRewriter::RewriteSoftmax(
 
     VLOG(3) << "Rewriting softmax: " << softmax_root->ToString();
 
-    std::string fusion_name = absl::StrCat("acl_softmax_", softmax_root->name());
-    HloComputation::Builder builder(absl::StrCat(fusion_name, "_computation"));
+    HloComputation::Builder builder(absl::StrCat("acl_softmax_", softmax_root->name(), "_computation"));
+    std::string fusion_name = "acl_softmax_" + std::string(softmax_root->name());
 
     // Create parameter for the input
     const HloInstruction* input = softmax_root;

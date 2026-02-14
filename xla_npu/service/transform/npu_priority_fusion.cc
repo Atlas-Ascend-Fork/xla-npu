@@ -173,9 +173,19 @@ absl::StatusOr<bool> NpuPriorityFusion::RunImpl(HloModule* module,
                                                 const absl::flat_hash_set<absl::string_view>& execution_threads) {
     bool changed = false;
 
-    // Process each computation
-    auto all_computations = module->computations(execution_threads);
-    for (HloComputation* computation : all_computations) {
+    // Copy computations to a vector to avoid iterator invalidation during fusion
+    std::vector<HloComputation*> all_computations_list;
+    for (HloComputation* computation : module->computations(execution_threads)) {
+        all_computations_list.push_back(computation);
+    }
+
+    // Process each computation from the copied list
+    for (HloComputation* computation : all_computations_list) {
+        if (computation == nullptr) {
+            NPU_LOG_FORMAT_PRINT(WARN, "NpuPriorityFusion: skipping null computation");
+            continue;
+        }
+
         if (computation->IsFusionComputation()) {
             continue;
         }

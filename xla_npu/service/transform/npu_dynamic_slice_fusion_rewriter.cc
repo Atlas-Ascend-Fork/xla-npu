@@ -114,7 +114,7 @@ absl::StatusOr<HloComputation*> CreateFusionBody(
     for (const HloInstruction* capture : captures) {
         int64_t index = instr_mapping.size();
         instr_mapping[capture] = builder.AddInstruction(HloInstruction::CreateParameter(
-            index, capture->shape(), absl::StrCat("p", index)));
+            index, capture->shape(), absl::StrFormat("p%d", index)));
     }
 
     // Instructions in the pattern are already topologically sorted

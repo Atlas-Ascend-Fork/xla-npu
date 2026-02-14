@@ -37,17 +37,15 @@ try:
     print(f"Devices type: {type(jax.devices())}")
     print(f"Devices available: {jax.devices()}")
 
-    # Creates a JAX array, calling Mock_Buffer_FromHost()
-    # x = jnp.array([8.0, 2.0, 3.0])
-    # print(f"Created JAX array on device: {x.devices()}")
-    # print(x)
-
     x1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
-    # x2 = np.array([[-1.0, -2.0, -3.0, -4.0], [-5.0, -6.0, -7.0, -8.0]])
-    print(f"input array 1: {x1}")
-    # print(f"input array 2: {x2}")
+    print(f"input array: {x1}")
 
-    func = jax.jit(lambda x1: jax.nn.gelu(x1) + x1)
+    # 定义多融合算子场景的函数 (单参数输入)
+    def multi_fusion_func(x1):
+        y = jax.nn.tanh(x1)*x1 + jax.nn.gelu(x1)*x1 + jax.nn.relu(x1)*x1
+        return y
+
+    func = jax.jit(multi_fusion_func)
     y = func(x1)
     result = y.block_until_ready()
     print(f"output array: {result}")
