@@ -63,10 +63,11 @@ struct AFIRToASCIRTextPass : public ::impl::ConvertAFIRToASCIRTextPassBase<AFIRT
     std::string convertModuleToASCIRText(ModuleOp module);
     std::string convertFuncToASCIRText(func::FuncOp func, Attribute graphAttr);
     std::string convertOpToASCIRText(Operation* op, int& nodeCounter, llvm::StringMap<std::string>& ssaToNodeName,
-                                     const std::string& graphName);
+                                     const std::string& graphName,
+                                     const llvm::StringMap<SmallVector<Operation*, 4>> &valueToConsumers);
     std::string generateGraphAttr(Attribute graphAttr);
     std::string generateNodeAttr(Operation* op, const std::string& nodeName, int nodeCounter);
-    std::string generateTensorAttr(Operation* op);
+    std::string generateTensorAttr(Operation* op, const llvm::StringMap<SmallVector<Operation*, 4>> &valueToConsumers);
     std::string generateApiAttr(Operation* op);
     std::string generateIrAttrDef(Operation* op);
     std::string generateIrDef(Operation* op);
@@ -207,6 +208,18 @@ std::string AFIRToASCIRTextPass::convertFuncToASCIRText(func::FuncOp func, Attri
 
     // Generate compute nodes
     Block& block = func.getBody().front();
+
+    // Build a map from SSA value to its consuming operation(s)
+    llvm::StringMap<SmallVector<Operation*, 4>> valueToConsumers;
+    for (Operation &op : block) {
+      for (Value operand : op.getOperands()) {
+        std::string ptrStr;
+        llvm::raw_string_ostream(ptrStr) << operand.getAsOpaquePointer();
+        std::string ssaName = "ssa_" + ptrStr;
+        valueToConsumers[ssaName].push_back(&op);
+      }
+    }
+
     for (Operation& op : block) {
         if (!isa<func::ReturnOp>(op)) {
             // Generate Data nodes for arguments that are used for the first time
@@ -228,7 +241,7 @@ std::string AFIRToASCIRTextPass::convertFuncToASCIRText(func::FuncOp func, Attri
                 }
             }
 
-            std::string nodeText = convertOpToASCIRText(&op, nodeCounter, ssaToNodeName, graphName);
+            std::string nodeText = convertOpToASCIRText(&op, nodeCounter, ssaToNodeName, graphName, valueToConsumers);
             os << nodeText;
         }
     }
@@ -258,7 +271,8 @@ std::string AFIRToASCIRTextPass::convertFuncToASCIRText(func::FuncOp func, Attri
 
 std::string AFIRToASCIRTextPass::convertOpToASCIRText(Operation* op, int& nodeCounter,
                                                       llvm::StringMap<std::string>& ssaToNodeName,
-                                                      const std::string& graphName) {
+                                                      const std::string& graphName,
+                                                      const llvm::StringMap<SmallVector<Operation*, 4>> &valueToConsumers) {
     std::string result;
     llvm::raw_string_ostream os(result);
 
@@ -302,7 +316,7 @@ std::string AFIRToASCIRTextPass::convertOpToASCIRText(Operation* op, int& nodeCo
 
     os << "asc_node {\n";
     os << generateInputSrc(op, ssaToNodeName);
-    os << generateTensorAttr(op);
+    os << generateTensorAttr(op, valueToConsumers);
     os << generateNodeAttr(op, fullNodeName, nodeCounter);
     os << generateIrDef(op);
     os << "}\n";
@@ -405,7 +419,7 @@ std::string AFIRToASCIRTextPass::generateNodeAttr(Operation* op, const std::stri
     return result;
 }
 
-std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op) {
+std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::StringMap<SmallVector<Operation*, 4>> &valueToConsumers) {
     std::string result;
     llvm::raw_string_ostream os(result);
 
@@ -447,21 +461,69 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op) {
         os << "  outputs {\n";
         os << "    attr {\n";
 
-        for (int i = 0; i < rank; i++) {
-            os << "      axis_ids: " << i << "\n";
-        }
+        // For scalar tensors (rank 0), get axis information from the next consumer node
+        if (rank == 0) {
+            // Find the consumer of this operation's result
+            Value result = op->getResult(0);
+            std::string ptrStr;
+            llvm::raw_string_ostream(ptrStr) << result.getAsOpaquePointer();
+            std::string ssaName = "ssa_" + ptrStr;
 
-        for (int i = 0; i < rank; i++) {
-            int64_t size = shapedType.getDimSize(i);
-            if (size == ShapedType::kDynamic) {
-                os << "      repeats: \"-1\"\n";
+            auto it = valueToConsumers.find(ssaName);
+            if (it != valueToConsumers.end() && !it->second.empty()) {
+                // Get the first consumer operation
+                Operation *consumer = it->second[0];
+
+                // Get the consumer's output attribute
+                auto consumerOutputsAttr = consumer->getAttrOfType<ArrayAttr>("outputs");
+                if (consumerOutputsAttr && !consumerOutputsAttr.empty()) {
+                    auto consumerTensorAttr = dyn_cast<afir::AscTensorGroupsAttr>(consumerOutputsAttr[0]);
+                    if (consumerTensorAttr) {
+                        // Copy axis_ids from the consumer's vectorized_axis
+                        auto consumerAxis = consumerTensorAttr.getVectorizedAxis();
+                        for (int64_t axisId : consumerAxis) {
+                            os << "      axis_ids: " << axisId << "\n";
+                        }
+                        // For scalar nodes, set all repeats to 1 and all strides to 0
+                        for (size_t i = 0; i < consumerAxis.size(); i++) {
+                            os << "      repeats: \"1\"\n";
+                        }
+                        for (size_t i = 0; i < consumerAxis.size(); i++) {
+                            os << "      strides: \"0\"\n";
+                        }
+                    } else {
+                        // Fallback if consumer tensor attr is not valid
+                        os << "      axis_ids: 0\n";
+                        os << "      repeats: \"1\"\n";
+                        os << "      strides: \"0\"\n";
+                    }
+                } else {
+                    // Fallback if consumer has no outputs attr
+                    os << "      axis_ids: 0\n";
+                    os << "      repeats: \"1\"\n";
+                    os << "      strides: \"0\"\n";
+                }
             } else {
-                os << "      repeats: \"" << size << "\"\n";
+                // No consumer found - this shouldn't happen for normal cases, but add fallback
+                os << "      axis_ids: 0\n";
+                os << "      repeats: \"1\"\n";
+                os << "      strides: \"0\"\n";
             }
+        } else {
+            // Normal case: non-scalar tensor
+            for (int i = 0; i < rank; i++) {
+                os << "      axis_ids: " << i << "\n";
+            }
+            for (int i = 0; i < rank; i++) {
+                int64_t size = shapedType.getDimSize(i);
+                if (size == ShapedType::kDynamic) {
+                    os << "      repeats: \"-1\"\n";
+                } else {
+                    os << "      repeats: \"" << size << "\"\n";
+                }
+            }
+            os << calculateStrides(shape);
         }
-
-        os << calculateStrides(shape);
-
         os << "      mem {\n";
         os << "        tensor_id: " << tensorId << "\n";
         os << "      }\n";

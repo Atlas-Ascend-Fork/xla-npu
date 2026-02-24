@@ -301,14 +301,20 @@ absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(co
 
     const HloComputation* entry = hlo_module.entry_computation();
 
-    // Only convert non-entry computations
+    // Only convert fusion computations (non-entry)
     for (const HloComputation* computation : hlo_module.computations()) {
         if (computation == entry) {
             NPU_LOG_FORMAT_PRINT(INFO, "Skipping entry computation: %s", std::string(computation->name()).c_str());
             continue;
         }
 
-        NPU_LOG_FORMAT_PRINT(INFO, "Converting non-entry computation: %s", std::string(computation->name()).c_str());
+        // Only convert fusion computations
+        if (!computation->IsFusionComputation()) {
+            NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
+            continue;
+        }
+
+        NPU_LOG_FORMAT_PRINT(INFO, "Converting fusion computation: %s", std::string(computation->name()).c_str());
 
         // Create MLIR context for this computation
         auto context = std::make_unique<mlir::MLIRContext>();
@@ -333,7 +339,7 @@ absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(co
         afir_strings.push_back(afir_string);
     }
 
-    NPU_LOG_FORMAT_PRINT(INFO, "Converted %d non-entry computations to AFIR", afir_strings.size());
+    NPU_LOG_FORMAT_PRINT(INFO, "Converted %d fusion computations to AFIR", afir_strings.size());
 
     return afir_strings;
 }
@@ -750,6 +756,14 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
         if (computation == entry) {
             continue;
         }
+
+        // Only convert fusion computations
+        if (!computation->IsFusionComputation()) {
+            NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
+            continue;
+        }
+
+        NPU_LOG_FORMAT_PRINT(INFO, "Converting fusion computation: %s", std::string(computation->name()).c_str());
 
         const std::string& afir_string = afir_strings[idx];
         const std::string computation_name = std::string(computation->name());

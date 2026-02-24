@@ -70,6 +70,7 @@ class HloToAfirConverter {
     absl::StatusOr<mlir::Value> ConvertSubtractOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertMultiplyOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertDivideOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertMaximumOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertBroadcastOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertTanhOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertFusionOp(const HloInstruction* instruction);
@@ -276,6 +277,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertInstruction(const HloInst
 
         case HloOpcode::kBroadcast:
             return ConvertBroadcastOp(instruction);
+
+        case HloOpcode::kMaximum:
+            return ConvertMaximumOp(instruction);
 
         case HloOpcode::kTanh:
             return ConvertTanhOp(instruction);
@@ -536,6 +540,42 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertDivideOp(const HloInstruc
     // Use arith.div as fallback
     auto div_op = builder_.create<mlir::arith::DivSIOp>(loc, lhs, rhs);
     return div_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertMaximumOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() != 2) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Maximum operation must have 2 operands, got ", instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Value lhs = value_map_[instruction->operand(0)];
+    mlir::Value rhs = value_map_[instruction->operand(1)];
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Use afir.MaximumOp when emit_afir_dialect is true
+    if (options_.emit_afir_dialect) {
+    int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+    auto identity_map = GetIdentityAffineMap(rank);
+
+    auto output_attr = CreateDefaultOutputAttr(result_type);
+    llvm::SmallVector<mlir::Attribute> output_attrs;
+    output_attrs.push_back(output_attr);
+    auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+    llvm::SmallVector<mlir::AffineMap> maps;
+    maps.push_back(identity_map);
+    maps.push_back(identity_map);
+    maps.push_back(identity_map);
+    auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+    auto max_op = builder_.create<mlir::afir::MaximumOp>(
+        loc, result_type, lhs, rhs,
+        indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
+    return max_op.getResult();
+    }
+
+    return absl::UnimplementedError("Maximum operation requires emit_afir_dialect to be enabled");
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertTanhOp(const HloInstruction* instruction) {
