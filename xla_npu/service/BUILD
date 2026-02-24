@@ -92,6 +92,17 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_latency_hiding_scheduler",
+    srcs = ["npu_latency_hiding_scheduler.cc"],
+    hdrs = ["npu_latency_hiding_scheduler.h"],
+    deps = [
+        "//xla:shape_util",
+        "//xla/hlo/ir:hlo",
+        "//xla/service:hlo_cost_analysis",
+    ],
+)
+
+cc_library(
     name = "npu_ir_emission_utils",
     srcs = ["npu_ir_emission_utils.cc"],
     hdrs = ["npu_ir_emission_utils.h"],
@@ -225,6 +236,24 @@ cc_library(
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_set",
         # "@llvm-project//llvm:Support",
+    ],
+)
+
+cc_library(
+    name = "npu_hlo_schedule",
+    srcs = ["npu_hlo_schedule.cc"],
+    hdrs = ["npu_hlo_schedule.h"],
+    deps = [
+        ":npu_alias_info",
+        "//xla/hlo/ir:hlo",
+        "//xla/hlo/analysis:symbolic_expr",
+        "//xla/hlo/transforms/simplifiers:hlo_memory_scheduler",
+        "//xla/service:buffer_value",
+        "//xla/stream_executor:device_description",
+        "@tsl//tsl/profiler/lib:traceme",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -698,10 +727,10 @@ cc_library(
         # "//xla/service/gpu:fusion_dispatch_pipeline",
         "//xla/service/gpu:fusion_pipeline",
         # "//xla/service/gpu:gpu_constants",
-        # "//xla/service/gpu:gpu_executable",
+        # "//xra/service/gpu:gpu_executable",
         # "//xla/service/gpu:gpu_executable_proto_cc",
         # "//xla/service/gpu:gpu_float_support",
-        "//xla/service/gpu:gpu_hlo_schedule",
+        # "//xla/service/gpu:gpu_hlo_schedule",
         "//xla/service/gpu:gpu_latency_hiding_scheduler",
         # "//xla/service/gpu:gpu_spmd_pipeline",
         # "//xla/service/gpu:hlo_fusion_stats",
@@ -718,6 +747,8 @@ cc_library(
         # "//xla/service/gpu:stream_executor_util",
 
         ":npu_alias_info",
+        ":npu_hlo_schedule",
+        ":npu_latency_hiding_scheduler",
         ":npu_ir_emitter_context",
         ":npu_executable",
         ":npu_execution_stream_assignment",
@@ -725,7 +756,6 @@ cc_library(
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/service/transform:npu_super_fusion",
         "//xla/xla_npu/service/transform:npu_fusion_passes",
 
         ":npu_compile_module_to_llvm_ir", # 务必不要修改此依赖的相对顺序

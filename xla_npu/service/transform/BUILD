@@ -242,21 +242,7 @@ cc_library(
     ],
 )
 
-# 原有的 npu_super_fusion 保留
-cc_library(
-    name = "npu_super_fusion",
-    srcs = ["npu_super_fusion.cc"],
-    hdrs = ["npu_super_fusion.h"],
-    deps = [
-        "//xla/xla_npu/dependency/tool:log",
-
-        "//xla/hlo/ir:hlo",
-        "//xla/hlo/pass:hlo_pass",
-        "//xla/hlo/transforms/simplifiers:hlo_dce",
-        "//xla:status_macros",
-        "@com_google_absl//absl/log:log",
-    ],
-)
+# NpuGemmFusion
 
 # NpuGemmFusion
 cc_library(

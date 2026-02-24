@@ -295,13 +295,14 @@
 #endif  // PLATFORM_GOOGLE
 
 // TODO 部分gpu依赖暂时无法去除,后续需实现成NPU的
-#include "xla/service/gpu/alias_info.h"
-#include "xla/service/gpu/autotuning/autotuner_util.h"
-#include "xla/service/gpu/backend_configs.pb.h"
-#include "xla/service/gpu/fusion_pipeline.h"
-#include "xla/service/gpu/gpu_hlo_schedule.h"
-#include "xla/service/gpu/gpu_latency_hiding_scheduler.h"
-#include "xla/service/gpu/transforms/add_tracking_suffix_to_instruction_names.h"
+// #include "xla/service/gpu/alias_info.h"
+// #include "xla/service/gpu/autotuning/autotuner_util.h"
+// #include "xla/service/gpu/backend_configs.pb.h"
+// #include "xla/service/gpu/fusion_pipeline.h"
+// #include "xla/service/gpu/gpu_hlo_schedule.h"  // Using NPU schedule instead
+// #include "xla/service/gpu/gpu_latency_hiding_scheduler.h"
+// #include "xla/service/gpu/transforms/add_tracking_suffix_to_instruction_names.h"
+#include "xla/xla_npu/service/npu_latency_hiding_scheduler.h"
 // #include "xla/service/gpu/transforms/rename_fusions.h"  // Using NPU rename_fusions instead
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_config.h"
@@ -311,10 +312,10 @@
 #include "xla/xla_npu/service/npu_compile_module_to_llvm_ir.h"
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_execution_stream_assignment.h"
+#include "xla/xla_npu/service/npu_hlo_schedule.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
 #include "xla/xla_npu/service/transform/npu_fusion_pipeline.h"
-#include "xla/xla_npu/service/transform/npu_super_fusion.h"
 
 namespace xla {
 
@@ -350,14 +351,16 @@ MaybeOwningThreadPool CreateMaybeOwningThreadPool(int parallelism, tsl::thread::
     }
 }
 
-gpu::DeviceOrDevicelessConfig GetDeviceConfig(se::StreamExecutor* stream_exec,
-                                              const NpuCompiler::CompileOptions& options,
-                                              const Compiler::GpuTargetConfig& gpu_target_config) {
-    if (stream_exec) {
-        return gpu::DeviceOrDevicelessConfig{gpu::DeviceConfig{stream_exec, options.device_allocator}};
-    }
-    return gpu::DeviceOrDevicelessConfig{gpu::DevicelessConfig{gpu_target_config.device_description}};
-}
+// TODO: Implement NPU-specific DeviceOrDevicelessConfig
+// Commented out GPU-specific implementation
+// gpu::DeviceOrDevicelessConfig GetDeviceConfig(se::StreamExecutor* stream_exec,
+//                                               const NpuCompiler::CompileOptions& options,
+//                                               const Compiler::GpuTargetConfig& gpu_target_config) {
+//     if (stream_exec) {
+//         return gpu::DeviceOrDevicelessConfig{gpu::DeviceConfig{stream_exec, options.device_allocator}};
+//     }
+//     return gpu::DeviceOrDevicelessConfig{gpu::DevicelessConfig{gpu_target_config.device_description}};
+// }
 
 se::GpuComputeCapability GetGpuVersion(const se::StreamExecutor* stream_exec) {
     return stream_exec->GetDeviceDescription().gpu_compute_capability();
@@ -491,29 +494,32 @@ void LogDebugOptions(HloModule* hlo_module) {
 
 namespace {
 
-absl::Status SetHostDeviceType(HloInstruction* instr) {
-    TF_ASSIGN_OR_RETURN(auto backend_config, instr->backend_config<gpu::GpuBackendConfig>());
-    backend_config.set_device_type(gpu::DEVICE_TYPE_HOST);
-    TF_RETURN_IF_ERROR(instr->set_backend_config(backend_config));
-    return absl::OkStatus();
-}
+// TODO: Implement NPU-specific device type handling
+// Commented out GPU-specific implementation
+// NPU does not use GPU-specific device type handling
+// absl::Status SetHostDeviceType(HloInstruction* instr) {
+//     TF_ASSIGN_OR_RETURN(auto backend_config, instr->backend_config<gpu::GpuBackendConfig>());
+//     backend_config.set_device_type(gpu::DEVICE_TYPE_HOST);
+//     TF_RETURN_IF_ERROR(instr->set_backend_config(backend_config));
+//     return absl::OkStatus();
+// }
 
-absl::Status ClearBackendConfigDeviceType(HloInstruction* instr) {
-    TF_ASSIGN_OR_RETURN(auto backend_config, instr->backend_config<gpu::GpuBackendConfig>());
-    backend_config.clear_device_type();
-    return instr->set_backend_config(backend_config);
-}
+// absl::Status ClearBackendConfigDeviceType(HloInstruction* instr) {
+//     TF_ASSIGN_OR_RETURN(auto backend_config, instr->backend_config<gpu::GpuBackendConfig>());
+//     backend_config.clear_device_type();
+//     return instr->set_backend_config(backend_config);
+// }
 
-bool BackendConfigDeviceTypeIsHost(HloInstruction* instr) {
-    if (!instr->has_backend_config()) {
-        return false;
-    }
-    auto backend_config = instr->backend_config<gpu::GpuBackendConfig>();
-    if (!backend_config.ok()) {
-        return false;
-    }
-    return backend_config->device_type() == gpu::DEVICE_TYPE_HOST;
-}
+// bool BackendConfigDeviceTypeIsHost(HloInstruction* instr) {
+//     if (!instr->has_backend_config()) {
+//         return false;
+//     }
+//     auto backend_config = instr->backend_config<gpu::GpuBackendConfig>();
+//     if (!backend_config.ok()) {
+//         return false;
+//     }
+//     return backend_config->device_type() == gpu::DEVICE_TYPE_HOST;
+// }
 
 }  // namespace
 
@@ -936,7 +942,8 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
     const se::DeviceDescription& gpu_device_info = gpu_target_config.device_description;
 
     HloPassPipeline pre_fusion("pre-npu-fusion");
-    pre_fusion.AddPass<gpu::AddTrackingSuffixToInstructionNames>();
+    // TODO: Implement NPU-specific AddTrackingSuffixToInstructionNames pass
+    // pre_fusion.AddPass<gpu::AddTrackingSuffixToInstructionNames>();
     TF_RETURN_IF_ERROR(pre_fusion.Run(hlo_module).status());
 
     TF_RETURN_IF_ERROR(NpuFusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool,
@@ -1226,12 +1233,13 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     //                                   gpu_target_config.platform_name == "ROCM");
 
     {
-        HloPassPipeline pipeline("annotate-host-compute");
-        HloHostDeviceTypeCallWrapper::Options hlo_host_device_type_call_wrapper_options;
-        hlo_host_device_type_call_wrapper_options.set_backend_config_fn = SetHostDeviceType;
-        hlo_host_device_type_call_wrapper_options.clear_backend_config_device_type = ClearBackendConfigDeviceType;
-        pipeline.AddPass<HloHostDeviceTypeCallWrapper>(hlo_host_device_type_call_wrapper_options);
-        TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
+        // NPU does not use GPU-specific host device type handling
+        // HloPassPipeline pipeline("annotate-host-compute");
+        // HloHostDeviceTypeCallWrapper::Options hlo_host_device_type_call_wrapper_options;
+        // hlo_host_device_type_call_wrapper_options.set_backend_config_fn = SetHostDeviceType;
+        // hlo_host_device_type_call_wrapper_options.clear_backend_config_device_type = ClearBackendConfigDeviceType;
+        // pipeline.AddPass<HloHostDeviceTypeCallWrapper>(hlo_host_device_type_call_wrapper_options);
+        // TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
     }
 
     // TF_RETURN_IF_ERROR(RunPreSPMDPartitionerPasses(hlo_module));
@@ -1243,6 +1251,8 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
 
     {
         HloPassPipeline pipeline("host-compute");
+        // NPU does not support host compute offloading, so use a lambda that always returns false
+        auto BackendConfigDeviceTypeIsHost = [](HloInstruction* instr) { return false; };
         pipeline.AddPass<HostComputeAsyncifier>(BackendConfigDeviceTypeIsHost);
         pipeline.AddPass<HostOffloadingPrepare>(HostOffloadingPrepare::Rewrite::kConvertToCustomCall);
         TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
@@ -2134,12 +2144,10 @@ absl::StatusOr<NpuCompiler::CompileResultWithMetadata> NpuCompiler::CompileToBac
     const se::DeviceDescription& gpu_device_info) {
     tsl::profiler::TraceMe traceme("CompileToBackendResult");
     std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
-    std::unique_ptr<gpu::GpuAliasInfo> gpu_alias_info =
-        std::make_unique<gpu::GpuAliasInfo>(gpu_device_info);  // TODO 切换为NPU的
     // TF_RETURN_IF_ERROR(RunPreSchedulingPasses(module, gpu_device_info, alias_info.get()));
     TF_ASSIGN_OR_RETURN(
-        gpu::ScheduleMetadata schedule_metadata,
-        gpu::ScheduleGpuModule(module, pointer_size_, gpu_device_info, &symbolic_expr_context_, gpu_alias_info.get()));
+        NpuScheduleMetadata schedule_metadata,
+        NpuScheduleModule(module, pointer_size_, gpu_device_info, &symbolic_expr_context_, alias_info.get()));
     HloPassPipeline pipeline("scheduled-npu-module");
     AddHloVerifier(&pipeline);
     TF_RETURN_IF_ERROR(pipeline.Run(module).status());
@@ -2430,8 +2438,7 @@ absl::StatusOr<std::vector<std::unique_ptr<AotCompilationResult>>> NpuCompiler::
 }
 
 HloCostAnalysis::ShapeSizeFunction NpuCompiler::ShapeSizeBytesFunction() const {
-    // Capture just the pointer size, not the entire NpuCompiler object.
-    return gpu::ShapeSizeBytesFunction(pointer_size_);
+    return NpuShapeSizeBytesFunction(pointer_size_, std::nullopt);
 }
 
 absl::StatusOr<std::unique_ptr<AotCompilationResult>> NpuCompiler::Export(Executable* executable) const {
