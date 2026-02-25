@@ -80,6 +80,12 @@
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 
+#if NPU_AUTO_FUSE_BACKEND == 1
+#include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
+#elif NPU_AUTO_FUSE_BACKEND == 2
+#include "xla/xla_npu/service/convert_to_npuir/npuir_backend.h"
+#endif
+
 namespace xla {
 
 namespace {
@@ -1226,7 +1232,21 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     std::string computation_name =
         std::string(fused_computation->name());  // 此处kernel的名称为computation的名称,即calls后面跟的名称
 
-    auto artifact_infos = ir_emitter_context.GetNpuCompileResult().artifact_infos;
+    NpuCompileResult npu_compile_result;
+#if NPU_AUTO_FUSE_BACKEND == 1
+    // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
+    NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
+    AscirBackend ascir_backend;
+    AscirBackendOptions ascir_backend_compile_option;
+    ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
+    ascir_backend_compile_option.soc_version = "Ascend910B1"; // TODO 支持自动感知,或者用户通过环境变量配置
+    TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(fused_computation, ascir_backend_compile_option));
+#elif NPU_AUTO_FUSE_BACKEND == 2
+    NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
+    mlir::hfusion::GraphGenTester::test();
+#endif
+
+    auto artifact_infos = npu_compile_result.artifact_infos;
 
     CHECK_COND_AND_PRINT_NPU_LOG(artifact_infos.count(computation_name) == 0,
                                  "Can't find computation %s in compile result", computation_name);

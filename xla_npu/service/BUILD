@@ -19,23 +19,6 @@ load(
 )
 load("//xla/tsl/xnnpack:build_defs.bzl", "if_ynnpack")
 
-# 条件编译: afir 1, npuir 2 
-config_setting(
-    name = "npu_auto_fuse_backend_afir",
-    define_values = {
-        "NPU_AUTO_FUSE_BACKEND": "1",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "npu_auto_fuse_backend_npuir",
-    define_values = {
-        "NPU_AUTO_FUSE_BACKEND": "2",
-    },
-    visibility = ["//visibility:public"],
-)
-
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
     default_visibility = internal_visibility(["//xla:internal"]),
@@ -288,7 +271,6 @@ cc_library(
         ":npu_executable",
         "//xla/xla_npu/backend/runtime:npu_thunk_id",
         "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/service/kernel:npu_compile_result",
 
         # "//xla/service/gpu:gpu_constants",
         # "//xla/service/gpu:gpu_executable",
@@ -372,7 +354,6 @@ cc_library(
         ":npu_ir_emitter",
         ":npu_ir_emitter_context",
 
-        "//xla/xla_npu/backend/codegen:npu_custom",
         "//xla/xla_npu/backend/codegen:npu_fusion_emitter",
         "//xla/xla_npu/backend/runtime:npu_aclnn_thunk",
         "//xla/xla_npu/backend/runtime:npu_call_thunk",
@@ -402,6 +383,8 @@ cc_library(
         # "//xla/service/gpu:ptx_custom_kernel_emitter",
         # "//xla/service/gpu:stream_executor_util",
         # "//xla/service/gpu:triton_call",
+
+        "//xla/xla_npu/backend/codegen:npu_custom",
 
         "//xla:autotuning_proto_cc",
         "//xla:literal",
@@ -541,16 +524,10 @@ cc_library(
     hdrs = [
         "npu_compile_module_to_llvm_ir.h",
     ],
-    copts = select({
-        ":npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
-        ":npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
-        "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
-    }),
     deps = [
         ":npu_alias_info",
         ":npu_execution_stream_assignment",
         ":npu_ir_emitter_context",
-        ":npu_ir_emitter_unnested",
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
@@ -564,6 +541,8 @@ cc_library(
         # "//xla/service/gpu:ir_emitter_unnested",
         # "//xla/service/gpu:kernel_reuse_cache_proto_cc",
         # "//xla/service/gpu:metrics",
+        
+        ":npu_ir_emitter_unnested",
 
         "//xla:shape_util",
         "//xla:status_macros",
@@ -604,13 +583,7 @@ cc_library(
         "@tsl//tsl/platform:path",
         "@tsl//tsl/profiler/lib:scoped_annotation",
         "@tsl//tsl/profiler/lib:traceme",
-    ] + select({
-        # 一定要保证对ascir_backend的依赖在所有@llvm-project依赖之后(包含间接依赖),
-        # 否则会出现运行时coredump,报错堆栈在mlir::DialectRegistry函数附近
-        ":npu_auto_fuse_backend_afir": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
-        ":npu_auto_fuse_backend_npuir": ["//xla/xla_npu/service/convert_to_npuir:npuir_backend"],
-        "//conditions:default": [],
-    }),
+    ]
 )
 
 cc_library(
@@ -712,11 +685,6 @@ cc_library(
     hdrs = [
         "npu_compiler.h",
     ],
-    copts = select({
-        ":npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
-        ":npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
-        "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
-    }),
     deps = [
         # 为了解决afir依赖导致的coredump问题,务必保证这段gpu的依赖在最前面
         "//xla/service/gpu:alias_info",
@@ -753,7 +721,6 @@ cc_library(
         ":npu_ir_emitter_context",
         ":npu_executable",
         ":npu_execution_stream_assignment",
-        ":npu_ir_emitter_unnested",
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",

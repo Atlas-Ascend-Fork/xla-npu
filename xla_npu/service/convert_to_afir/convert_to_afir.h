@@ -66,14 +66,12 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModu
 //
 // Args:
 //   computation: The HloComputation to convert
-//   module: The HloModule containing all computations (for resolving dependencies)
 //   context: The MLIRContext to use (will load required dialects)
 //   options: Conversion options
 //
 // Returns:
 //   An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies
 absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(const HloComputation& computation,
-                                                                              const HloModule& module,
                                                                               mlir::MLIRContext* context,
                                                                               const HloToAfirOptions& options = {});
 

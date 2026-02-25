@@ -23,7 +23,6 @@ namespace pjrt {
 namespace npu_plugin {
 
 PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args) {
-    // TODO: temp debug
     PJRT_ASSIGN_OR_RETURN(std::unique_ptr<xla::PjRtClient> client, xla::GetNpuPjrtStreamExecutorClient());
 
     // // 暂不使用外部传入参数

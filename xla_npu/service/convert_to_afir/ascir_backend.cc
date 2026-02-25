@@ -295,24 +295,24 @@ AscirBackend::AscirBackend() = default;
 
 AscirBackend::~AscirBackend() = default;
 
-absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(const HloModule& hlo_module,
+absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(const HloComputation* computation,
                                                                               const AscirBackendOptions& options) {
     std::vector<std::string> afir_strings;
 
-    const HloComputation* entry = hlo_module.entry_computation();
+    // const HloComputation* entry = hlo_module.entry_computation();
 
-    // Only convert fusion computations (non-entry)
-    for (const HloComputation* computation : hlo_module.computations()) {
-        if (computation == entry) {
-            NPU_LOG_FORMAT_PRINT(INFO, "Skipping entry computation: %s", std::string(computation->name()).c_str());
-            continue;
-        }
+    // // Only convert fusion computations (non-entry)
+    // for (const HloComputation* computation : hlo_module.computations()) {
+    //     if (computation == entry) {
+    //         NPU_LOG_FORMAT_PRINT(INFO, "Skipping entry computation: %s", std::string(computation->name()).c_str());
+    //         continue;
+    //     }
 
-        // Only convert fusion computations
-        if (!computation->IsFusionComputation()) {
-            NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
-            continue;
-        }
+    //     // Only convert fusion computations
+    //     if (!computation->IsFusionComputation()) {
+    //         NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
+    //         continue;
+    //     }
 
         NPU_LOG_FORMAT_PRINT(INFO, "Converting fusion computation: %s", std::string(computation->name()).c_str());
 
@@ -329,7 +329,7 @@ absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(co
         afir_options.emit_afir_dialect = true;
 
         TF_ASSIGN_OR_RETURN(auto mlir_module,
-                            ConvertHloComputationToAfir(*computation, hlo_module, context.get(), afir_options));
+                            ConvertHloComputationToAfir(*computation, context.get(), afir_options));
 
         // Serialize MLIR module to string immediately
         std::string afir_string;
@@ -337,7 +337,7 @@ absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(co
         mlir_module->print(stream);
 
         afir_strings.push_back(afir_string);
-    }
+    // }
 
     NPU_LOG_FORMAT_PRINT(INFO, "Converted %d fusion computations to AFIR", afir_strings.size());
 
@@ -735,33 +735,33 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(const std::
     return result;
 }
 
-absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_module,
+absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloComputation* computation,
                                                        const AscirBackendOptions& options) {
     NpuCompileResult final_result;
 
     // Step 1: Convert HLO to AFIR for each non-entry computation
-    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(hlo_module, options));
+    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(computation, options));
 
     // Create output directory if it doesn't exist
     std::string mkdir_cmd = absl::StrCat("mkdir -p ", options.output_dir);
     TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-    // Get entry computation to skip
-    const HloComputation* entry = hlo_module.entry_computation();
+    // // Get entry computation to skip
+    // const HloComputation* entry = hlo_module.entry_computation();
 
     // Process each non-entry computation
     int idx = 0;
-    for (const HloComputation* computation : hlo_module.computations()) {
-        // Skip entry computation
-        if (computation == entry) {
-            continue;
-        }
+    // for (const HloComputation* computation : hlo_module.computations()) {
+    //     // Skip entry computation
+    //     if (computation == entry) {
+    //         continue;
+    //     }
 
-        // Only convert fusion computations
-        if (!computation->IsFusionComputation()) {
-            NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
-            continue;
-        }
+    //     // Only convert fusion computations
+    //     if (!computation->IsFusionComputation()) {
+    //         NPU_LOG_FORMAT_PRINT(INFO, "Skipping non-fusion computation: %s", std::string(computation->name()).c_str());
+    //         continue;
+    //     }
 
         NPU_LOG_FORMAT_PRINT(INFO, "Converting fusion computation: %s", std::string(computation->name()).c_str());
 
@@ -806,8 +806,8 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(const HloModule& hlo_modu
         npu_artifact_info.name = comp_result.graph_name;
         npu_artifact_info.dir = options.output_dir;
         final_result.artifact_infos[computation_name] = npu_artifact_info;
-        idx++;
-    }
+        // idx++;
+    // }
 
     NPU_LOG_FORMAT_PRINT(INFO, "Successfully compiled %d computations", final_result.artifact_infos.size());
 

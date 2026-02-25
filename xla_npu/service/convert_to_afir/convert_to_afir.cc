@@ -952,7 +952,6 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModu
 }
 
 absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(const HloComputation& computation,
-                                                                              const HloModule& module,
                                                                               mlir::MLIRContext* context,
                                                                               const HloToAfirOptions& options) {
     // Create MLIR module
