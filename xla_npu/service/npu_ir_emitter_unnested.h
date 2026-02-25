@@ -96,6 +96,8 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
     // NpuIrEmitterUnnested handles the following instructions differently from
     // NpuIrEmitter. It also mixes in some special handling for custom kernels
     // via the ThunkEmitter.
+    absl::Status EmitCall(const HloInstruction* instr);
+
     absl::Status EmitConstant(const HloConstantInstruction* instr);
 
     absl::Status EmitNpuAclnnThunk(const HloInstruction* instr);

@@ -44,8 +44,8 @@ try:
 
     # 定义多融合算子场景的函数 (单参数输入)
     def multi_fusion_func(x1, x2):
-        # y =  jax.nn.gelu(x1) + jax.nn.relu(x2)
-        y =  jax.nn.gelu(x1) 
+        y =  jax.nn.gelu(x1) + jax.nn.relu(x2)
+        # y =  jax.nn.gelu(x1)
         return y
 
     func = jax.jit(multi_fusion_func)

@@ -92,13 +92,13 @@ class AscirBackend {
     //
     // Returns:
     //   NpuCompileResult containing paths to generated files
-    absl::StatusOr<NpuCompileResult> Compile(const HloModule& hlo_module,
+    absl::StatusOr<NpuCompileResult> Compile(const HloComputation* computation,
                                              const AscirBackendOptions& options = AscirBackendOptions());
 
    private:
     // Step 1: Convert HLO to AFIR MLIR module (in-memory)
     // Returns a vector of AFIR strings, one per computation
-    absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(const HloModule& hlo_module,
+    absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(const HloComputation* computation,
                                                                     const AscirBackendOptions& options);
 
     // Step 2: Convert AFIR to AscIR

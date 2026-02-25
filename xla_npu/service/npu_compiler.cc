@@ -1713,7 +1713,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     //                           autotune_results);
     // }
 
-#if NPU_AUTO_FUSE_BACKEND > 0
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");
 
     bool is_deviceless = true;
@@ -1730,18 +1729,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
                                        ShapeSizeBytesFunction(), &symbolic_expr_context_));
 
     NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
-
-    // // hlo instuction融合成一条语句以保证进thunk生成时
-    // // 和当前通过auto fuse融合成的一个算子相匹配(未来应该是通过npu的pass来实现融合)
-    // NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion pass.");
-    // /* 实现所有instruction融合成一条语句(仅用于调试) 开始 */
-    // // Add super fusion pass for NPU
-    // HloPassPipeline super_fusion_pipeline("super-fusion");
-    // super_fusion_pipeline.AddPass<NpuSuperFusion>();
-    // TF_RETURN_IF_ERROR(super_fusion_pipeline.Run(module.get(), {HloInstruction::kMainExecutionThread}).status());
-    // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
-    // /* 实现所有instruction融合成一条语句(仅用于调试) 结束 */
-#endif
 
     return std::move(module);
 }

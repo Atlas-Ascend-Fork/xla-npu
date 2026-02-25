@@ -131,6 +131,7 @@ class NpuThunk {
         kCollectivePermute,
         kCollectivePermuteDone,
         kCollectivePermuteStart,
+        kCall,
         kCommandBuffer,
         kConditional,
         kConvolution,

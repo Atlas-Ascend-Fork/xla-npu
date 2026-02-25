@@ -31,7 +31,6 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
-#include "tsl/platform/path.h"
 #include "tsl/profiler/lib/scoped_annotation.h"
 #include "tsl/profiler/lib/traceme.h"
 // #include "xla/backends/gpu/runtime/sequential_thunk.h"
@@ -57,6 +56,7 @@
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/platform.h"
 // #include "xla/stream_executor/rocm/rocm_platform_id.h"
+#include "tsl/platform/path.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
@@ -71,12 +71,6 @@
 #include "xla/xla_npu/service/npu_executable.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
-
-#if NPU_AUTO_FUSE_BACKEND == 1
-#include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
-#elif NPU_AUTO_FUSE_BACKEND == 2
-#include "xla/xla_npu/service/convert_to_npuir/npuir_backend.h"
-#endif
 
 namespace xla {
 
@@ -282,25 +276,13 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     VLOG(1) << "After optimization module fingerprint for " << hlo_module->name() << ": "
             << hlo_module->GetFingerprint128();
 
-    NpuCompileResult npu_compile_result;
-#if NPU_AUTO_FUSE_BACKEND == 1
-    // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
-    NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
-    AscirBackend ascir_backend;
-    AscirBackendOptions ascir_backend_compile_option;
     const auto& output_sub_dir_name = NpuTool::generate_unique_folder_name_absl();
-    ascir_backend_compile_option.output_dir = tsl::io::JoinPath(
+    const auto& output_dir = tsl::io::JoinPath(
         NpuConfig::GetInstance().GetTypedValue<std::string>(NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR),
         output_sub_dir_name);
-    TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(*hlo_module, ascir_backend_compile_option));
-#elif NPU_AUTO_FUSE_BACKEND == 2
-    NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
-    mlir::hfusion::GraphGenTester::test();
-#endif
-
     std::unique_ptr<mlir::MLIRContext> mlir_context = CreateMlirContext();
     auto symbolic_expr_context = std::make_unique<SymbolicExprContext>(mlir_context.get());
-    NpuIrEmitterContext ir_emitter_context(npu_compile_result, hlo_module, results.buffer_assignment.get(),
+    NpuIrEmitterContext ir_emitter_context(output_dir, hlo_module, results.buffer_assignment.get(),
                                            results.execution_stream_assignment.get(), platform->Name(), device_desc,
                                            mlir_context.get(), results.llvm_module.get(),
                                            results.llvm_module_constants.get(),
