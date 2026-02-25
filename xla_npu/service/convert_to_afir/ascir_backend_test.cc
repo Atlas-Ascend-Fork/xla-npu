@@ -25,7 +25,7 @@ limitations under the License.
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "xla/hlo/ir/hlo_module.h"
+#include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/parser/hlo_parser.h"
 #include "xla/xla_data.pb.h"
 
@@ -70,16 +70,61 @@ absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(absl::string_view
     return xla::ParseAndReturnUnverifiedModule(hlo_text, config, options);
 }
 
+/*
+Parse the HloComputation string and return a HloComputation pointer.
+
+ Input format example:
+ 1. pure computation body:
+   {
+     %param0 = f32[4] parameter(0)
+     %param1 = f32[4] parameter(1)
+     ROOT %add = f32[4] add(%param0, %param1)
+   }
+
+ 2. computation body with computation name:
+   %my_computation {
+     %param0 = f32[4] parameter(0)
+     ROOT %add = f32[4] add(%param0, %param0)
+   }
+
+ return: pair<module, computation*>
+ */
+absl::StatusOr<std::pair<std::unique_ptr<xla::HloModule>, xla::HloComputation*>>
+ParseHloComputationString(absl::string_view computation_text,
+                          const std::string& computation_name = "parsed_computation") {
+    xla::HloModuleConfig config;
+    xla::HloParserOptions options;
+
+    std::string wrapped_hlo;
+    if (computation_text.find('(') != absl::string_view::npos) {
+        wrapped_hlo = absl::StrCat(
+            "HloModule temp_module\n\n",
+            "ENTRY ", computation_text
+        );
+    } else {
+        wrapped_hlo = absl::StrCat(
+            "HloModule temp_module\n\n",
+            "ENTRY ", computation_name, " ", computation_text
+        );
+    }
+
+    TF_ASSIGN_OR_RETURN(auto module, xla::ParseAndReturnUnverifiedModule(wrapped_hlo, config, options));
+    xla::HloComputation* computation = module->entry_computation();
+    return std::make_pair(std::move(module), computation);
+}
+
 absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) {
     std::cout << "=== HLO to AscIR Backend Test ===" << std::endl;
     std::cout << "\n[Step 1] Parsing HLO text..." << std::endl;
 
-    // Parse HLO text to HloModule
-    TF_ASSIGN_OR_RETURN(auto hlo_module, ParseHloString(hlo_text));
+    // Parse HLO text to HloModule and HloComputation
+    // Note: The module must maintain its lifecycle until compile is completed, otherwise, a coredump will occur.
+    TF_ASSIGN_OR_RETURN(auto parsed, ParseHloComputationString(hlo_text));
+    auto& hlo_module = parsed.first;
+    xla::HloComputation* hlo_computation = parsed.second;
 
-    std::cout << "  ✅ HLO module parsed: " << hlo_module->name() << std::endl;
-    std::cout << "     Computations: " << hlo_module->computation_count() << std::endl;
-    std::cout << "     Entry computation instructions: " << hlo_module->entry_computation()->instruction_count()
+    std::cout << "  ✅ HLO module parsed: " << hlo_computation->name() << std::endl;
+    std::cout << "     Entry computation instructions: " << hlo_computation->instruction_count()
               << std::endl;
 
     std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
@@ -95,7 +140,7 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
     std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
 
     xla::AscirBackend backend;
-    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(*hlo_module, options));
+    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(hlo_computation, options));
 
     std::cout << "  ✅ Compilation successful!" << std::endl;
 
