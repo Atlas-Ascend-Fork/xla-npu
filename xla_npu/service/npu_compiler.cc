@@ -272,7 +272,7 @@
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/status_macros.h"
-#include "xla/stream_executor/cuda/cuda_compute_capability.h"
+// #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/device_description.pb.h"
 #include "xla/stream_executor/dnn.h"
@@ -362,9 +362,9 @@ MaybeOwningThreadPool CreateMaybeOwningThreadPool(int parallelism, tsl::thread::
 //     return gpu::DeviceOrDevicelessConfig{gpu::DevicelessConfig{gpu_target_config.device_description}};
 // }
 
-se::GpuComputeCapability GetGpuVersion(const se::StreamExecutor* stream_exec) {
-    return stream_exec->GetDeviceDescription().gpu_compute_capability();
-}
+// se::GpuComputeCapability GetGpuVersion(const se::StreamExecutor* stream_exec) {
+//     return stream_exec->->GetDeviceDescription().gpu_compute_capability();
+// }
 
 }  // namespace
 
