@@ -133,6 +133,24 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_call_thunk",
+    srcs = ["npu_call_thunk.cc"],
+    hdrs = ["npu_call_thunk.h"],
+    deps = [
+        ":npu_thunk",
+        ":npu_sequential_thunk",
+
+        "//xla/hlo/ir:hlo",
+        "//xla/tsl/platform:errors",
+        "//xla/tsl/platform:statusor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "npu_sequential_thunk",
     srcs = ["npu_sequential_thunk.cc"],
     hdrs = ["npu_sequential_thunk.h"],

@@ -231,6 +231,7 @@ NpuThunk::ExecuteParams::ExecuteParams(const NpuBufferAllocations* buffer_alloca
         CASE(kCollectivePermute);
         CASE(kCollectivePermuteDone);
         CASE(kCollectivePermuteStart);
+        CASE(kCall);
         CASE(kCommandBuffer);
         CASE(kConditional);
         CASE(kConvolution);

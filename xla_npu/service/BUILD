@@ -375,6 +375,7 @@ cc_library(
         "//xla/xla_npu/backend/codegen:npu_custom",
         "//xla/xla_npu/backend/codegen:npu_fusion_emitter",
         "//xla/xla_npu/backend/runtime:npu_aclnn_thunk",
+        "//xla/xla_npu/backend/runtime:npu_call_thunk",
         "//xla/xla_npu/backend/runtime:npu_custom_kernel_thunk",
         "//xla/xla_npu/backend/runtime:npu_sequential_thunk",
         "//xla/xla_npu/backend/runtime:npu_thunk",

@@ -173,6 +173,7 @@
 #include "xla/xla_npu/backend/codegen/npu_custom.h"
 #include "xla/xla_npu/backend/codegen/npu_fusion_emitter.h"
 #include "xla/xla_npu/backend/runtime/npu_aclnn_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_call_thunk.h"
 #include "xla/xla_npu/backend/runtime/npu_custom_kernel_thunk.h"
 #include "xla/xla_npu/backend/runtime/npu_sequential_thunk.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
@@ -1357,6 +1358,18 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
         AddThunkToThunkSequence(std::move(thunk));
     }
     VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:complete";
+    return absl::OkStatus();
+}
+
+absl::Status NpuIrEmitterUnnested::EmitCall(const HloInstruction* instr) {
+    const HloComputation* called_computation = instr->called_computations().front();
+    auto ir_emitter = NpuIrEmitterUnnested::Create(ir_emitter_context_);
+    TF_RETURN_IF_ERROR(ir_emitter->EmitHloComputation(called_computation));
+    std::unique_ptr<NpuSequentialThunk> called_thunk_sequence = ir_emitter->ConsumeThunkSequence(
+        NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()));
+    AddThunkToThunkSequence(std::make_unique<NpuCallThunk>(
+        NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
+        std::move(called_thunk_sequence->thunks())));
     return absl::OkStatus();
 }
 
@@ -2631,206 +2644,211 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
             return EmitNpuAclnnThunk(instr);
         }
 
-        // case HloOpcode::kAllGatherDone:
-        //     return EmitCollectiveAsyncDone(NpuThunk::kAllGatherDone, instr);
-        // case HloOpcode::kAllGatherStart: {
-        //     auto* all_gather = Cast<HloAllGatherInstruction>(instr);
-        //     return EmitCollectiveThunk<AllGatherStartThunk, HloAllGatherInstruction>(
-        //         NpuThunk::kAllGatherStart, all_gather, all_gather, all_gather->use_global_device_ids());
-        // }
+            // case HloOpcode::kAllGatherDone:
+            //     return EmitCollectiveAsyncDone(NpuThunk::kAllGatherDone, instr);
+            // case HloOpcode::kAllGatherStart: {
+            //     auto* all_gather = Cast<HloAllGatherInstruction>(instr);
+            //     return EmitCollectiveThunk<AllGatherStartThunk, HloAllGatherInstruction>(
+            //         NpuThunk::kAllGatherStart, all_gather, all_gather, all_gather->use_global_device_ids());
+            // }
 
-        // case HloOpcode::kAllReduceDone: {
-        //     if (IsNvshmemCollective(instr)) {
-        //         return EmitNvshmemAsyncDone(NpuThunk::kNvshmemAllReduceDone, instr);
-        //     }
-        //     return EmitCollectiveAsyncDone(NpuThunk::kAllReduceDone, instr);
-        // }
-        // case HloOpcode::kAllReduceStart: {
-        //     auto* all_reduce = Cast<HloAllReduceInstruction>(instr);
-        //     if (IsNvshmemCollective(instr)) {
-        //         return EmitNvshmemThunk<NvshmemAllReduceStartThunk, HloAllReduceInstruction>(
-        //             NpuThunk::kNvshmemAllReduceStart, all_reduce, all_reduce, all_reduce->use_global_device_ids());
-        //     }
-        //     return EmitCollectiveThunk<AllReduceStartThunk, HloAllReduceInstruction>(
-        //         NpuThunk::kAllReduceStart, all_reduce, all_reduce, all_reduce->use_global_device_ids());
-        // }
-        // case HloOpcode::kAsyncDone: {
-        //     if (!instr->async_wrapped_computation()->CanExpandIntoSingleInstruction()) {
-        //         return EmitCollectiveAsyncDone(NpuThunk::kGroupDone, instr);
-        //     }
-        //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
-        //     switch (wrapped->opcode()) {
-        //         case HloOpcode::kReduceScatter:
-        //             return EmitCollectiveAsyncDone(NpuThunk::kReduceScatterDone, instr);
-        //         case HloOpcode::kAllToAll:
-        //             return EmitCollectiveAsyncDone(NpuThunk::kAllToAllDone, instr);
-        //         case HloOpcode::kRaggedAllToAll:
-        //             return EmitCollectiveAsyncDone(NpuThunk::kRaggedAllToAllDone, instr);
-        //         case HloOpcode::kCollectiveBroadcast:
-        //             return EmitCollectiveAsyncDone(NpuThunk::kCollectiveBroadcastDone, instr);
-        //         case HloOpcode::kFusion: {
-        //             auto collective_hero =
-        //             GetCollectiveHeroForDynamicSliceFusion(Cast<HloFusionInstruction>(wrapped)); if
-        //             (collective_hero.has_value()) {
-        //                 switch ((*collective_hero)->opcode()) {
-        //                     case HloOpcode::kReduceScatter:
-        //                         TF_RETURN_IF_ERROR(EmitCollectiveAsyncDone(NpuThunk::kReduceScatterDone, instr));
-        //                         break;
-        //                     default:
-        //                         return absl::InternalError(
-        //                             absl::StrFormat("Unhandled collective in dynamic slice fusion "
-        //                                             "instruction: %s",
-        //                                             (*collective_hero)->fused_instructions_computation()->ToString()));
-        //                 }
-        //             }
-        //             // We still want to emit the stream done thunk.
-        //             [[clang::fallthrough]];
-        //         }
-        //         case HloOpcode::kCall:
-        //         case HloOpcode::kCustomCall: {
-        //             if (IsHostExecuteCustomCall(*wrapped)) {
-        //                 auto custom_call = Cast<HloCustomCallInstruction>(wrapped);
+            // case HloOpcode::kAllReduceDone: {
+            //     if (IsNvshmemCollective(instr)) {
+            //         return EmitNvshmemAsyncDone(NpuThunk::kNvshmemAllReduceDone, instr);
+            //     }
+            //     return EmitCollectiveAsyncDone(NpuThunk::kAllReduceDone, instr);
+            // }
+            // case HloOpcode::kAllReduceStart: {
+            //     auto* all_reduce = Cast<HloAllReduceInstruction>(instr);
+            //     if (IsNvshmemCollective(instr)) {
+            //         return EmitNvshmemThunk<NvshmemAllReduceStartThunk, HloAllReduceInstruction>(
+            //             NpuThunk::kNvshmemAllReduceStart, all_reduce, all_reduce,
+            //             all_reduce->use_global_device_ids());
+            //     }
+            //     return EmitCollectiveThunk<AllReduceStartThunk, HloAllReduceInstruction>(
+            //         NpuThunk::kAllReduceStart, all_reduce, all_reduce, all_reduce->use_global_device_ids());
+            // }
+            // case HloOpcode::kAsyncDone: {
+            //     if (!instr->async_wrapped_computation()->CanExpandIntoSingleInstruction()) {
+            //         return EmitCollectiveAsyncDone(NpuThunk::kGroupDone, instr);
+            //     }
+            //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
+            //     switch (wrapped->opcode()) {
+            //         case HloOpcode::kReduceScatter:
+            //             return EmitCollectiveAsyncDone(NpuThunk::kReduceScatterDone, instr);
+            //         case HloOpcode::kAllToAll:
+            //             return EmitCollectiveAsyncDone(NpuThunk::kAllToAllDone, instr);
+            //         case HloOpcode::kRaggedAllToAll:
+            //             return EmitCollectiveAsyncDone(NpuThunk::kRaggedAllToAllDone, instr);
+            //         case HloOpcode::kCollectiveBroadcast:
+            //             return EmitCollectiveAsyncDone(NpuThunk::kCollectiveBroadcastDone, instr);
+            //         case HloOpcode::kFusion: {
+            //             auto collective_hero =
+            //             GetCollectiveHeroForDynamicSliceFusion(Cast<HloFusionInstruction>(wrapped)); if
+            //             (collective_hero.has_value()) {
+            //                 switch ((*collective_hero)->opcode()) {
+            //                     case HloOpcode::kReduceScatter:
+            //                         TF_RETURN_IF_ERROR(EmitCollectiveAsyncDone(NpuThunk::kReduceScatterDone, instr));
+            //                         break;
+            //                     default:
+            //                         return absl::InternalError(
+            //                             absl::StrFormat("Unhandled collective in dynamic slice fusion "
+            //                                             "instruction: %s",
+            //                                             (*collective_hero)->fused_instructions_computation()->ToString()));
+            //                 }
+            //             }
+            //             // We still want to emit the stream done thunk.
+            //             [[clang::fallthrough]];
+            //         }
+            //         case HloOpcode::kCall:
+            //         case HloOpcode::kCustomCall: {
+            //             if (IsHostExecuteCustomCall(*wrapped)) {
+            //                 auto custom_call = Cast<HloCustomCallInstruction>(wrapped);
 
-        //                 auto async_events = GetInstructionToHostExecuteAsyncEvents().at(custom_call);
+            //                 auto async_events = GetInstructionToHostExecuteAsyncEvents().at(custom_call);
 
-        //                 AddThunkToThunkSequence(std::make_unique<HostExecuteDoneThunk>(
-        //                     NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
-        //                     async_events));
-        //                 return absl::OkStatus();
-        //             }
-        //             // Wait until the concurrent stream has finished.
-        //             auto* async_done = Cast<HloAsyncInstruction>(instr);
-        //             const NpuExecutionStreamAssignment& stream_assignment =
-        //                 ir_emitter_context_->execution_stream_assignment();
-        //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
-        //                                 stream_assignment.GetAsyncExecutionStreamIds(async_done));
-        //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
-        //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
-        //                 streams.source_stream_id, streams.destination_stream_id));
-        //             return absl::OkStatus();
-        //         }
-        //         default:
-        //             return Internal("Unsupported async done wrapped instruction: %s",
-        //                             HloOpcodeString(wrapped->opcode()));
-        //     }
-        // }
-        // case HloOpcode::kAsyncStart: {
-        //     // Multi-op async start will emit a NCCL group thunk.
-        //     if (!instr->async_wrapped_computation()->CanExpandIntoSingleInstruction()) {
-        //         return EmitCollectiveGroupStartThunk(instr);
-        //     }
-        //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
-        //     switch (wrapped->opcode()) {
-        //         case HloOpcode::kReduceScatter: {
-        //             auto* reduce_scatter = Cast<HloReduceScatterInstruction>(wrapped);
-        //             return EmitCollectiveThunk<ReduceScatterStartThunk, HloReduceScatterInstruction>(
-        //                 NpuThunk::kReduceScatter, instr, reduce_scatter, reduce_scatter->use_global_device_ids());
-        //         }
-        //         case HloOpcode::kAllToAll: {
-        //             auto* all_to_all = Cast<HloAllToAllInstruction>(wrapped);
-        //             return EmitCollectiveThunk<AllToAllStartThunk, HloAllToAllInstruction>(NpuThunk::kAllToAll,
-        //             instr,
-        //                                                                                    all_to_all, std::nullopt);
-        //         }
-        //         case HloOpcode::kRaggedAllToAll: {
-        //             auto* ragged_all_to_all = Cast<HloRaggedAllToAllInstruction>(wrapped);
-        //             return EmitCollectiveThunk<RaggedAllToAllStartThunk, HloRaggedAllToAllInstruction>(
-        //                 NpuThunk::kRaggedAllToAll, instr, ragged_all_to_all, std::nullopt);
-        //         }
-        //         case HloOpcode::kCollectiveBroadcast: {
-        //             auto* collective_broadcast = Cast<HloCollectiveBroadcastInstruction>(wrapped);
-        //             return EmitCollectiveThunk<CollectiveBroadcastStartThunk, HloCollectiveBroadcastInstruction>(
-        //                 NpuThunk::kCollectiveBroadcast, instr, collective_broadcast, std::nullopt);
-        //         }
-        //         case HloOpcode::kFusion: {
-        //             // We'll launch the fusion computation on a concurrent
-        //             // stream. The concurrent stream needs to first wait until
-        //             // the main stream has finished calculating any values
-        //             // that may be used as inputs to the fusion computation.
-        //             // We enforce this by inlining a `WaitForStreams` thunk.
-        //             auto* async_start = Cast<HloAsyncInstruction>(instr);
-        //             const NpuExecutionStreamAssignment& stream_assignment =
-        //                 ir_emitter_context_->execution_stream_assignment();
-        //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
-        //                                 stream_assignment.GetAsyncExecutionStreamIds(async_start));
-        //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
-        //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
-        //                 streams.destination_stream_id, streams.source_stream_id));
-        //             return EmitFusion(Cast<HloFusionInstruction>(wrapped));
-        //         }
-        //         case HloOpcode::kCall: {
-        //             return EmitAsyncComputation(instr);
-        //         }
-        //         case HloOpcode::kCustomCall: {
-        //             if (IsHostExecuteCustomCall(*wrapped)) {
-        //                 auto custom_call = Cast<HloCustomCallInstruction>(wrapped);
+            //                 AddThunkToThunkSequence(std::make_unique<HostExecuteDoneThunk>(
+            //                     NpuThunk::ThunkInfo::WithProfileAnnotation(instr,
+            //                     ir_emitter_context_->GetNextThunkId()), async_events));
+            //                 return absl::OkStatus();
+            //             }
+            //             // Wait until the concurrent stream has finished.
+            //             auto* async_done = Cast<HloAsyncInstruction>(instr);
+            //             const NpuExecutionStreamAssignment& stream_assignment =
+            //                 ir_emitter_context_->execution_stream_assignment();
+            //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+            //                                 stream_assignment.GetAsyncExecutionStreamIds(async_done));
+            //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
+            //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
+            //                 streams.source_stream_id, streams.destination_stream_id));
+            //             return absl::OkStatus();
+            //         }
+            //         default:
+            //             return Internal("Unsupported async done wrapped instruction: %s",
+            //                             HloOpcodeString(wrapped->opcode()));
+            //     }
+            // }
+            // case HloOpcode::kAsyncStart: {
+            //     // Multi-op async start will emit a NCCL group thunk.
+            //     if (!instr->async_wrapped_computation()->CanExpandIntoSingleInstruction()) {
+            //         return EmitCollectiveGroupStartThunk(instr);
+            //     }
+            //     const HloInstruction* wrapped = instr->async_wrapped_instruction();
+            //     switch (wrapped->opcode()) {
+            //         case HloOpcode::kReduceScatter: {
+            //             auto* reduce_scatter = Cast<HloReduceScatterInstruction>(wrapped);
+            //             return EmitCollectiveThunk<ReduceScatterStartThunk, HloReduceScatterInstruction>(
+            //                 NpuThunk::kReduceScatter, instr, reduce_scatter,
+            //                 reduce_scatter->use_global_device_ids());
+            //         }
+            //         case HloOpcode::kAllToAll: {
+            //             auto* all_to_all = Cast<HloAllToAllInstruction>(wrapped);
+            //             return EmitCollectiveThunk<AllToAllStartThunk, HloAllToAllInstruction>(NpuThunk::kAllToAll,
+            //             instr,
+            //                                                                                    all_to_all,
+            //                                                                                    std::nullopt);
+            //         }
+            //         case HloOpcode::kRaggedAllToAll: {
+            //             auto* ragged_all_to_all = Cast<HloRaggedAllToAllInstruction>(wrapped);
+            //             return EmitCollectiveThunk<RaggedAllToAllStartThunk, HloRaggedAllToAllInstruction>(
+            //                 NpuThunk::kRaggedAllToAll, instr, ragged_all_to_all, std::nullopt);
+            //         }
+            //         case HloOpcode::kCollectiveBroadcast: {
+            //             auto* collective_broadcast = Cast<HloCollectiveBroadcastInstruction>(wrapped);
+            //             return EmitCollectiveThunk<CollectiveBroadcastStartThunk, HloCollectiveBroadcastInstruction>(
+            //                 NpuThunk::kCollectiveBroadcast, instr, collective_broadcast, std::nullopt);
+            //         }
+            //         case HloOpcode::kFusion: {
+            //             // We'll launch the fusion computation on a concurrent
+            //             // stream. The concurrent stream needs to first wait until
+            //             // the main stream has finished calculating any values
+            //             // that may be used as inputs to the fusion computation.
+            //             // We enforce this by inlining a `WaitForStreams` thunk.
+            //             auto* async_start = Cast<HloAsyncInstruction>(instr);
+            //             const NpuExecutionStreamAssignment& stream_assignment =
+            //                 ir_emitter_context_->execution_stream_assignment();
+            //             TF_ASSIGN_OR_RETURN(NpuExecutionStreamAssignment::AsyncExecutionStreamIds streams,
+            //                                 stream_assignment.GetAsyncExecutionStreamIds(async_start));
+            //             AddThunkToThunkSequence(std::make_unique<WaitForStreamsThunk>(
+            //                 NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
+            //                 streams.destination_stream_id, streams.source_stream_id));
+            //             return EmitFusion(Cast<HloFusionInstruction>(wrapped));
+            //         }
+            //         case HloOpcode::kCall: {
+            //             return EmitAsyncComputation(instr);
+            //         }
+            //         case HloOpcode::kCustomCall: {
+            //             if (IsHostExecuteCustomCall(*wrapped)) {
+            //                 auto custom_call = Cast<HloCustomCallInstruction>(wrapped);
 
-        //                 std::unique_ptr<HloModule> hlo_module =
-        //                     ExtractComputationIntoNewModule(*custom_call->called_computation());
+            //                 std::unique_ptr<HloModule> hlo_module =
+            //                     ExtractComputationIntoNewModule(*custom_call->called_computation());
 
-        //                 // All offloaded computations are marked as host computations from
-        //                 // the perspective of the GPU backend. Since these will execute on
-        //                 // the main thread from the CPU backend perspective, we need to mark
-        //                 // them as such.
-        //                 for (auto* computation : hlo_module->computations()) {
-        //                     computation->SetExecutionThread(HloInstruction::kMainExecutionThread);
-        //                 }
+            //                 // All offloaded computations are marked as host computations from
+            //                 // the perspective of the GPU backend. Since these will execute on
+            //                 // the main thread from the CPU backend perspective, we need to mark
+            //                 // them as such.
+            //                 for (auto* computation : hlo_module->computations()) {
+            //                     computation->SetExecutionThread(HloInstruction::kMainExecutionThread);
+            //                 }
 
-        //                 absl::InlinedVector<HostExecuteStartThunk::SliceAndShape, 4> operand_slices;
-        //                 for (HloInstruction* operand : wrapped->operands()) {
-        //                     for (auto& indexed : ShapeUtil::GetLeafShapes(operand->shape())) {
-        //                         TF_ASSIGN_OR_RETURN(auto slice,
-        //                         ir_emitter_context_->buffer_assignment().GetUniqueSlice(
-        //                                                             operand, indexed.index));
-        //                         operand_slices.push_back({slice, indexed.shape});
-        //                     }
-        //                 }
+            //                 absl::InlinedVector<HostExecuteStartThunk::SliceAndShape, 4> operand_slices;
+            //                 for (HloInstruction* operand : wrapped->operands()) {
+            //                     for (auto& indexed : ShapeUtil::GetLeafShapes(operand->shape())) {
+            //                         TF_ASSIGN_OR_RETURN(auto slice,
+            //                         ir_emitter_context_->buffer_assignment().GetUniqueSlice(
+            //                                                             operand, indexed.index));
+            //                         operand_slices.push_back({slice, indexed.shape});
+            //                     }
+            //                 }
 
-        //                 // Collect buffer slices for all results.
-        //                 absl::InlinedVector<HostExecuteStartThunk::SliceAndShape, 4> result_slices;
-        //                 for (auto& indexed : ShapeUtil::GetLeafShapes(wrapped->shape())) {
-        //                     TF_ASSIGN_OR_RETURN(auto slice, ir_emitter_context_->buffer_assignment().GetUniqueSlice(
-        //                                                         wrapped, indexed.index));
-        //                     result_slices.push_back({slice, indexed.shape});
-        //                 }
+            //                 // Collect buffer slices for all results.
+            //                 absl::InlinedVector<HostExecuteStartThunk::SliceAndShape, 4> result_slices;
+            //                 for (auto& indexed : ShapeUtil::GetLeafShapes(wrapped->shape())) {
+            //                     TF_ASSIGN_OR_RETURN(auto slice,
+            //                     ir_emitter_context_->buffer_assignment().GetUniqueSlice(
+            //                                                         wrapped, indexed.index));
+            //                     result_slices.push_back({slice, indexed.shape});
+            //                 }
 
-        //                 HostOffloadingExecutableProto host_offloading_executable_proto;
-        //                 *host_offloading_executable_proto.mutable_hlo_module() = hlo_module->ToProto();
-        //                 host_offloading_executable_proto.set_executable_type(
-        //                     HostOffloadingExecutableProto::EXECUTABLE_TYPE_NANORT);
+            //                 HostOffloadingExecutableProto host_offloading_executable_proto;
+            //                 *host_offloading_executable_proto.mutable_hlo_module() = hlo_module->ToProto();
+            //                 host_offloading_executable_proto.set_executable_type(
+            //                     HostOffloadingExecutableProto::EXECUTABLE_TYPE_NANORT);
 
-        //                 TF_ASSIGN_OR_RETURN(auto thunk, HostExecuteStartThunk::Create(
-        //                                                     NpuThunk::ThunkInfo::WithProfileAnnotation(
-        //                                                         instr, ir_emitter_context_->GetNextThunkId()),
-        //                                                     std::move(host_offloading_executable_proto),
-        //                                                     std::move(operand_slices), std::move(result_slices)));
+            //                 TF_ASSIGN_OR_RETURN(auto thunk, HostExecuteStartThunk::Create(
+            //                                                     NpuThunk::ThunkInfo::WithProfileAnnotation(
+            //                                                         instr, ir_emitter_context_->GetNextThunkId()),
+            //                                                     std::move(host_offloading_executable_proto),
+            //                                                     std::move(operand_slices),
+            //                                                     std::move(result_slices)));
 
-        //                 auto async_events = thunk->async_events();
+            //                 auto async_events = thunk->async_events();
 
-        //                 auto [it, inserted] =
-        //                     GetInstructionToHostExecuteAsyncEvents().emplace(custom_call, async_events);
+            //                 auto [it, inserted] =
+            //                     GetInstructionToHostExecuteAsyncEvents().emplace(custom_call, async_events);
 
-        //                 if (!inserted) {
-        //                     return Internal(
-        //                         "Async events already exist for host offloading custom call "
-        //                         "%s.",
-        //                         custom_call->ToString());
-        //                 }
+            //                 if (!inserted) {
+            //                     return Internal(
+            //                         "Async events already exist for host offloading custom call "
+            //                         "%s.",
+            //                         custom_call->ToString());
+            //                 }
 
-        //                 AddThunkToThunkSequence(std::move(thunk));
+            //                 AddThunkToThunkSequence(std::move(thunk));
 
-        //                 return absl::OkStatus();
-        //             }
-        //             return EmitAsyncCustomCallStart(instr);
-        //         }
-        //         default:
-        //             return Internal("Unsupported async start wrapped instruction: %s",
-        //                             HloOpcodeString(wrapped->opcode()));
-        //     }
-        // }
+            //                 return absl::OkStatus();
+            //             }
+            //             return EmitAsyncCustomCallStart(instr);
+            //         }
+            //         default:
+            //             return Internal("Unsupported async start wrapped instruction: %s",
+            //                             HloOpcodeString(wrapped->opcode()));
+            //     }
+            // }
 
-        // case HloOpcode::kCall:
-        //     return EmitCommandBufferThunk(instr);
+        case HloOpcode::kCall:
+            return EmitCall(Cast<HloCallInstruction>(instr));
         // case HloOpcode::kCollectivePermuteDone:
         //     if (IsNvshmemCollective(instr)) {
         //         return EmitNvshmemAsyncDone(NpuThunk::kNvshmemCollectivePermuteDone, instr);
