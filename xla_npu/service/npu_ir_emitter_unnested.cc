@@ -232,6 +232,8 @@ std::unique_ptr<NpuIrEmitterUnnested> NpuIrEmitterUnnested::Create(NpuIrEmitterC
 }
 
 absl::Status NpuIrEmitterUnnested::EmitConstant(const HloConstantInstruction* instr) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Emit const thunk");
+
     TF_ASSIGN_OR_RETURN(NpuDenseDataIntermediate content, NpuLiteralToXlaFormat(instr->literal()));
 
     int element_bytes = primitive_util::ByteWidth(instr->literal().shape().element_type());
@@ -880,6 +882,8 @@ absl::Status NpuIrEmitterUnnested::EmitConstant(const HloConstantInstruction* in
 // }
 
 absl::Status NpuIrEmitterUnnested::EmitNpuAclnnThunk(const HloInstruction* instr) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Emit aclnn thunk");
+
     TF_ASSIGN_OR_RETURN(auto kernel_arguments,
                         emitters::KernelArguments::Create(ir_emitter_context_->buffer_assignment(),
                                                           NpuConstant::GetDefaultBufferAlignment(), instr));
@@ -1337,9 +1341,10 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 // }
 
 absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Emit fusion thunk");
+
     // const se::DeviceDescription& device_info = ir_emitter_context_->gpu_device_info();
     // const HloFusionAnalysis fusion_analysis = HloFusionAnalysis::Create(*instr, device_info);
-    VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:start";
     // std::unique_ptr<NpuFusionInterface> emitter = GetFusionEmitter(
     //     /*fusion_info=*/HloFusionInfo(
     //         /*analysis=*/fusion_analysis, instr,
@@ -1347,6 +1352,7 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
     //         &ir_emitter_context_->buffer_assignment(),
     //         /*call_graph=*/*call_graph_),
     //     ir_emitter_context_->expr_context());
+
     std::unique_ptr<NpuFusionInterface> emitter = std::make_unique<NpuCustomFusion>();
     TF_ASSIGN_OR_RETURN(auto result, emitter->Emit(*ir_emitter_context_, *instr));
 
@@ -1357,11 +1363,13 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
         thunk->set_execution_stream_id(execution_stream_id);
         AddThunkToThunkSequence(std::move(thunk));
     }
-    VLOG(3) << "NpuIrEmitterUnnested::EmitFusion:complete";
+
     return absl::OkStatus();
 }
 
 absl::Status NpuIrEmitterUnnested::EmitCall(const HloInstruction* instr) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Emit call thunk");
+
     const HloComputation* called_computation = instr->called_computations().front();
     auto ir_emitter = NpuIrEmitterUnnested::Create(ir_emitter_context_);
     TF_RETURN_IF_ERROR(ir_emitter->EmitHloComputation(called_computation));
@@ -2963,6 +2971,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         case HloOpcode::kGetTupleElement:
         case HloOpcode::kParameter:
         case HloOpcode::kTuple:
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Emit no thunk");
             return absl::OkStatus();
         default:
             return Internal("Unsupported instruction opcode: %s", HloOpcodeString(instr->opcode()));

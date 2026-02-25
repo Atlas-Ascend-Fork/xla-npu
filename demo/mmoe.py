@@ -10,6 +10,7 @@ Reference:
     https://dl.acm.org/doi/10.1145/3219819.3220007
 """
 
+import os
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
@@ -364,6 +365,12 @@ def create_mmoe(
 
 
 if __name__ == "__main__":
+    # Npu platform init
+    PLATFORM_NAME = 'npu' # Use a simple name without underscores for safety
+    LIBRARY_PATH = os.path.abspath("pjrt_c_api_npu_plugin.so")
+    os.environ['PJRT_NAMES_AND_LIBRARY_PATHS'] = f"{PLATFORM_NAME}:{LIBRARY_PATH}"
+    os.environ['JAX_PLATFORMS'] = PLATFORM_NAME
+
     # Example usage
     print("MMOE JAX Implementation Test")
     print("=" * 50)

@@ -46,6 +46,14 @@ bool IsFusibleOnSharding(const HloInstruction* consumer, const HloInstruction* p
 
 // Helper function to check basic fusibility constraints.
 bool CanFuseNpu(const HloInstruction* consumer, const HloInstruction* producer) {
+    // Check if consumer can be fused (XLA-level check)
+    // This is required because CreateFusion() has a CHECK for fused_root->IsFusible()
+    // and will crash if called with a non-fusible instruction.
+    if (!consumer->IsFusible()) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Consumer %s is not fusible", consumer->name().data());
+        return false;
+    }
+
     // Check if producer can be fused (XLA-level check)
     // This is required because FuseInstruction() has a CHECK for IsFusible()
     // and will crash if called with a non-fusible instruction.

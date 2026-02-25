@@ -1212,27 +1212,27 @@ absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetCon
 //     return pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status();
 // }
 
-// Runs optimization passes on the given HLO module.
-absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
-                                            const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
-                                            const NpuAliasInfo* alias_info) {
-    tsl::profiler::TraceMe traceme("OptimizeHloModule");
-    const se::DeviceDescription& device_description = gpu_target_config.device_description;
+// // Runs optimization passes on the given HLO module.
+// absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
+//                                             const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
+//                                             const NpuAliasInfo* alias_info) {
+    // tsl::profiler::TraceMe traceme("OptimizeHloModule");
+    // const se::DeviceDescription& device_description = gpu_target_config.device_description;
 
-    CheckNotScheduled(hlo_module);
-    LogDebugOptions(hlo_module);
+    // CheckNotScheduled(hlo_module);
+    // LogDebugOptions(hlo_module);
 
-    MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
-        /*parallelism=*/hlo_module->config().debug_options().xla_gpu_force_compilation_parallelism(),
-        /*default_thread_pool=*/options.thread_pool,
-        /*default_parallelism=*/tsl::port::MaxParallelism());
+    // MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
+    //     /*parallelism=*/hlo_module->config().debug_options().xla_gpu_force_compilation_parallelism(),
+    //     /*default_thread_pool=*/options.thread_pool,
+    //     /*default_parallelism=*/tsl::port::MaxParallelism());
 
     // AlgebraicSimplifierOptions layout_insensitive_algsimp_opts =
     //     GetAlgebraicSimplifierOptions(AlgebraicSimplifierMode::kLayoutInsensitive,
     //     hlo_module->config().debug_options(),
     //                                   gpu_target_config.platform_name == "ROCM");
 
-    {
+    // {
         // NPU does not use GPU-specific host device type handling
         // HloPassPipeline pipeline("annotate-host-compute");
         // HloHostDeviceTypeCallWrapper::Options hlo_host_device_type_call_wrapper_options;
@@ -1240,7 +1240,7 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
         // hlo_host_device_type_call_wrapper_options.clear_backend_config_device_type = ClearBackendConfigDeviceType;
         // pipeline.AddPass<HloHostDeviceTypeCallWrapper>(hlo_host_device_type_call_wrapper_options);
         // TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
-    }
+    // }
 
     // TF_RETURN_IF_ERROR(RunPreSPMDPartitionerPasses(hlo_module));
     // // Set max_windowed_einsum_iteration to slice_size, as there will be
@@ -1249,23 +1249,23 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     // TF_RETURN_IF_ERROR(RunSPMDPasses(hlo_module, gpu_target_config, alias_info, layout_insensitive_algsimp_opts,
     //                                  /*max_windowed_einsum_iteration=*/options.slice_size));
 
-    {
-        HloPassPipeline pipeline("host-compute");
-        // NPU does not support host compute offloading, so use a lambda that always returns false
-        auto BackendConfigDeviceTypeIsHost = [](HloInstruction* instr) { return false; };
-        pipeline.AddPass<HostComputeAsyncifier>(BackendConfigDeviceTypeIsHost);
-        pipeline.AddPass<HostOffloadingPrepare>(HostOffloadingPrepare::Rewrite::kConvertToCustomCall);
-        TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
-    }
+    // {
+    //     HloPassPipeline pipeline("host-compute");
+    //     // NPU does not support host compute offloading, so use a lambda that always returns false
+    //     auto BackendConfigDeviceTypeIsHost = [](HloInstruction* instr) { return false; };
+    //     pipeline.AddPass<HostComputeAsyncifier>(BackendConfigDeviceTypeIsHost);
+    //     pipeline.AddPass<HostOffloadingPrepare>(HostOffloadingPrepare::Rewrite::kConvertToCustomCall);
+    //     TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
+    // }
 
     // Dump the HLO module after SPMD partitioning. There should be no more Python
     // callbacks at this point.
-    DumpHloModuleIfEnabled(*hlo_module, "after_spmd_partitioner");
-    TF_ASSIGN_OR_RETURN(const stream_executor::Platform* platform,
-                        stream_executor::PlatformManager::PlatformWithId(PlatformId()));
+    // DumpHloModuleIfEnabled(*hlo_module, "after_spmd_partitioner");
+    // TF_ASSIGN_OR_RETURN(const stream_executor::Platform* platform,
+    //                     stream_executor::PlatformManager::PlatformWithId(PlatformId()));
     // TF_RETURN_IF_ERROR(RunOptimizationPasses(hlo_module, stream_exec, gpu_target_config,
     //                                          layout_insensitive_algsimp_opts, platform->Name()));
-    se::GpuComputeCapability gpu_version = device_description.gpu_compute_capability();
+    // se::GpuComputeCapability gpu_version = device_description.gpu_compute_capability();
     // TF_RETURN_IF_ERROR(RunCollectiveOptimizationPasses(hlo_module, options, layout_insensitive_algsimp_opts,
     //                                                    gpu_version, platform->VisibleDeviceCount(), pointer_size_));
 
@@ -1296,8 +1296,8 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     // // This is a "low effort, high impact" fusion that should be run first.
     // TF_RETURN_IF_ERROR(RunDynamicSliceFusionPasses(hlo_module, /*platform_id=*/PlatformId()));
 
-    TF_RETURN_IF_ERROR(RunFusionPasses(hlo_module, gpu_target_config, thread_pool.get_mutable(),
-                                       ShapeSizeBytesFunction(), &symbolic_expr_context_));
+    // TF_RETURN_IF_ERROR(RunFusionPasses(hlo_module, gpu_target_config, thread_pool.get_mutable(),
+    //                                    ShapeSizeBytesFunction(), &symbolic_expr_context_));
     // TF_RETURN_IF_ERROR(RunPostFusionPasses(hlo_module, device_description, alias_info, pointer_size_, options,
     //                                        &symbolic_expr_context_));
     // TF_RETURN_IF_ERROR(RunAsyncCollectivesConversionPasses(hlo_module));
@@ -1322,8 +1322,8 @@ absl::Status NpuCompiler::OptimizeHloModule(HloModule* hlo_module, se::StreamExe
     //     TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
     // }
 
-    return absl::OkStatus();
-}  // NOLINT(readability/fn_size)
+    // return absl::OkStatus();
+// }  // NOLINT(readability/fn_size)
 
 // absl::Status NpuCompiler::RunPreSchedulingCopyInsertion(HloModule& hlo_module,
 //                                                         const se::DeviceDescription& device_description,
@@ -1715,11 +1715,11 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
 
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");
 
-    bool is_deviceless = true;
-    const se::DeviceDescription& device_description = gpu_target_config.device_description;
-    std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
-    TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
-                                         gpu_target_config, alias_info.get()));
+    // bool is_deviceless = true;
+    // const se::DeviceDescription& device_description = gpu_target_config.device_description;
+    // std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(device_description);
+    // TF_RETURN_IF_ERROR(OptimizeHloModule(module.get(), is_deviceless ? nullptr : stream_exec, options,
+    //                                      gpu_target_config, alias_info.get()));
 
     MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
         /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
@@ -1728,7 +1728,7 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
     TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
                                        ShapeSizeBytesFunction(), &symbolic_expr_context_));
 
-    NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
+    // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
 
     return std::move(module);
 }

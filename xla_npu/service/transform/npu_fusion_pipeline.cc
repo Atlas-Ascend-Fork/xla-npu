@@ -71,22 +71,22 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
                                                    /*count_multiple_input_accesses=*/true};
 
     // Print initial HLO
-    fusion.AddPass<NpuHloPrinterPass>("Initial");
+    fusion.AddPass<NpuHloPrinterPass>("Npu fusion initial");
 
     // GELU fusion rewriter - identify and fuse GELU activation patterns
     // Run BEFORE priority fusion to prevent GELU operations from being split into small fusions
     fusion.AddPass<NpuGeluFusionRewriter>();
-    fusion.AddPass<NpuHloPrinterPass>("NpuGeluFusionRewriter");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuGeluFusionRewriter");
 
     // NpuGemmFusionSwapOperands - swap GEMM operands for better NPU layout
     // Run BEFORE priority fusion to optimize GEMM operand order
     fusion.AddPass<NpuGemmFusionSwapOperands>();
-    fusion.AddPass<NpuHloPrinterPass>("NpuGemmFusionSwapOperands");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuGemmFusionSwapOperands");
 
     // Priority fusion pass for NPU - independent implementation
     fusion.AddPass<NpuPriorityFusion>(thread_pool, npu_device_info, std::move(cost_analysis_options),
                                       symbolic_expr_context);
-    fusion.AddPass<NpuHloPrinterPass>("NpuPriorityFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuPriorityFusion");
 
     // Running CSE affects how many users an op has. This plays a role in what
     // we detect as fusion patterns.
@@ -94,15 +94,15 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
         /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
         /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
     fusion.AddPass<HloDCE>();
-    fusion.AddPass<NpuHloPrinterPass>("CSE + DCE after PriorityFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("CSE + DCE after PriorityFusion");
 
     // Multi-output fusion for NPU
     fusion.AddPass<NpuMultiOutputFusion>(npu_device_info, shape_size_bytes_function, symbolic_expr_context);
-    fusion.AddPass<NpuHloPrinterPass>("NpuMultiOutputFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuMultiOutputFusion");
 
     // Copy fusion for NPU
     fusion.AddPass<NpuCopyFusion>(npu_device_info);
-    fusion.AddPass<NpuHloPrinterPass>("NpuCopyFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuCopyFusion");
 
     // Create MLIR context for passes that need it
     mlir::MLIRContext mlir_context;
@@ -110,33 +110,33 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
     // NpuGemmFusion - create ACLNN GEMM fusions
     // Run after basic fusions to convert suitable GEMM patterns
     fusion.AddPass<NpuGemmFusion>(npu_device_info, &mlir_context);
-    fusion.AddPass<NpuHloPrinterPass>("NpuGemmFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuGemmFusion");
 
     fusion.AddPass<HloCSE>(
         /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
         /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
     fusion.AddPass<HloDCE>();
-    fusion.AddPass<NpuHloPrinterPass>("CSE + DCE after GemmFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("CSE + DCE after GemmFusion");
 
     // Dynamic slice fusion rewriter for NPU
     fusion.AddPass<NpuDynamicSliceFusionRewriter>("NPU");
-    fusion.AddPass<NpuHloPrinterPass>("NpuDynamicSliceFusionRewriter");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuDynamicSliceFusionRewriter");
 
     // Fusion dynamic memcpy rewriter for NPU
     fusion.AddPass<NpuFusionDynamicMemcpyRewriter>();
-    fusion.AddPass<NpuHloPrinterPass>("NpuFusionDynamicMemcpyRewriter");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuFusionDynamicMemcpyRewriter");
 
     // NpuCustomKernelFusionRewriter - match CANN custom kernel patterns
     fusion.AddPass<NpuCustomKernelFusionRewriter>();
-    fusion.AddPass<NpuHloPrinterPass>("NpuCustomKernelFusionRewriter");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuCustomKernelFusionRewriter");
 
     // NpuFusionBlockLevelRewriter - convert loop/input fusions to block-level
     fusion.AddPass<NpuFusionBlockLevelRewriter>(npu_device_info);
-    fusion.AddPass<NpuHloPrinterPass>("NpuFusionBlockLevelRewriter");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuFusionBlockLevelRewriter");
 
     // NpuNestGemmFusion - convert GEMM fusions to nested fusions
     fusion.AddPass<NpuNestGemmFusion>(npu_device_info, symbolic_expr_context);
-    fusion.AddPass<NpuHloPrinterPass>("NpuNestGemmFusion");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuNestGemmFusion");
 
     // DISABLED: Fusion wrapper - causes NPU runtime error 507057 (Synchronize stream failed)
     // TODO: Fix NpuFusionWrapper to generate correct NPU fusion graph
@@ -144,7 +144,7 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
 
     // Rename fusions - use NPU implementation for completeness
     fusion.AddPass<NpuRenameFusions>();
-    fusion.AddPass<NpuHloPrinterPass>("NpuRenameFusions");
+    // fusion.AddPass<NpuHloPrinterPass>("NpuRenameFusions");
 
     // Final HloDCE pass
     fusion.AddPass<HloDCE>();

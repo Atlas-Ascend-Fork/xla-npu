@@ -22,6 +22,7 @@
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -67,6 +68,8 @@ absl::Status NpuSequentialThunk::Initialize(const InitializeParams& params) {
 }
 
 absl::Status NpuSequentialThunk::ExecuteOnStream(const ExecuteParams& params) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Start execute thunk sequence");
+
     // std::optional<tsl::profiler::ScopedAnnotation> seq_annotation = GetKernelAnnotation(profile_annotation());
     for (const std::unique_ptr<NpuThunk>& thunk : thunks_) {
         tsl::profiler::TraceMe trace(thunk->profile_annotation());

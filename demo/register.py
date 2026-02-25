@@ -27,10 +27,6 @@ os.environ['PJRT_NAMES_AND_LIBRARY_PATHS'] = f"{PLATFORM_NAME}:{LIBRARY_PATH}"
 #    This is the variable you used before, useful to explicitly request it
 os.environ['JAX_PLATFORMS'] = PLATFORM_NAME
 
-# 4. Import jax.lib.xla_client to trigger the backend discovery mechanism
-import jax.lib.xla_client
-print(f"JAX Rerunning client discovery for platform: {PLATFORM_NAME}")
-
 # --- Run a simple JAX program ---
 try:
     print(f"\nJAX Default Backend: {jax.default_backend()}")
@@ -42,7 +38,7 @@ try:
     x2 = x1 + 1
     print(f"input array: {x2}")
 
-    # 定义多融合算子场景的函数 (单参数输入)
+    # 定义多融合算子场景的函数
     def multi_fusion_func(x1, x2):
         y =  jax.nn.gelu(x1) + jax.nn.relu(x2)
         # y =  jax.nn.gelu(x1)

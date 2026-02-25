@@ -156,6 +156,7 @@ cc_library(
     hdrs = ["npu_sequential_thunk.h"],
     deps = [
         ":npu_thunk",
+        "//xla/xla_npu/dependency/tool:log",
 
         # "//xla/backends/gpu/runtime:annotation",
         # "//xla/backends/gpu/runtime:thunk",

@@ -211,9 +211,9 @@ class NpuCompiler : public LLVMCompiler {
     // During compilation with device, stream_exec != null and autotune_results
     // == null. During deviceless AOT compilation, stream_exec == null and
     // autotune_results != null.
-    absl::Status OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
-                                   const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
-                                   const NpuAliasInfo* alias_info);
+    // absl::Status OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
+    //                                const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
+    //                                const NpuAliasInfo* alias_info);
 
     // virtual absl::Status OptimizeHloConvolutionCanonicalization(HloModule* hlo_module,
     //                                                             const se::GpuComputeCapability& gpu_version,
