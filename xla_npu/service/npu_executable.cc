@@ -215,7 +215,6 @@ NpuExecutable::NpuExecutable(NpuExecutable::Params params, std::deque<BufferAllo
       text_(std::move(params.asm_text)),
       binary_(std::move(params.binary)),
       //   dnn_compiled_graphs_(std::move(params.dnn_compiled_graphs)),
-      gpu_version_(params.device_description.gpu_compute_capability()),
       thunks_(std::move(params.executable)),
       execution_stream_ids_(GetExecutionStreamIds(*thunks_)),
       module_name_(params.module_name),
@@ -229,13 +228,6 @@ NpuExecutable::NpuExecutable(NpuExecutable::Params params, std::deque<BufferAllo
       constants_(std::move(params.constants)),
       output_info_(std::move(params.output_info)),
       enable_debug_info_manager_(params.enable_debug_info_manager) {
-    if (gpu_version_.IsRocm()) {
-        // ROCm uses hsaco hashes to distinguish between modules.
-        // Bad things happen if multiple modules with identical code are loaded.
-        binary_.resize(binary_.size() + 16);
-        *(uint64_t*)(&binary_[binary_.size() - 16]) = tsl::EnvTime::NowNanos();
-        *(uint64_t*)(&binary_[binary_.size() - 8]) = tsl::random::New64();
-    }
     if (has_module() && enable_debug_info_manager_) {
         XlaDebugInfoManager::Get()->RegisterModule(shared_module(), buffer_assignment_);
     }
@@ -255,21 +247,21 @@ NpuExecutable::~NpuExecutable() {
 //     if (platform_id == stream_executor::rocm::kROCmPlatformId) {
 //         auto cc = main_stream->GetRocmComputeCapability();
 //         std::string stream_arch = cc.gcn_arch_name();
-//         std::string gpu_exec_arch = gpu_version_.rocm_compute_capability()->gcn_arch_name();
-//         TF_RET_CHECK(stream_arch == gpu_exec_arch)
-//             << "AMDGPU GCN ISA version mismatch; expected {" << gpu_exec_arch << ", but was " << stream_arch;
+//         // std::string gpu_exec_arch = gpu_version_.rocm_compute_capability()->gcn_arch_name();
+//         // TF_RET_CHECK(stream_arch == gpu_exec_arch)
+//         //     << "AMDGPU GCN ISA version mismatch; expected {" << gpu_exec_arch << ", but was " << stream_arch;
 //     } else if (platform_id == stream_executor::cuda::kCudaPlatformId) {
 //         se::CudaComputeCapability cc = main_stream->GetCudaComputeCapability();
-//         TF_RET_CHECK(cc == *gpu_version_.cuda_compute_capability())
-//             << "Compute capability mismatch; expected {" << gpu_version_.ToString() << "}, but was {" <<
-//             cc.ToString()
-//             << "}";
+//         // TF_RET_CHECK(cc == *gpu_version_.cuda_compute_capability())
+//         //     << "Compute capability mismatch; expected {" << gpu_version_.ToString() << "}, but was {" <<
+//         //     cc.ToString()
+//         //     << "}";
 //     } else if (platform_id == stream_executor::sycl::kSyclPlatformId) {
 //         // TODO: Add check.
 //     } else {
 //         return Internal("Unknown platform");
 //     }
-
+//
 //     return absl::OkStatus();
 // }
 
@@ -1043,7 +1035,7 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
 //     proto.set_asm_text(text_);
 //     proto.mutable_dnn_compiled_graphs()->insert(dnn_compiled_graphs_.cbegin(), dnn_compiled_graphs_.cend());
 
-//     *proto.mutable_gpu_compute_capability() = gpu_version_.ToProto();
+//     // *proto.mutable_gpu_compute_capability() = gpu_version_.ToProto();
 
 //     TF_ASSIGN_OR_RETURN(*proto.mutable_thunk(), thunks_->ToProto());
 

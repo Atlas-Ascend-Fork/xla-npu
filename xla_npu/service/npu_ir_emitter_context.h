@@ -84,7 +84,6 @@ class NpuIrEmitterContext {
     const NpuExecutionStreamAssignment& execution_stream_assignment() const { return *execution_stream_assignment_; }
     absl::string_view platform_name() const { return platform_name_; }
     const se::DeviceDescription& gpu_device_info() const { return gpu_device_info_; }
-    const se::GpuComputeCapability& gpu_compute_capability() const { return gpu_device_info_.gpu_compute_capability(); }
 
     mlir::MLIRContext* mlir_context() { return mlir_context_; }
 

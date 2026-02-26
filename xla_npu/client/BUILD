@@ -19,7 +19,6 @@ cc_library(
         "//xla/xla_npu/service:npu_transfer_manager",
         "//xla/xla_npu/stream_executor:npu_platform",
         "//xla/xla_npu/stream_executor:npu_platform_id",
-        # "//xla/xla_npu/service:cpu_compiler_type.npu_compiler", # !!! Cpu compiler type code, currently not used.
 
         "//xla/stream_executor:platform_manager",
         "//xla/service:computation_placer",

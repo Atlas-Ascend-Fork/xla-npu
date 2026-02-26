@@ -79,12 +79,23 @@ cc_library(
     ],
 )
 
+# NpuFusionWhitelist
+cc_library(
+    name = "npu_fusion_whitelist",
+    hdrs = ["npu_fusion_whitelist.h"],
+    deps = [
+        "//xla/hlo/ir:hlo",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
 # NpuPriorityFusion
 cc_library(
     name = "npu_priority_fusion",
     srcs = ["npu_priority_fusion.cc"],
     hdrs = ["npu_priority_fusion.h"],
     deps = [
+        ":npu_fusion_whitelist",
         "//xla/xla_npu/dependency/tool:log",
 
         "//xla/hlo/ir:hlo",
@@ -103,6 +114,7 @@ cc_library(
     srcs = ["npu_multi_output_fusion.cc"],
     hdrs = ["npu_multi_output_fusion.h"],
     deps = [
+        ":npu_fusion_whitelist",
         "//xla/xla_npu/dependency/tool:log",
 
         "//xla/hlo/ir:hlo",
@@ -243,13 +255,13 @@ cc_library(
 )
 
 # NpuGemmFusion
-
-# NpuGemmFusion
 cc_library(
     name = "npu_gemm_fusion",
     srcs = ["npu_gemm_fusion.cc"],
     hdrs = ["npu_gemm_fusion.h"],
     deps = [
+        ":npu_fusion_whitelist",
+
         "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service:backend_config_cc",
         "//xla/hlo/analysis:symbolic_expr",
@@ -360,14 +372,16 @@ cc_library(
     srcs = ["npu_fusion_dispatch_pipeline.cc"],
     hdrs = ["npu_fusion_dispatch_pipeline.h"],
     deps = [
-        "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/service:backend_config_cc",
         ":npu_custom_kernel_fusion_rewriter",
         ":npu_fusion_block_level_rewriter",
         ":npu_fusion_dynamic_memcpy_rewriter",
+        ":npu_fusion_whitelist",
         ":npu_gemm_fusion",
         ":npu_gemm_fusion_swap_operands",
         ":npu_nest_gemm_fusion",
+        "//xla/xla_npu/dependency/tool:log",
+        "//xla/xla_npu/service:backend_config_cc",
+
         "//xla/hlo/ir:hlo",
         "//xla/hlo/pass:hlo_pass",
         "//xla/hlo/pass:hlo_pass_pipeline",

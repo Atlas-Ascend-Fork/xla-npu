@@ -29,6 +29,7 @@ limitations under the License.
 #include "xla/status_macros.h"
 #include "xla/tsl/platform/errors.h"
 #include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/service/transform/npu_fusion_whitelist.h"
 
 namespace xla {
 
@@ -59,6 +60,15 @@ bool CanFuseNpu(const HloInstruction* consumer, const HloInstruction* producer) 
     // and will crash if called with a non-fusible instruction.
     if (!producer->IsFusible()) {
         NPU_LOG_FORMAT_PRINT(DEBUG, "Producer %s is not fusible", producer->name().data());
+        return false;
+    }
+
+    if (NpuFusionWhitelist::ShouldSkipFusion(consumer)) {
+        NPU_LOG_FORMAT_PRINT(WARN, "Consumer %s is whitelisted to skip fusion", consumer->name().data());
+        return false;
+    }
+    if (NpuFusionWhitelist::ShouldSkipFusion(producer)) {
+        NPU_LOG_FORMAT_PRINT(WARN, "Producer %s is whitelisted to skip fusion", producer->name().data());
         return false;
     }
 
