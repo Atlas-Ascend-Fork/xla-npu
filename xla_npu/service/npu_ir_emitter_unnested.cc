@@ -895,9 +895,12 @@ absl::Status NpuIrEmitterUnnested::EmitNpuAclnnThunk(const HloInstruction* instr
     //     TF_ASSIGN_OR_RETURN(const auto gpu_config, instr->backend_config<xla::gpu::GpuBackendConfig>());
     //     dropout_seed = gpu_config.cudnn_fmha_backend_config().seed();
     // }
+
+    // TODO 运行mmoe目前需要打桩此代码
     AddThunkToThunkSequence(std::make_unique<NpuAclnnThunk>(
         fingerprint, NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
         kernel_arguments.GetArgumentBufferSlices(), kernel_arguments.GetArgumentOutputFlags(), dropout_seed));
+
     return absl::OkStatus();
 }
 
@@ -1353,6 +1356,7 @@ absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr)
     //         /*call_graph=*/*call_graph_),
     //     ir_emitter_context_->expr_context());
 
+    // TODO 运行mmoe目前需要打桩此代码
     std::unique_ptr<NpuFusionInterface> emitter = std::make_unique<NpuCustomFusion>();
     TF_ASSIGN_OR_RETURN(auto result, emitter->Emit(*ir_emitter_context_, *instr));
 
@@ -1372,7 +1376,9 @@ absl::Status NpuIrEmitterUnnested::EmitCall(const HloInstruction* instr) {
 
     const HloComputation* called_computation = instr->called_computations().front();
     auto ir_emitter = NpuIrEmitterUnnested::Create(ir_emitter_context_);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "====Start generate sub hlo instruction thunk====");
     TF_RETURN_IF_ERROR(ir_emitter->EmitHloComputation(called_computation));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "====End generate sub hlo instruction thunk====");
     std::unique_ptr<NpuSequentialThunk> called_thunk_sequence = ir_emitter->ConsumeThunkSequence(
         NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()));
     AddThunkToThunkSequence(std::make_unique<NpuCallThunk>(
@@ -2648,9 +2654,12 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         case HloOpcode::kTranspose:
         case HloOpcode::kTan:
         case HloOpcode::kTanh:
-        case HloOpcode::kXor: {
+        case HloOpcode::kXor:
+        case HloOpcode::kDot:  // 自动融合暂不支持matmul,以aclnn处理
+        case HloOpcode::kConcatenate:
+        case HloOpcode::kReduce: // TODO reduce需要特殊处理
+        case HloOpcode::kDynamicSlice:
             return EmitNpuAclnnThunk(instr);
-        }
 
             // case HloOpcode::kAllGatherDone:
             //     return EmitCollectiveAsyncDone(NpuThunk::kAllGatherDone, instr);
@@ -2869,7 +2878,10 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         //     return EmitConditional(instr);
         case HloOpcode::kConstant:
             return EmitConstant(Cast<HloConstantInstruction>(instr));
-        // case HloOpcode::kCustomCall: {
+        case HloOpcode::kCustomCall:
+            // TODO 实现此功能
+            return absl::OkStatus();
+        // {
         //     auto* custom_call = Cast<HloCustomCallInstruction>(instr);
         //     if (IsLegacyCublasMatmul(*instr)) {
         //         return EmitGemmThunk(custom_call);

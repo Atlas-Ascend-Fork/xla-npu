@@ -134,10 +134,28 @@ class NpuTool {
         return vector_shape;
     }
 
+    static std::string GetXlaShapeString(const Shape& xla_data_shape) {
+        if (xla_data_shape.IsTuple()) {
+            std::stringstream ss;
+            ss << "(";
+            const auto& tuple_shapes = xla_data_shape.tuple_shapes();
+            for (size_t i = 0; i < tuple_shapes.size(); ++i) {
+                ss << GetXlaShapeString(tuple_shapes[i]);
+                if (i < tuple_shapes.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << ")";
+            return ss.str();
+        } else {
+            const auto& vector_shape = ConvertXlaShape2VectorShape(xla_data_shape);
+            return GetShapeString(vector_shape);
+        }
+    }
+
     static void PrintXlaShape(const Shape& xla_data_shape, std::string desc = "Xla tensor shape: ") {
-        const auto& vector_shape = ConvertXlaShape2VectorShape(xla_data_shape);
-        const auto& vector_shape_str = GetShapeString(vector_shape);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "%s%s", desc, vector_shape_str);
+        const auto& shape_str = GetXlaShapeString(xla_data_shape);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "%s%s", desc, shape_str);
     }
 
     static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {
