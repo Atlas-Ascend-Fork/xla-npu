@@ -30,6 +30,6 @@ cc_library(
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:FuncDialect",
         "//xla/xla_npu/third_party/stub:ge_hdrs",
-        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/third_party/register:acl_interface",
     ],
 )

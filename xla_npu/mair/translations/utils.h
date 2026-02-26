@@ -17,8 +17,10 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef std::uint64_t uint64;
 
-static void log(const std::string& str) { std::cout << str << std::endl; }
+static void log(const std::string &str) {
+        std::cout << str << std::endl;
+    }
 
-}  // namespace mlir::air
+}  // namespace air
 
 #endif  // AIR_UTILS_UTILS_H_

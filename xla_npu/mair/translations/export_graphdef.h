@@ -1,11 +1,12 @@
 #ifndef AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_
 #define AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_
 
+#include <unordered_map>
 #include <iostream>
 #include <string_view>
-#include <unordered_map>
 
-#include "./status.h"
+#include "llvm/ADT/StringRef.h"
+#include "mlir/IR/MLIRContext.h"  // from @llvm-project
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/STLExtras.h"
@@ -13,46 +14,49 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Attributes.h"              // from @llvm-project
-#include "mlir/IR/Builders.h"                // from @llvm-project
-#include "mlir/IR/BuiltinOps.h"              // from @llvm-project
+#include "mlir/IR/Attributes.h"               // from @llvm-project
+#include "mlir/IR/Builders.h"                 // from @llvm-project
+#include "mlir/IR/BuiltinOps.h"               // from @llvm-project
 #include "mlir/IR/Location.h"                // from @llvm-project
-#include "mlir/IR/MLIRContext.h"             // from @llvm-project
 #include "mlir/IR/Operation.h"               // from @llvm-project
 #include "mlir/IR/Types.h"                   // from @llvm-project
 #include "mlir/Pass/Pass.h"                  // from @llvm-project
 #include "mlir/Pass/PassManager.h"           // from @llvm-project
 #include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
 #include "mlir/Support/LogicalResult.h"      // from @llvm-project
-#include "xla/xla_npu/dependency/interface/acl_interface.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/gnode.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
 #include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/gnode.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
+#include "xla/xla_npu/third_party/metadef/external/graph/operator.h"
+#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
+
+#include "./status.h"
 // #include "translations/statusor.h"
 // #include "utils/utils.h"
 
 namespace mlir::air {
 
 class Exporter {
-   public:
-    Status Convert(mlir::ModuleOp& module, ge::GraphPtr& graphPtr);
+public:
+    
+    Status Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr);
     explicit Exporter() {}
 
-   private:
+
+private:
     struct SymbolInfo {
         std::string orgSymbol;  // 原始符号，如"%arg0"
-        ge::Operator geOp;      // 对应的算子
+        ge::Operator geOp; // 对应的算子
         ge::TensorDesc tensorDesc;
     };
 
     static const std::unordered_map<std::string, std::vector<std::string>> inputNameMap;
 
     SymbolInfo processReturnOp(mlir::Operation& returnOp);
-    bool processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr& graphPtr);
+    bool processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr &graphPtr);
     bool processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
     bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter, std::string opType);
 
@@ -64,12 +68,14 @@ class Exporter {
 
     float extractFloatValueSimple(mlir::Attribute valueAttr);
     void printSymbolInfo(const SymbolInfo& symbolInfo);
-    const char* getOpName(const ge::Operator& geOp);
+    const char * getOpName(const ge::Operator& geOp);
 
     std::unordered_map<std::string, SymbolInfo> symbolMap;
     std::vector<SymbolInfo> inputInfos;
 };
 
-}  // namespace mlir::air
 
-#endif  // AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_
+} // namespace mlir::air
+
+
+#endif // AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_
