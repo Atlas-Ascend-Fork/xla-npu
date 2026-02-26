@@ -14,46 +14,8 @@ import os
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
-from typing import Tuple, List, Optional, Callable
-
-try:
-    # Try to import MLIR library for StableHLO
-    from jax._src.lib import mlir
-    HAS_MLIR = True
-except ImportError:
-    HAS_MLIR = False
-
-try:
-    # For older JAX versions
-    from jaxlib import hlo_module_string
-    HAS_HLO_MODULE_STRING = True
-except ImportError:
-    HAS_HLO_MODULE_STRING = False
-
-
-class ActivationLayer(nn.Module):
-    """Activation layer supporting multiple activation functions."""
-    act_name: str = 'relu'
-
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-        if self.act_name.lower() == 'sigmoid':
-            return jax.nn.sigmoid(x)
-        elif self.act_name.lower() == 'linear':
-            return x
-        elif self.act_name.lower() == 'relu':
-            return nn.relu(x)
-        elif self.act_name.lower() == 'leaky_relu':
-            return jax.nn.leaky_relu(x, negative_slope=0.01)
-        elif self.act_name.lower() == 'tanh':
-            return jnp.tanh(x)
-        elif self.act_name.lower() == 'elu':
-            return jax.nn.elu(x)
-        elif self.act_name.lower() == 'selu':
-            return jax.nn.selu(x)
-        elif self.act_name.lower() == 'gelu':
-            return jax.nn.gelu(x)
-        else:
-            raise ValueError(f"Unsupported activation: {self.act_name}")
+import numpy as np
+from typing import Tuple, List
 
 
 class DNN(nn.Module):
@@ -318,7 +280,6 @@ def create_mmoe(
     dnn_use_bn: bool = False,
     task_types: Tuple[str, ...] = ('binary', 'binary'),
     task_names: Tuple[str, ...] = ('ctr', 'ctcvr'),
-    key: Optional[jax.Array] = None,
 ) -> Tuple[MMOE, dict]:
     """Create and initialize the MMOE model.
 
@@ -334,13 +295,10 @@ def create_mmoe(
         dnn_use_bn: Whether to use BatchNorm.
         task_types: Task types tuple.
         task_names: Task names tuple.
-        key: JAX random key.
 
     Returns:
         Tuple of (initialized model, parameters dictionary).
     """
-    if key is None:
-        key = jax.random.PRNGKey(0)
 
     model = MMOE(
         num_experts=num_experts,
@@ -356,12 +314,47 @@ def create_mmoe(
         task_names=task_names,
     )
 
-    # Initialize with dummy input
-    dummy_input = jnp.zeros((1, input_dim))
-    key, init_key = jax.random.split(key)
-    params = model.init(init_key, dummy_input, train=False)
+    return model
 
-    return model, params
+
+def save_params_with_npz(params, filepath: str):
+    params_np = jax.tree_util.tree_map(lambda x: np.array(x), params)
+
+    def flatten_dict(d, parent_key='', sep='.'):
+        items = {}
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.update(flatten_dict(v, new_key, sep=sep))
+            else:
+                items[new_key] = v
+        return items
+
+    flat_params = flatten_dict(params_np)
+
+    np.savez(filepath, **flat_params)
+
+    print(f"参数已保存到: {filepath}")
+
+
+def load_params_with_npz(filepath: str):
+    data = np.load(filepath)
+
+    def unflatten_dict(flat_dict, sep='.'):
+        result = {}
+        for key, value in flat_dict.items():
+            parts = key.split(sep)
+            current = result
+            for part in parts[:-1]:
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+            current[parts[-1]] = jnp.array(value)
+        return result
+
+    params_jax = unflatten_dict(dict(data))
+
+    return params_jax
 
 
 if __name__ == "__main__":
@@ -382,8 +375,7 @@ if __name__ == "__main__":
     num_tasks = 2
 
     # Create model
-    key = jax.random.PRNGKey(42)
-    model, params = create_mmoe(
+    model = create_mmoe(
         input_dim=input_dim,
         num_experts=num_experts,
         num_tasks=num_tasks,
@@ -392,18 +384,18 @@ if __name__ == "__main__":
         tower_dnn_hidden_units=(64,),
         dnn_activation='relu',
         task_types=('binary', 'binary'),
-        key=key,
     )
 
-    print(f"\nModel created successfully!")
-    print(f"Input dimension: {input_dim}")
-    print(f"Number of experts: {num_experts}")
-    print(f"Number of tasks: {num_tasks}")
-    print(f"Task types: {model.task_types}")
-    print(f"Task names: {model.task_names}")
+    save_filepath = "./model_params.npz"
+    # Initialize with dummy input
+    # key = jax.random.PRNGKey(42)
+    # dummy_input = jnp.zeros((1, input_dim))
+    # key, init_key = jax.random.split(key)
+    # params = model.init(init_key, dummy_input, train=False)    
+    # save_params_with_npz(params, save_filepath)
 
-    # Generate random input
-    x = jax.random.normal(key, (batch_size, input_dim))
+    params = load_params_with_npz(save_filepath)
+    x = jnp.zeros((batch_size, input_dim))
 
     # Forward pass (inference mode)
     output = model.apply(params, x, train=False)
@@ -412,26 +404,11 @@ if __name__ == "__main__":
     print(f"Output shape: {output.shape}")
     print(f"Expected output shape: ({batch_size}, {num_tasks})")
 
-    # Forward pass (training mode)
-    key, dropout_key = jax.random.split(key)
-    output_train = model.apply(params, x, train=True, rngs={'dropout': dropout_key})
-    print(f"\nTraining mode output shape: {output_train.shape}")
-
-    # Sample output values
-    print(f"\nSample output values (first 2 samples):")
-    print(output[:2])
-
     # ==================== HLO/StableHLO Debug ====================
-    print("\n" + "=" * 50)
-    print("HLO/StableHLO Debug Information")
-    print("=" * 50)
-
-    # Define jitted function for HLO analysis
     @jax.jit
     def jitted_forward(params, x):
         return model.apply(params, x, train=False)
 
-    # Get HLO text
     print("\n--- StableHLO Text ---")
     lowered = jitted_forward.lower(params, x)
     stablehlo_text = lowered.as_text()
@@ -440,14 +417,3 @@ if __name__ == "__main__":
     print("\n--- HLO Text ---")
     hlo_text = lowered.compile().as_text()
     print(hlo_text)
-
-    # Print compilation statistics
-    print("\n--- Compilation Statistics ---")
-    print(f"Number of ops: {len(hlo_text.split('%'))}")
-    print(f"Number of functions: {hlo_text.count('func.func ')}")
-    print(f"Number of dot operations: {hlo_text.count('stablehlo.dot_general')}")
-    print(f"Number of softmax operations: {hlo_text.count('stablehlo.reduce')}")
-    print(f"Number of broadcast operations: {hlo_text.count('stablehlo.broadcast_in_dim')}")
-
-    print("\n" + "=" * 50)
-    print("Test completed successfully!")
