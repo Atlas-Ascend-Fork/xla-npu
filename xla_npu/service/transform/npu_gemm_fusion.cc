@@ -40,6 +40,7 @@ limitations under the License.
 #include "xla/tsl/platform/errors.h"
 #include "xla/xla_npu/service/npu_backend_config.pb.h"
 #include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/service/transform/npu_fusion_whitelist.h"
 
 namespace xla {
 
@@ -84,6 +85,11 @@ class GemmFusionVisitor : public DfsHloRewriteVisitor {
         // Check if this GEMM should be handled by NPU
         if (!fusion_.ShouldNpuHandleGEMM(dot_instr)) {
             VLOG(3) << "GEMM not handled by NPU: " << dot->ToString();
+            return absl::OkStatus();
+        }
+
+        if (NpuFusionWhitelist::ShouldSkipFusion(dot)) {
+            NPU_LOG_FORMAT_PRINT(WARN, "GEMM instruction %s is whitelisted to skip fusion", dot->name().data());
             return absl::OkStatus();
         }
 

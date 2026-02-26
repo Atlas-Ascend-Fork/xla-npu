@@ -39,6 +39,8 @@ limitations under the License.
 #include "xla/service/instruction_fusion.h"
 #include "xla/shape_util.h"
 #include "xla/tsl/platform/errors.h"
+#include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/service/transform/npu_fusion_whitelist.h"
 
 namespace xla {
 
@@ -93,6 +95,20 @@ bool IsSiblingFusionCandidate(const HloInstruction* instr) {
 bool CanFuseSiblings(const HloInstruction& sibling1, const HloInstruction& sibling2,
                      HloInstruction& parent, const HloDfsReachability& reachability,
                      const se::DeviceDescription& device_description) {
+    for (const HloInstruction* operand : sibling1.operands()) {
+        if (NpuFusionWhitelist::ShouldSkipFusion(operand)) {
+            NPU_LOG_FORMAT_PRINT(WARN, "Operand %s of sibling1 is whitelisted to skip fusion", operand->name().data());
+            return false;
+        }
+    }
+
+    for (const HloInstruction* operand : sibling2.operands()) {
+        if (NpuFusionWhitelist::ShouldSkipFusion(operand)) {
+            NPU_LOG_FORMAT_PRINT(WARN, "Operand %s of sibling2 is whitelisted to skip fusion", operand->name().data());
+            return false;
+        }
+    }
+
     // They must not be connected (no cycle)
     if (IsConnected(&sibling1, &sibling2, reachability)) {
         return false;
