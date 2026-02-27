@@ -461,6 +461,11 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
         os << "  outputs {\n";
         os << "    attr {\n";
 
+        // Get element type for dtype
+        Type elementType = shapedType.getElementType();
+        int dtype = parseDataType(elementType);
+        os << "      dtype: " << dtype << "\n";
+
         // For scalar tensors (rank 0), get axis information from the next consumer node
         if (rank == 0) {
             // Find the consumer of this operation's result
@@ -481,15 +486,24 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
                     if (consumerTensorAttr) {
                         // Copy axis_ids from the consumer's vectorized_axis
                         auto consumerAxis = consumerTensorAttr.getVectorizedAxis();
-                        for (int64_t axisId : consumerAxis) {
-                            os << "      axis_ids: " << axisId << "\n";
-                        }
-                        // For scalar nodes, set all repeats to 1 and all strides to 0
-                        for (size_t i = 0; i < consumerAxis.size(); i++) {
+                        // Check if consumer's axis is empty - if so, use fallback
+                        if (consumerAxis.empty()) {
+                            // Fallback: consumer axis is not ready yet
+                            os << "      axis_ids: 0\n";
                             os << "      repeats: \"1\"\n";
-                        }
-                        for (size_t i = 0; i < consumerAxis.size(); i++) {
                             os << "      strides: \"0\"\n";
+                        } else {
+                            // Consumer has valid axis info, copy it
+                            for (int64_t axisId : consumerAxis) {
+                                os << "      axis_ids: " << axisId << "\n";
+                            }
+                            // For scalar nodes, set all repeats to 1 and all strides to 0
+                            for (size_t i = 0; i < consumerAxis.size(); i++) {
+                                os << "      repeats: \"1\"\n";
+                            }
+                            for (size_t i = 0; i < consumerAxis.size(); i++) {
+                                os << "      strides: \"0\"\n";
+                            }
                         }
                     } else {
                         // Fallback if consumer tensor attr is not valid
@@ -812,6 +826,13 @@ std::string AFIRToASCIRTextPass::generateDataNode(int nodeIndex, int argIndex, T
         os << "      strides: \"1\"\n";
     }
 
+    // Add dtype field
+    if (auto shapedType = dyn_cast<ShapedType>(argType)) {
+        Type elementType = shapedType.getElementType();
+        int dtype = parseDataType(elementType);
+        os << "      dtype: " << dtype << "\n";
+    }
+
     os << "      mem {\n";
     os << "        tensor_id: " << tensorId << "\n";
     os << "      }\n";
@@ -942,25 +963,25 @@ std::string AFIRToASCIRTextPass::generateOutputNode(int index, const std::string
 
 int AFIRToASCIRTextPass::parseDataType(Type type) {
     return llvm::TypeSwitch<Type, int>(type)
-        .Case<Float32Type>([](Float32Type) { return 1; })
-        .Case<Float16Type>([](Float16Type) { return 2; })
-        .Case<Float64Type>([](Float64Type) { return 12; })
+        .Case<Float32Type>([](Float32Type) { return 0; })
+        .Case<Float16Type>([](Float16Type) { return 1; })
+        .Case<Float64Type>([](Float64Type) { return 11; })
         .Case<IntegerType>([](IntegerType intType) {
             if (intType.getWidth() == 8) {
-                return intType.isUnsigned() ? 4 : 3;
+                return intType.isUnsigned() ? 4 : 2;
             }
             if (intType.getWidth() == 16) {
-                return intType.isUnsigned() ? 6 : 5;
+                return intType.isUnsigned() ? 7 : 6;
             }
             if (intType.getWidth() == 32) {
-                return intType.isUnsigned() ? 9 : 7;
+                return intType.isUnsigned() ? 8 : 3;
             }
             if (intType.getWidth() == 64) {
-                return intType.isUnsigned() ? 10 : 8;
+                return intType.isUnsigned() ? 10 : 9;
             }
-            return 1;
+            return 0;
         })
-        .Default([](Type) { return 1; });
+        .Default([](Type) { return 0; });
 }
 
 std::unique_ptr<Pass> createConvertAFIRToASCIRTextPass() { return std::unique_ptr<Pass>(new AFIRToASCIRTextPass()); }

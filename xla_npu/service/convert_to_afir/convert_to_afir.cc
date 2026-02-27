@@ -73,6 +73,12 @@ class HloToAfirConverter {
     absl::StatusOr<mlir::Value> ConvertMaximumOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertBroadcastOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertTanhOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertNegateOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertExponentialOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertConvertOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertReshapeOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertReduceOp(const HloInstruction* instruction);
+    absl::StatusOr<mlir::Value> ConvertConcatenateOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertFusionOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertCallOp(const HloInstruction* instruction);
 
@@ -283,6 +289,24 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertInstruction(const HloInst
 
         case HloOpcode::kTanh:
             return ConvertTanhOp(instruction);
+
+        case HloOpcode::kNegate:
+            return ConvertNegateOp(instruction);
+
+        case HloOpcode::kExp:
+            return ConvertExponentialOp(instruction);
+
+        case HloOpcode::kConvert:
+            return ConvertConvertOp(instruction);
+
+        case HloOpcode::kReshape:
+            return ConvertReshapeOp(instruction);
+
+        case HloOpcode::kReduce:
+            return ConvertReduceOp(instruction);
+
+        case HloOpcode::kConcatenate:
+            return ConvertConcatenateOp(instruction);
 
         case HloOpcode::kFusion:
             return ConvertFusionOp(instruction);
@@ -616,6 +640,474 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertTanhOp(const HloInstructi
     // Use math.tanh as fallback
     auto tanh_op = builder_.create<mlir::math::TanhOp>(loc, operand);
     return tanh_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertNegateOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() != 1) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Negate operation must have 1 operand, got ", instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Value operand = value_map_[instruction->operand(0)];
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Use afir.NegOp when emit_afir_dialect is true
+    if (options_.emit_afir_dialect) {
+        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Build indexing_maps array (2 maps: operand, result)
+        llvm::SmallVector<mlir::AffineMap> maps;
+        maps.push_back(identity_map);  // operand
+        maps.push_back(identity_map);  // result
+        auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+        // Create NegOp with all required attributes
+        auto neg_op = builder_.create<mlir::afir::NegOp>(loc, result_type, operand, indexing_maps_attr,
+                                                          nullptr,                         // loop_axis (use default)
+                                                          builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
+                                                          nullptr,                         // tmp_buffers (use default)
+                                                          outputs_array);
+        return neg_op.getResult();
+    }
+
+    // Use arith.negf as fallback
+    auto neg_op = builder_.create<mlir::arith::NegFOp>(loc, operand);
+    return neg_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertExponentialOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() != 1) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Exponential operation must have 1 operand, got ", instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Value operand = value_map_[instruction->operand(0)];
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Use afir.ExpOp when emit_afir_dialect is true
+    if (options_.emit_afir_dialect) {
+        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Build indexing_maps array (2 maps: operand, result)
+        llvm::SmallVector<mlir::AffineMap> maps;
+        maps.push_back(identity_map);  // operand
+        maps.push_back(identity_map);  // result
+        auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+        // Create ExpOp with all required attributes
+        auto exp_op = builder_.create<mlir::afir::ExpOp>(loc, result_type, operand, indexing_maps_attr,
+                                                          nullptr,                         // loop_axis (use default)
+                                                          builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
+                                                          nullptr,                         // tmp_buffers (use default)
+                                                          outputs_array);
+        return exp_op.getResult();
+    }
+
+    // Use math.exp as fallback
+    auto exp_op = builder_.create<mlir::math::ExpOp>(loc, operand);
+    return exp_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() != 1) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Convert operation must have 1 operand, got ", instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Value operand = value_map_[instruction->operand(0)];
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Use afir.CastOp when emit_afir_dialect is true
+    if (options_.emit_afir_dialect) {
+        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Build indexing_maps array (2 maps: operand, result)
+        llvm::SmallVector<mlir::AffineMap> maps;
+        maps.push_back(identity_map);  // operand
+        maps.push_back(identity_map);  // result
+        auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+        // Create CastOp with all required attributes
+        auto cast_op = builder_.create<mlir::afir::CastOp>(loc, result_type, operand, indexing_maps_attr,
+                                                           nullptr,                         // loop_axis (use default)
+                                                           builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
+                                                           nullptr,                         // tmp_buffers (use default)
+                                                           outputs_array);
+        return cast_op.getResult();
+    }
+
+    // Use arith.ExtFOp, arith.TruncFOp, arith.IndexCastOp, etc. as fallback
+    // For simplicity, we'll use the standard arith operations based on the types
+    auto operand_type = llvm::dyn_cast<mlir::RankedTensorType>(operand.getType());
+    auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+
+    if (!operand_type || !result_tensor_type) {
+        return absl::InternalError("Convert operands must be ranked tensors");
+    }
+
+    auto operand_elem_type = operand_type.getElementType();
+    auto result_elem_type = result_tensor_type.getElementType();
+
+    // Handle float to float conversions
+    if (llvm::isa<mlir::FloatType>(operand_elem_type) && llvm::isa<mlir::FloatType>(result_elem_type)) {
+        auto operand_width = llvm::cast<mlir::FloatType>(operand_elem_type).getWidth();
+        auto result_width = llvm::cast<mlir::FloatType>(result_elem_type).getWidth();
+
+        if (operand_width < result_width) {
+            // Extend floating point
+            auto extf_op = builder_.create<mlir::arith::ExtFOp>(loc, result_type, operand);
+            return extf_op.getResult();
+        } else if (operand_width > result_width) {
+            // Truncate floating point
+            auto truncf_op = builder_.create<mlir::arith::TruncFOp>(loc, result_type, operand);
+            return truncf_op.getResult();
+        } else {
+            // Same width, just bitcast
+            auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
+            return bitcast_op.getResult();
+        }
+    }
+
+    // Handle integer to integer conversions
+    if (llvm::isa<mlir::IntegerType>(operand_elem_type) && llvm::isa<mlir::IntegerType>(result_elem_type)) {
+        auto operand_width = llvm::cast<mlir::IntegerType>(operand_elem_type).getWidth();
+        auto result_width = llvm::cast<mlir::IntegerType>(result_elem_type).getWidth();
+
+        if (operand_width < result_width) {
+            // Extend integer (signed or unsigned)
+            auto operand_signed = llvm::cast<mlir::IntegerType>(operand_elem_type).isSigned();
+            if (operand_signed) {
+                auto exti_op = builder_.create<mlir::arith::ExtSIOp>(loc, result_type, operand);
+                return exti_op.getResult();
+            } else {
+                auto exti_op = builder_.create<mlir::arith::ExtUIOp>(loc, result_type, operand);
+                return exti_op.getResult();
+            }
+        } else if (operand_width > result_width) {
+            // Truncate integer
+            auto trunci_op = builder_.create<mlir::arith::TruncIOp>(loc, result_type, operand);
+            return trunci_op.getResult();
+        } else {
+            // Same width, just bitcast
+            auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
+            return bitcast_op.getResult();
+        }
+    }
+
+    // Handle float to integer conversions
+    if (llvm::isa<mlir::FloatType>(operand_elem_type) && llvm::isa<mlir::IntegerType>(result_elem_type)) {
+        auto result_signed = llvm::cast<mlir::IntegerType>(result_elem_type).isSigned();
+        if (result_signed) {
+            auto fptosi_op = builder_.create<mlir::arith::FPToSIOp>(loc, result_type, operand);
+            return fptosi_op.getResult();
+        } else {
+            auto fptoui_op = builder_.create<mlir::arith::FPToUIOp>(loc, result_type, operand);
+            return fptoui_op.getResult();
+        }
+    }
+
+    // Handle integer to float conversions
+    if (llvm::isa<mlir::IntegerType>(operand_elem_type) && llvm::isa<mlir::FloatType>(result_elem_type)) {
+        auto operand_signed = llvm::cast<mlir::IntegerType>(operand_elem_type).isSigned();
+        if (operand_signed) {
+            auto sitofp_op = builder_.create<mlir::arith::SIToFPOp>(loc, result_type, operand);
+            return sitofp_op.getResult();
+        } else {
+            auto uitofp_op = builder_.create<mlir::arith::UIToFPOp>(loc, result_type, operand);
+            return uitofp_op.getResult();
+        }
+    }
+
+    return absl::UnimplementedError(
+        absl::StrCat("Unsupported type conversion"));
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() != 1) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Reshape operation must have 1 operand, got ", instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Value operand = value_map_[instruction->operand(0)];
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    const Shape& input_shape = instruction->operand(0)->shape();
+    const Shape& output_shape = instruction->shape();
+
+    // For emit_afir_dialect mode, use AFIR operations to implement reshape
+    if (options_.emit_afir_dialect) {
+        // Special case: scalar -> [1] reshape
+        // Implement this as a broadcast operation
+        // Because some ops e.g. concat, do not support input tensor with empty axis.
+        if (input_shape.dimensions().size() == 0 && output_shape.dimensions().size() == 1 &&
+            output_shape.dimensions(0) == 1) {
+            int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+
+            // Create indexing maps for broadcast
+            // Input (scalar): affine_map<() -> ()>
+            // Output ([1]): affine_map<(d0) -> (d0)>
+            auto scalar_map = GetIdentityAffineMap(0);
+            llvm::SmallVector<mlir::AffineMap> maps;
+            maps.push_back(scalar_map);  // scalar input
+
+            auto output_map = GetIdentityAffineMap(rank);
+            maps.push_back(output_map);  // [1] output
+
+            auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+            // Create output attributes
+            auto output_attr = CreateDefaultOutputAttr(result_type);
+            llvm::SmallVector<mlir::Attribute> output_attrs;
+            output_attrs.push_back(output_attr);
+            auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+            // Create BroadcastOp to implement scalar -> [1] reshape
+            auto broadcast_op = builder_.create<mlir::afir::BroadcastOp>(
+                loc, result_type, operand, indexing_maps_attr,
+                nullptr,  // loop_axis
+                builder_.getDictionaryAttr({}),  // ir_attr_def
+                nullptr,  // tmp_buffers
+                outputs_array);
+
+            return broadcast_op.getResult();
+        }
+
+        // Special case: [1] -> scalar reshape
+        if (input_shape.dimensions().size() == 1 && input_shape.dimensions(0) == 1 &&
+            output_shape.dimensions().size() == 0) {
+            // Use broadcast with scalar indexing maps
+            auto scalar_map = GetIdentityAffineMap(0);
+            llvm::SmallVector<mlir::AffineMap> maps;
+            maps.push_back(scalar_map);  // input: scalar map
+            maps.push_back(scalar_map);  // output: scalar map
+
+            auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+            auto output_attr = CreateDefaultOutputAttr(result_type);
+            llvm::SmallVector<mlir::Attribute> output_attrs;
+            output_attrs.push_back(output_attr);
+            auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+            auto broadcast_op = builder_.create<mlir::afir::BroadcastOp>(
+                loc, result_type, operand, indexing_maps_attr,
+                nullptr,
+                builder_.getDictionaryAttr({}),
+                nullptr,
+                outputs_array);
+
+            return broadcast_op.getResult();
+        }
+
+        // For more complex reshapes, we currently don't support them
+        return absl::UnimplementedError(
+            absl::StrCat("Unsupported reshape: ",
+                         ShapeUtil::HumanString(input_shape), " -> ",
+                         ShapeUtil::HumanString(output_shape),
+                         ". Only scalar<->[1] reshapes are currently supported."));
+    }
+
+    // For non-afir mode, just return the operand (reshape is no-op in MLIR)
+    return operand;
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReduceOp(const HloInstruction* instruction) {
+    // HLO reduce instruction has N data operands followed by N init operands
+    // For example, reduce(arg0, arg1, ..., init0, init1, ...)
+    // The actual reduction is applied to (arg0, init0), (arg1, init1), etc.
+
+    // Get the number of data operands (total operands / 2)
+    int64_t num_data_operands = instruction->operand_count() / 2;
+    if (num_data_operands < 1) {
+        return absl::InvalidArgumentError("Reduce operation must have at least one data operand");
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Get the reduce computation
+    if (!instruction->has_to_apply()) {
+        return absl::InvalidArgumentError("Reduce operation must have a to_apply computation");
+    }
+    const HloComputation* reduce_computation = instruction->to_apply();
+
+    // For simplicity, we'll handle single-operand reduce here
+    // Multi-operand reduce would need more complex handling
+    if (num_data_operands != 1) {
+        return absl::UnimplementedError(
+            absl::StrCat("Reduce with ", num_data_operands, " operands is not yet supported"));
+    }
+
+    mlir::Value data_operand = value_map_[instruction->operand(0)];
+
+    // Get dimensions to reduce - AFIR reduce ops only support reducing along a single axis
+    const auto& dimensions = instruction->dimensions();
+    if (dimensions.size() != 1) {
+        return absl::UnimplementedError(
+            absl::StrCat("AFIR reduce operations only support reducing along a single dimension, got ",
+                         dimensions.size(), " dimensions"));
+    }
+    int64_t reduce_axis = dimensions[0];
+
+    // For AFIR dialect, use the dedicated reduce ops
+    if (options_.emit_afir_dialect) {
+        auto data_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(data_operand.getType());
+        auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+
+        if (!data_tensor_type || !result_tensor_type) {
+            return absl::InternalError("Reduce operands must be ranked tensors");
+        }
+
+        int64_t data_rank = data_tensor_type.getRank();
+
+        // Build identity indexing map for the input
+        auto identity_map = GetIdentityAffineMap(data_rank);
+
+        // Build outputs attribute
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Build indexing_maps array (1 map: input)
+        llvm::SmallVector<mlir::AffineMap> maps;
+        maps.push_back(identity_map);
+        auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+        // Create axis attribute for AFIR reduce op
+        auto axis_attr = builder_.getI32IntegerAttr(reduce_axis);
+
+        // Check if the reduce computation corresponds to a known operation
+        const HloInstruction* reduce_root = reduce_computation->root_instruction();
+
+        // For common reductions like sum, max, min, we can use dedicated AFIR ops
+        if (reduce_root->opcode() == HloOpcode::kAdd) {
+            // Sum reduction
+            auto reduce_op = builder_.create<mlir::afir::SumOp>(
+                loc, result_type, data_operand, axis_attr, indexing_maps_attr,
+                nullptr,                         // loop_axis
+                builder_.getDictionaryAttr({}),  // ir_attr_def
+                nullptr,                         // tmp_buffers
+                outputs_array);
+            return reduce_op.getResult();
+        } else if (reduce_root->opcode() == HloOpcode::kMaximum) {
+            // Max reduction
+            auto reduce_op = builder_.create<mlir::afir::MaxOp>(
+                loc, result_type, data_operand, axis_attr, indexing_maps_attr,
+                nullptr,                         // loop_axis
+                builder_.getDictionaryAttr({}),  // ir_attr_def
+                nullptr,                         // tmp_buffers
+                outputs_array);
+            return reduce_op.getResult();
+        } else if (reduce_root->opcode() == HloOpcode::kMinimum) {
+            // Min reduction
+            auto reduce_op = builder_.create<mlir::afir::MinOp>(
+                loc, result_type, data_operand, axis_attr, indexing_maps_attr,
+                nullptr,                         // loop_axis
+                builder_.getDictionaryAttr({}),  // ir_attr_def
+                nullptr,                         // tmp_buffers
+                outputs_array);
+            return reduce_op.getResult();
+        } else {
+            // Generic reduce - not yet supported
+            return absl::UnimplementedError(
+                absl::StrCat("Reduce computation type '", HloOpcodeString(reduce_root->opcode()),
+                             "' is not yet supported for AFIR dialect"));
+        }
+    }
+
+    // Non-AFIR mode: use MLIR standard reduce operations
+    // For now, return unimplemented
+    return absl::UnimplementedError("Reduce operation requires emit_afir_dialect to be enabled");
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConcatenateOp(const HloInstruction* instruction) {
+    if (instruction->operand_count() < 2) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Concatenate operation must have at least 2 operands, got ",
+                         instruction->operand_count()));
+    }
+
+    mlir::Location loc = ConvertLocation(instruction);
+    mlir::Type result_type = ConvertShape(instruction->shape());
+
+    // Get the concatenate dimension
+    const auto& concat_dimensions = instruction->dimensions();
+    if (concat_dimensions.size() != 1) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Concatenate must have exactly 1 dimension, got ", concat_dimensions.size()));
+    }
+    int64_t concat_dim = concat_dimensions[0];
+
+    // Collect all operands
+    llvm::SmallVector<mlir::Value> operands;
+    for (const HloInstruction* operand : instruction->operands()) {
+        auto it = value_map_.find(operand);
+        if (it == value_map_.end()) {
+            return absl::InternalError(absl::StrCat("Concatenate operand not found in value map: ", operand->name()));
+        }
+        operands.push_back(it->second);
+    }
+
+    // Use AFIR dialect
+    if (options_.emit_afir_dialect) {
+        auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+        if (!result_tensor_type) {
+            return absl::InternalError("Concatenate result must be a ranked tensor");
+        }
+
+        int64_t result_rank = result_tensor_type.getRank();
+
+        // Build identity indexing map for inputs (AFIR ConcatOp uses identity map)
+        auto identity_map = GetIdentityAffineMap(result_rank);
+        llvm::SmallVector<mlir::AffineMap> maps;
+        maps.push_back(identity_map);
+        auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+        // Build outputs attribute
+        auto output_attr = CreateDefaultOutputAttr(result_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Create concat_axis attribute for AFIR concat op
+        auto concat_axis_attr = builder_.getI32IntegerAttr(concat_dim);
+
+        // Create ConcatOp with all operands
+        auto concat_op = builder_.create<mlir::afir::ConcatOp>(
+            loc, result_type, operands, concat_axis_attr, indexing_maps_attr,
+            nullptr,                         // loop_axis
+            builder_.getDictionaryAttr({}),  // ir_attr_def
+            nullptr,                         // tmp_buffers
+            outputs_array);
+
+        return concat_op.getResult();
+    }
+
+    // Non-AFIR mode: use MLIR standard operations
+    // For now, return unimplemented
+    return absl::UnimplementedError("Concatenate operation requires emit_afir_dialect to be enabled");
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertBroadcastOp(const HloInstruction* instruction) {
