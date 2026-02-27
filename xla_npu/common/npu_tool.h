@@ -185,6 +185,35 @@ class NpuTool {
 
     // 生成不重复文件夹名（Abseil 实现）
     static std::string generate_unique_folder_name_absl();
+
+    // 解析 reduce 操作的维度参数
+    // 格式: "dims=[dim1,dim2,...],keepDims=true/false"
+    static void ParseReduceDims(const std::string& desc, std::vector<int64_t>& dims, bool& keepDims) {
+        dims.clear();
+        keepDims = false;
+
+        size_t dims_pos = desc.find("dims=[");
+        if (dims_pos == std::string::npos) {
+            return;
+        }
+
+        size_t dims_end = desc.find("]", dims_pos);
+        if (dims_end == std::string::npos) {
+            return;
+        }
+
+        std::string dims_str = desc.substr(dims_pos + 6, dims_end - dims_pos - 6);
+        std::stringstream ss(dims_str);
+        std::string dim_str;
+        while (std::getline(ss, dim_str, ',')) {
+            dims.push_back(std::stoll(dim_str));
+        }
+
+        size_t keep_pos = desc.find("keepDims=");
+        if (keep_pos != std::string::npos) {
+            keepDims = (desc.substr(keep_pos + 9, 5) == "true");
+        }
+    }
 };
 
 }  // namespace xla

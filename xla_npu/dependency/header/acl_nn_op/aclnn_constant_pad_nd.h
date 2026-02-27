@@ -11,7 +11,7 @@
 #ifndef OP_API_INC_CONSTANT_PAD_ND_H_
 #define OP_API_INC_CONSTANT_PAD_ND_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

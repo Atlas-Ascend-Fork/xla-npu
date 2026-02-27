@@ -6,7 +6,7 @@
 #ifndef ACLNN_MOE_GATING_TOP_KSOFTMAX_V2_H_
 #define ACLNN_MOE_GATING_TOP_KSOFTMAX_V2_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

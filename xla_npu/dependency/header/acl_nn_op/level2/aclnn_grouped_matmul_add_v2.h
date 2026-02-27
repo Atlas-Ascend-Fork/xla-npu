@@ -10,7 +10,7 @@ BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULA
  */
 #ifndef OP_API_INC_GROUPED_MATMUL_ADD_V2_H
 #define OP_API_INC_GROUPED_MATMUL_ADD_V2_H
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

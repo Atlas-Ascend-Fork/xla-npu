@@ -11,7 +11,7 @@
 #ifndef OP_API_INC_GROUPED_MATMUL_FINALIZE_ROUTING_WEIGHT_NZ_V2
 #define OP_API_INC_GROUPED_MATMUL_FINALIZE_ROUTING_WEIGHT_NZ_V2
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

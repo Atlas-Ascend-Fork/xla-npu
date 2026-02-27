@@ -6,7 +6,7 @@
 #ifndef ACLNN_ROI_ALIGN_ROTATED_H_
 #define ACLNN_ROI_ALIGN_ROTATED_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

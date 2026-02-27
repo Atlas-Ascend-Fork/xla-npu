@@ -6,7 +6,7 @@
 #ifndef ACLNN_CLIPPED_SWIGLU_H_
 #define ACLNN_CLIPPED_SWIGLU_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

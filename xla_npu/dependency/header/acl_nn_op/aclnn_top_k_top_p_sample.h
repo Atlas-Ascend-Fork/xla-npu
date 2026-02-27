@@ -6,7 +6,7 @@
 #ifndef ACLNN_TOP_KTOP_PSAMPLE_H_
 #define ACLNN_TOP_KTOP_PSAMPLE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

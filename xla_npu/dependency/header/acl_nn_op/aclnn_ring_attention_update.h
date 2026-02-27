@@ -6,7 +6,7 @@
 #ifndef ACLNN_RING_ATTENTION_UPDATE_H_
 #define ACLNN_RING_ATTENTION_UPDATE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -6,7 +6,7 @@
 #ifndef ACLNN_MASKED_SOFTMAX_WITH_REL_POS_BIAS_H_
 #define ACLNN_MASKED_SOFTMAX_WITH_REL_POS_BIAS_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

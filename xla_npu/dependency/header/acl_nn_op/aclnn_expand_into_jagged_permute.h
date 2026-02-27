@@ -6,7 +6,7 @@
 #ifndef ACLNN_EXPAND_INTO_JAGGED_PERMUTE_H_
 #define ACLNN_EXPAND_INTO_JAGGED_PERMUTE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

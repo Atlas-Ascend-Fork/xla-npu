@@ -10,7 +10,7 @@
 #ifndef ACLNN_DYNAMIC_QUANT_H_
 #define ACLNN_DYNAMIC_QUANT_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

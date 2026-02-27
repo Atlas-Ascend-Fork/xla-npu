@@ -6,7 +6,7 @@
 #ifndef ACLNN_MOE_TOKEN_UNPERMUTE_WITH_EP_GRAD_H_
 #define ACLNN_MOE_TOKEN_UNPERMUTE_WITH_EP_GRAD_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

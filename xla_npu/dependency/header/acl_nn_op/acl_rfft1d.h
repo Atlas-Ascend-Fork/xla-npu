@@ -17,7 +17,7 @@
 #ifndef OP_API_INC_LEVEL2_ACL_RFFT1D_H_
 #define OP_API_INC_LEVEL2_ACL_RFFT1D_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

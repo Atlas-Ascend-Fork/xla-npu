@@ -10,8 +10,8 @@
 
 #ifndef ACLNN_PROMPT_FLASH_ATTENTION_H_
 #define ACLNN_PROMPT_FLASH_ATTENTION_H_
-#include "aclnn/acl_meta.h"
-#include "aclnn/aclnn_base.h"
+#include "acl_meta.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

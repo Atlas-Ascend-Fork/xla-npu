@@ -11,7 +11,7 @@
 #ifndef ACLNN_UPSAMPLE_BILINEAR2D_AABACKWARD_H_
 #define ACLNN_UPSAMPLE_BILINEAR2D_AABACKWARD_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

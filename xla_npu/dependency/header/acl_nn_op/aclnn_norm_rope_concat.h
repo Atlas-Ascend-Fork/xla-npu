@@ -15,7 +15,7 @@
 #ifndef ACLNN_NORM_ROPE_CONCAT_H_
 #define ACLNN_NORM_ROPE_CONCAT_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

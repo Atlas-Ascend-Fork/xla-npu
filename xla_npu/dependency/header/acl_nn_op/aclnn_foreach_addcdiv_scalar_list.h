@@ -6,7 +6,7 @@
 #ifndef ACLNN_FOREACH_ADDCDIV_SCALAR_LIST_H_
 #define ACLNN_FOREACH_ADDCDIV_SCALAR_LIST_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

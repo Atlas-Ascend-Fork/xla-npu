@@ -11,7 +11,7 @@
 #ifndef OP_API_INC_LEVEL2_ACLNN_NSA_COMPRESS_ATTENTION_INFER_H_
 #define OP_API_INC_LEVEL2_ACLNN_NSA_COMPRESS_ATTENTION_INFER_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

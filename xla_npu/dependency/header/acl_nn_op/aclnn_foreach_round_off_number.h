@@ -6,7 +6,7 @@
 #ifndef ACLNN_FOREACH_ROUND_OFF_NUMBER_H_
 #define ACLNN_FOREACH_ROUND_OFF_NUMBER_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

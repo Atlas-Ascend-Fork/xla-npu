@@ -11,7 +11,7 @@
 #ifndef OP_API_INC_TRANSPOSE_BATCH_MAT_MUL
 #define OP_API_INC_TRANSPOSE_BATCH_MAT_MUL
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

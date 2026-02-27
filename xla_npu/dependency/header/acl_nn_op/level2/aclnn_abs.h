@@ -13,7 +13,7 @@
 #define OP_API_INC_LEVEL2_ACLNN_ABS_H_
 
 #include "aclnn_util.h"
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

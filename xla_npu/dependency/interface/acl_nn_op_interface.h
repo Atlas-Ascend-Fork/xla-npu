@@ -48,6 +48,48 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnMulGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMul)
 
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnDivGetWorkspaceSize,
+                            (const aclTensor* self, const aclTensor* other, aclTensor* out,
+                             uint64_t* workspaceSize, aclOpExecutor** executor),
+                            (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnDiv)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSubGetWorkspaceSize,
+                            (const aclTensor* self, const aclTensor* other, const aclScalar* alpha, aclTensor* out,
+                             uint64_t* workspaceSize, aclOpExecutor** executor),
+                            (self, other, alpha, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSub)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnNegGetWorkspaceSize,
+                            (const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+                             aclOpExecutor** executor),
+                            (self, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnNeg)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnExpGetWorkspaceSize,
+                            (const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+                             aclOpExecutor** executor),
+                            (self, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnExp)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnMaximumGetWorkspaceSize,
+                            (const aclTensor* self, const aclTensor* other, aclTensor* out,
+                             uint64_t* workspaceSize, aclOpExecutor** executor),
+                            (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMaximum)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnMatmulGetWorkspaceSize,
+                            (const aclTensor* self, const aclTensor* mat2, aclTensor* out, int8_t cubeMathType,
+                             uint64_t* workspaceSize, aclOpExecutor** executor),
+                            (self, mat2, out, cubeMathType, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMatmul)
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_

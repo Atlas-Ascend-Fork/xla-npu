@@ -10,7 +10,7 @@
 
 #ifndef ACLNN_FUSED_INFER_ATTENTION_SCORE_V4_H_
 #define ACLNN_FUSED_INFER_ATTENTION_SCORE_V4_H_
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

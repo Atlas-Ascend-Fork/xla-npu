@@ -10,7 +10,7 @@
 #ifndef OP_API_INC_FUSED_MATMUL_H
 #define OP_API_INC_FUSED_MATMUL_H
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

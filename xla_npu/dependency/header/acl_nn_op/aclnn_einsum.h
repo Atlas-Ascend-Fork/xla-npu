@@ -15,7 +15,7 @@
 #define OP_API_INC_EINSUM_H_
 
 #include <string>
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

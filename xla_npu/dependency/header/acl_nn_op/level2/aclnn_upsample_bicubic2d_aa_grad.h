@@ -11,7 +11,7 @@
 #ifndef ACLNN_UPSAMPLE_BICUBIC2D_AAGRAD_H_
 #define ACLNN_UPSAMPLE_BICUBIC2D_AAGRAD_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

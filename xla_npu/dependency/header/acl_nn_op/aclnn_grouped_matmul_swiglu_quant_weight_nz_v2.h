@@ -9,7 +9,7 @@
  */
 #ifndef OP_API_INC_GROUPED_MATMUL_SWIGLU_QUANT_WEIGHT_NZ_V2_H
 #define OP_API_INC_GROUPED_MATMUL_SWIGLU_QUANT_WEIGHT_NZ_V2_H
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

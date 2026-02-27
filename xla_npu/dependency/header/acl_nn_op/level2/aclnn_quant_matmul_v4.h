@@ -10,7 +10,7 @@
 #ifndef OP_API_INC_QUANT_MATMUL_V4
 #define OP_API_INC_QUANT_MATMUL_V4
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

@@ -11,7 +11,7 @@
 #ifndef ACLNN_INCRE_FLASH_ATTENTION_V4_H_
 #define ACLNN_INCRE_FLASH_ATTENTION_V4_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

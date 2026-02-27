@@ -6,7 +6,7 @@
 #ifndef ACLNN_MRGBA_CUSTOM_H_
 #define ACLNN_MRGBA_CUSTOM_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

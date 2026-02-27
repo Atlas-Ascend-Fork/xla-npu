@@ -6,7 +6,7 @@
 #ifndef ACLNN_TRANSFORM_BIAS_RESCALE_QKV_H_
 #define ACLNN_TRANSFORM_BIAS_RESCALE_QKV_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

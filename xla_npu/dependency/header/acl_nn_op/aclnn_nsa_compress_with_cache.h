@@ -12,7 +12,7 @@
 #ifndef OP_API_INC_LEVEL2_ACLNN_NSA_COMPRESS_WITH_CACHE_SCORE_H_
 #define OP_API_INC_LEVEL2_ACLNN_NSA_COMPRESS_WITH_CACHE_SCORE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

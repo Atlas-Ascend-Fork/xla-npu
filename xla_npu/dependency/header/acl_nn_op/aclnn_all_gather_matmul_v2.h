@@ -17,7 +17,7 @@
 #define OP_API_INC_ALL_GATHER_MATMUL_V2_
 
 #include <string>
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 #include "hccl/hccl.h"
 #include "hccl/hccl_types.h"
