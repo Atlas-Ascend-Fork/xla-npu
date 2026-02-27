@@ -10,7 +10,7 @@
 #ifndef OP_API_INC_ACLNN_FOREACH_MINIMUM_SCALAR_V2_H_
 #define OP_API_INC_ACLNN_FOREACH_MINIMUM_SCALAR_V2_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

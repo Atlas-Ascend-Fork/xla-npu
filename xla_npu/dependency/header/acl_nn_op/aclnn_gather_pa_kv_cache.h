@@ -6,7 +6,7 @@
 #ifndef ACLNN_GATHER_PA_KV_CACHE_H_
 #define ACLNN_GATHER_PA_KV_CACHE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

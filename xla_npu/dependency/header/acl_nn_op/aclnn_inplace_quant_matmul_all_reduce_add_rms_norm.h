@@ -15,7 +15,7 @@
 #ifndef OP_API_INC_INPLACE_QUANT_MATMUL_ALL_REDUCE_ADD_RMS_NORM_
 #define OP_API_INC_INPLACE_QUANT_MATMUL_ALL_REDUCE_ADD_RMS_NORM_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 #include "hccl/hccl.h"
 #include "hccl/hccl_types.h"

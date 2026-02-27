@@ -11,7 +11,7 @@
 #define OP_API_INC_LEVEL2_ACLNN_SOFTMAX_BACKWARD_H_
 
 #include <array>
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

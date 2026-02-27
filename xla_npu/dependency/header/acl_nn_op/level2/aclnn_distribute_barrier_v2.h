@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -6,7 +6,7 @@
 #ifndef ACLNN_KV_RMS_NORM_ROPE_CACHE_H_
 #define ACLNN_KV_RMS_NORM_ROPE_CACHE_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

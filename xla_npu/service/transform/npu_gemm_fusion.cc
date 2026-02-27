@@ -82,14 +82,14 @@ class GemmFusionVisitor : public DfsHloRewriteVisitor {
         CHECK_EQ(dot->opcode(), HloOpcode::kDot);
         auto& dot_instr = *Cast<HloDotInstruction>(dot);
 
-        // Check if this GEMM should be handled by NPU
-        if (!fusion_.ShouldNpuHandleGEMM(dot_instr)) {
-            VLOG(3) << "GEMM not handled by NPU: " << dot->ToString();
+        if (NpuFusionWhitelist::ShouldSkipFusion(dot)) {
+            NPU_LOG_FORMAT_PRINT(WARN, "GEMM instruction %s is whitelisted to skip fusion", dot->name().data());
             return absl::OkStatus();
         }
 
-        if (NpuFusionWhitelist::ShouldSkipFusion(dot)) {
-            NPU_LOG_FORMAT_PRINT(WARN, "GEMM instruction %s is whitelisted to skip fusion", dot->name().data());
+        // Check if this GEMM should be handled by NPU
+        if (!fusion_.ShouldNpuHandleGEMM(dot_instr)) {
+            VLOG(3) << "GEMM not handled by NPU: " << dot->ToString();
             return absl::OkStatus();
         }
 

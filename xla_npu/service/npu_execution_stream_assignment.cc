@@ -128,13 +128,16 @@ NpuExecutionStreamAssignment::NpuExecutionStreamAssignment(const HloModule* modu
 
         // First, we'll assign the current `NpuExecutionStreamId` to all synchronous
         // instructions. Asynchronous instructions will be handled afterwards.
-        for (HloInstruction* instruction : pending.node->instructions()) {
+        // Process instructions in post-order to ensure dependencies are processed first.
+        std::vector<HloInstruction*> instructions = pending.node->MakeInstructionPostOrder();
+        for (HloInstruction* instruction : instructions) {
             if (instruction->IsAsynchronous()) continue;
             // Handle some async instructions that are not wrapped by async wrapper.
             if (instruction->opcode() == HloOpcode::kCopyStart || is_async_collective(instruction)) {
                 assign_async_execution_streams(instruction, pending.stream_id, std::nullopt);
             } else {
-                CHECK(sync_instructions_.try_emplace(instruction, pending.stream_id).second);
+                auto [_, emplaced] = sync_instructions_.emplace(instruction, pending.stream_id);
+                DCHECK(emplaced) << "Found duplicate execution stream assignment: " << instruction->name();
             }
         }
 
@@ -167,14 +170,15 @@ NpuExecutionStreamAssignment::NpuExecutionStreamAssignment(const HloModule* modu
         // instructions that are were not handled by the iteration over callsites
         // above. These are the `async-updates` and `async-dones`. Both of these
         // should share the `NpuExecutionStreamId` with the originating `async-starts`.
-        for (HloInstruction* instruction : pending.node->instructions()) {
+        for (HloInstruction* instruction : instructions) {
             if (!instruction->IsAsynchronous()) continue;
             if (instruction->opcode() == HloOpcode::kAsyncStart) {
-                CHECK(async_instructions_.find(instruction) != async_instructions_.end());
+                DCHECK(async_instructions_.find(instruction) != async_instructions_.end());
             } else {
                 HloInstruction* async_start = Cast<HloAsyncInstruction>(instruction)->async_chain_start();
                 AsyncExecutionStreamIds async_start_streams = async_instructions_.at(async_start);
-                CHECK(async_instructions_.try_emplace(instruction, async_start_streams).second);
+                auto [_, emplaced] = async_instructions_.emplace(instruction, async_start_streams);
+                DCHECK(emplaced) << "Found duplicate execution stream assignment: " << instruction->name();
             }
         }
     }

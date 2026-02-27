@@ -23,6 +23,7 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/header/acl_nn_op/aclnn_matmul.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_op_interface.h"
@@ -34,6 +35,9 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
     switch (op_code) {
         case HloOpcode::kBroadcast:
         case HloOpcode::kTanh:
+        case HloOpcode::kReshape:
+        case HloOpcode::kNegate:
+        case HloOpcode::kExp:
             if (param_shapes.size() != 2) {
                 NPU_LOG_FORMAT_PRINT(ERROR, "Param shape size %d does not meet target value 2", param_shapes.size());
                 return false;
@@ -41,6 +45,10 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
             break;
         case HloOpcode::kAdd:
         case HloOpcode::kMultiply:
+        case HloOpcode::kDot:
+        case HloOpcode::kDivide:
+        case HloOpcode::kSubtract:
+        case HloOpcode::kMaximum:
             if (param_shapes.size() != 3) {
                 NPU_LOG_FORMAT_PRINT(ERROR, "Param shape size %d does not meet target value 3", param_shapes.size());
                 return false;
@@ -116,6 +124,14 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     TF_ASSIGN_OR_RETURN(auto acl_tensor_ptr_vector, ExtractAclInputOutTensorPtr(allocations, param_shapes));
 
     switch (thunk_info().op_code) {
+        case HloOpcode::kReshape: {
+            // Reshape is a meta-operation, no actual computation needed
+            // The output tensor shares the same memory as input, just with different shape
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Reshape operation: no ACLNN call needed");
+            exec_ret = absl::OkStatus();
+            break;
+        }
+
         case HloOpcode::kBroadcast: {
             std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(param_shapes.back());
             aclIntArray* output_param_size =
@@ -178,6 +194,95 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             }
 
             exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnMul);
+            break;
+        }
+
+        case HloOpcode::kDot: {
+            int8_t cubeMathType = 1; // ALLOW_FP32_DOWN_PRECISION
+            ret =
+                npu::aclnnMatmulGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+                                                 acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnMatmulGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnMatmul);
+            break;
+        }
+
+        case HloOpcode::kDivide: {
+            ret = npu::aclnnDivGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+                                                acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnDivGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnDiv);
+            break;
+        }
+
+        case HloOpcode::kSubtract: {
+            float alphaValue = 1.0;
+            aclScalar* alpha = npu::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+
+            ret = npu::aclnnSubGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
+                                                acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnSubGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnSub);
+            break;
+        }
+
+        case HloOpcode::kNegate: {
+            ret = npu::aclnnNegGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector.back(), &workspaceSize,
+                                                &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnNegGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnNeg);
+            break;
+        }
+
+        case HloOpcode::kExp: {
+            ret = npu::aclnnExpGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector.back(), &workspaceSize,
+                                                &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnExpGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnExp);
+            break;
+        }
+
+        case HloOpcode::kMaximum: {
+            ret = npu::aclnnMaximumGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+                                                    acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnMaximumGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnMaximum);
             break;
         }
 

@@ -26,7 +26,7 @@ namespace xla {
 // Certain operations like Dot and Reduce are excluded from fusion to preserve
 // their optimized implementations.
 class NpuFusionWhitelist {
- public:
+   public:
     // Returns true if given instruction should skip fusion.
     static bool ShouldSkipFusion(const HloInstruction* instr) {
         if (instr == nullptr) {
@@ -40,12 +40,11 @@ class NpuFusionWhitelist {
         // Hardcoded whitelist of opcodes to skip fusion
         static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {
             HloOpcode::kDot,
-            HloOpcode::kReduce,
         };
         return kSkipFusionOpcodes.contains(opcode);
     }
 };
 
-} // namespace xla
+}  // namespace xla
 
-#endif // XLA_XLA_NPU_SERVICE_TRANSFORM_NPU_FUSION_WHITELIST_H_
+#endif  // XLA_XLA_NPU_SERVICE_TRANSFORM_NPU_FUSION_WHITELIST_H_

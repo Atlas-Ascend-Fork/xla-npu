@@ -10,7 +10,7 @@
 #ifndef OP_API_ACLNN_BATCHMATMUL_H
 #define OP_API_ACLNN_BATCHMATMUL_H
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

@@ -6,7 +6,7 @@
 #ifndef ACLNN_ADD_LAYER_NORM_GRAD_H_
 #define ACLNN_ADD_LAYER_NORM_GRAD_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

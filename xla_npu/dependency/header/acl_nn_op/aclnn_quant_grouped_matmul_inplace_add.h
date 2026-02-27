@@ -9,7 +9,7 @@
  */
 #ifndef OP_API_INC_QUANT_GROUPED_MATMUL_INPLACE_ADD_H
 #define OP_API_INC_QUANT_GROUPED_MATMUL_INPLACE_ADD_H
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

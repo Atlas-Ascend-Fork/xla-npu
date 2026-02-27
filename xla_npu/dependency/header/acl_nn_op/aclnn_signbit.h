@@ -12,7 +12,7 @@
 #ifndef OP_API_INC_LEVEL2_ACLNN_SIGN_BIT_H_
 #define OP_API_INC_LEVEL2_ACLNN_SIGN_BIT_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

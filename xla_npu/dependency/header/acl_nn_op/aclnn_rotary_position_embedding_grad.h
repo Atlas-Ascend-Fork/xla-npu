@@ -6,7 +6,7 @@
 #ifndef ACLNN_ROTARY_POSITION_EMBEDDING_GRAD_H_
 #define ACLNN_ROTARY_POSITION_EMBEDDING_GRAD_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

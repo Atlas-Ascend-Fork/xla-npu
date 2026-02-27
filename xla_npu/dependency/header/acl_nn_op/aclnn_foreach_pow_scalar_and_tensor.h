@@ -6,7 +6,7 @@
 #ifndef ACLNN_FOREACH_POW_SCALAR_AND_TENSOR_H_
 #define ACLNN_FOREACH_POW_SCALAR_AND_TENSOR_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

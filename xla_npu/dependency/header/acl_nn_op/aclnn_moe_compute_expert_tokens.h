@@ -6,7 +6,7 @@
 #ifndef ACLNN_MOE_COMPUTE_EXPERT_TOKENS_H_
 #define ACLNN_MOE_COMPUTE_EXPERT_TOKENS_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,8 +11,8 @@
 #ifndef ACLNN_MLA_PROLOG_V2_WEIGHT_NZ_H
 #define ACLNN_MLA_PROLOG_V2_WEIGHT_NZ_H
 
-#include "aclnn/acl_meta.h"
-#include "aclnn/aclnn_base.h"
+#include "acl_meta.h"
+#include "aclnn_base.h"
 
 #ifdef __cplusplus
 extern "C" {

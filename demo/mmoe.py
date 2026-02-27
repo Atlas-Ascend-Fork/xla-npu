@@ -386,7 +386,7 @@ if __name__ == "__main__":
         task_types=('binary', 'binary'),
     )
 
-    save_filepath = "./model_params.npz"
+    save_filepath = os.path.join(os.path.dirname(__file__), "model_params.npz")
     # Initialize with dummy input
     # key = jax.random.PRNGKey(42)
     # dummy_input = jnp.zeros((1, input_dim))
@@ -404,16 +404,16 @@ if __name__ == "__main__":
     print(f"Output shape: {output.shape}")
     print(f"Expected output shape: ({batch_size}, {num_tasks})")
 
-    # ==================== HLO/StableHLO Debug ====================
-    @jax.jit
-    def jitted_forward(params, x):
-        return model.apply(params, x, train=False)
+    # # ==================== HLO/StableHLO Debug ====================
+    # @jax.jit
+    # def jitted_forward(params, x):
+    #     return model.apply(params, x, train=False)
 
-    print("\n--- StableHLO Text ---")
-    lowered = jitted_forward.lower(params, x)
-    stablehlo_text = lowered.as_text()
-    print(stablehlo_text)
+    # print("\n--- StableHLO Text ---")
+    # lowered = jitted_forward.lower(params, x)
+    # stablehlo_text = lowered.as_text()
+    # print(stablehlo_text)
 
-    print("\n--- HLO Text ---")
-    hlo_text = lowered.compile().as_text()
-    print(hlo_text)
+    # print("\n--- HLO Text ---")
+    # hlo_text = lowered.compile().as_text()
+    # print(hlo_text)

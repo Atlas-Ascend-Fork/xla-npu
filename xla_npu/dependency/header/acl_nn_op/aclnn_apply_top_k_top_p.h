@@ -15,7 +15,7 @@
 #ifndef OP_API_INC_APPLY_TOP_K_TOP_P_H_
 #define OP_API_INC_APPLY_TOP_K_TOP_P_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

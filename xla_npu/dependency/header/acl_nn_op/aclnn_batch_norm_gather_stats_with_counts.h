@@ -11,7 +11,7 @@
 #ifndef OP_API_INC_SYNC_BATCH_NORM_GATHER_STATS_WITH_COUNTS_H
 #define OP_API_INC_SYNC_BATCH_NORM_GATHER_STATS_WITH_COUNTS_H
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

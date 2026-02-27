@@ -15,7 +15,7 @@
 #ifndef OP_API_ACLNN_QUANT_MATMUL_REDUCE_SUM_H_
 #define OP_API_ACLNN_QUANT_MATMUL_REDUCE_SUM_H_
 
-#include "aclnn/aclnn_base.h"
+#include "aclnn_base.h"
 #include "aclnn_util.h"
 
 #ifdef __cplusplus

@@ -6,7 +6,7 @@
 #ifndef ACLNN_GROUP_NORM_SWISH_H_
 #define ACLNN_GROUP_NORM_SWISH_H_
 
-#include "aclnn/acl_meta.h"
+#include "acl_meta.h"
 
 #ifdef __cplusplus
 extern "C" {
