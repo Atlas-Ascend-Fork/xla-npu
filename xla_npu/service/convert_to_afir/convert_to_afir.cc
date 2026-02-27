@@ -920,12 +920,59 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstru
             return broadcast_op.getResult();
         }
 
+        // Check if reshape only adds or removes dimensions of size 1
+        // This covers cases like:
+        // - [1,128] -> [128] or [128] -> [1,128]
+        // - [32,3,1] -> [32,3] or [32,3] -> [32,3,1]
+        // - [1,128,1] -> [128] or [128] -> [1,128,1]
+        // - [1] -> [1,1] or [1,1] -> [1]
+        // - [1] -> [1,1,1] or [1,1,1] -> [1]
+        bool is_one_dim_reshape = true;
+        int64_t input_idx = 0;
+        int64_t output_idx = 0;
+
+        while (input_idx < input_shape.dimensions().size() ||
+               output_idx < output_shape.dimensions().size()) {
+            // Skip dimensions of size 1 in input
+            while (input_idx < input_shape.dimensions().size() &&
+                   input_shape.dimensions(input_idx) == 1) {
+                input_idx++;
+            }
+            // Skip dimensions of size 1 in output
+            while (output_idx < output_shape.dimensions().size() &&
+                   output_shape.dimensions(output_idx) == 1) {
+                output_idx++;
+            }
+
+            // If both indices are still valid, check if dimensions match
+            if (input_idx < input_shape.dimensions().size() &&
+                output_idx < output_shape.dimensions().size()) {
+                if (input_shape.dimensions(input_idx) != output_shape.dimensions(output_idx)) {
+                    is_one_dim_reshape = false;
+                    break;
+                }
+                input_idx++;
+                output_idx++;
+            } else if (input_idx < input_shape.dimensions().size() ||
+                       output_idx < output_shape.dimensions().size()) {
+                // One shape still has non-1 dimensions left
+                is_one_dim_reshape = false;
+                break;
+            }
+        }
+
+        if (is_one_dim_reshape) {
+            // Reshape only adds/removes dimensions of size 1
+            // The underlying data layout is the same, so we can just return the operand
+            return operand;
+        }
+
         // For more complex reshapes, we currently don't support them
         return absl::UnimplementedError(
             absl::StrCat("Unsupported reshape: ",
                          ShapeUtil::HumanString(input_shape), " -> ",
                          ShapeUtil::HumanString(output_shape),
-                         ". Only scalar<->[1] reshapes are currently supported."));
+                         ". Only reshapes that add/remove dimensions of size 1 are currently supported."));
     }
 
     // For non-afir mode, just return the operand (reshape is no-op in MLIR)
