@@ -1236,11 +1236,30 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
 #if NPU_AUTO_FUSE_BACKEND == 1
     // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
+
+    // 构建 computation map: key 为 "main" 表示 entry computation
+    // 如果有 reduce 指令，将其 to_apply computation 也加入 map
+    std::unordered_map<std::string, const HloComputation*> computation_map;
+    computation_map["main"] = fused_computation;
+
+    // 遍历所有指令，查找 reduce 类型指令
+    for (const HloInstruction* instr : fused_computation->instructions()) {
+        if (instr->opcode() == HloOpcode::kReduce) {
+            const HloComputation* reduce_computation = instr->to_apply();
+            if (reduce_computation != nullptr) {
+                std::string reduce_comp_name = std::string(reduce_computation->name());
+                computation_map[reduce_comp_name] = reduce_computation;
+                NPU_LOG_FORMAT_PRINT(INFO, "Found reduce instruction with to_apply computation: %s",
+                                     reduce_comp_name.c_str());
+            }
+        }
+    }
+
     AscirBackend ascir_backend;
     AscirBackendOptions ascir_backend_compile_option;
     ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
     ascir_backend_compile_option.soc_version = "Ascend910B1"; // TODO 支持自动感知,或者用户通过环境变量配置
-    TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(fused_computation, ascir_backend_compile_option));
+    TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(computation_map, ascir_backend_compile_option));
 #elif NPU_AUTO_FUSE_BACKEND == 2
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
     mlir::hfusion::GraphGenTester::test();

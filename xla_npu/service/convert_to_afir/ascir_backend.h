@@ -87,19 +87,24 @@ class AscirBackend {
     // Compile an HLO module to AscIR kernel
     //
     // Args:
-    //   hlo_module: The HLO module to compile
+    //   computations: Map of computation name to HloComputation pointer.
+    //                 Key "main" represents the entry computation.
+    //                 Other keys (e.g., "region_0.1") represent sub-computations
+    //                 used by instructions like reduce (to_apply).
     //   options: Compilation options
     //
     // Returns:
     //   NpuCompileResult containing paths to generated files
-    absl::StatusOr<NpuCompileResult> Compile(const HloComputation* computation,
-                                             const AscirBackendOptions& options = AscirBackendOptions());
+    absl::StatusOr<NpuCompileResult> Compile(
+        const std::unordered_map<std::string, const HloComputation*>& computations,
+        const AscirBackendOptions& options = AscirBackendOptions());
 
    private:
     // Step 1: Convert HLO to AFIR MLIR module (in-memory)
     // Returns a vector of AFIR strings, one per computation
-    absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(const HloComputation* computation,
-                                                                    const AscirBackendOptions& options);
+    absl::StatusOr<std::vector<std::string>> ConvertHloToAfirModule(
+        const std::unordered_map<std::string, const HloComputation*>& computations,
+        const AscirBackendOptions& options);
 
     // Step 2: Convert AFIR to AscIR
     absl::StatusOr<std::string> ConvertAfirToAscir(const std::string& afir_string, const AscirBackendOptions& options);
