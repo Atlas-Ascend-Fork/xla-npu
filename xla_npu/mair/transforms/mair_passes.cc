@@ -169,6 +169,51 @@ namespace {
       return success();
     };
   };
+  class ConvertDivOp : public OpConversionPattern<stablehlo::DivOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::DivOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<DivOp>(op, op.getType(), op.getLhs(), op.getRhs());
+          return success();
+      };
+  };
+  class ConvertExpOp : public OpConversionPattern<stablehlo::ExpOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::ExpOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<ExpOp>(op, op.getType(), op.getOperand());
+          return success();
+      };
+  };
+  class ConvertMaxOp : public OpConversionPattern<stablehlo::MaxOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::MaxOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<MaxOp>(op, op.getType(), op.getLhs(), op.getRhs());
+          return success();
+      };
+  };
+  class ConvertNegOp : public OpConversionPattern<stablehlo::NegOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::NegOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<NegOp>(op, op.getType(), op.getOperand());
+          return success();
+      };
+  };
+  class ConvertSubOp : public OpConversionPattern<stablehlo::SubtractOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::SubtractOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<SubOp>(op, op.getType(), op.getLhs(), op.getRhs());
+          return success();
+      };
+  };
 }
 
 struct LegalizeToMairPass
