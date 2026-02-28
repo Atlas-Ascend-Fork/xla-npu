@@ -6,18 +6,6 @@ package(
     licenses = ["notice"],
 )
 
-# // Not used
-# cc_library(
-#     name = "npu_client_options",
-#     hdrs = ["npu_client_options.h"],
-#     deps = [
-#         # ":cpu_memory",
-#         # "//xla/backends/cpu/collectives:cpu_collectives",
-#         "//xla/service:hlo_module_config",
-#         "@com_google_absl//absl/status:statusor",
-#     ],
-# )
-
 cc_library(
     name = "npu_topology",
     srcs = ["npu_topology.cc"],
