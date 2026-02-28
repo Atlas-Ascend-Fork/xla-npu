@@ -1,6 +1,5 @@
 #ifndef PJRT_NPU_PJRT_COMMON_H_
 #define PJRT_NPU_PJRT_COMMON_H_
-
 #include "xla/pjrt/pjrt_common.h"
 
 namespace xla {

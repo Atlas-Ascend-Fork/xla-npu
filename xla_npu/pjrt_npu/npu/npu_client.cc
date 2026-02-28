@@ -13,7 +13,6 @@
 
 #include "xla/pjrt/mlir_to_hlo.h"
 #include "xla/service/hlo_module_util.h"
-#include "xla/xla_npu/pjrt_npu/npu_tool.h"
 #include "xla/xla_npu/pjrt_npu/npu/npu_device.h"
 #include "xla/xla_npu/pjrt_npu/npu/raw_buffer.h"
 #include "xla/xla_npu/pjrt_npu/npu/abstract_npu_buffer.h"
@@ -372,13 +371,28 @@ static void  TestGraph(ge::GraphPtr &graph) {
     // mlir::air::GraphGenTester::Convert(module, graph);
 }
 
+static std::string DebugString(const ge::Shape &shape) {
+    std::stringstream ss;
+    auto dims = shape.GetDims();
+    if (dims.empty()) {
+        return "empty";
+    }
+    ss << "[";
+    size_t index = 0U;
+    for (; index < (dims.size() - 1U); index++) {
+    ss << dims[index] << ", ";
+    }
+    ss << dims[index] << "]";
+    return ss.str(); 
+}
+
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
 PjRtNpuClient::CompileInternal(
     const XlaComputation& computation,
     const std::vector<const Shape*>& argument_layout_pointers,
     LayoutCanonicalizationCallback layout_canonicalization_callback,
     CompileOptions options,
-    GraphData& graph_data,
+    const GraphData& graph_data,
     const AotCompilationOptions* absl_nullable aot_options) {
 
   auto input_options = options;
@@ -478,23 +492,13 @@ PjRtNpuClient::CompileInternal(
             build_options.set_device_ordinal(addressable_devices.front()->local_hardware_id().value());
         }
     }
-    
-    /* set input data */
-    for (int i = 0; i < program_shape.parameters_size(); ++i) {
-        Shape input_parameter = program_shape.parameters(i);
-        ge::Shape input_data_shape = NpuTool::ConvertXlaShape2GeShape(input_parameter);
-        ge::DataType input_data_type = NpuTool::ConvertXlaType2GeType(input_parameter.element_type());
-        graph_data.inputs_shapes.emplace_back(input_data_shape);
-        graph_data.input_dtypes.emplace_back(input_data_type);
-    }
-
-    /* create buffer assignment(Do not delete!!! alloc output buffer depends on it) */ 
+    // create buffer assignment(Do not delete!!! alloc output buffer depends on it)
     auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
-    // auto output_shape = graph_data.outputs_shape.back();
-    // auto output_type = graph_data.output_dtypes.back();
-    // int64_t size = output_shape.GetShapeSize() * GetSizeByDataType(output_type);
-    // auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
-    // allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
+    auto output_shape = graph_data.outputs_shape.back();
+    auto output_type = graph_data.output_dtypes.back();
+    int64_t size = output_shape.GetShapeSize() * GetSizeByDataType(output_type);
+    auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
+    allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
 
     TF_ASSIGN_OR_RETURN(
             auto npu_executable,
@@ -544,22 +548,11 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     mair_module.print(mair_os);
     std::cout << "mair module: " << mair_os.str() << std::endl;
 
-    auto graph_data = GraphData();
-    graph_data.graph = std::make_shared<ge::Graph>("XLAGraph");
-    mlir::air::GraphGenTester::Convert(mair_module, graph_data.graph);
-    // TestGraph(graph_data.graph);
-    graph_data.id = 0;
-    // graph_data.inputs_shape.push_back(ge::Shape({3}));
-
     std::map<ge::AscendString, ge::AscendString> ge_options = {
         {"ge.exec.deviceId", "0"},
-        {"ge.exec.enableDump", "1"},
-        {"ge.exec.dumpPath", "/tmp/data_dump"},
-        {"ge.exec.dumpMode", "all"}
     };
 
-    if (!ge_initialized_) {    
-        ge_initialized_ = true;    
+    if (!ge_initialized_) {        
         if (ge::GEInitialize(ge_options) != ge::SUCCESS) {
             return absl::InternalError("Failed to initialize GE.");
         } else {
@@ -568,8 +561,16 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
             if (global_ge_session_ == nullptr) {
                 return absl::InternalError("Failed to create GE session.");
             }
+            ge_initialized_ = true;
         }
     }
+
+    auto graph_data = GraphData();
+    graph_data.graph = std::make_shared<ge::Graph>("XLAGraph");
+    mlir::air::GraphGenTester::Convert(mair_module, graph_data.graph);
+    // TestGraph(graph_data.graph);
+    graph_data.id = 0;
+    graph_data.inputs_shape.push_back(ge::Shape({3}));
 
     if (global_ge_session_->AddGraph(graph_data.id, *graph_data.graph, ge_options) != ge::SUCCESS) {
         return absl::InternalError("Failed to AddGraph.");
@@ -583,12 +584,12 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     // }
     // summary->GetOutputShapes(graph_data.outputs_shape);
     // summary->GetOutputDtypes(graph_data.output_dtypes);
-    // graph_data.outputs_shape.push_back(ge::Shape({3}));
-    // graph_data.output_dtypes.push_back(ge::DT_FLOAT);
-    // std::cout << "GetCompiledGraphSummary finish,"
-    //     << " output shape is: " << GetShapeString(graph_data.outputs_shape[0])
-    //     << " output dtype is: " << graph_data.output_dtypes[0]
-    //     << std::endl;
+    graph_data.outputs_shape.push_back(ge::Shape({3}));
+    graph_data.output_dtypes.push_back(ge::DT_FLOAT);
+    std::cout << "GetCompiledGraphSummary finish,"
+        << " output shape is: " << DebugString(graph_data.outputs_shape[0])
+        << " output dtype is: " << graph_data.output_dtypes[0]
+        << std::endl;
 
     //构建hlo modules,通过JAX的校验
     //TF_RETURN_IF_ERROR(pjrt::MaybeDumpCompileInputs(options, module, topology_));
@@ -627,8 +628,9 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
                          arg_memory_spaces, out_memory_spaces,
                          &LayoutUtil::GetWithDefaultLayout,
                          options.executable_build_options));
-    return CompileInternal(xla_computation, arg_layouts_and_pointers.second,
-        layout_callback, options, graph_data);
+  return CompileInternal(xla_computation, arg_layouts_and_pointers.second,
+                         layout_callback, options, graph_data);
+
 }
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
@@ -797,27 +799,22 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
 
     // transfer to ge tensor
     std::vector<ge::Tensor> inputs;
-    for (int i = 0; i < tracked_buffers.size(); ++i) {
+    for (int i = 0; i < tracked_buffers.size(); i++) {
         ge::TensorDesc desc;
-        const ge::Shape& input_data_shape = graph_data.inputs_shapes[i];
-        desc.SetOriginShape(input_data_shape);
         desc.SetOriginFormat(ge::FORMAT_ND);
+        desc.SetOriginShape(graph_data.inputs_shape[i]);
         // desc.SetShape(graph_data.inputs_shape[i]);
         desc.SetPlacement(ge::Placement::kPlacementDevice);
         desc.SetFormat(ge::FORMAT_ND);
-        desc.SetDataType(graph_data.input_dtypes[i]);
+        desc.SetDataType(ge::DataType::DT_FLOAT);
         ge::Tensor input;
         const static ge::Tensor::DeleteFunc kDoNothing = [](uint8_t* data) {};
         input.ResetData(
             (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(),
             tracked_buffers[i].second->buffer().get().size_bytes(),
             kDoNothing);
-
-        const auto& dimSize = input_data_shape.GetDims().size();
-        input.SetShapeDimNum(dimSize);
-        for (int j = 0; j < dimSize; ++j) {
-            input.SetShapeDim(j, input_data_shape.GetDim(j));
-        }
+        input.SetShapeDimNum(1);
+        input.SetShapeDim(0, 3);
 
         // ge::Tensor input = ge::Tensor(desc, (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
         std::cout << "input tensor " << i << " data addr=" << tracked_buffers[i].second->buffer().get().untyped_data()
@@ -834,37 +831,30 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     }
 
     /* debug */
-    auto output_data_ptr = outputs[0].GetData();
-    auto output_data_size = outputs[0].GetSize();
-    auto output_data_desc = outputs[0].GetTensorDesc();
-    auto output_data_shape = output_data_desc.GetShape();
-    auto output_data_type = output_data_desc.GetDataType();
-
-    // TODO: Use ge graph compile date to init buffer_assignment when compile and load
-    auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
-    int64_t size = output_data_shape.GetShapeSize() * GetSizeByDataType(output_data_type);
-    auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
-    allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
+    auto data_ptr = outputs[0].GetData();
+    auto data_size = outputs[0].GetSize();
+    auto dataDesc = outputs[0].GetTensorDesc();
+    auto dataShape = dataDesc.GetShape();
+    auto dataShapeSize = dataShape.GetShapeSize();
+    std::cout << " output shape is: " << DebugString(dataShape) << std::endl;
+    std::cout << " output shapeSize is: " << dataShapeSize << std::endl;
 
     /* prepare output buffer */ 
     // `buffer_alloc` and `buffer_alloc_and_copy` are used to do real memory allocation and copy work.
     absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> output_tracked_buffers;
     output_tracked_buffers.reserve(outputs.size());
     void* output_memory_ptr = NULL;
-    auto acl_ret = npu::AclrtMallocHost(&output_memory_ptr, output_data_size);
+    auto acl_ret = npu::AclrtMallocHost(&output_memory_ptr, data_size);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("malloc host memory failed, error code: ", acl_ret));
     }
-    acl_ret = npu::AclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr, output_data_size, ACL_MEMCPY_HOST_TO_HOST);
-    if (acl_ret != ACL_SUCCESS) {
-        return absl::InternalError(absl::StrCat("memcpy from host to host failed, error code: ", acl_ret));
-    }
+    memcpy(output_memory_ptr, data_ptr, data_size);
     auto deleter = [output_memory_ptr]() {
         npu::AclrtFreeHost(output_memory_ptr);
     };
-    tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory = NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, output_data_size, deleter);
+    tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory = NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, data_size, deleter);
     auto output_tracked_buffer = TrackedNpuDeviceBuffer(
-        /*owns_buffers=*/true, std::move(output_device_memory), output_data_size,
+        /*owns_buffers=*/true, std::move(output_device_memory), data_size,
         absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4>{tsl::AsyncValueRef<NpuEvent>()});
     output_tracked_buffers.emplace_back(/*can_donate=*/false, &output_tracked_buffer);
         
@@ -872,14 +862,14 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     // BufferAllocAndCopy buffer_alloc_and_copy;
    
     TF_ASSIGN_OR_RETURN(std::vector<BufferInfo> buffer_table,
-        CreateBufferTable(*buffer_assignment, /* npu_executable->constants(), */ output_tracked_buffers, buffer_alloc));
+        CreateBufferTable(npu_executable->buffer_assignment(), /* npu_executable->constants(), */ output_tracked_buffers, buffer_alloc));
             // buffer_alloc_and_copy,
             // tuple_index_table));
     auto result_buffers_info = CreateResultBufferInfo(result_buffer_indices_, buffer_table);
 
     // Create output buffers.
     // const Shape& result_shape = npu_executable_->result_shape();
-    const Shape& result_shape = NpuTool::ConvertGeShape2XlaShape(output_data_shape, output_data_type);
+    const Shape& result_shape = ShapeUtil::MakeShape(F32, {3});
     std::vector<std::unique_ptr<PjRtBuffer>> res;
     auto* memory_space = *device->default_memory_space();
     CHECK_EQ(result_buffers_info.size(), 1);

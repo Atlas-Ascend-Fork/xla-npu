@@ -65,18 +65,13 @@ void TensorDesc::SetDataType(DataType dt) {};
 Shape TensorDesc::GetShape() const {
   return {};
 }
-DataType TensorDesc::GetDataType() const { return DataType::DT_FLOAT; }
+DataType TensorDesc::GetDataType() const {return {};}
 TensorDesc &TensorDesc::operator=(TensorDesc &&desc){};
 void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len) {}
-
-/* Shape */
-Shape::Shape(){}
 Shape::Shape(const std::vector<int64_t>& dims) {}
-int64_t Shape::GetDim(size_t idx) const { return 0; }
-graphStatus Shape::SetDim(size_t idx, int64_t value) { return 0; }
-std::vector<int64_t> Shape::GetDims() const { return {}; }
-int64_t Shape::GetShapeSize() const { return 0; }
-
+int64_t Shape::GetShapeSize() const {
+  return 0;
+}
 Tensor::Tensor() {}
 Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) {}
 Tensor::Tensor(const TensorDesc &tensor_desc) {}
@@ -153,4 +148,10 @@ graphStatus GNode::SetAttr(
 }
 
 graphStatus GNode::GetName(AscendString &name) const{return 0;}
+
+std::vector<int64_t> Shape::GetDims() const {
+  return {};
+}
+
+Shape::Shape(){}
 } // namespace ge

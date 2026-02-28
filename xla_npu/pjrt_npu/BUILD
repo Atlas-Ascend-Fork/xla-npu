@@ -12,16 +12,6 @@ package(
 )
 
 cc_library(
-    name = "npu_tool",
-    hdrs = ["npu_tool.h"],
-    deps = [
-        "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
-        
-        "//xla:shape_util",
-    ],
-)
-
-cc_library(
     name = "pjrt_common",
     hdrs = ["pjrt_common.h"],
     deps = [

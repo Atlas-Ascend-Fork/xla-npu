@@ -107,7 +107,6 @@ cc_library(
     deps = [
         ":abstract_npu_buffer",
         ":npu_device",
-        "//xla/xla_npu/pjrt_npu:npu_tool",
         "//xla/xla_npu/pjrt_npu:host_memory_spaces",
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
         "//xla/xla_npu/third_party/register:acl_interface",
