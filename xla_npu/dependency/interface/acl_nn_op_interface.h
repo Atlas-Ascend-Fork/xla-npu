@@ -90,6 +90,13 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnMatmulGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMatmul)
 
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnCatGetWorkspaceSize,
+                            (const aclTensorList* tensors, int64_t dim, aclTensor* out,
+                             uint64_t* workspaceSize, aclOpExecutor** executor),
+                            (tensors, dim, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnCat)
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_

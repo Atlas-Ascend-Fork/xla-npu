@@ -8,5 +8,7 @@ REGISTER_LIBRARY(libnnopbase)
 REGISTER_FUNCTION(libnnopbase, aclCreateTensor)
 REGISTER_FUNCTION(libnnopbase, aclCreateScalar)
 REGISTER_FUNCTION(libnnopbase, aclCreateIntArray)
+REGISTER_FUNCTION(libnnopbase, aclCreateTensorList)
+REGISTER_FUNCTION(libnnopbase, aclDestroyTensorList)
 
 }  // namespace npu

@@ -26,6 +26,7 @@
 #include "xla/executable_run_options.h"
 #include "xla/ffi/execution_context.h"
 #include "xla/hlo/ir/hlo_instruction.h"
+#include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/service/global_device_id.h"
 // #include "xla/service/gpu/backend_configs.pb.h"
 // #include "xla/service/gpu/buffer_allocations.h"
@@ -339,6 +340,13 @@ NpuThunk::ThunkInfo NpuThunk::ThunkInfo::WithProfileAnnotation(const HloInstruct
         thunk_info.param_shapes.push_back(instr->operand(i)->shape());
     }
     thunk_info.param_shapes.push_back(instr->shape());
+
+    // 保存dimensions信息,用于concatenate等算子
+    // 只有HloDimensionsInstruction类型的指令才有dimensions属性
+    if (HloDimensionsInstruction::ClassOf(instr)) {
+        auto dimensions_span = instr->dimensions();
+        thunk_info.dimensions = std::vector<int64_t>(dimensions_span.begin(), dimensions_span.end());
+    }
 
     return thunk_info;
 }

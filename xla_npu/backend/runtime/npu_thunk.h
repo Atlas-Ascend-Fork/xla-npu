@@ -224,6 +224,7 @@ class NpuThunk {
         std::string op_name;
         HloOpcode op_code;
         std::vector<Shape> param_shapes;  // 与instruction中参数顺序一致, 最后一个位置表示出参shape
+        std::vector<int64_t> dimensions;  // 用于concatenate等需要维度的算子
     };
 
     //===--------------------------------------------------------------------===//

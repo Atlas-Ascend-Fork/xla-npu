@@ -20,6 +20,11 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclScalar*, aclCreateScalar, (void* value, aclDataT
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclIntArray*, aclCreateIntArray, (const int64_t* value, uint64_t size), (value, size))
 
+DECLARE_ACL_FUNC_IN_NNOPBASE(aclTensorList*, aclCreateTensorList, (const aclTensor* const* value, uint64_t size),
+                             (value, size))
+
+DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyTensorList, (const aclTensorList* array), (array))
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_

@@ -24,6 +24,7 @@
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/header/acl_nn_op/aclnn_matmul.h"
+#include "xla/xla_npu/dependency/header/acl_nn_op/aclnn_cat.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_op_interface.h"
@@ -51,6 +52,13 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
         case HloOpcode::kMaximum:
             if (param_shapes.size() != 3) {
                 NPU_LOG_FORMAT_PRINT(ERROR, "Param shape size %d does not meet target value 3", param_shapes.size());
+                return false;
+            }
+            break;
+        case HloOpcode::kConcatenate:
+            // Concatenate 是变长参数算子,至少需要 2 个输入 + 1 个输出 = 至少 3 个参数
+            if (param_shapes.size() < 3) {
+                NPU_LOG_FORMAT_PRINT(ERROR, "Concatenate param shape size %d is less than 3", param_shapes.size());
                 return false;
             }
             break;
@@ -283,6 +291,46 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             }
 
             exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnMaximum);
+            break;
+        }
+
+        case HloOpcode::kConcatenate: {
+            // 获取concatenate维度, dimensions向量中应该只有一个元素
+            if (thunk_info().dimensions.empty()) {
+                const std::string err_msg = "Concatenate dimensions is empty";
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+            int64_t dim = thunk_info().dimensions[0];
+
+            // 创建aclTensorList,包含所有输入tensor(除最后一个输出外)
+            std::vector<aclTensor*> input_tensors;
+            for (size_t i = 0; i < acl_tensor_ptr_vector.size() - 1; ++i) {
+                input_tensors.push_back(acl_tensor_ptr_vector[i]);
+            }
+            aclTensorList* tensor_list = npu::aclCreateTensorList(
+                input_tensors.data(), input_tensors.size());
+            if (tensor_list == nullptr) {
+                const std::string err_msg = "Failed to create aclTensorList for concatenate";
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            // 调用aclnnCatGetWorkspaceSize
+            ret = npu::aclnnCatGetWorkspaceSize(tensor_list, dim, acl_tensor_ptr_vector.back(),
+                                                &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg =
+                    absl::StrFormat("Call aclnnCatGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                npu::aclDestroyTensorList(tensor_list);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnCat);
+
+            // 清理tensor_list
+            npu::aclDestroyTensorList(tensor_list);
             break;
         }
 
