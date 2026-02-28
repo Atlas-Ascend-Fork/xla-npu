@@ -134,7 +134,7 @@ def Air_GraphOp : Air_Op<"graph"> {
 // HcomAllReduceOp
 //===--------------------------------------------------------------------------===//
 
-def Air_HcomAllReduceOp : Air_Op<"hcomallreduce", [Pure]>{
+def Air_HcomAllReduceOp : Air_Op<"HcomAllReduce", [Pure]>{
     let summary = "HcomAllReduce operator.";
     let description = "HcomAllReduce operator.";
 
@@ -150,7 +150,7 @@ def Air_HcomAllReduceOp : Air_Op<"hcomallreduce", [Pure]>{
 // HcomAllGatherOp
 //===--------------------------------------------------------------------------===//
 
-def Air_HcomAllGatherOp : Air_Op<"hcomallgather", [Pure]>{
+def Air_HcomAllGatherOp : Air_Op<"HcomAllGather", [Pure]>{
     let summary = "HcomAllGather operator.";
     let description = "HcomAllGather operator.";
 
@@ -181,5 +181,158 @@ def Air_ConcatV2Op : Air_Op<"ConcatV2", [Pure]> {
     in `concat_dim` where it has the sum of the sizes.}]>:$y
     );
 }
+
+//===--------------------------------------------------------------------------===//
+// DivOp
+//===--------------------------------------------------------------------------===//
+def Air_DivOp : Air_Op<"Div", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise division operation.";
+  let description = [{
+    Performs element-wise division of two input tensors.
+  }];
+  let arguments = (ins
+    Air_Tensor:$lhs,
+    Air_Tensor:$rhs
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// MatMulOp
+//===--------------------------------------------------------------------------===//
+def Air_MatMulOp : Air_Op<"MatMul", [Pure]> {
+  let summary = "Standard matrix multiplication operation";
+  let description = [{
+    Performs standard matrix multiplication on two input tensors, summing over contracting dimensions.
+    For example: tensor<AxB> * tensor<BxC> -> tensor<AxC>
+  }];
+
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2,
+    Optional<Air_Tensor>:$bias,
+    DefaultValuedAttr<BoolAttr, "false">:$transpose_x1,
+    DefaultValuedAttr<BoolAttr, "false">:$transpose_x2
+  );
+
+  let results = (outs
+    Air_Tensor:$output
+  );
+}
+
+//===--------------------------------------------------------------------------===//
+// ExpOp
+//===--------------------------------------------------------------------------===//
+def Air_ExpOp : Air_Op<"Exp", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise exponential operation.";
+  let description = [{
+    Computes the exponential value of each element in the input tensor.
+  }];
+  let arguments = (ins Air_Tensor:$operand);
+  let results = (outs Air_Tensor:$result);
+}
+
+//===--------------------------------------------------------------------------===//
+// MaxOp
+//===--------------------------------------------------------------------------===//
+def Air_MaximumOp : Air_Op<"Maximum", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise maximum operation.";
+  let description = [{
+    Computes the element-wise maximum of two input tensors.
+  }];
+  let arguments = (ins
+    Air_Tensor:$lhs,
+    Air_Tensor:$rhs
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// NegOp
+//===--------------------------------------------------------------------------===//
+def Air_NegNegOp : Air_Op<"Neg", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise negation operation.";
+  let description = [{
+    Computes the element-wise negation of the input tensor.
+  }];
+  let arguments = (ins Air_Tensor:$operand);
+  let results = (outs Air_Tensor:$result);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReduceSumOp
+//===--------------------------------------------------------------------------===//
+def Air_ReduceSumOp : Air_Op<"ReduceSum", [Pure]> {
+  let summary = "Reduction sum operation.";
+  let description = [{
+    Applies sum reduction to elements along specified dimensions of the input tensor.
+  }];
+  let arguments = (ins
+    Air_Tensor:$inputs,
+    AnyType:$init_values,
+    DefaultValuedAttr<BoolAttr, "false">:$keep_dims
+  );
+  let results = (outs Variadic<AnyType>:$outputs);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReduceMaxOp
+//===--------------------------------------------------------------------------===//
+def Air_ReduceMaxOp : Air_Op<"ReduceMax", [Pure]> {
+  let summary = "Reduction max operation.";
+  let description = [{
+    Applies max reduction to elements along specified dimensions of the input tensor.
+  }];
+  let arguments = (ins
+    Air_Tensor:$inputs,
+    AnyType:$init_values,
+    DefaultValuedAttr<BoolAttr, "false">:$keep_dims
+  );
+  let results = (outs Variadic<AnyType>:$outputs);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReshapeOp
+//===--------------------------------------------------------------------------===//
+def Air_ReshapeOp : Air_Op<"Reshape", [Pure]> {
+  let summary = "Reshape operation.";
+  let description = [{
+    Reshapes a tensor to the specified shape while preserving total element count.
+  }];
+  let arguments = (ins
+    Air_Tensor:$operand
+  );
+    let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$shape,
+    DefaultValuedAttr<I64Attr, "0">:$axis,
+    DefaultValuedAttr<I64Attr, "-1">:$num_axes
+  );
+
+  let results = (outs Air_Tensor:$result);
+}
+
+//===--------------------------------------------------------------------------===//
+// SubOp
+//===--------------------------------------------------------------------------===//
+def Air_SubOp : Air_Op<"Sub", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise subtraction operation.";
+  let description = [{
+    Performs element-wise subtraction of two input tensors.
+  }];
+  let arguments = (ins
+    Air_Tensor:$lhs,
+    Air_Tensor:$rhs
+  );
+  let results = (outs Air_Tensor);
+}
+
+// --- func.call (for calling other functions like @relu) ---
+// This would typically reuse existing func.call or define a similar call op
+// def Air_CallOp : Air_Op<"call", [NoMemoryEffect]> { ... }
+
+// --- func.func (for defining functions like @relu) ---
+// This would typically reuse existing func.func or define a similar func op
+// def Air_FuncOp : Air_Op<"func", [IsolatedFromAbove, Symbol]> { ... }
 
 #endif // MAIR_OPS
