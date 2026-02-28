@@ -64,6 +64,7 @@ cc_library(
         ":convert_to_afir",
         ":python_gil_guard",
         "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/service/kernel:npu_compile_result",
 
         "//xla:util",

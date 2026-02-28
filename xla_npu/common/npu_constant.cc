@@ -3,5 +3,6 @@
 namespace xla {
 
 const std::string NpuConstant::platformName{"npu"};
+const std::string NpuConstant::entryComputationKeyName{"main"};
 
 }  // namespace xla

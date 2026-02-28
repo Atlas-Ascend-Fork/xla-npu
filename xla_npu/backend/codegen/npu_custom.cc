@@ -1229,8 +1229,6 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     //                                                                 std::move(kernels[config.kernel_index()])));
 
     const HloComputation* fused_computation = fusion.fused_instructions_computation();
-    std::string computation_name =
-        std::string(fused_computation->name());  // 此处kernel的名称为computation的名称,即calls后面跟的名称
 
     NpuCompileResult npu_compile_result;
 #if NPU_AUTO_FUSE_BACKEND == 1
@@ -1240,9 +1238,10 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     // 构建 computation map: key 为 "main" 表示 entry computation
     // 如果有 reduce 指令，将其 to_apply computation 也加入 map
     std::unordered_map<std::string, const HloComputation*> computation_map;
-    computation_map["main"] = fused_computation;
+    const std::string entry_computation_key_name = NpuConstant::entryComputationKeyName;
+    computation_map[entry_computation_key_name] = fused_computation;
 
-    // 遍历所有指令，查找 reduce 类型指令
+    // 遍历所有指令,查找 reduce 类型指令
     for (const HloInstruction* instr : fused_computation->instructions()) {
         if (instr->opcode() == HloOpcode::kReduce) {
             const HloComputation* reduce_computation = instr->to_apply();
@@ -1258,7 +1257,7 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     AscirBackend ascir_backend;
     AscirBackendOptions ascir_backend_compile_option;
     ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
-    ascir_backend_compile_option.soc_version = "Ascend910B1"; // TODO 支持自动感知,或者用户通过环境变量配置
+    ascir_backend_compile_option.soc_version = "Ascend910B1"; // TODO 支持自动感知, 或者用户通过环境变量配置
     TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(computation_map, ascir_backend_compile_option));
 #elif NPU_AUTO_FUSE_BACKEND == 2
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
@@ -1267,14 +1266,15 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
 
     auto artifact_infos = npu_compile_result.artifact_infos;
 
-    CHECK_COND_AND_PRINT_NPU_LOG(artifact_infos.count(computation_name) == 0,
-                                 "Can't find computation %s in compile result", computation_name);
+    CHECK_COND_AND_PRINT_NPU_LOG(artifact_infos.count(entry_computation_key_name) == 0,
+                                 "Can't find computation %s in compile result", entry_computation_key_name);
 
     auto npu_kernel_config_ptr = std::make_unique<NpuKernelConfig>();
     npu_kernel_config_ptr->npu_kernel_type = NpuKernelConfig::NpuKernelType::FUSION;
-    npu_kernel_config_ptr->npu_artifact_info = artifact_infos[computation_name];
-    se::BlockDim block_dims(0);  // autofuse算子的block dim由tiling计算得到,不使用这里设置的值
+    npu_kernel_config_ptr->npu_artifact_info = artifact_infos[entry_computation_key_name];
+    se::BlockDim block_dims(0);  // autofuse算子的block dim由tiling计算得到, 不使用这里设置的值
     size_t shared_memory_bytes = 0;
+    std::string computation_name = std::string(fused_computation->name());  // 此处kernel的名称为computation的名称,即calls后面跟的名称
     NpuCustomKernel kernel(std::move(npu_kernel_config_ptr), computation_name, block_dims, shared_memory_bytes);
     TF_ASSIGN_OR_RETURN(auto thunk, BuildCustomKernelThunkForFusion(ir_emitter_context, fusion, std::move(kernel)));
 

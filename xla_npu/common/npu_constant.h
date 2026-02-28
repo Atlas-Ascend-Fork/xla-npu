@@ -30,6 +30,9 @@ class NpuConstant {
 
         return buffer_alignment;
     }
+
+    // 用于标记AFIR入口的Computation的key name, 在转换reduce运算时使用
+    static const std::string entryComputationKeyName;
 };
 
 }  // namespace xla

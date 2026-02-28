@@ -36,6 +36,7 @@ limitations under the License.
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "xla/xla_npu/common/npu_config.h"
+#include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/convert_to_afir/convert_to_afir.h"
 #include "xla/xla_npu/service/convert_to_afir/python_gil_guard.h"
@@ -728,62 +729,70 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
     const AscirBackendOptions& options) {
     NpuCompileResult final_result;
 
-    // Step 1: Convert HLO to AFIR for all computations in the map
-    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(computations, options));
+    // 只处理 entry computation,忽略其他 computation (如 reduce 的 to_apply)
+    const std::string& entry_key = NpuConstant::entryComputationKeyName;
+    auto it = computations.find(entry_key);
+    if (it == computations.end()) {
+        return absl::InternalError(
+            absl::StrCat("Entry computation with key '", entry_key, "' not found in computations map"));
+    }
+
+    const HloComputation* entry_computation = it->second;
+    NPU_LOG_FORMAT_PRINT(INFO, "Processing entry computation: %s", entry_key.c_str());
+
+    // 创建只包含 entry computation 的 map 用于转换
+    std::unordered_map<std::string, const HloComputation*> entry_computation_map;
+    entry_computation_map[entry_key] = entry_computation;
+
+    // Step 1: Convert HLO to AFIR for entry computation only
+    TF_ASSIGN_OR_RETURN(auto afir_strings, ConvertHloToAfirModule(entry_computation_map, options));
 
     // Create output directory if it doesn't exist
     std::string mkdir_cmd = absl::StrCat("mkdir -p ", options.output_dir);
     TF_ASSIGN_OR_RETURN(auto _, ExecuteCommand(mkdir_cmd));
 
-    // Process each computation
-    int idx = 0;
-    for (const auto& [computation_name, computation] : computations) {
-        NPU_LOG_FORMAT_PRINT(INFO, "Converting computation: %s", computation_name.c_str());
+    // Process entry computation only
+    const std::string& afir_string = afir_strings[0];
 
-        const std::string& afir_string = afir_strings[idx];
+    NPU_LOG_FORMAT_PRINT(INFO, "Processing entry computation: %s", entry_key.c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "About to call ConvertAfirToAscir for %s", entry_key.c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "AFIR string size: %d bytes", afir_string.size());
 
-        NPU_LOG_FORMAT_PRINT(INFO, "Processing computation %d/%d: %s", idx + 1, afir_strings.size(),
-                             computation_name.c_str());
-        NPU_LOG_FORMAT_PRINT(DEBUG, "About to call ConvertAfirToAscir for %s", computation_name.c_str());
-        NPU_LOG_FORMAT_PRINT(DEBUG, "AFIR string size: %d bytes", afir_string.size());
+    // Step 2: Convert AFIR to AscIR
+    TF_ASSIGN_OR_RETURN(auto ascir_text, ConvertAfirToAscir(afir_string, options));
 
-        // Step 2: Convert AFIR to AscIR
-        TF_ASSIGN_OR_RETURN(auto ascir_text, ConvertAfirToAscir(afir_string, options));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir completed, ASCIR size: %d bytes", ascir_text.size());
 
-        NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir completed, ASCIR size: %d bytes", ascir_text.size());
-
-        // Extract shape information from computation's root instruction
-        // to add axis information to ASCIR
-        const HloInstruction* root = computation->root_instruction();
-        const Shape& root_shape = root->shape();
-        std::vector<int64_t> shape_dims;
-        if (root_shape.IsArray()) {
-            auto dims_span = root_shape.dimensions();
-            shape_dims.assign(dims_span.begin(), dims_span.end());
-        }
-
-        // Add axis information if shape is available
-        if (!shape_dims.empty()) {
-            ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
-            NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
-        }
-
-        // Fix sched.axis for nodes that have axis_ids but missing sched.axis
-        ascir_text = FixNodeSchedAxis(ascir_text);
-        NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
-
-        // Step 3: Generate kernel for this computation
-        TF_ASSIGN_OR_RETURN(auto comp_result, GenerateKernel(ascir_text, computation_name, options));
-
-        NpuArtifactInfo npu_artifact_info;
-        // 使用graph名作为产物前缀名称,目前这个命名是基于computation name,将其中.替换为_
-        npu_artifact_info.name = comp_result.graph_name;
-        npu_artifact_info.dir = options.output_dir;
-        final_result.artifact_infos[computation_name] = npu_artifact_info;
-        idx++;
+    // Extract shape information from computation's root instruction
+    // to add axis information to ASCIR
+    const HloInstruction* root = entry_computation->root_instruction();
+    const Shape& root_shape = root->shape();
+    std::vector<int64_t> shape_dims;
+    if (root_shape.IsArray()) {
+        auto dims_span = root_shape.dimensions();
+        shape_dims.assign(dims_span.begin(), dims_span.end());
     }
 
-    NPU_LOG_FORMAT_PRINT(INFO, "Successfully compiled %d computations", final_result.artifact_infos.size());
+    // Add axis information if shape is available
+    if (!shape_dims.empty()) {
+        ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
+    }
+
+    // Fix sched.axis for nodes that have axis_ids but missing sched.axis
+    ascir_text = FixNodeSchedAxis(ascir_text);
+    NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
+
+    // Step 3: Generate kernel for entry computation
+    TF_ASSIGN_OR_RETURN(auto comp_result, GenerateKernel(ascir_text, entry_key, options));
+
+    NpuArtifactInfo npu_artifact_info;
+    // 使用graph名作为产物前缀名称,目前这个命名是基于computation name,将其中.替换为_
+    npu_artifact_info.name = comp_result.graph_name;
+    npu_artifact_info.dir = options.output_dir;
+    final_result.artifact_infos[entry_key] = npu_artifact_info;
+
+    NPU_LOG_FORMAT_PRINT(INFO, "Successfully compiled entry computation: %s", entry_key.c_str());
 
     return final_result;
 }
