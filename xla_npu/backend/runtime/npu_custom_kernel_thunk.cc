@@ -79,8 +79,7 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
         NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d info before execute: ----", id);
         NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
                              arg.offset(), buf.opaque(), buf.size());
-        NpuTool::PrintNpuDeviceMemoryValue<float>(
-            "  Value on device:", NpuTool::GetXlaShapeSize(thunk_info().param_shapes[id]), buf.opaque());
+        NpuTool::PrintNpuDeviceMemoryValueByShape("  Value on device:", thunk_info().param_shapes[id], buf.opaque());
 
         id++;
     }
@@ -104,8 +103,7 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
         NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d info after execute: ----", id);
         NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)", device_ordinal, arg.index(),
                              arg.offset(), buf.opaque(), buf.size());
-        NpuTool::PrintNpuDeviceMemoryValue<float>(
-            "  Value on device:", NpuTool::GetXlaShapeSize(thunk_info().param_shapes[id]), buf.opaque());
+        NpuTool::PrintNpuDeviceMemoryValueByShape("  Value on device:", thunk_info().param_shapes[id], buf.opaque());
 
         id++;
     }

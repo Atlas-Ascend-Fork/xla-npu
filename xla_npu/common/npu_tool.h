@@ -82,21 +82,32 @@ class NpuTool {
     }
 
     template <typename printDataType>
-    static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr) {
+    static void PrintNpuDeviceMemoryValue(const std::string& title, const int64_t& size, const void* deviceAddr,
+                                          int64_t max_print_count = 10) {
         NPU_LOG_FORMAT_PRINT(DEBUG, title);
 
-        std::vector<printDataType> resultData(size, 0);
-        aclError ret = npu::aclrtMemcpy(resultData.data(), resultData.size() * sizeof(resultData[0]), deviceAddr,
-                                        size * sizeof(resultData[0]), ACL_MEMCPY_DEVICE_TO_HOST);
+        int64_t print_count = std::min(size, max_print_count);
+        std::vector<printDataType> resultData(print_count, 0);
+        aclError ret = npu::aclrtMemcpy(resultData.data(), resultData.size() * sizeof(printDataType), deviceAddr,
+                                        print_count * sizeof(printDataType), ACL_MEMCPY_DEVICE_TO_HOST);
 
         if (ret != ACL_SUCCESS) {
             NPU_LOG_FORMAT_PRINT(DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
             return;
         }
-        for (int64_t i = 0; i < size; i++) {
-            NPU_LOG_FORMAT_PRINT(DEBUG, "    Value[%ld] on device is: %f", i, resultData[i]);
+
+        for (int64_t i = 0; i < print_count; i++) {
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    Value[%ld] on device is: %f", i, static_cast<double>(resultData[i]));
+        }
+
+        if (size > max_print_count) {
+            NPU_LOG_FORMAT_PRINT(DEBUG, "    ...(total %ld elements, showing first %ld)", size, max_print_count);
         }
     }
+
+    // 根据 Shape 的元素类型自动选择打印类型的接口
+    static void PrintNpuDeviceMemoryValueByShape(const std::string& title, const Shape& xla_shape,
+                                                 const void* device_addr, int64_t max_print_count = 10);
 
     // 计算xla shape表示的元素个数
     static int64_t GetXlaShapeSize(const Shape& xla_data_shape) {

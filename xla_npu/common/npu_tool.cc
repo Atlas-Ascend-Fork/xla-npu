@@ -27,4 +27,55 @@ std::string NpuTool::generate_unique_folder_name_absl() {
     return absl::StrCat(timestamp, "_", random_num);
 }
 
+// 根据 Shape 的元素类型自动选择打印类型
+void NpuTool::PrintNpuDeviceMemoryValueByShape(const std::string& title, const Shape& xla_shape,
+                                               const void* device_addr, int64_t max_print_count) {
+    int64_t size = GetXlaShapeSize(xla_shape);
+    PrimitiveType element_type = xla_shape.element_type();
+
+    switch (element_type) {
+        case F32:
+            PrintNpuDeviceMemoryValue<float>(title, size, device_addr, max_print_count);
+            break;
+        case F64:
+            PrintNpuDeviceMemoryValue<double>(title, size, device_addr, max_print_count);
+            break;
+        case S32:
+            PrintNpuDeviceMemoryValue<int32_t>(title, size, device_addr, max_print_count);
+            break;
+        case S64:
+            PrintNpuDeviceMemoryValue<int64_t>(title, size, device_addr, max_print_count);
+            break;
+        case U32:
+            PrintNpuDeviceMemoryValue<uint32_t>(title, size, device_addr, max_print_count);
+            break;
+        case U64:
+            PrintNpuDeviceMemoryValue<uint64_t>(title, size, device_addr, max_print_count);
+            break;
+        case F16:
+            PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr, max_print_count);
+            break;
+        case BF16:
+            PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr, max_print_count);
+            break;
+        case S16:
+            PrintNpuDeviceMemoryValue<int16_t>(title, size, device_addr, max_print_count);
+            break;
+        case U16:
+            PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr, max_print_count);
+            break;
+        case S8:
+            PrintNpuDeviceMemoryValue<int8_t>(title, size, device_addr, max_print_count);
+            break;
+        case U8:
+            PrintNpuDeviceMemoryValue<uint8_t>(title, size, device_addr, max_print_count);
+            break;
+        default:
+            // 默认使用 float 类型打印
+            NPU_LOG_FORMAT_PRINT(DEBUG, "%s (unsupported type %d, using float)", title.c_str(), element_type);
+            PrintNpuDeviceMemoryValue<float>(title, size, device_addr, max_print_count);
+            break;
+    }
+}
+
 }  // namespace xla

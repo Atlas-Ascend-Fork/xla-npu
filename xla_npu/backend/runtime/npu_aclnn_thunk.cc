@@ -469,8 +469,7 @@ absl::Status NpuAclnnThunk::PrintOutputTensor(const NpuBufferAllocations* alloca
     NPU_LOG_FORMAT_PRINT(DEBUG, "  Buffer allocation: %v", output_arg.ToString());
     NPU_LOG_FORMAT_PRINT(DEBUG, "  Tensor Shape: %v", outout_arg_param.ToString(true));
     NPU_LOG_FORMAT_PRINT(DEBUG, "  Device addr: %p", device_addr);
-    NpuTool::PrintNpuDeviceMemoryValue<float>("  Value on device:", NpuTool::GetXlaShapeSize(outout_arg_param),
-                                              device_addr);
+    NpuTool::PrintNpuDeviceMemoryValueByShape("  Value on device:", outout_arg_param, device_addr);
 
     return absl::OkStatus();
 }
