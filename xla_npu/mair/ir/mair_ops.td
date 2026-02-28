@@ -235,7 +235,7 @@ def Air_ExpOp : Air_Op<"Exp", [Pure, SameOperandsAndResultType]> {
 //===--------------------------------------------------------------------------===//
 // MaxOp
 //===--------------------------------------------------------------------------===//
-def Air_MaximumOp : Air_Op<"Maximum", [Pure, SameOperandsAndResultType]> {
+def Air_MaxOp : Air_Op<"Maximum", [Pure, SameOperandsAndResultType]> {
   let summary = "Element-wise maximum operation.";
   let description = [{
     Computes the element-wise maximum of two input tensors.
@@ -250,7 +250,7 @@ def Air_MaximumOp : Air_Op<"Maximum", [Pure, SameOperandsAndResultType]> {
 //===--------------------------------------------------------------------------===//
 // NegOp
 //===--------------------------------------------------------------------------===//
-def Air_NegNegOp : Air_Op<"Neg", [Pure, SameOperandsAndResultType]> {
+def Air_NegOp : Air_Op<"Neg", [Pure, SameOperandsAndResultType]> {
   let summary = "Element-wise negation operation.";
   let description = [{
     Computes the element-wise negation of the input tensor.
@@ -300,9 +300,6 @@ def Air_ReshapeOp : Air_Op<"Reshape", [Pure]> {
     Reshapes a tensor to the specified shape while preserving total element count.
   }];
   let arguments = (ins
-    Air_Tensor:$operand
-  );
-    let arguments = (ins
     Air_Tensor:$x,
     Air_Tensor:$shape,
     DefaultValuedAttr<I64Attr, "0">:$axis,
