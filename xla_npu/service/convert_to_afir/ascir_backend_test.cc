@@ -164,7 +164,7 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
     auto& hlo_module = parsed.first;
     xla::HloComputation* entry_computation = parsed.second;
 
-    std::cout << "  ✅ HLO module parsed: " << entry_computation->name() << std::endl;
+    std::cout << " HLO module parsed: " << entry_computation->name() << std::endl;
     std::cout << "     Entry computation instructions: " << entry_computation->instruction_count()
               << std::endl;
 
@@ -178,6 +178,7 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
         computation_count++;
     }
 
+    std::cout << "**** Parse hlo successfully! ****" << std::endl;
     std::cout << "     Total computations in module: " << computation_count << std::endl;
     for (const auto& [key, comp] : computations) {
         std::cout << "       - " << key << " (" << comp->instruction_count() << " instructions)" << std::endl;
@@ -198,7 +199,7 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
     xla::AscirBackend backend;
     TF_ASSIGN_OR_RETURN(auto result, backend.Compile(computations, options));
 
-    std::cout << "  ✅ Compilation successful!" << std::endl;
+    std::cout << "**** Compilation successfully! ****" << std::endl;
 
     std::cout << "\n[Step 4] Generated Artifacts:" << std::endl;
     std::cout << "  Total artifacts compiled: " << result.artifact_infos.size() << std::endl;
@@ -222,10 +223,10 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
         int dir_exists = (system(check_cmd.c_str()) == 0);
 
         if (dir_exists) {
-            std::cout << "  ✅ Directory exists for " << artifact_name << " (" << artifact_info.dir << ")" << std::endl;
+            std::cout << "  Directory exists for " << artifact_name << " (" << artifact_info.dir << ")" << std::endl;
             existing_dirs++;
         } else {
-            std::cout << "  ❌ Directory missing for " << artifact_name << " (" << artifact_info.dir << ")"
+            std::cout << "  Directory missing for " << artifact_name << " (" << artifact_info.dir << ")"
                       << std::endl;
         }
     }

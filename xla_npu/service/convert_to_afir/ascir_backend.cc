@@ -1016,9 +1016,10 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
         NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
     }
 
-    // Fix sched.axis for nodes that have axis_ids but missing sched.axis
+    // Fix sched.axis and outputs.attr.axis for all nodes in order to using one set of axes for the entire graph.
     ascir_text = FixNodeAxisInfo(ascir_text);
-    NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
+    NPU_LOG_PRINT(DEBUG, "Fix sched.axis and outputs.attr.axis for all nodes in order to"
+                  "using one set of axes for the entire graph.");
 
     // Step 3: Generate kernel for entry computation
     TF_ASSIGN_OR_RETURN(auto comp_result, GenerateKernel(ascir_text, entry_key, options));

@@ -101,7 +101,7 @@ cc_binary(
     ],
 )
 
-# Binary tool for standalone conversion
+# Binary tool for standalone hlo to afir conversion
 cc_binary(
     name = "hlo_to_afir_tool",
     srcs = ["hlo_to_afir_tool.cc"],

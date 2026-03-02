@@ -30,6 +30,8 @@ limitations under the License.
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/Support/LLVM.h"
 #include "xla/hlo/ir/hlo_module.h"
+#include "xla/hlo/parser/hlo_parser.h"
+#include "xla/service/hlo_module_config.h"
 #include "xla/tools/hlo_module_loader.h"
 #include "xla/xla_npu/service/convert_to_afir/convert_to_afir.h"
 
@@ -38,6 +40,7 @@ limitations under the License.
 
 ABSL_FLAG(std::string, input, "", "Input HLO file path");
 ABSL_FLAG(std::string, output, "", "Output file path (default: stdout)");
+ABSL_FLAG(std::string, computation_text, "", "HloComputation text to convert directly (overrides --input)");
 ABSL_FLAG(bool, preserve_names, true, "Preserve HLO instruction names in MLIR");
 ABSL_FLAG(bool, verify, true, "Verify generated MLIR module");
 ABSL_FLAG(bool, emit_afir, false, "Emit AFIR dialect operations (experimental)");
@@ -78,19 +81,8 @@ absl::Status WriteMlirModule(mlir::ModuleOp module, absl::string_view filename) 
 
 // Run the conversion tool
 absl::Status Run(const HloToAfirOptions& options) {
-    // Get input file
-    std::string input_file = absl::GetFlag(FLAGS_input);
-    if (input_file.empty()) {
-        return absl::InvalidArgumentError("Input file must be specified with --input flag");
-    }
-
-    // Load HLO module
-    TF_ASSIGN_OR_RETURN(auto hlo_module, LoadHloModule(input_file));
-
-    std::cout << "Loaded HLO module: " << hlo_module->name() << std::endl;
-    std::cout << "  Computations: " << hlo_module->computation_count() << std::endl;
-    std::cout << "  Entry Computation Instructions: " << hlo_module->entry_computation()->instruction_count()
-              << std::endl;
+    // Check if computation_text is provided
+    std::string computation_text = absl::GetFlag(FLAGS_computation_text);
 
     // Create MLIR context and load required dialects
     mlir::MLIRContext context;
@@ -98,8 +90,49 @@ absl::Status Run(const HloToAfirOptions& options) {
     context.loadDialect<mlir::arith::ArithDialect>();
     context.loadDialect<mlir::afir::AFIRDialect>();
 
-    // Convert to AFIR
-    TF_ASSIGN_OR_RETURN(auto mlir_module, ConvertHloToAfir(*hlo_module, &context, options));
+    mlir::OwningOpRef<mlir::ModuleOp> mlir_module;
+
+    // Keep the module alive if we're parsing computation_text
+    std::unique_ptr<HloModule> temp_module;
+
+    if (!computation_text.empty()) { // convert single hlo computation
+        // Parse computation from text
+        std::cout << "Parsing HloComputation from text..." << std::endl;
+
+        // Wrap the computation text in a simple HloModule for parsing
+        std::string wrapped_text = absl::StrCat("HloModule TempModule\n\n", computation_text);
+
+        // Create a temporary module and keep it alive
+        HloModuleConfig config;
+        HloParserOptions parser_options;
+        TF_ASSIGN_OR_RETURN(temp_module, ParseAndReturnUnverifiedModule(wrapped_text, config, parser_options));
+
+        const HloComputation* computation = temp_module->entry_computation();
+
+        std::cout << "Parsed computation: " << computation->name() << std::endl;
+        std::cout << "  Instructions: " << computation->instruction_count() << std::endl;
+
+        // Convert HloComputation to AFIR
+        TF_ASSIGN_OR_RETURN(mlir_module, ConvertHloComputationToAfir(*computation, &context, options));
+    } else { // convert entire hlo module
+        // Get input file
+        std::string input_file = absl::GetFlag(FLAGS_input);
+        if (input_file.empty()) {
+            return absl::InvalidArgumentError(
+                "Either --input or --computation_text must be specified");
+        }
+
+        // Load HLO module
+        TF_ASSIGN_OR_RETURN(auto hlo_module, LoadHloModule(input_file));
+
+        std::cout << "Loaded HLO module: " << hlo_module->name() << std::endl;
+        std::cout << "  Computations: " << hlo_module->computation_count() << std::endl;
+        std::cout << "  Entry Computation Instructions: " << hlo_module->entry_computation()->instruction_count()
+                  << std::endl;
+
+        // Convert to AFIR
+        TF_ASSIGN_OR_RETURN(mlir_module, ConvertHloToAfir(*hlo_module, &context, options));
+    }
 
     std::cout << "Conversion successful!" << std::endl;
 

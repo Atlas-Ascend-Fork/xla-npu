@@ -72,7 +72,7 @@ struct SingleComputationResult {
 // This class provides an interface to compile HLO modules to AscIR kernels
 // through the following pipeline:
 // 1. HLO -> AFIR (using ConvertHloToAfir)
-// 2. AFIR -> AscIR (using Python script)
+// 2. AFIR -> AscIR (using cpp interface)
 // 3. AscIR -> Kernel (using Ascend runtime)
 //
 // Usage example:
@@ -109,7 +109,7 @@ class AscirBackend {
     // Step 2: Convert AFIR to AscIR
     absl::StatusOr<std::string> ConvertAfirToAscir(const std::string& afir_string, const AscirBackendOptions& options);
 
-    // Step 3: Call Ascend runtime to generate kernel and tiling for a single computation
+    // Step 3: Call Ascend runtime to generate kernel and tiling for single computation
     absl::StatusOr<SingleComputationResult> GenerateKernel(const std::string& ascir_text,
                                                            const std::string& computation_name,
                                                            const AscirBackendOptions& options);

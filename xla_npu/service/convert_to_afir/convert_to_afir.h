@@ -62,7 +62,7 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModu
 // Convert a single HloComputation to MLIR Module with AFIR dialect
 //
 // This function converts a single HLO computation to MLIR's AFIR dialect.
-// It also includes all computations that this computation depends on (fused/called computations).
+// It also includes the fused/called computations computations that this computation depends on.
 //
 // Args:
 //   computation: The HloComputation to convert
@@ -70,7 +70,7 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModu
 //   options: Conversion options
 //
 // Returns:
-//   An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies
+//   An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies used/called computations.
 absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(const HloComputation& computation,
                                                                               mlir::MLIRContext* context,
                                                                               const HloToAfirOptions& options = {});
