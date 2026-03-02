@@ -269,7 +269,7 @@ def Air_ReduceSumOp : Air_Op<"ReduceSum", [Pure]> {
   }];
   let arguments = (ins
     Air_Tensor:$inputs,
-    AnyType:$init_values,
+    Air_Tensor:$axes,
     DefaultValuedAttr<BoolAttr, "false">:$keep_dims
   );
   let results = (outs Variadic<AnyType>:$outputs);
@@ -285,7 +285,23 @@ def Air_ReduceMaxOp : Air_Op<"ReduceMax", [Pure]> {
   }];
   let arguments = (ins
     Air_Tensor:$inputs,
-    AnyType:$init_values,
+    Air_Tensor:$axes,
+    DefaultValuedAttr<BoolAttr, "false">:$keep_dims
+  );
+  let results = (outs Variadic<AnyType>:$outputs);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReduceMinOp
+//===--------------------------------------------------------------------------===//
+def Air_ReduceMinOp : Air_Op<"ReduceMin", [Pure]> {
+  let summary = "Reduction min operation.";
+  let description = [{
+    Applies min reduction to elements along specified dimensions of the input tensor.
+  }];
+  let arguments = (ins
+    Air_Tensor:$inputs,
+    Air_Tensor:$axes,
     DefaultValuedAttr<BoolAttr, "false">:$keep_dims
   );
   let results = (outs Variadic<AnyType>:$outputs);

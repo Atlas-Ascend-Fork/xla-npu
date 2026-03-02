@@ -236,10 +236,7 @@ namespace {
           }
           auto targetShape = resultType.getShape();
           auto shapeAttr = rewriter.getI64TensorAttr(targetShape);
-          auto shapeTensor = rewriter.create<mlir::arith::ConstantOp>(
-              op.getLoc(),
-              shapeAttr
-          ).getResult();
+          auto shapeTensor = rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), shapeAttr).getResult();
           auto newReshapeOp = rewriter.create<mlir::air::ReshapeOp>(
               op.getLoc(),
               op.getType(),
@@ -256,7 +253,85 @@ namespace {
       using OpConversionPattern::OpConversionPattern;
       LogicalResult matchAndRewrite(stablehlo::ReduceOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const final {
-          // 需要把reduce拆分乘reduceSum和reduceMax
+          auto &body = op.getBody().front();
+          auto it = body.begin();
+          auto termIt = body.end();
+          --termIt;
+
+          if (it == termIt) {
+              return rewriter.notifyMatchFailure(op, "Body must contain exactly one computation op.");
+          }
+          auto computeIt = it;
+          auto afterComputeIt = std::next(computeIt);
+
+          if (computeIt != body.begin() || afterComputeIt != termIt) {
+              return rewriter.notifyMatchFailure(op, "Body must contain exactly one computation op.");
+          }
+
+          auto *singleComputeOp = &(*computeIt);
+
+          bool isSum = isa<stablehlo::AddOp>(singleComputeOp);
+          bool isMax = isa<stablehlo::MaxOp>(singleComputeOp);
+          bool isMin = isa<stablehlo::MinOp>(singleComputeOp);
+
+          if (!isSum && !isMax && !isMin) {
+              return success();
+          }
+
+          auto inputsRange = adaptor.getInputs();
+          if (inputsRange.size() != 1) {
+              return rewriter.notifyMatchFailure(op, "Only single-input reduce is supported.");
+          }
+          mlir::Value inputs = inputsRange[0];
+
+          auto dimensionsArrayRef = op.getDimensions();
+          if (dimensionsArrayRef.empty()) {
+              return rewriter.notifyMatchFailure(op, "Dimensions list cannot be empty.");
+          }
+          auto elementType = rewriter.getIntegerType(64);
+          auto shape = llvm::ArrayRef(static_cast<int64_t>(dimensionsArrayRef.size()));
+          auto tensorType = mlir::RankedTensorType::get(shape, elementType);
+
+          auto dimensionsAttr = rewriter.getI64TensorAttr(dimensionsArrayRef);
+
+          auto axesValue = rewriter.create<mlir::arith::ConstantOp>(
+              op.getLoc(),
+              tensorType,
+              dimensionsAttr
+          ).getResult();
+
+          bool keepDims = false;
+          auto keepDimsAttr = rewriter.getBoolAttr(keepDims);
+
+          mlir::Operation *newOp = nullptr;
+          if (isSum) {
+              newOp = rewriter.create<mlir::air::ReduceSumOp>(
+                  op.getLoc(),
+                  op.getResultTypes(),
+                  inputs,
+                  axesValue,
+                  keepDimsAttr
+              );
+          } else if (isMax) {
+              newOp = rewriter.create<mlir::air::ReduceMaxOp>(
+                  op.getLoc(),
+                  op.getResultTypes(),
+                  inputs,
+                  axesValue,
+                  keepDimsAttr
+              );
+          } else if (isMin) {
+              newOp = rewriter.create<mlir::air::ReduceMaxOp>(
+                  op.getLoc(),
+                  op.getResultTypes(),
+                  inputs,
+                  axesValue,
+                  keepDimsAttr
+              );
+          }
+          if(newOp) {
+              rewriter.replaceOp(op, newOp->getResults());
+          }
           return success();
       };
   };
