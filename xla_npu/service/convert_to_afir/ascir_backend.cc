@@ -190,103 +190,340 @@ std::string AddAxisInfoToAscir(const std::string& ascir_text, const std::vector<
     return result;
 }
 
-// Helper function to fix sched.axis for nodes that have axis_ids but missing sched.axis
-std::string FixNodeSchedAxis(const std::string& ascir_text) {
+// Helper function to fix sched.axis and outputs.attr.axis_ids to ensure consistency
+std::string FixNodeAxisInfo(const std::string& ascir_text) {
     std::string result = ascir_text;
 
     // Strategy: Count how many axis definitions are in asc_graph_attr
     // Then for any node with sched that's missing axis, add all axes
-    size_t graph_attr_pos = result.find("asc_graph_attr {");
-    size_t num_axes = 0;
+    // Also fix outputs.attr.axis_ids to match sched.axis count
+    // Helper function: Count axes in asc_graph_attr
+    auto countGlobalAxes = [&result]() -> size_t {
+        size_t graph_attr_pos = result.find("asc_graph_attr {");
+        if (graph_attr_pos == std::string::npos) {
+            return 0;
+        }
 
-    NPU_LOG_PRINT(DEBUG, "FixNodeSchedAxis: Starting to process ASCIR text");
-
-    if (graph_attr_pos != std::string::npos) {
-        // Find the end of asc_graph_attr (matching closing brace at start of line)
+        // Find the end of asc_graph_attr
         size_t graph_attr_end = result.find("\n}\n", graph_attr_pos);
         if (graph_attr_end == std::string::npos) {
             graph_attr_end = result.find("}\nasc_node", graph_attr_pos);
         }
 
-        if (graph_attr_end != std::string::npos) {
-            std::string graph_attr_section = result.substr(graph_attr_pos, graph_attr_end - graph_attr_pos);
-
-            // Count axis definitions
-            size_t pos = 0;
-            while ((pos = graph_attr_section.find("axis {", pos)) != std::string::npos) {
-                num_axes++;
-                pos += 7;
-            }
-        }
-    }
-
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Found %d axes in asc_graph_attr", num_axes);
-
-    if (num_axes == 0) {
-        // Couldn't determine axis count, return as-is
-        NPU_LOG_PRINT(DEBUG, "No axes found, returning without modifications");
-        return result;
-    }
-
-    // Now find all sched sections that are missing axis and add it
-    size_t pos = 0;
-    size_t fixed_count = 0;
-    size_t total_sched = 0;
-
-    while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
-        total_sched++;
-        size_t sched_end = result.find("}", pos);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Found sched at position %d, sched_end at %d", pos, sched_end);
-
-        if (sched_end == std::string::npos || sched_end > pos + 200) {
-            NPU_LOG_PRINT(DEBUG, "Skipping sched (invalid end)");
-            pos += 8;
-            continue;
+        if (graph_attr_end == std::string::npos) {
+            return 0;
         }
 
-        // Extract the sched section content
-        std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Sched content: [%s]", sched_content.c_str());
+        std::string graph_attr_section = result.substr(graph_attr_pos, graph_attr_end - graph_attr_pos);
 
-        // Check if this sched already has axis fields (but not loop_axis)
-        // We need to check for "axis:" at the start of a line (with whitespace)
-        bool has_axis_field = false;
+        // Count axis definitions
+        size_t num_axes = 0;
+        size_t pos = 0;
+        while ((pos = graph_attr_section.find("axis {", pos)) != std::string::npos) {
+            num_axes++;
+            pos += 7;
+        }
+
+        return num_axes;
+    };
+
+    // Helper function: Count axis fields in a sched section
+    auto countSchedAxes = [](const std::string& sched_content) -> size_t {
+        size_t num_axes = 0;
         size_t search_pos = 0;
+
         while ((search_pos = sched_content.find("axis:", search_pos)) != std::string::npos) {
-            // Check if it's at start of line or preceded only by whitespace
-            if (search_pos == 0 || sched_content[search_pos - 1] == ' ' || sched_content[search_pos - 1] == '\t' ||
-                sched_content[search_pos - 1] == '\n') {
-                // Make sure it's not part of "loop_axis"
-                if (search_pos < 4 || sched_content.substr(search_pos - 4, 4) != "loop") {
-                    has_axis_field = true;
-                    break;
+            // Make sure it's not part of "loop_axis:"
+            if (search_pos < 4 || sched_content.substr(search_pos - 4, 4) != "loop") {
+                // Check if preceded by newline (with optional spaces), or at the start
+                bool is_valid_axis = false;
+                if (search_pos == 0) {
+                    is_valid_axis = true;
+                } else {
+                    // Check if preceded only by whitespace or newline
+                    bool found_newline = false;
+                    bool only_whitespace = true;
+                    for (size_t i = 1; i <= search_pos; i++) {
+                        if (sched_content[search_pos - i] == '\n') {
+                            found_newline = true;
+                            break;
+                        }
+                        if (sched_content[search_pos - i] != ' ' && sched_content[search_pos - i] != '\t') {
+                            only_whitespace = false;
+                            break;
+                        }
+                    }
+                    is_valid_axis = found_newline || only_whitespace;
+                }
+                if (is_valid_axis) {
+                    num_axes++;
                 }
             }
             search_pos += 5;
         }
 
-        if (!has_axis_field) {
-            NPU_LOG_FORMAT_PRINT(DEBUG, "This sched is missing axis, adding %d axes", num_axes);
-            // This sched is missing axis, add all axes
-            std::string axis_fields;
-            for (size_t i = 0; i < num_axes; ++i) {
-                axis_fields += absl::StrFormat("      axis: %zu\n", i);
+        return num_axes;
+    };
+
+    // Helper function: Fix sched sections to match global axis count
+    auto fixSchedSections = [&result, &countSchedAxes](size_t num_axes) -> size_t {
+        size_t pos = 0;
+        size_t fixed_count = 0;
+        size_t total_count = 0;
+
+        while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
+            total_count++;
+            size_t sched_end = result.find("}", pos);
+
+            if (sched_end == std::string::npos || sched_end > pos + 200) {
+                pos += 8;
+                continue;
             }
 
-            // Insert before the closing brace
-            result.insert(sched_end, axis_fields);
-            sched_end += axis_fields.length();
-            fixed_count++;
+            std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
+            size_t num_sched_axis = countSchedAxes(sched_content);
 
-            NPU_LOG_FORMAT_PRINT(DEBUG, "Fixed sched at position %d, added %d axes", pos, num_axes);
-        } else {
-            NPU_LOG_PRINT(DEBUG, "This sched already has axis fields");
+            if (num_sched_axis < num_axes) {
+                size_t num_missing = num_axes - num_sched_axis;
+
+                // Find insertion point (before closing brace)
+                size_t insert_pos = sched_end;
+                size_t newline_before_brace = result.rfind("\n", sched_end);
+                if (newline_before_brace != std::string::npos && newline_before_brace > pos) {
+                    insert_pos = newline_before_brace + 1;
+                }
+
+                // Add missing axes
+                std::string axis_fields;
+                for (size_t i = num_sched_axis; i < num_axes; ++i) {
+                    axis_fields += absl::StrFormat("      axis: %zu\n", i);
+                }
+
+                result.insert(insert_pos, axis_fields);
+                sched_end += axis_fields.length();
+                fixed_count++;
+
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Fixed sched at %d: %d -> %d axes",
+                                    pos, num_sched_axis, num_axes);
+            }
+
+            pos = sched_end + 1;
         }
 
-        pos = sched_end + 1;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Processed %d sched sections, fixed %d", total_count, fixed_count);
+        return fixed_count;
+    };
+
+    // Helper function: Find matching closing brace for attr block
+    auto findAttrBlockEnd = [&result](size_t attr_start) -> size_t {
+        size_t attr_content_start = attr_start + 7;  // After "attr {\n"
+        int brace_depth = 1;  // We're inside "attr {" already
+
+        for (size_t i = attr_content_start; i < result.length() && i < attr_content_start + 2000; ++i) {
+            if (result[i] == '{') {
+                brace_depth++;
+            } else if (result[i] == '}') {
+                brace_depth--;
+                if (brace_depth == 0) {
+                    return i;
+                }
+            }
+        }
+
+        return std::string::npos;
+    };
+
+    // Helper function: Count occurrences of a field in output_attr_section
+    auto countField = [](const std::string& section, const std::string& field_name) -> size_t {
+        size_t count = 0;
+        size_t pos = 0;
+        while ((pos = section.find(field_name, pos)) != std::string::npos) {
+            count++;
+            pos += field_name.length();
+        }
+        return count;
+    };
+
+    // Helper function: Parse field values from output_attr_section
+    auto parseFieldValues = [](const std::string& section, const std::string& field_name)
+            -> std::pair<std::vector<std::string>, std::vector<size_t>> {
+        std::vector<std::string> values;
+        std::vector<size_t> positions;
+        size_t pos = 0;
+
+        while ((pos = section.find(field_name, pos)) != std::string::npos) {
+            size_t val_start = pos + field_name.length();
+            size_t val_end = section.find("\"", val_start + 1);
+            if (val_end != std::string::npos && val_end > val_start) {
+                std::string val = section.substr(val_start + 1, val_end - val_start - 1);
+                values.push_back(val);
+                positions.push_back(pos);
+            }
+            pos += field_name.length();
+        }
+
+        return {values, positions};
+    };
+
+    // Helper function: Fix incorrect stride values
+    auto fixStrideValues = [&result, &parseFieldValues](const std::string& output_attr_section, size_t output_attr_start,
+            const std::vector<std::string>& repeats, const std::vector<size_t>& stride_positions) -> void {
+        auto [strides, _] = parseFieldValues(output_attr_section, "strides:");
+
+        for (size_t i = 0; i < strides.size() && i < repeats.size(); i++) {
+            if (strides[i] == "0" && repeats[i] != "1") {
+                // Compute correct stride (column-major: stride[i] = product of repeats[i+1:])
+                int64_t stride = 1;
+                for (size_t j = i + 1; j < repeats.size(); j++) {
+                    try {
+                        stride *= std::stoll(repeats[j]);
+                    } catch (...) {
+                        stride = 0;
+                        break;
+                    }
+                }
+
+                // Replace the stride value in result
+                if (i < stride_positions.size()) {
+                    size_t stride_pos = stride_positions[i];
+                    size_t val_start = result.find("\"", stride_pos + 8) + 1;
+                    size_t val_end = result.find("\"", val_start);
+                    if (val_end != std::string::npos) {
+                        result.replace(val_start, val_end - val_start, std::to_string(stride));
+                    }
+                }
+            }
+        }
+    };
+
+    // Helper function: Fix outputs.attr sections to match global axis count
+    auto fixOutputAttrSections = [&result, &findAttrBlockEnd, &countField, &parseFieldValues, &fixStrideValues,
+            &countSchedAxes](size_t num_axes) -> size_t {
+        size_t pos = 0;
+        size_t fixed_count = 0;
+
+        while ((pos = result.find("asc_node {", pos)) != std::string::npos) {
+            size_t node_start = pos;
+
+            // Find outputs section
+            size_t outputs_pos = result.find("outputs {\n", pos);
+            if (outputs_pos == std::string::npos || outputs_pos > node_start + 500) {
+                pos += 9;
+                continue;
+            }
+
+            // Find attr section inside outputs
+            size_t output_attr_start = result.find("attr {\n", outputs_pos);
+            if (output_attr_start == std::string::npos || output_attr_start > outputs_pos + 50) {
+                pos += 9;
+                continue;
+            }
+
+            // Find attr block end
+            size_t output_attr_end = findAttrBlockEnd(output_attr_start);
+            if (output_attr_end == std::string::npos) {
+                pos += 9;
+                continue;
+            }
+
+            std::string output_attr_section = result.substr(output_attr_start, output_attr_end - output_attr_start + 1);
+            size_t num_axis_ids = countField(output_attr_section, "axis_ids:");
+
+            // Find sched section
+            size_t sched_pos = result.find("sched {\n", pos);
+            if (sched_pos == std::string::npos || sched_pos > node_start + 2000) {
+                pos += 9;
+                continue;
+            }
+
+            size_t sched_end = result.find("}\n", sched_pos);
+            if (sched_end == std::string::npos || sched_end > sched_pos + 500) {
+                pos += 9;
+                continue;
+            }
+
+            std::string sched_section = result.substr(sched_pos, sched_end - sched_pos);
+            size_t num_sched_axis = countSchedAxes(sched_section);
+
+            // Fix outputs.attr if needed
+            if (num_axis_ids < num_axes) {
+                // Find insertion position
+                size_t last_field_pos = 0;
+
+                // Find last field position
+                std::vector<std::string> fields = {"axis_ids:", "repeats:", "strides:"};
+                for (const auto& field : fields) {
+                    size_t search_pos = 0;
+                    while ((search_pos = output_attr_section.find(field, search_pos)) != std::string::npos) {
+                        size_t field_pos = output_attr_start + search_pos;
+                        if (field_pos > last_field_pos) last_field_pos = field_pos;
+                        search_pos += field.length();
+                    }
+                }
+
+                // If no fields found, insert after dtype
+                if (last_field_pos == 0) {
+                    size_t dtype_pos = output_attr_section.find("dtype:");
+                    if (dtype_pos != std::string::npos) {
+                        last_field_pos = output_attr_start + dtype_pos;
+                    }
+                }
+
+                if (last_field_pos > 0) {
+                    size_t line_end = result.find("\n", last_field_pos);
+                    if (line_end != std::string::npos && line_end < output_attr_end) {
+                        size_t num_repeats = countField(output_attr_section, "repeats:");
+                        size_t num_strides = countField(output_attr_section, "strides:");
+
+                        // Fix incorrect stride values
+                        auto [repeats, repeat_pos] = parseFieldValues(output_attr_section, "repeats:");
+                        auto [strides, stride_pos] = parseFieldValues(output_attr_section, "strides:");
+                        fixStrideValues(output_attr_section, output_attr_start, repeats, stride_pos);
+
+                        // Generate additional axes
+                        std::string additional_axes;
+                        for (size_t i = num_axis_ids; i < num_sched_axis; i++) {
+                            additional_axes += "      axis_ids: " + std::to_string(i) + "\n";
+                        }
+                        for (size_t i = num_repeats; i < num_sched_axis; i++) {
+                            additional_axes += "      repeats: \"1\"\n";
+                        }
+                        for (size_t i = num_strides; i < num_sched_axis; i++) {
+                            additional_axes += "      strides: \"0\"\n";
+                        }
+
+                        if (!additional_axes.empty()) {
+                            result.insert(line_end + 1, additional_axes);
+                            output_attr_end += additional_axes.length();
+                            fixed_count++;
+                        }
+                    }
+                }
+            }
+
+            pos = node_start + 9;
+        }
+
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Fixed %d outputs.attr sections", fixed_count);
+        return fixed_count;
+    };
+
+    // Main logic
+    NPU_LOG_PRINT(DEBUG, "FixNodeAxisInfo: Starting to process ASCIR text");
+
+    size_t num_axes = countGlobalAxes();
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Found %d axes in asc_graph_attr", num_axes);
+
+    if (num_axes == 0) {
+        NPU_LOG_PRINT(DEBUG, "No axes found, returning without modifications");
+        return result;
     }
 
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Processed %d sched sections, fixed %d nodes", total_sched, fixed_count);
+    // Step 1: Fix sched sections
+    fixSchedSections(num_axes);
+
+    // Step 2: Fix outputs.attr sections
+    fixOutputAttrSections(num_axes);
 
     return result;
 }
@@ -780,7 +1017,7 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
     }
 
     // Fix sched.axis for nodes that have axis_ids but missing sched.axis
-    ascir_text = FixNodeSchedAxis(ascir_text);
+    ascir_text = FixNodeAxisInfo(ascir_text);
     NPU_LOG_PRINT(DEBUG, "Fixed sched.axis for nodes");
 
     // Step 3: Generate kernel for entry computation

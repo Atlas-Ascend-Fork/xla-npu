@@ -73,7 +73,9 @@ struct AFIRToASCIRTextPass : public ::impl::ConvertAFIRToASCIRTextPassBase<AFIRT
     std::string generateIrDef(Operation* op);
     std::string generateInputSrc(Operation* op, const llvm::StringMap<std::string>& ssaToNodeName);
     std::string generateDataNode(int nodeIndex, int argIndex, Type argType, const std::string& graphName,
-                                 Attribute argAttr = nullptr);
+                                 Attribute argAttr = nullptr, Attribute graphAttr = nullptr,
+                                 const llvm::StringMap<SmallVector<Operation*, 4>>* valueToConsumers = nullptr,
+                                 const std::string* argSSAName = nullptr);
     std::string generateOutputNode(int index, const std::string& lastNodeName, const std::string& graphName);
     int parseDataType(Type type);
     std::string calculateStrides(ArrayRef<int64_t> shape);
@@ -235,7 +237,8 @@ std::string AFIRToASCIRTextPass::convertFuncToASCIRText(func::FuncOp func, Attri
                     std::string dataNodeName = graphName + "/Data_" + std::to_string(nodeCounter);
                     ssaToNodeName[ssaName] = dataNodeName;
 
-                    std::string dataNodeText = generateDataNode(nodeCounter, idx, argType, graphName, argAttr);
+                    std::string dataNodeText = generateDataNode(nodeCounter, idx, argType, graphName, argAttr, graphAttr,
+                                                                  &valueToConsumers, &ssaName);
                     os << dataNodeText;
                     nodeCounter++;
                 }
@@ -454,81 +457,64 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
     }
 
     Type tensorType = op->getResult(0).getType();
+
+    os << "  outputs {\n";
+    os << "    attr {\n";
+
+    // Generate dtype first
+    if (auto shapedType = dyn_cast<ShapedType>(tensorType)) {
+        Type elementType = shapedType.getElementType();
+        int dtype = parseDataType(elementType);
+        os << "      dtype: " << dtype << "\n";
+    }
+
+    // Then generate axis_ids, repeats, strides
     if (auto shapedType = dyn_cast<ShapedType>(tensorType)) {
         int rank = shapedType.getRank();
         auto shape = shapedType.getShape();
 
-        os << "  outputs {\n";
-        os << "    attr {\n";
+        // Get axis information from indexing_maps to match sched.axis
+        // This ensures consistency between outputs.axis_ids and sched.axis
+        auto indexingMapsAttr = op->getAttrOfType<ArrayAttr>("indexing_maps");
+        int numAxes = rank;  // Default to tensor rank
+        bool hasIndexingMaps = false;
 
-        // Get element type for dtype
-        Type elementType = shapedType.getElementType();
-        int dtype = parseDataType(elementType);
-        os << "      dtype: " << dtype << "\n";
-
-        // For scalar tensors (rank 0), get axis information from the next consumer node
-        if (rank == 0) {
-            // Find the consumer of this operation's result
-            Value result = op->getResult(0);
-            std::string ptrStr;
-            llvm::raw_string_ostream(ptrStr) << result.getAsOpaquePointer();
-            std::string ssaName = "ssa_" + ptrStr;
-
-            auto it = valueToConsumers.find(ssaName);
-            if (it != valueToConsumers.end() && !it->second.empty()) {
-                // Get the first consumer operation
-                Operation *consumer = it->second[0];
-
-                // Get the consumer's output attribute
-                auto consumerOutputsAttr = consumer->getAttrOfType<ArrayAttr>("outputs");
-                if (consumerOutputsAttr && !consumerOutputsAttr.empty()) {
-                    auto consumerTensorAttr = dyn_cast<afir::AscTensorGroupsAttr>(consumerOutputsAttr[0]);
-                    if (consumerTensorAttr) {
-                        // Copy axis_ids from the consumer's vectorized_axis
-                        auto consumerAxis = consumerTensorAttr.getVectorizedAxis();
-                        // Check if consumer's axis is empty - if so, use fallback
-                        if (consumerAxis.empty()) {
-                            // Fallback: consumer axis is not ready yet
-                            os << "      axis_ids: 0\n";
-                            os << "      repeats: \"1\"\n";
-                            os << "      strides: \"0\"\n";
-                        } else {
-                            // Consumer has valid axis info, copy it
-                            for (int64_t axisId : consumerAxis) {
-                                os << "      axis_ids: " << axisId << "\n";
-                            }
-                            // For scalar nodes, set all repeats to 1 and all strides to 0
-                            for (size_t i = 0; i < consumerAxis.size(); i++) {
-                                os << "      repeats: \"1\"\n";
-                            }
-                            for (size_t i = 0; i < consumerAxis.size(); i++) {
-                                os << "      strides: \"0\"\n";
-                            }
-                        }
-                    } else {
-                        // Fallback if consumer tensor attr is not valid
-                        os << "      axis_ids: 0\n";
-                        os << "      repeats: \"1\"\n";
-                        os << "      strides: \"0\"\n";
-                    }
-                } else {
-                    // Fallback if consumer has no outputs attr
-                    os << "      axis_ids: 0\n";
-                    os << "      repeats: \"1\"\n";
-                    os << "      strides: \"0\"\n";
+        if (indexingMapsAttr) {
+            for (auto attr : indexingMapsAttr) {
+                if (auto affineMapAttr = dyn_cast<AffineMapAttr>(attr)) {
+                    auto affineMap = affineMapAttr.getValue();
+                    // Use the number of results from the last affine map as axis count
+                    // This matches the logic used for sched.axis generation
+                    numAxes = affineMap.getNumResults();
+                    hasIndexingMaps = true;
+                    break;
                 }
-            } else {
-                // No consumer found - this shouldn't happen for normal cases, but add fallback
-                os << "      axis_ids: 0\n";
+            }
+        }
+
+        // Fallback: if still 0, default to 1 axis
+        if (numAxes == 0) {
+            numAxes = 1;
+        }
+
+        // Generate axis_ids based on the determined axis count
+        for (int i = 0; i < numAxes; i++) {
+            os << "      axis_ids: " << i << "\n";
+        }
+
+        // Generate repeats and strides - always match numAxes count
+        if (rank == 0) {
+            // Scalar case - always generate default repeats/strides
+            for (int i = 0; i < numAxes; i++) {
                 os << "      repeats: \"1\"\n";
+            }
+            for (int i = 0; i < numAxes; i++) {
                 os << "      strides: \"0\"\n";
             }
         } else {
-            // Normal case: non-scalar tensor
-            for (int i = 0; i < rank; i++) {
-                os << "      axis_ids: " << i << "\n";
-            }
-            for (int i = 0; i < rank; i++) {
+            // Normal case: generate repeats/strides matching numAxes
+            // First use actual tensor shape for available dimensions
+            for (int i = 0; i < std::min(numAxes, rank); i++) {
                 int64_t size = shapedType.getDimSize(i);
                 if (size == ShapedType::kDynamic) {
                     os << "      repeats: \"-1\"\n";
@@ -536,27 +522,60 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
                     os << "      repeats: \"" << size << "\"\n";
                 }
             }
-            os << calculateStrides(shape);
+            // If numAxes > rank, fill with default "1"
+            for (int i = rank; i < numAxes; i++) {
+                os << "      repeats: \"1\"\n";
+            }
+
+            // Generate strides directly using column-major layout
+            // For a tensor with shape [d0, d1, d2, ...], strides are [d1*d2*..., d2*..., ..., 1]
+            for (int i = 0; i < std::min(numAxes, rank); i++) {
+                // Check if the corresponding repeat is 1 (scalar/broadcast dimension)
+                // For the first (rank - numAxes) dimensions that were dropped, check the original repeats
+                int64_t repeat_val = 1;
+                if (i < rank) {
+                    repeat_val = shape[i];
+                }
+
+                if (repeat_val == 1) {
+                    // Broadcast dimension - stride is 0
+                    os << "      strides: \"0\"\n";
+                } else {
+                    // Calculate stride for this dimension (column-major)
+                    int64_t stride = 1;
+                    for (int j = i + 1; j < rank; j++) {
+                        if (shape[j] > 0) {
+                            stride *= shape[j];
+                        }
+                    }
+                    os << "      strides: \"" << stride << "\"\n";
+                }
+            }
+            // If numAxes > rank, fill with default "0" (broadcast dimensions)
+            for (int i = rank; i < numAxes; i++) {
+                os << "      strides: \"0\"\n";
+            }
         }
-        os << "      mem {\n";
-        os << "        tensor_id: " << tensorId << "\n";
-        os << "      }\n";
-        os << "      que {\n";
-        os << "        id: -1\n";
-        os << "        depth: " << queDepth << "\n";
-        os << "        buf_num: " << queBufNum << "\n";
-        os << "      }\n";
-        os << "      buf {\n";
-        os << "        id: " << positionId << "\n";
-        os << "      }\n";
-        os << "      opt {\n";
-        os << "        reuse_id: " << reuseId << "\n";
-        os << "        ref_tensor: -1\n";
-        os << "        merge_scope: -1\n";
-        os << "      }\n";
-        os << "    }\n";
-        os << "  }\n";
     }
+
+    os << "      mem {\n";
+    os << "        tensor_id: " << tensorId << "\n";
+    os << "      }\n";
+    os << "      que {\n";
+    os << "        id: -1\n";
+    os << "        depth: " << queDepth << "\n";
+    os << "        buf_num: " << queBufNum << "\n";
+    os << "      }\n";
+    os << "      buf {\n";
+    os << "        id: " << positionId << "\n";
+    os << "      }\n";
+    os << "      opt {\n";
+    os << "        reuse_id: " << reuseId << "\n";
+    os << "        ref_tensor: -1\n";
+    os << "        merge_scope: -1\n";
+    os << "      }\n";
+    os << "    }\n";
+    os << "  }\n";
 
     os.flush();
     return result;
@@ -766,11 +785,66 @@ std::string AFIRToASCIRTextPass::generateInputSrc(Operation* op, const llvm::Str
 }
 
 std::string AFIRToASCIRTextPass::generateDataNode(int nodeIndex, int argIndex, Type argType,
-                                                  const std::string& graphName, Attribute argAttr) {
+                                                  const std::string& graphName, Attribute argAttr,
+                                                  Attribute graphAttr,
+                                                  const llvm::StringMap<SmallVector<Operation*, 4>>* valueToConsumers,
+                                                  const std::string* argSSAName) {
     std::string result;
     llvm::raw_string_ostream os(result);
 
     std::string nodeName = graphName + "/Data_" + std::to_string(nodeIndex);
+
+    // Get number of axes from graph attribute
+    int numGraphAxes = 0;
+    if (graphAttr) {
+        auto ascGraphAttr = dyn_cast<afir::AscGraphAttrGroupsAttr>(graphAttr);
+        if (ascGraphAttr) {
+            numGraphAxes = ascGraphAttr.getAxes().size();
+        }
+    }
+
+    // Try to get axis count from consumer's indexing_maps
+    int numConsumerAxes = 0;
+    if (valueToConsumers && argSSAName) {
+        auto it = valueToConsumers->find(*argSSAName);
+        if (it != valueToConsumers->end() && !it->second.empty()) {
+            // Get the first consumer
+            Operation* consumer = it->second[0];
+            auto indexingMapsAttr = consumer->getAttrOfType<ArrayAttr>("indexing_maps");
+            if (indexingMapsAttr) {
+                // Find the indexing map for this operand
+                unsigned operandIndex = 0;
+                for (unsigned i = 0; i < consumer->getNumOperands(); ++i) {
+                    std::string ptrStr;
+                    llvm::raw_string_ostream(ptrStr) << consumer->getOperand(i).getAsOpaquePointer();
+                    std::string operandSSAName = "ssa_" + ptrStr;
+                    if (operandSSAName == *argSSAName) {
+                        operandIndex = i;
+                        break;
+                    }
+                }
+
+                if (operandIndex < indexingMapsAttr.size()) {
+                    if (auto affineMapAttr = dyn_cast<AffineMapAttr>(indexingMapsAttr[operandIndex])) {
+                        auto affineMap = affineMapAttr.getValue();
+                        numConsumerAxes = affineMap.getNumResults();
+                    }
+                }
+            }
+        }
+    }
+
+    // Use graph axes count for all nodes to ensure consistency
+    // If graphAttr has axes defined, use that count; otherwise use consumer info or rank
+    int numOutputAxes = numGraphAxes;
+    if (numOutputAxes == 0 && numConsumerAxes > 0) {
+        // Fallback: use consumer axes if no graph axes
+        numOutputAxes = numConsumerAxes;
+    }
+    if (numOutputAxes == 0) {
+        // Final fallback: at least 1 axis
+        numOutputAxes = 1;
+    }
 
     os << "asc_node {\n";
     os << "  outputs {\n";
@@ -802,35 +876,61 @@ std::string AFIRToASCIRTextPass::generateDataNode(int nodeIndex, int argIndex, T
         }
     }
 
-    if (auto shapedType = dyn_cast<ShapedType>(argType)) {
-        int rank = shapedType.getRank();
-        auto shape = shapedType.getShape();
-
-        for (int i = 0; i < rank; i++) {
-            os << "      axis_ids: " << i << "\n";
-        }
-
-        for (int i = 0; i < rank; i++) {
-            int64_t size = shapedType.getDimSize(i);
-            if (size == ShapedType::kDynamic) {
-                os << "      repeats: \"-1\"\n";
-            } else {
-                os << "      repeats: \"" << size << "\"\n";
-            }
-        }
-
-        os << calculateStrides(shape);
-    } else {
-        os << "      axis_ids: 0\n";
-        os << "      repeats: \"1\"\n";
-        os << "      strides: \"1\"\n";
-    }
-
-    // Add dtype field
+    // First, generate dtype at the beginning
     if (auto shapedType = dyn_cast<ShapedType>(argType)) {
         Type elementType = shapedType.getElementType();
         int dtype = parseDataType(elementType);
         os << "      dtype: " << dtype << "\n";
+    }
+
+    // Then generate axis_ids, repeats, strides based on type
+    if (auto shapedType = dyn_cast<ShapedType>(argType)) {
+        int rank = shapedType.getRank();
+        auto shape = shapedType.getShape();
+
+        // Special handling for scalar (rank 0) tensors
+        if (rank == 0) {
+            // Use the determined axis count (from consumer or graph)
+            for (int i = 0; i < numOutputAxes; i++) {
+                os << "      axis_ids: " << i << "\n";
+            }
+            for (int i = 0; i < numOutputAxes; i++) {
+                os << "      repeats: \"1\"\n";
+            }
+            for (int i = 0; i < numOutputAxes; i++) {
+                os << "      strides: \"0\"\n";
+            }
+        } else {
+            // Normal case: non-scalar tensor
+            for (int i = 0; i < numOutputAxes; i++) {
+                os << "      axis_ids: " << i << "\n";
+            }
+
+            for (int i = 0; i < rank; i++) {
+                int64_t size = shapedType.getDimSize(i);
+                if (size == ShapedType::kDynamic) {
+                    os << "      repeats: \"-1\"\n";
+                } else {
+                    os << "      repeats: \"" << size << "\"\n";
+                }
+            }
+
+            os << calculateStrides(shape);
+        }
+    } else {
+        // Non-ShapedType: use the determined axis count
+        if (numOutputAxes == 0) {
+            numOutputAxes = 1;
+        }
+        for (int i = 0; i < numOutputAxes; i++) {
+            os << "      axis_ids: " << i << "\n";
+        }
+        for (int i = 0; i < numOutputAxes; i++) {
+            os << "      repeats: \"1\"\n";
+        }
+        for (int i = 0; i < numOutputAxes; i++) {
+            os << "      strides: \"0\"\n";
+        }
     }
 
     os << "      mem {\n";
@@ -861,11 +961,30 @@ std::string AFIRToASCIRTextPass::generateDataNode(int nodeIndex, int argIndex, T
 
     if (auto shapedType = dyn_cast<ShapedType>(argType)) {
         int rank = shapedType.getRank();
-        for (int i = 0; i < rank; i++) {
+
+        // Use the same numOutputAxes that was calculated for outputs.attr
+        // This ensures consistency between outputs.axis_ids and sched.axis
+        int numSchedAxes = numOutputAxes;
+        if (numSchedAxes == 0) {
+            numSchedAxes = rank;
+        }
+        // Final fallback: if still 0 (scalar with no consumer info), default to 1
+        if (numSchedAxes == 0) {
+            numSchedAxes = 1;
+        }
+
+        for (int i = 0; i < numSchedAxes; i++) {
             os << "      axis: " << i << "\n";
         }
     } else {
-        os << "      axis: 0\n";
+        // Use the same numOutputAxes for non-ShapedType
+        int numSchedAxes = numOutputAxes;
+        if (numSchedAxes == 0) {
+            numSchedAxes = 1;
+        }
+        for (int i = 0; i < numSchedAxes; i++) {
+            os << "      axis: " << i << "\n";
+        }
     }
 
     os << "      loop_axis: -1\n";

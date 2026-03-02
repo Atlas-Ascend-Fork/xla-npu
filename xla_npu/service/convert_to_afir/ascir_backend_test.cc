@@ -18,6 +18,7 @@ limitations under the License.
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -71,23 +72,34 @@ absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(absl::string_view
 }
 
 /*
-Parse the HloComputation string and return a HloComputation pointer.
+Parse HLO text to HloModule.
 
- Input format example:
- 1. pure computation body:
+This function parses HLO text (which may contain multiple computations)
+and returns the HloModule along with a pointer to the entry computation.
+
+The HloModule contains ALL computations from the HLO text:
+- Entry computation (accessible via module->entry_computation())
+- Sub-computations (e.g., reduce computations, fusion computations)
+  All computations can be accessed via module->computations()
+
+Input format example:
+1. Full HLO module with multiple computations:
+   HloModule MyModule
+
+   ENTRY %main {
+     %param0 = f32[4] parameter(0)
+     ROOT %add = f32[4] add(%param0, %param0)
+   }
+
+2. Pure computation body (will be wrapped as entry computation):
    {
      %param0 = f32[4] parameter(0)
      %param1 = f32[4] parameter(1)
      ROOT %add = f32[4] add(%param0, %param1)
    }
 
- 2. computation body with computation name:
-   %my_computation {
-     %param0 = f32[4] parameter(0)
-     ROOT %add = f32[4] add(%param0, %param0)
-   }
-
- return: pair<module, computation*>
+Returns: pair<module, entry_computation*>
+Note: The module must maintain its lifecycle until compile is completed.
  */
 absl::StatusOr<std::pair<std::unique_ptr<xla::HloModule>, xla::HloComputation*>>
 ParseHloComputationString(absl::string_view computation_text,
@@ -95,22 +107,51 @@ ParseHloComputationString(absl::string_view computation_text,
     xla::HloModuleConfig config;
     xla::HloParserOptions options;
 
-    std::string wrapped_hlo;
-    if (computation_text.find('(') != absl::string_view::npos) {
-        wrapped_hlo = absl::StrCat(
-            "HloModule temp_module\n\n",
-            "ENTRY ", computation_text
-        );
-    } else {
-        wrapped_hlo = absl::StrCat(
-            "HloModule temp_module\n\n",
-            "ENTRY ", computation_name, " ", computation_text
-        );
+    // Process the computation text to add ENTRY prefix to fusion computation
+    std::string processed_text = std::string(computation_text);
+
+    // Find lines starting with "%fused" and add "ENTRY" prefix
+    // This handles fusion computations like %fused_reduce, %fused_computation, etc.
+    size_t pos = 0;
+    while ((pos = processed_text.find("%fused", pos)) != std::string::npos) {
+        // Check if this is at the start of a line (or after whitespace)
+        if (pos == 0 || processed_text[pos - 1] == '\n') {
+            // Insert "ENTRY " before "%fused"
+            processed_text.insert(pos, "ENTRY ");
+            pos += 7;  // Skip "ENTRY %fused"
+        } else {
+            pos += 1;  // Move forward
+        }
     }
 
+    // Wrap as HloModule
+    std::string wrapped_hlo = absl::StrCat(
+        "HloModule temp_module\n\n",
+        processed_text
+    );
+
     TF_ASSIGN_OR_RETURN(auto module, xla::ParseAndReturnUnverifiedModule(wrapped_hlo, config, options));
-    xla::HloComputation* computation = module->entry_computation();
-    return std::make_pair(std::move(module), computation);
+
+    // Find the fusion computation (starting with "fused") to use as entry
+    // If no fusion computation found, use the default entry computation
+    xla::HloComputation* entry_computation = nullptr;
+
+    for (const auto* computation : module->computations()) {
+        std::string comp_name = std::string(computation->name());
+        if (comp_name.find("fused") == 0) {
+            entry_computation = const_cast<xla::HloComputation*>(computation);
+            std::cout << "  Found fusion computation as entry: " << comp_name << std::endl;
+            break;
+        }
+    }
+
+    // Fallback to default entry if no fusion computation found
+    if (entry_computation == nullptr) {
+        entry_computation = module->entry_computation();
+        std::cout << "  Using default entry computation: " << entry_computation->name() << std::endl;
+    }
+
+    return std::make_pair(std::move(module), entry_computation);
 }
 
 absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) {
@@ -121,11 +162,26 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
     // Note: The module must maintain its lifecycle until compile is completed, otherwise, a coredump will occur.
     TF_ASSIGN_OR_RETURN(auto parsed, ParseHloComputationString(hlo_text));
     auto& hlo_module = parsed.first;
-    xla::HloComputation* hlo_computation = parsed.second;
+    xla::HloComputation* entry_computation = parsed.second;
 
-    std::cout << "  ✅ HLO module parsed: " << hlo_computation->name() << std::endl;
-    std::cout << "     Entry computation instructions: " << hlo_computation->instruction_count()
+    std::cout << "  ✅ HLO module parsed: " << entry_computation->name() << std::endl;
+    std::cout << "     Entry computation instructions: " << entry_computation->instruction_count()
               << std::endl;
+
+    // Collect all computations from the module (entry + sub-computations)
+    std::unordered_map<std::string, const xla::HloComputation*> computations;
+
+    int computation_count = 0;
+    for (const auto* computation : hlo_module->computations()) {
+        std::string key = computation->IsEntryComputation() ? "main" : std::string(computation->name());
+        computations[key] = computation;
+        computation_count++;
+    }
+
+    std::cout << "     Total computations in module: " << computation_count << std::endl;
+    for (const auto& [key, comp] : computations) {
+        std::cout << "       - " << key << " (" << comp->instruction_count() << " instructions)" << std::endl;
+    }
 
     std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
 
@@ -140,7 +196,7 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
     std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
 
     xla::AscirBackend backend;
-    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(hlo_computation, options));
+    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(computations, options));
 
     std::cout << "  ✅ Compilation successful!" << std::endl;
 

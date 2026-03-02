@@ -96,6 +96,14 @@ class HloToAfirConverter {
     mlir::afir::AscTensorGroupsAttr CreateDefaultOutputAttr(mlir::Type tensor_type);
     void SetModuleGraphAttr(const HloModule& hlo_module);
 
+    // Helper: Check if reshape only adds/removes dimensions of size 1
+    // Returns true if it's a no-op reshape (only 1-dim changes), and the effective type to use
+    struct ReshapeTypeInfo {
+        bool is_one_dim_reshape;
+        mlir::Type effective_type;
+    };
+    ReshapeTypeInfo GetReshapeEffectiveType(const HloInstruction* reshape_instr);
+
     // Module state
     mlir::Operation* module_op_ptr_;
     mlir::MLIRContext* context_;
@@ -145,7 +153,17 @@ absl::StatusOr<mlir::func::FuncOp> HloToAfirConverter::ConvertComputation(const 
     }
 
     // Determine return type
-    mlir::Type result_type = ConvertShape(computation.root_instruction()->shape());
+    // If root instruction is a reshape that only adds/removes dimensions of size 1,
+    // use the input type of reshape (since reshape is a no-op in AFIR)
+    mlir::Type result_type;
+    const HloInstruction* root = computation.root_instruction();
+
+    if (options_.emit_afir_dialect && root->opcode() == HloOpcode::kReshape) {
+        auto reshape_info = GetReshapeEffectiveType(root);
+        result_type = reshape_info.effective_type;
+    } else {
+        result_type = ConvertShape(root->shape());
+    }
 
     // Create function type
     mlir::TypeRange param_types_range(param_types);
@@ -228,8 +246,19 @@ absl::StatusOr<mlir::func::FuncOp> HloToAfirConverter::ConvertComputation(const 
     mlir::Value result = value_map_[computation.root_instruction()];
 
     if (options_.emit_afir_dialect) {
-        // Create store node before return
-        mlir::Type result_type = ConvertShape(computation.root_instruction()->shape());
+        // Determine the actual result type for store operation
+        // If root instruction is a reshape that only adds/removes dimensions of size 1,
+        // use the input type of reshape (since reshape is a no-op in AFIR)
+        const HloInstruction* root = computation.root_instruction();
+        mlir::Type result_type;
+
+        if (root->opcode() == HloOpcode::kReshape) {
+            auto reshape_info = GetReshapeEffectiveType(root);
+            result_type = reshape_info.effective_type;
+        } else {
+            result_type = ConvertShape(root->shape());
+        }
+
         int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
         auto identity_map = GetIdentityAffineMap(rank);
 
@@ -1289,6 +1318,59 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertCallOp(const HloInstructi
 
     // Call produces a single result (for non-tuple results)
     return call_op.getResult(0);
+}
+
+HloToAfirConverter::ReshapeTypeInfo HloToAfirConverter::GetReshapeEffectiveType(
+        const HloInstruction* reshape_instr) {
+    ReshapeTypeInfo result;
+    result.is_one_dim_reshape = false;
+
+    if (reshape_instr->opcode() != HloOpcode::kReshape || reshape_instr->operand_count() != 1) {
+        result.effective_type = ConvertShape(reshape_instr->shape());
+        return result;
+    }
+
+    const Shape& input_shape = reshape_instr->operand(0)->shape();
+    const Shape& output_shape = reshape_instr->shape();
+
+    // Check if reshape only adds/removes dimensions of size 1
+    bool is_one_dim = true;
+    int64_t input_idx = 0;
+    int64_t output_idx = 0;
+
+    while (input_idx < input_shape.dimensions().size() ||
+           output_idx < output_shape.dimensions().size()) {
+        // Skip dimensions of size 1 in input
+        while (input_idx < input_shape.dimensions().size() &&
+               input_shape.dimensions(input_idx) == 1) {
+            input_idx++;
+        }
+        // Skip dimensions of size 1 in output
+        while (output_idx < output_shape.dimensions().size() &&
+               output_shape.dimensions(output_idx) == 1) {
+            output_idx++;
+        }
+
+        // If both indices are still valid, check if dimensions match
+        if (input_idx < input_shape.dimensions().size() &&
+            output_idx < output_shape.dimensions().size()) {
+            if (input_shape.dimensions(input_idx) != output_shape.dimensions(output_idx)) {
+                is_one_dim = false;
+                break;
+            }
+            input_idx++;
+            output_idx++;
+        } else if (input_idx < input_shape.dimensions().size() ||
+                   output_idx < output_shape.dimensions().size()) {
+            // One shape still has non-1 dimensions left
+            is_one_dim = false;
+            break;
+        }
+    }
+
+    result.is_one_dim_reshape = is_one_dim;
+    result.effective_type = is_one_dim ? ConvertShape(input_shape) : ConvertShape(output_shape);
+    return result;
 }
 
 mlir::Type HloToAfirConverter::ConvertShape(const Shape& shape) {
