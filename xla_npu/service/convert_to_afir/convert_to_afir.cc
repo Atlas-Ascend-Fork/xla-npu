@@ -1219,13 +1219,19 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertBroadcastOp(const HloInst
         auto result_map = mlir::AffineMap::get(result_rank, 0, result_exprs, context_);
 
         // Operand map: map result dims to operand dims based on broadcast_dims
-        // For example, if broadcasting from (2,) to (3, 2) with broadcast_dims={1},
+        // broadcast_dims specifies which dimensions in the result correspond to the operand's dimensions
+        // For example: if broadcasting from (2,) to (3, 2) with broadcast_dims={1},
         // then operand map should be (d0, d1) -> (d1)
         llvm::SmallVector<mlir::AffineExpr> exprs;
         for (int64_t i = 0; i < operand_rank; ++i) {
-            // Find which result dimension corresponds to this operand dimension
-            int64_t result_dim = broadcast_dims[i];
-            exprs.push_back(builder_.getAffineDimExpr(result_dim));
+            if (i < broadcast_dims.size()) {
+                // This operand dimension maps to a result dimension
+                int64_t result_dim = broadcast_dims[i];
+                exprs.push_back(builder_.getAffineDimExpr(result_dim));
+            } else {
+                // This operand dimension is broadcast (size 1), use constant 0
+                exprs.push_back(builder_.getAffineConstantExpr(0));
+            }
         }
         auto operand_map = mlir::AffineMap::get(result_rank, 0, exprs, context_);
 
