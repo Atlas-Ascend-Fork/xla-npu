@@ -1,5 +1,6 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
 #include "transforms/mair_passes.h"
 #include "stablehlo2mair_converter.h"
 
@@ -9,6 +10,7 @@ namespace mair {
         mlir::PassManager pm(module.getContext());
 
         // 添加Stablehlo到Mair方言的转换Pass
+        pm.addPass(mlir::createInlinerPass());
         pm.addPass(mlir::air::createLegalizeStablehloToGePass());
 
         if (failed(pm.run(module)))
