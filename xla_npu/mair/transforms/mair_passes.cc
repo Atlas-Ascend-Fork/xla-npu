@@ -16,6 +16,7 @@
 #include "mlir/Support/LLVM.h"                  // from @llvm-project
 #include "mlir/Support/LogicalResult.h"         // from @llvm-project
 #include "mlir/Transforms/DialectConversion.h"  // from @llvm-project
+#include "mlir/Dialect/Arith/IR/Arith.h"  // from @llvm-project
 
 #include "stablehlo/dialect/StablehloOps.h"
 
@@ -214,6 +215,51 @@ namespace {
           return success();
       };
   };
+  class ConvertMatMulOp : public OpConversionPattern<stablehlo::DotGeneralOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::DotGeneralOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          rewriter.replaceOpWithNewOp<MatMulOp>(op, op.getType(), op.getLhs(), op.getRhs(), nullptr, false, false);
+          return success();
+      };
+  };
+  class ConvertReshapeOp : public OpConversionPattern<stablehlo::ReshapeOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::ReshapeOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          mlir::Value inputTensor = adaptor.getOperand();
+          auto resultType = dyn_cast_or_null<mlir::RankedTensorType>(op.getType());
+          if (!resultType) {
+            return rewriter.notifyMatchFailure(op, "Result must be a ranked tensor");
+          }
+          auto targetShape = resultType.getShape();
+          auto shapeAttr = rewriter.getI64TensorAttr(targetShape);
+          auto shapeTensor = rewriter.create<mlir::arith::ConstantOp>(
+              op.getLoc(),
+              shapeAttr
+          ).getResult();
+          auto newReshapeOp = rewriter.create<mlir::air::ReshapeOp>(
+              op.getLoc(),
+              op.getType(),
+              inputTensor,
+              shapeTensor
+              // axis and num_axes use default values
+          );
+          rewriter.replaceOp(op, newReshapeOp.getResult());
+          return success();
+      };
+  };
+  class ConvertReduceOp : public OpConversionPattern<stablehlo::ReduceOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::ReduceOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          // 需要把reduce拆分乘reduceSum和reduceMax
+          return success();
+      };
+  };
 }
 
 struct LegalizeToMairPass
@@ -243,6 +289,14 @@ void LegalizeToMairPass::runOnOperation() {
   patterns.add<ConvertTanhOp>(&getContext());
   patterns.add<ConvertAllReduceOp>(&getContext());
   patterns.add<ConvertAllGatherOp>(&getContext());
+  patterns.add<ConvertDivOp>(&getContext());
+  patterns.add<ConvertExpOp>(&getContext());
+  patterns.add<ConvertMaxOp>(&getContext());
+  patterns.add<ConvertNegOp>(&getContext());
+  patterns.add<ConvertSubOp>(&getContext());
+  patterns.add<ConvertMatMulOp>(&getContext());
+  patterns.add<ConvertReshapeOp>(&getContext());
+  patterns.add<ConvertReduceOp>(&getContext());
 
   if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
     getOperation().emitError("stablehlo to mair legalization failed.");
