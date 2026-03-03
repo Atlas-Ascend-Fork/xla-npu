@@ -33,7 +33,7 @@ const std::unordered_map<std::string, std::vector<std::string>> Exporter::inputN
     {"BroadcastTo", {"x", "shape"}},
     {"Div", {"x1", "x2"}},
     {"Exp", {"x"}},
-    {"Max", {"x1", "x2"}},
+    {"Maximum", {"x1", "x2"}},
     {"Neg", {"x"}},
     {"Sub", {"x1", "x2"}},
     {"MatMul", {"x1", "x2"}},
@@ -41,6 +41,7 @@ const std::unordered_map<std::string, std::vector<std::string>> Exporter::inputN
     {"ReduceSum", {"x", "axes"}},
     {"ReduceMax", {"x", "axes"}},
     {"ReduceMin", {"x", "axes"}},
+    {"ConcatV2", {"x", "concat_dim"}},
 };
 
 const std::map<ge::DataType, std::string> DataTypeNames = {
