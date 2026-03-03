@@ -235,8 +235,21 @@ namespace {
             return rewriter.notifyMatchFailure(op, "Result must be a ranked tensor");
           }
           auto targetShape = resultType.getShape();
-          auto shapeAttr = rewriter.getI64TensorAttr(targetShape);
-          auto shapeTensor = rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), shapeAttr).getResult();
+          mlir::Type elementType = resultType.getElementType();
+          int64_t numElements = 1;
+          for (auto dim : targetShape) {
+            numElements *= dim;
+          }
+          std::vector<float> defaultValues(numElements, 0.0f);
+          auto denseAttr = mlir::DenseElementsAttr::get(
+              resultType,
+              llvm::ArrayRef(defaultValues)
+          );
+          auto shapeTensor = rewriter.create<mlir::air::ConstantOp>(
+              op.getLoc(),
+              resultType,
+              denseAttr
+          ).getResult();
           auto newReshapeOp = rewriter.create<mlir::air::ReshapeOp>(
               op.getLoc(),
               op.getType(),
@@ -321,7 +334,7 @@ namespace {
                   keepDimsAttr
               );
           } else if (isMin) {
-              newOp = rewriter.create<mlir::air::ReduceMaxOp>(
+              newOp = rewriter.create<mlir::air::ReduceMinOp>(
                   op.getLoc(),
                   op.getResultTypes(),
                   inputs,
