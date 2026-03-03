@@ -565,7 +565,7 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     graph_data.graph = std::make_shared<ge::Graph>("XLAGraph");
     mlir::air::GraphGenTester::Convert(mair_module, graph_data.graph);
     // TestGraph(graph_data.graph);
-    graph_data.id = 0;
+    graph_data.id = global_graph_id++;
     // graph_data.inputs_shape.push_back(ge::Shape({3}));
 
     if (global_ge_session_->AddGraph(graph_data.id, *graph_data.graph, ge_options) != ge::SUCCESS) {

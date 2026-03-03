@@ -217,6 +217,7 @@ private:
 
     bool ge_initialized_ = false;
     std::unique_ptr<ge::Session> global_ge_session_ = nullptr;
+    int64_t global_graph_id = 0;
 };
 
 class PjRtNpuExecutable final : public PjRtLoadedExecutable {
