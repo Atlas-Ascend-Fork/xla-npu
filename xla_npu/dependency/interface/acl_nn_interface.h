@@ -25,6 +25,8 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclTensorList*, aclCreateTensorList, (const aclTens
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyTensorList, (const aclTensorList* array), (array))
 
+DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyIntArray, (const aclIntArray* array), (array))
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_

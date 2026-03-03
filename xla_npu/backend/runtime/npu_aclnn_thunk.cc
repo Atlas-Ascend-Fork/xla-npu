@@ -17,6 +17,7 @@
 // #include "xla/backends/gpu/runtime/thunk.pb.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/buffer_assignment.pb.h"
+#include "xla/shape_util.h"
 #include "xla/stream_executor/device_memory.h"
 #include "xla/stream_executor/dnn.h"
 #include "xla/tsl/platform/errors.h"
@@ -59,6 +60,13 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
             // Concatenate 是变长参数算子,至少需要 2 个输入 + 1 个输出 = 至少 3 个参数
             if (param_shapes.size() < 3) {
                 NPU_LOG_FORMAT_PRINT(ERROR, "Concatenate param shape size %d is less than 3", param_shapes.size());
+                return false;
+            }
+            break;
+        case HloOpcode::kReduce:
+            // Reduce 操作: 输入 + 初始值 + 输出 = 3 个参数
+            if (param_shapes.size() != 3) {
+                NPU_LOG_FORMAT_PRINT(ERROR, "Reduce param shape size %d does not meet target value 3", param_shapes.size());
                 return false;
             }
             break;
@@ -133,9 +141,37 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
     switch (thunk_info().op_code) {
         case HloOpcode::kReshape: {
-            // Reshape is a meta-operation, no actual computation needed
-            // The output tensor shares the same memory as input, just with different shape
-            NPU_LOG_FORMAT_PRINT(DEBUG, "Reshape operation: no ACLNN call needed");
+            // Reshape operation: copy data from input to output using aclrtMemcpy
+            // Even if shapes are different, the underlying data size is the same
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Reshape operation: using aclrtMemcpy to copy data");
+
+            // Get input and output buffer addresses
+            auto input_addr = allocations->GetDeviceAddress(args_[0]);
+            auto output_addr = allocations->GetDeviceAddress(args_.back());
+            void* input_device_addr = input_addr.opaque();
+            void* output_device_addr = output_addr.opaque();
+
+            // Calculate data size in bytes
+            int64_t input_size = NpuTool::GetXlaShapeSize(param_shapes[0]) *
+                                 ShapeUtil::ByteSizeOfPrimitiveType(param_shapes[0].element_type());
+
+            // Perform device-to-device memory copy
+            ret = npu::aclrtMemcpy(output_device_addr, input_size, input_device_addr, input_size,
+                                   ACL_MEMCPY_DEVICE_TO_DEVICE);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg = absl::StrFormat("aclrtMemcpy for reshape failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            // Synchronize stream to ensure copy completes
+            ret = npu::aclrtSynchronizeStream(stream);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg = absl::StrFormat("Synchronize stream after reshape failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
             exec_ret = absl::OkStatus();
             break;
         }
@@ -331,6 +367,43 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
             // 清理tensor_list
             npu::aclDestroyTensorList(tensor_list);
+            break;
+        }
+
+        case HloOpcode::kReduce: {
+            // 获取 reduce 的维度信息
+            if (thunk_info().dimensions.empty()) {
+                const std::string err_msg = "Reduce dimensions is empty";
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            // 创建维度数组
+            aclIntArray* dims = npu::aclCreateIntArray(thunk_info().dimensions.data(), thunk_info().dimensions.size());
+            if (dims == nullptr) {
+                const std::string err_msg = "Failed to create aclIntArray for reduce dimensions";
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                return absl::InternalError(err_msg);
+            }
+
+            // 获取输出数据类型
+            aclDataType out_dtype = NpuTool::ConvertXlaType2AclDataType(param_shapes.back().element_type());
+
+            // 调用 aclnnReduceSum 第一段接口
+            // aclnnReduceSum 接口参数: input, dims, keepDims, dtype, output, workspaceSize, executor
+            ret = npu::aclnnReduceSumGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false, out_dtype,
+                                                      acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+            if (ret != ACL_SUCCESS) {
+                const std::string err_msg = absl::StrFormat("Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d", ret);
+                NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                npu::aclDestroyIntArray(dims);
+                return absl::InternalError(err_msg);
+            }
+
+            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnReduceSum);
+
+            // 清理维度数组
+            npu::aclDestroyIntArray(dims);
             break;
         }
 

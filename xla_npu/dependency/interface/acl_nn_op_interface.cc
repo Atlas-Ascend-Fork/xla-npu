@@ -29,5 +29,9 @@ REGISTER_FUNCTION(libopapi, aclnnMaximumGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnMaximum)
 REGISTER_FUNCTION(libopapi, aclnnCatGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnCat)
+REGISTER_FUNCTION(libopapi, aclnnReduceSumGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnReduceSum)
+REGISTER_FUNCTION(libopapi, aclnnInplaceCopyGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnInplaceCopy)
 
 }  // namespace npu
