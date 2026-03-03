@@ -103,6 +103,12 @@ constexpr T GetDefaultError() {
     }
 }
 
+// 对 void 类型的特化
+template<>
+inline void GetDefaultError<void>() {
+    // void 类型不返回任何值
+}
+
 // 去除传参列表中参数列表外的额外括号
 #define _REMOVE_PARENS(...) __VA_ARGS__
 #define STRIP_PARENS(x) _REMOVE_PARENS x

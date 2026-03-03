@@ -97,6 +97,21 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnCatGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnCat)
 
+// Reduce sum operation
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnReduceSumGetWorkspaceSize,
+                          (const aclTensor* self, const aclIntArray* dims, bool keepDims, aclDataType dtype,
+                           aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dims, keepDims, dtype, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnReduceSum)
+
+// Copy operation for reshape
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnInplaceCopyGetWorkspaceSize,
+                          (aclTensor* selfRef, const aclTensor* src, uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (selfRef, src, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnInplaceCopy)
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_

@@ -349,7 +349,7 @@ def load_params_with_npz(filepath: str):
                 if part not in current:
                     current[part] = {}
                 current = current[part]
-            current[parts[-1]] = jnp.array(value)
+            current[parts[-1]] = np.array(value)
         return result
 
     params_jax = unflatten_dict(dict(data))
@@ -395,7 +395,7 @@ if __name__ == "__main__":
     # save_params_with_npz(params, save_filepath)
 
     params = load_params_with_npz(save_filepath)
-    x = jnp.zeros((batch_size, input_dim))
+    x = np.zeros((batch_size, input_dim))
 
     # Forward pass (inference mode)
     output = model.apply(params, x, train=False)
