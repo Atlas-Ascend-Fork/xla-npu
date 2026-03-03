@@ -16,7 +16,6 @@
 #include "mlir/Support/LLVM.h"                  // from @llvm-project
 #include "mlir/Support/LogicalResult.h"         // from @llvm-project
 #include "mlir/Transforms/DialectConversion.h"  // from @llvm-project
-#include "mlir/Dialect/Arith/IR/Arith.h"  // from @llvm-project
 
 #include "stablehlo/dialect/StablehloOps.h"
 
@@ -170,6 +169,34 @@ namespace {
       return success();
     };
   };
+  class ConvertConcatV2Op : public OpConversionPattern<stablehlo::ConcatenateOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::ConcatenateOp op, OpAdaptor adaptor,
+                                    ConversionPatternRewriter &rewriter) const final {
+          mlir::ValueRange inputs = adaptor.getInputs();
+          mlir::Type resultType = op.getType();
+          int64_t concatDim = op.getDimension();
+
+          mlir::Type indexType = rewriter.getI64Type();
+          auto dimAttr = rewriter.getIntegerAttr(indexType, concatDim);
+          mlir::Value concatDimValue = rewriter.create<mlir::air::ConstantOp>(
+              op.getLoc(),
+              indexType,
+              dimAttr
+          ).getResult();
+          auto newConcatOp = rewriter.create<mlir::air::ConcatV2Op>(
+              op.getLoc(),
+              resultType,
+              inputs,
+              concatDimValue,
+              rewriter.getI64IntegerAttr(1)
+          );
+
+          rewriter.replaceOp(op, newConcatOp.getResult());
+          return success();
+      };
+    };
   class ConvertDivOp : public OpConversionPattern<stablehlo::DivOp> {
     public:
       using OpConversionPattern::OpConversionPattern;
@@ -302,7 +329,7 @@ namespace {
 
           auto dimensionsAttr = rewriter.getI64TensorAttr(dimensionsArrayRef);
 
-          auto axesValue = rewriter.create<mlir::arith::ConstantOp>(
+          auto axesValue = rewriter.create<mlir::air::ConstantOp>(
               op.getLoc(),
               tensorType,
               dimensionsAttr
