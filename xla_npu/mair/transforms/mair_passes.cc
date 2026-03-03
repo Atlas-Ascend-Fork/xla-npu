@@ -175,16 +175,17 @@ namespace {
       LogicalResult matchAndRewrite(stablehlo::ConcatenateOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const final {
           mlir::ValueRange inputs = adaptor.getInputs();
-          mlir::Type resultType = op.getType();
           int64_t concatDim = op.getDimension();
-
+          mlir::Type resultType = op.getType();
           mlir::Type indexType = rewriter.getI64Type();
-          auto dimAttr = rewriter.getIntegerAttr(indexType, concatDim);
-          mlir::Value concatDimValue = rewriter.create<mlir::air::ConstantOp>(
+          mlir::RankedTensorType scalarTensorType = mlir::RankedTensorType::get({}, indexType);
+          mlir::DenseElementsAttr dimElementsAttr = mlir::DenseElementsAttr::get(scalarTensorType, concatDim);
+          auto constantOp = rewriter.create<mlir::air::ConstantOp>(
               op.getLoc(),
               indexType,
-              dimAttr
-          ).getResult();
+              dimElementsAttr
+          );
+          mlir::Value concatDimValue = constantOp.getResult();
           auto newConcatOp = rewriter.create<mlir::air::ConcatV2Op>(
               op.getLoc(),
               resultType,
@@ -192,11 +193,10 @@ namespace {
               concatDimValue,
               rewriter.getI64IntegerAttr(1)
           );
-
           rewriter.replaceOp(op, newConcatOp.getResult());
           return success();
       };
-    };
+  };
   class ConvertDivOp : public OpConversionPattern<stablehlo::DivOp> {
     public:
       using OpConversionPattern::OpConversionPattern;
@@ -407,6 +407,7 @@ void LegalizeToMairPass::runOnOperation() {
   patterns.add<ConvertMatMulOp>(&getContext());
   patterns.add<ConvertReshapeOp>(&getContext());
   patterns.add<ConvertReduceOp>(&getContext());
+  patterns.add<ConvertConcatV2Op>(&getContext());
 
   if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
     getOperation().emitError("stablehlo to mair legalization failed.");
