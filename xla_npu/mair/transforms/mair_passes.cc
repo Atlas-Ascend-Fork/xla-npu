@@ -371,6 +371,25 @@ namespace {
           return success();
       };
   };
+  class ConvertCastOp : public OpConversionPattern<stablehlo::ConvertOp> {
+    public:
+      using OpConversionPattern::OpConversionPattern;
+      LogicalResult matchAndRewrite(stablehlo::ConvertOp op, OpAdaptor adaptor,
+          ConversionPatternRewriter &rewriter) const final {
+        auto inputValue = adaptor.getOperands()[0];
+        auto dstType = op.getType();
+        if (!dstType) {
+          return rewriter.notifyMatchFailure(op, "failed to get destination type for convert op");
+        }
+        rewriter.replaceOpWithNewOp<CastOp>(
+            op,
+            dstType,
+            inputValue,
+            TypeAttr::get(dstType)
+        );
+        return success();
+      }
+  };
 }
 
 struct LegalizeToMairPass
@@ -409,6 +428,7 @@ void LegalizeToMairPass::runOnOperation() {
   patterns.add<ConvertReshapeOp>(&getContext());
   patterns.add<ConvertReduceOp>(&getContext());
   patterns.add<ConvertConcatV2Op>(&getContext());
+  patterns.add<ConvertCastOp>(&getContext());
 
   if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
     getOperation().emitError("stablehlo to mair legalization failed.");
