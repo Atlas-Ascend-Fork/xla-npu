@@ -34,6 +34,9 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMemcpy,
                              (void* dst, size_t destMax, const void* src, size_t count, aclrtMemcpyKind kind),
                              (dst, destMax, src, count, kind))
 
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMemset, (void* devPtr, size_t maxCount, int32_t value, size_t count),
+                             (devPtr, maxCount, value, count))
+
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtMallocHost, (void** hostPtr, size_t size), (hostPtr, size))
 
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtFreeHost, (void* hostPtr), (hostPtr))

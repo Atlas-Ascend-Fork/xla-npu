@@ -96,6 +96,12 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
         return DeviceMemoryBase(nullptr, size);
     }
 
+    // 如果该地址之前被释放过,从集合中移除(地址被复用)
+    {
+        std::lock_guard<std::mutex> lock(freed_addresses_mutex_);
+        freed_addresses_.erase(base);
+    }
+
     NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
     return DeviceMemoryBase(base, size);
 }
@@ -103,6 +109,23 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
 void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
     // 保证当前线程执行过set device
     xla::NpuOperation::SetDevice(device_ordinal_);
+
+    // 检查指针是否为空,避免重复释放
+    if (mem->opaque() == nullptr) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free skipped, addr is nullptr");
+        return;
+    }
+
+    // 检查是否已经释放过
+    {
+        std::lock_guard<std::mutex> lock(freed_addresses_mutex_);
+        if (freed_addresses_.find(mem->opaque()) != freed_addresses_.end()) {
+            NPU_LOG_FORMAT_PRINT(WARN, "Npu memory free skipped, addr %p already freed", mem->opaque());
+            return;
+        }
+        // 记录已释放的地址
+        freed_addresses_.insert(mem->opaque());
+    }
 
     NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
     npu::aclrtFree(mem->opaque());

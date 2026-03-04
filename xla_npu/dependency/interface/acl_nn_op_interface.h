@@ -112,6 +112,22 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnInplaceCopyGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnInplaceCopy)
 
+// MaxDim operation for reduce max
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnMaxDimGetWorkspaceSize,
+                          (const aclTensor* self, int64_t dim, bool keepdim, aclTensor* out, aclTensor* indices,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dim, keepdim, out, indices, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnMaxDim)
+
+// Amax operation for reduce max (returns max values only, no indices)
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnAmaxGetWorkspaceSize,
+                          (const aclTensor* self, const aclIntArray* dim, bool keepDim, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dim, keepDim, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnAmax)
+
 }  // namespace npu
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_
