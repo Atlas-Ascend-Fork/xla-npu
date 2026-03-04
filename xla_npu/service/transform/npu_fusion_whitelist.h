@@ -40,7 +40,6 @@ class NpuFusionWhitelist {
         // Hardcoded whitelist of opcodes to skip fusion
         static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {
             HloOpcode::kDot,
-            HloOpcode::kAdd,
         };
         return kSkipFusionOpcodes.contains(opcode);
     }
