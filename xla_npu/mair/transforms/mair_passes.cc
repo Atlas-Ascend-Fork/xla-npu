@@ -324,8 +324,9 @@ namespace {
               return rewriter.notifyMatchFailure(op, "Dimensions list cannot be empty.");
           }
           auto elementType = rewriter.getIntegerType(64);
-          auto shape = llvm::ArrayRef(static_cast<int64_t>(dimensionsArrayRef.size()));
-          auto tensorType = mlir::RankedTensorType::get(shape, elementType);
+          llvm::SmallVector<int64_t, 4> shapeVector;
+          shapeVector.push_back(dimensionsArrayRef.size());
+          auto tensorType = mlir::RankedTensorType::get(shapeVector, elementType);
 
           auto dimensionsAttr = rewriter.getI64TensorAttr(dimensionsArrayRef);
 
