@@ -340,6 +340,25 @@ def Air_SubOp : Air_Op<"Sub", [Pure, SameOperandsAndResultType]> {
   let results = (outs Air_Tensor);
 }
 
+//===--------------------------------------------------------------------------===//
+// CastOp
+//===--------------------------------------------------------------------------===//
+def Air_CastOp : Air_Op<"Cast", [Pure]> {
+  let summary = "Type cast operation with explicit destination type.";
+  let description = [{
+    The `your_dialect.cast` operation converts values of one type to another.
+    The destination type is specified by the `dst_type` attribute.
+  }];
+
+  let arguments = (ins
+    AnyType:$x,
+    TypeAttr:$dst_type
+  );
+
+  let results = (outs
+    AnyType:$y
+  );
+}
 // --- func.call (for calling other functions like @relu) ---
 // This would typically reuse existing func.call or define a similar call op
 // def Air_CallOp : Air_Op<"call", [NoMemoryEffect]> { ... }
