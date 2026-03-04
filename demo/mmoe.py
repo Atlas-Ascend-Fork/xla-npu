@@ -397,8 +397,12 @@ if __name__ == "__main__":
     params = load_params_with_npz(save_filepath)
     x = np.zeros((batch_size, input_dim))
 
+    @jax.jit
+    def jitted_forward(params, x):
+        return model(params, x)
+
     # Forward pass (inference mode)
-    output = model.apply(params, x, train=False)
+    output = jitted_forward(params, x)
     print(f"\nForward pass result:")
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
