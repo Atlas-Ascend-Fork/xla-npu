@@ -36,6 +36,7 @@
 // #include "xla/tsl/platform/profile_utils/cpu_utils.h"
 #include "xla/tsl/platform/threadpool.h"
 #include "xla/xla_npu/common/npu_config.h"
+#include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/common/npu_operation.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/tool/log.h"
@@ -89,20 +90,51 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     // 保证当前线程执行过set device
     xla::NpuOperation::SetDevice(device_ordinal_);
 
+    // Calculate aligned size: align to kDeviceMemoryAlignmentBytes and add extra bytes
+    uint64_t aligned_size = ((size + xla::NpuConstant::kDeviceMemoryAlignmentBytes - 1) /
+                             xla::NpuConstant::kDeviceMemoryAlignmentBytes) *
+                            xla::NpuConstant::kDeviceMemoryAlignmentBytes;
+    uint64_t total_size = aligned_size + xla::NpuConstant::kDeviceMemoryExtraBytes;
+
     void* base = nullptr;
-    aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
+    aclError ret = npu::aclrtMalloc(&base, total_size, ACL_MEM_MALLOC_HUGE_FIRST);
     if (ret != ACL_SUCCESS) {
-        NPU_LOG_FORMAT_PRINT(ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, "Allocate %d byte (aligned from %d) on npu failed, error code: %d",
+                              total_size, size, ret);
         return DeviceMemoryBase(nullptr, size);
     }
 
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", base, size);
+    // 如果该地址之前被释放过,从集合中移除(地址被复用)
+    {
+        std::lock_guard<std::mutex> lock(freed_addresses_mutex_);
+        freed_addresses_.erase(base);
+    }
+
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, requested size %d, aligned size %d, total size %d",
+                          base, size, aligned_size, total_size);
     return DeviceMemoryBase(base, size);
 }
 
 void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
     // 保证当前线程执行过set device
     xla::NpuOperation::SetDevice(device_ordinal_);
+
+    // 检查指针是否为空,避免重复释放
+    if (mem->opaque() == nullptr) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free skipped, addr is nullptr");
+        return;
+    }
+
+    // 检查是否已经释放过
+    {
+        std::lock_guard<std::mutex> lock(freed_addresses_mutex_);
+        if (freed_addresses_.find(mem->opaque()) != freed_addresses_.end()) {
+            NPU_LOG_FORMAT_PRINT(WARN, "Npu memory free skipped, addr %p already freed", mem->opaque());
+            return;
+        }
+        // 记录已释放的地址
+        freed_addresses_.insert(mem->opaque());
+    }
 
     NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free, addr: %p, size: %d", mem->opaque(), mem->size());
     npu::aclrtFree(mem->opaque());

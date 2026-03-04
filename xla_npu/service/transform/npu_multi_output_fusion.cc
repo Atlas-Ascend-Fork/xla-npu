@@ -159,6 +159,12 @@ bool ProducerCandidateIsFusible(const HloInstruction& producer,
         return false;
     }
 
+    // Check whitelist - skip fusion if producer is in the whitelist
+    if (NpuFusionWhitelist::ShouldSkipFusion(&producer)) {
+        NPU_LOG_FORMAT_PRINT(WARN, "Producer %s is whitelisted to skip fusion", producer.name().data());
+        return false;
+    }
+
     // Check that no operand of consumer is reachable from producer (avoid cycles)
     for (const auto* operand : consumer.operands()) {
         if (&producer != operand && reachability.IsReachable(&producer, operand)) {

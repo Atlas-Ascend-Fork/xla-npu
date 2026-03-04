@@ -608,7 +608,7 @@ absl::StatusOr<const NpuExecutable::BufferAllocToDeviceMemoryMap*> NpuExecutable
 absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
     VariantArguments arguments, const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
     const BufferAllocation& allocation, se::DeviceMemoryAllocator* const memory_allocator, int device_ordinal,
-    int64_t arg_idx) {
+    int64_t arg_idx, se::Stream* stream) {
     if (allocation.is_thread_local()) {
         return se::DeviceMemoryBase{};
     } else if (allocation.is_entry_computation_parameter()) {
@@ -648,6 +648,10 @@ absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
                                                            /*retry_on_failure=*/true,
                                                            /*memory_space=*/allocation.color()));
             buffer_address = buffer.Release();
+            // 清零分配的内存,避免未初始化数据导致的问题
+            if (stream != nullptr && !buffer_address.is_null()) {
+                TF_RETURN_IF_ERROR(stream->MemZero(&buffer_address, buffer_size));
+            }
         }
         return buffer_address;
     }
@@ -674,7 +678,7 @@ static absl::Status CheckAlignment(const BufferAllocation& allocation, se::Devic
 
 absl::StatusOr<NpuBufferAllocations> NpuExecutable::GenerateBufferAllocations(
     VariantArguments arguments, const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
-    se::DeviceMemoryAllocator* const memory_allocator, int device_ordinal) {
+    se::DeviceMemoryAllocator* const memory_allocator, int device_ordinal, se::Stream* stream) {
     tsl::profiler::TraceMe hlo_module_activity([&] { return std::string("Build buffer allocations"); },
                                                tsl::profiler::TraceMeLevel::kInfo);
 
@@ -685,7 +689,7 @@ absl::StatusOr<NpuBufferAllocations> NpuExecutable::GenerateBufferAllocations(
     for (int64_t i = 0; i < num_buffers; ++i) {
         const BufferAllocation& allocation = *allocations[i];
         TF_ASSIGN_OR_RETURN(buffers.emplace_back(),
-                            BufferForAllocation(arguments, globals, allocation, memory_allocator, device_ordinal, i));
+                            BufferForAllocation(arguments, globals, allocation, memory_allocator, device_ordinal, i, stream));
         TF_RETURN_IF_ERROR(CheckAlignment(allocation, buffers.back(), i));
     }
     return {{buffers, device_ordinal, memory_allocator}};
@@ -742,7 +746,7 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
                            executor->device_ordinal());
 
     TF_ASSIGN_OR_RETURN(NpuBufferAllocations buffer_allocations,
-                        GenerateBufferAllocations(arguments, globals, memory_allocator, device_ordinal));
+                        GenerateBufferAllocations(arguments, globals, memory_allocator, device_ordinal, run_options->stream()));
     VLOG(3) << buffer_allocations.ToString();
     absl::Span<const BufferAllocation* const> allocations = GetAllocations();
 

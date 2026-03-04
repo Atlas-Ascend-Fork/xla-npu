@@ -38,7 +38,6 @@ class DNN(nn.Module):
 
     @nn.compact
     def __call__(self, x: jnp.ndarray, train: bool = False) -> jnp.ndarray:
-        # Create layers on the fly using compact
         for i in range(len(self.hidden_units) - 1):
             x = nn.Dense(
                 features=self.hidden_units[i + 1],
@@ -109,7 +108,6 @@ class MMOE(nn.Module):
         dnn_use_bn: Whether to use BatchNorm.
         task_types: List of task types ['binary', 'regression', ...].
         task_names: List of task names.
-        key: JAX random key.
 
     Returns:
         Output for all tasks concatenated.
@@ -128,7 +126,6 @@ class MMOE(nn.Module):
     task_names: Tuple[str, ...] = ('ctr', 'ctcvr')
 
     def setup(self):
-        # Validate inputs
         if self.num_tasks <= 1:
             raise ValueError("num_tasks must be greater than 1")
         if self.num_experts <= 1:
@@ -140,7 +137,6 @@ class MMOE(nn.Module):
             if task_type not in ['binary', 'regression']:
                 raise ValueError(f"task must be binary or regression, {task_type} is illegal")
 
-        # Expert DNNs
         expert_input_dim = self.input_dim
         expert_hidden = [expert_input_dim] + list(self.expert_dnn_hidden_units)
 
@@ -154,7 +150,6 @@ class MMOE(nn.Module):
             for _ in range(self.num_experts)
         ]
 
-        # Gate DNNs
         gate_input_dim = self.input_dim
         if len(self.gate_dnn_hidden_units) > 0:
             self.gate_dnns = [
@@ -170,7 +165,6 @@ class MMOE(nn.Module):
         else:
             gate_final_input_dim = gate_input_dim
 
-        # Gate final layers (produce weights for experts)
         self.gate_final_layers = [
             nn.Dense(
                 features=self.num_experts,
@@ -180,7 +174,6 @@ class MMOE(nn.Module):
             for _ in range(self.num_tasks)
         ]
 
-        # Tower DNNs
         tower_input_dim = self.expert_dnn_hidden_units[-1]
         if len(self.tower_dnn_hidden_units) > 0:
             self.tower_dnns = [
@@ -196,7 +189,6 @@ class MMOE(nn.Module):
         else:
             tower_final_input_dim = tower_input_dim
 
-        # Tower final layers
         self.tower_final_layers = [
             nn.Dense(
                 features=1,
@@ -206,33 +198,20 @@ class MMOE(nn.Module):
             for _ in range(self.num_tasks)
         ]
 
-        # Prediction layers
         self.prediction_layers = [
             PredictionLayer(task=task_type, use_bias=True)
             for task_type in self.task_types
         ]
 
     def __call__(self, x: jnp.ndarray, train: bool = False) -> jnp.ndarray:
-        """
-        Forward pass.
-
-        Args:
-            x: Input tensor with shape (batch_size, input_dim).
-            train: Whether in training mode.
-
-        Returns:
-            Output tensor with shape (batch_size, num_tasks).
-        """
         batch_size = x.shape[0]
 
-        # Expert DNNs
         expert_outputs = []
         for expert_dnn in self.expert_dnns:
             expert_out = expert_dnn(x, train=train)
             expert_outputs.append(expert_out)
-        expert_outputs = jnp.stack(expert_outputs, axis=1)  # (batch_size, num_experts, expert_output_dim)
+        expert_outputs = jnp.stack(expert_outputs, axis=1)
 
-        # Gate networks and MoE output
         mmoe_outputs = []
         for task_idx in range(self.num_tasks):
             if len(self.gate_dnn_hidden_units) > 0:
@@ -241,15 +220,12 @@ class MMOE(nn.Module):
             else:
                 gate_weights = self.gate_final_layers[task_idx](x)
 
-            # Softmax on expert weights
-            gate_weights = jax.nn.softmax(gate_weights, axis=-1)  # (batch_size, num_experts)
-            gate_weights = gate_weights[:, :, jnp.newaxis]  # (batch_size, num_experts, 1)
+            gate_weights = jax.nn.softmax(gate_weights, axis=-1)
+            gate_weights = gate_weights[:, :, jnp.newaxis]
 
-            # Weighted combination of expert outputs
-            mmoe_out = jnp.sum(gate_weights * expert_outputs, axis=1)  # (batch_size, expert_output_dim)
+            mmoe_out = jnp.sum(gate_weights * expert_outputs, axis=1)
             mmoe_outputs.append(mmoe_out)
 
-        # Tower DNNs
         task_outputs = []
         for task_idx in range(self.num_tasks):
             if len(self.tower_dnn_hidden_units) > 0:
@@ -261,13 +237,11 @@ class MMOE(nn.Module):
             prediction = self.prediction_layers[task_idx](tower_logit)
             task_outputs.append(prediction)
 
-        # Concatenate all task outputs
-        output = jnp.concatenate(task_outputs, axis=-1)  # (batch_size, num_tasks)
+        output = jnp.concatenate(task_outputs, axis=-1)
 
         return output
 
 
-# Convenience function to initialize the model
 def create_mmoe(
     input_dim: int,
     num_experts: int = 3,
@@ -280,8 +254,8 @@ def create_mmoe(
     dnn_use_bn: bool = False,
     task_types: Tuple[str, ...] = ('binary', 'binary'),
     task_names: Tuple[str, ...] = ('ctr', 'ctcvr'),
-) -> Tuple[MMOE, dict]:
-    """Create and initialize the MMOE model.
+) -> MMOE:
+    """Create the MMOE model.
 
     Args:
         input_dim: Input feature dimension.
@@ -297,9 +271,8 @@ def create_mmoe(
         task_names: Task names tuple.
 
     Returns:
-        Tuple of (initialized model, parameters dictionary).
+        MMOE model instance.
     """
-
     model = MMOE(
         num_experts=num_experts,
         num_tasks=num_tasks,
@@ -357,67 +330,97 @@ def load_params_with_npz(filepath: str):
     return params_jax
 
 
-if __name__ == "__main__":
-    # Npu platform init
-    PLATFORM_NAME = 'npu' # Use a simple name without underscores for safety
-    LIBRARY_PATH = os.path.abspath("pjrt_c_api_npu_plugin.so")
-    os.environ['PJRT_NAMES_AND_LIBRARY_PATHS'] = f"{PLATFORM_NAME}:{LIBRARY_PATH}"
-    os.environ['JAX_PLATFORMS'] = PLATFORM_NAME
-
-    # Example usage
-    print("MMOE JAX Implementation Test")
-    print("=" * 50)
-
-    # Configuration
-    input_dim = 100
-    batch_size = 32
-    num_experts = 3
-    num_tasks = 2
-
-    # Create model
-    model = create_mmoe(
-        input_dim=input_dim,
-        num_experts=num_experts,
-        num_tasks=num_tasks,
-        expert_dnn_hidden_units=(256, 128),
-        gate_dnn_hidden_units=(64,),
-        tower_dnn_hidden_units=(64,),
-        dnn_activation='relu',
-        task_types=('binary', 'binary'),
-    )
-
-    save_filepath = os.path.join(os.path.dirname(__file__), "model_params.npz")
-    # Initialize with dummy input
-    # key = jax.random.PRNGKey(42)
-    # dummy_input = jnp.zeros((1, input_dim))
-    # key, init_key = jax.random.split(key)
-    # params = model.init(init_key, dummy_input, train=False)    
-    # save_params_with_npz(params, save_filepath)
-
-    params = load_params_with_npz(save_filepath)
-    x = np.zeros((batch_size, input_dim))
-
+def run_inference(model, params, x):
+    """运行推理并返回结果."""
     @jax.jit
     def jitted_forward(params, x):
-        return model(params, x)
+        return model.apply(params, x, train=False)
 
-    # Forward pass (inference mode)
     output = jitted_forward(params, x)
-    print(f"\nForward pass result:")
+    return np.array(output)
+
+
+def print_results(output, device_name, batch_size, num_tasks):
+    """打印推理结果."""
+    print(f"\n{device_name} Output (first 5 samples):")
+    print(output[:5])
+    print(f"\n{device_name} Output statistics:")
+    print(f"  Min: {output.min():.6f}")
+    print(f"  Max: {output.max():.6f}")
+    print(f"  Mean: {output.mean():.6f}")
+    print(f"  Std: {output.std():.6f}")
+
+
+# Model Configuration
+CONFIG_INPUT_DIM = 4
+CONFIG_BATCH_SIZE = 2
+CONFIG_NUM_EXPERTS = 2
+CONFIG_NUM_TASKS = 2
+CONFIG_EXPERT_DNN_HIDDEN_UNITS = (4, 2)
+CONFIG_GATE_DNN_HIDDEN_UNITS = (2,)
+CONFIG_TOWER_DNN_HIDDEN_UNITS = (2,)
+CONFIG_DNN_ACTIVATION = 'relu'
+CONFIG_TASK_TYPES = ('binary', 'binary')
+CONFIG_MODEL_PARAMS_FILE = "model_params_small.npz"
+
+
+def get_model_params_path():
+    """Get the path to model parameters file."""
+    return os.path.join(os.path.dirname(__file__), CONFIG_MODEL_PARAMS_FILE)
+
+
+def setup_model_and_data():
+    """Setup model, load parameters and create input data."""
+    model = create_mmoe(
+        input_dim=CONFIG_INPUT_DIM,
+        num_experts=CONFIG_NUM_EXPERTS,
+        num_tasks=CONFIG_NUM_TASKS,
+        expert_dnn_hidden_units=CONFIG_EXPERT_DNN_HIDDEN_UNITS,
+        gate_dnn_hidden_units=CONFIG_GATE_DNN_HIDDEN_UNITS,
+        tower_dnn_hidden_units=CONFIG_TOWER_DNN_HIDDEN_UNITS,
+        dnn_activation=CONFIG_DNN_ACTIVATION,
+        task_types=CONFIG_TASK_TYPES,
+    )
+
+    save_filepath = get_model_params_path()
+    params = load_params_with_npz(save_filepath)
+
+    x = np.arange(1, CONFIG_BATCH_SIZE * CONFIG_INPUT_DIM + 1, dtype=np.float32).reshape(CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
+
+    return model, params, x
+
+
+def run_inference_and_save(model, params, x, device_name, output_file):
+    """Run inference and save results."""
     print(f"Input shape: {x.shape}")
+    output = run_inference(model, params, x)
     print(f"Output shape: {output.shape}")
-    print(f"Expected output shape: ({batch_size}, {num_tasks})")
+    print(f"Expected output shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
+    print_results(output, device_name, CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
 
-    # # ==================== HLO/StableHLO Debug ====================
-    # @jax.jit
-    # def jitted_forward(params, x):
-    #     return model.apply(params, x, train=False)
+    np.savez(output_file, output=output, input=x)
+    return output
 
-    # print("\n--- StableHLO Text ---")
-    # lowered = jitted_forward.lower(params, x)
-    # stablehlo_text = lowered.as_text()
-    # print(stablehlo_text)
 
-    # print("\n--- HLO Text ---")
-    # hlo_text = lowered.compile().as_text()
-    # print(hlo_text)
+def compare_results(output_cpu, output_npu, x_cpu, x_npu):
+    """Compare CPU and NPU results."""
+    if not np.allclose(x_cpu, x_npu):
+        print("Warning: CPU and NPU inputs are different!")
+
+    print("\n" + "=" * 60)
+    print("--- Result Comparison (CPU vs NPU) ---")
+    print("=" * 60)
+    diff = np.abs(output_cpu - output_npu)
+    rel_diff = diff / (np.abs(output_cpu) + 1e-8)
+    print(f"Absolute difference (first 5 samples):")
+    print(diff[:5])
+    print(f"\nDifference statistics:")
+    print(f"  Max absolute difference: {diff.max():.6e}")
+    print(f"  Mean absolute difference: {diff.mean():.6e}")
+    print(f"  Max relative difference: {rel_diff.max():.6e}")
+    print(f"  Mean relative difference: {rel_diff.mean():.6e}")
+
+    tolerance = 1e-4
+    is_match = np.allclose(output_cpu, output_npu, rtol=tolerance, atol=tolerance)
+    print(f"\nResults match (tolerance={tolerance}): {is_match}")
+    return is_match

@@ -178,6 +178,42 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
         case HloOpcode::kBroadcast: {
             std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(param_shapes.back());
+            std::vector<int64_t> input_shape_data = NpuTool::ConvertXlaShape2VectorShape(param_shapes[0]);
+            
+            // Debug: print broadcast shapes
+            std::string shape_str = "[";
+            for (size_t i = 0; i < output_param_size_data.size(); ++i) {
+                if (i > 0) shape_str += ", ";
+                shape_str += std::to_string(output_param_size_data[i]);
+            }
+            shape_str += "]";
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast: input shape %s, target size %s", 
+                                 NpuTool::GetXlaShapeString(param_shapes[0]).c_str(),
+                                 shape_str.c_str());
+            
+            // Check if input and output shapes are the same (identity broadcast)
+            bool is_identity_broadcast = (input_shape_data == output_param_size_data);
+            if (is_identity_broadcast) {
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Identity broadcast detected, using stream Memcpy instead of aclnnExpand");
+
+                // Get input and output buffer addresses
+                auto input_addr = allocations->GetDeviceAddress(args_[0]);
+                auto output_addr = allocations->GetDeviceAddress(args_.back());
+
+                // Calculate data size
+                int64_t data_size = NpuTool::GetXlaShapeSize(param_shapes.back()) *
+                                   ShapeUtil::ByteSizeOfPrimitiveType(param_shapes.back().element_type());
+
+                // Perform device-to-device memory copy using stream
+                exec_ret = params.stream->Memcpy(&output_addr, input_addr, data_size);
+                if (!exec_ret.ok()) {
+                    NPU_LOG_FORMAT_PRINT(ERROR, "Stream Memcpy for identity broadcast failed: %s", exec_ret.ToString().c_str());
+                    return exec_ret;
+                }
+
+                break;
+            }
+            
             aclIntArray* output_param_size =
                 npu::aclCreateIntArray(output_param_size_data.data(), output_param_size_data.size());
 
@@ -389,18 +425,78 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             // 获取输出数据类型
             aclDataType out_dtype = NpuTool::ConvertXlaType2AclDataType(param_shapes.back().element_type());
 
-            // 调用 aclnnReduceSum 第一段接口
-            // aclnnReduceSum 接口参数: input, dims, keepDims, dtype, output, workspaceSize, executor
-            ret = npu::aclnnReduceSumGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false, out_dtype,
-                                                      acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
-            if (ret != ACL_SUCCESS) {
-                const std::string err_msg = absl::StrFormat("Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d", ret);
+            // 对于reduce操作,aclnnReduceSum只需要输入和输出,不需要初始值
+            // XLA的reduce有3个参数:输入、初始值、输出
+            // 但aclnnReduceSum接口只接受输入和输出,内部使用0作为初始值
+            // 所以这里使用acl_tensor_ptr_vector[0]作为输入,acl_tensor_ptr_vector[2]作为输出
+            // 注意:acl_tensor_ptr_vector[1]是初始值,不应该传给aclnnReduceSum
+            if (acl_tensor_ptr_vector.size() < 3) {
+                const std::string err_msg = absl::StrFormat("Reduce operation expects 3 parameters (input, init, output), but got %d", acl_tensor_ptr_vector.size());
                 NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                 npu::aclDestroyIntArray(dims);
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnReduceSum);
+            // 根据hloInstrDesc判断reduce类型
+            // reduce_max: %reduce_max.x = ... maximum(...)
+            // reduce_sum: %reduce_sum.x = ... add(...)
+            bool is_reduce_max = (thunk_info().hloInstrDesc.find("reduce_max") != std::string::npos) ||
+                                 (thunk_info().hloInstrDesc.find("maximum") != std::string::npos);
+            bool is_reduce_sum = (thunk_info().hloInstrDesc.find("reduce_sum") != std::string::npos) ||
+                                 (thunk_info().hloInstrDesc.find("add") != std::string::npos);
+
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Reduce operation: hloInstrDesc=%s, is_reduce_max=%d, is_reduce_sum=%d",
+                                 thunk_info().hloInstrDesc.c_str(), is_reduce_max, is_reduce_sum);
+
+            // 打印维度信息
+            std::string dims_str = "[";
+            for (int i = 0; i < thunk_info().dimensions.size(); ++i) {
+                if (i > 0) dims_str += ", ";
+                dims_str += std::to_string(thunk_info().dimensions[i]);
+            }
+            dims_str += "]";
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Reduce dimensions: %s", dims_str.c_str());
+
+            if (is_reduce_max) {
+                // 使用 aclnnAmax 实现 ReduceMax
+                // aclnnAmax 返回张量在指定维度上的最大值（不包含索引）
+                NPU_LOG_FORMAT_PRINT(DEBUG, "ReduceMax using aclnnAmax");
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Input shape: %s, Output shape: %s",
+                                     NpuTool::GetXlaShapeString(param_shapes[0]).c_str(),
+                                     NpuTool::GetXlaShapeString(param_shapes[2]).c_str());
+
+                // 调用 aclnnAmax 第一段接口
+                // aclnnAmax 接口参数: input, dim, keepDim, out, workspaceSize, executor
+                ret = npu::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false,
+                                                     acl_tensor_ptr_vector[2], &workspaceSize, &executor);
+                if (ret != ACL_SUCCESS) {
+                    const std::string err_msg = absl::StrFormat("Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
+                    NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                    npu::aclDestroyIntArray(dims);
+                    return absl::InternalError(err_msg);
+                }
+
+                exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnAmax);
+                if (!exec_ret.ok()) {
+                    NPU_LOG_FORMAT_PRINT(ERROR, "ExecuteAclnn for aclnnAmax failed: %s", exec_ret.ToString().c_str());
+                    npu::aclDestroyIntArray(dims);
+                    return exec_ret;
+                }
+            } else {
+                // 默认使用 ReduceSum
+                // 调用 aclnnReduceSum 第一段接口
+                // aclnnReduceSum 接口参数: input, dims, keepDims, dtype, output, workspaceSize, executor
+                ret = npu::aclnnReduceSumGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false, out_dtype,
+                                                          acl_tensor_ptr_vector[2], &workspaceSize, &executor);
+                if (ret != ACL_SUCCESS) {
+                    const std::string err_msg = absl::StrFormat("Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d", ret);
+                    NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+                    npu::aclDestroyIntArray(dims);
+                    return absl::InternalError(err_msg);
+                }
+
+                exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnReduceSum);
+            }
 
             // 清理维度数组
             npu::aclDestroyIntArray(dims);

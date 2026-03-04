@@ -22,6 +22,12 @@ class NpuConstant {
     // Minimum alignment for constant buffers.
     static constexpr int64_t kConstantBufferAlignBytes = kXlaAllocatedBufferAlignBytes;
 
+    // Device memory alignment in bytes for aclrtMalloc allocations.
+    static constexpr int64_t kDeviceMemoryAlignmentBytes = 512;
+
+    // Extra bytes to allocate beyond the requested size for device memory.
+    static constexpr int64_t kDeviceMemoryExtraBytes = 32;
+
     static emitters::KernelArguments::BufferAlignment GetDefaultBufferAlignment() {
         emitters::KernelArguments::BufferAlignment buffer_alignment;
         buffer_alignment.entry_parameter_align_bytes = kEntryParameterAlignBytes;

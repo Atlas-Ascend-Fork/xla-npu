@@ -3,7 +3,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <set>
 #include <variant>
 
 #include "absl/status/status.h"
@@ -81,6 +83,9 @@ class NpuExecutor : public StreamExecutorCommon {
    private:
     int device_ordinal_;
     std::shared_ptr<tsl::thread::ThreadPool> thread_pool_;
+    // Track freed memory addresses to prevent double-free
+    std::set<void*> freed_addresses_;
+    std::mutex freed_addresses_mutex_;
 };
 
 }  // namespace stream_executor

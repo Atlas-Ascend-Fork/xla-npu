@@ -201,13 +201,14 @@ class NpuExecutable : public Executable {
 
     absl::StatusOr<NpuBufferAllocations> GenerateBufferAllocations(
         VariantArguments arguments, const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
-        se::DeviceMemoryAllocator* memory_allocator, int device_ordinal);
+        se::DeviceMemoryAllocator* memory_allocator, int device_ordinal, se::Stream* stream = nullptr);
 
     absl::StatusOr<se::DeviceMemoryBase> BufferForAllocation(VariantArguments arguments,
                                                              const NpuExecutable::BufferAllocToDeviceMemoryMap* globals,
                                                              const BufferAllocation& allocation,
                                                              se::DeviceMemoryAllocator* memory_allocator,
-                                                             int device_ordinal, int64_t arg_idx);
+                                                             int device_ordinal, int64_t arg_idx,
+                                                             se::Stream* stream = nullptr);
 
     // The LLVM IR, in string format, of the unoptimized module generated for
     // this NpuExecutable. We save a string instead of an llvm::Module* because

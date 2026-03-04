@@ -16,6 +16,7 @@
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_common.h"
 #include "xla/xla_npu/common/npu_operation.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/stream_executor/npu_event.h"
 
@@ -56,11 +57,18 @@ absl::Status NpuStream::BlockHostUntilDone() {
 }
 
 absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const DeviceMemoryBase& npu_src, uint64_t size) {
-    // void* dst_mem = gpu_dst->opaque();
-    // void* src_mem = const_cast<void*>(gpu_src.opaque());
-    // memcpy(dst_mem, src_mem, size);
-    // return absl::OkStatus();
-    return absl::UnimplementedError("NpuStream::Memcpy d2d is not supported.");
+    TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
+
+    void* dst_mem = npu_dst->opaque();
+    void* src_mem = const_cast<void*>(npu_src.opaque());
+    auto acl_ret = npu::aclrtMemcpy(dst_mem, size, src_mem, size, ACL_MEMCPY_DEVICE_TO_DEVICE);
+    if (acl_ret != ACL_SUCCESS) {
+        return absl::InternalError(
+            absl::StrCat("Execute aclrtMemcpy d2d on stream '", GetName(), "' failed, error code: ", acl_ret));
+    }
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory copy d2d on stream '%s' success, dst npu addr %p, src npu addr %p, size %d",
+                         GetName(), dst_mem, src_mem, size);
+    return absl::OkStatus();
 }
 
 absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src, uint64_t size) {
@@ -99,10 +107,19 @@ absl::Status NpuStream::Memset32(DeviceMemoryBase* location, uint32_t pattern, u
 }
 
 absl::Status NpuStream::MemZero(DeviceMemoryBase* location, uint64_t size) {
-    // void* gpu_mem = location->opaque();
-    // memset(gpu_mem, 0, size);
-    // return absl::OkStatus();
-    return absl::UnimplementedError("NpuStream::MemZero is not supported.");
+    void* npu_mem = location->opaque();
+    if (npu_mem == nullptr) {
+        return absl::InvalidArgumentError("Cannot memset nullptr");
+    }
+    // 使用aclrtMemset将内存清零
+    aclError ret = npu::aclrtMemset(npu_mem, size, 0, size);
+    if (ret != ACL_SUCCESS) {
+        return absl::InternalError(
+            absl::StrCat("Execute aclrtMemset on stream '", GetName(), "' failed, error code: ", ret));
+    }
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Execute aclrtMemset on stream '%s' success, addr %p, size %d", GetName(), npu_mem,
+                         size);
+    return absl::OkStatus();
 }
 
 absl::Status NpuStream::WaitFor(Stream* other) {

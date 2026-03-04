@@ -54,6 +54,7 @@ cc_library(
         "//xla/hlo/analysis:hlo_dfs_reachability",
         "//xla/hlo/analysis:symbolic_expr",
         "//xla/hlo/transforms/simplifiers:hlo_dce",
+        "//xla/hlo/transforms/simplifiers:flatten_call_graph",
         "//xla/service:cpu_gpu_shape_verifier",
         "//xla/service:hlo_verifier",
         "//xla/service:hlo_cost_analysis",
