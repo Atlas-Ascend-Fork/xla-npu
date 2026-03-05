@@ -151,7 +151,7 @@ Status ConvertToTensor(const mlir::ElementsAttr attr, Tensor *output) {
       ConvertElementsAttr<int32_t>(dense_attr, output);
       break;
     case DT_INT64:
-      ConvertElementsAttr<std::int64_t>(dense_attr, output);
+      ConvertElementsAttr<int64_t>(dense_attr, output);
       break;
     // case DT_STRING:
     //   ConvertElementsAttr<std::string>(dense_attr, output);
