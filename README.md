@@ -71,10 +71,10 @@ rm -rf build/
 
 ### 运行环境变量
 
-运行测试前需要在xla代码仓目录下的xla_configure.bazelrc文件(由执行configure.py生成)中设置以下环境变量:
+运行测试前需要在xla代码仓目录下的xla_configure.bazelrc文件(由执行configure.py生成)中设置以下变量:
 
-- `ASCEND_MLIR_PYTHON_PATH`: 环境上Python可执行文件路径
-- `NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
+- `build --define ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径
+- `build --define NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
 
 ---
 

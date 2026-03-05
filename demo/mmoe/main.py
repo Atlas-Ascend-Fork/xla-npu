@@ -30,8 +30,19 @@ def main():
 
     from model import compare_results
 
-    cpu_data = np.load("/tmp/mmoe_cpu_output.npz")
-    npu_data = np.load("/tmp/mmoe_npu_output.npz")
+    cpu_output_path = "/tmp/mmoe_cpu_output.npz"
+    npu_output_path = "/tmp/mmoe_npu_output.npz"
+
+    if not os.path.exists(cpu_output_path):
+        print(f"WARNING: CPU output file not found: {cpu_output_path}")
+        sys.exit(1)
+
+    if not os.path.exists(npu_output_path):
+        print(f"WARNING: NPU output file not found: {npu_output_path}")
+        sys.exit(1)
+
+    cpu_data = np.load(cpu_output_path)
+    npu_data = np.load(npu_output_path)
 
     compare_results(cpu_data['output'], npu_data['output'], cpu_data['input'], npu_data['input'])
 

@@ -44,7 +44,6 @@ limitations under the License.
 #include "xla/xla_npu/service/transform/npu_fusion_wrapper.h"
 #include "xla/xla_npu/service/transform/npu_gemm_fusion.h"
 #include "xla/xla_npu/service/transform/npu_gemm_fusion_swap_operands.h"
-#include "xla/xla_npu/service/transform/npu_gelu_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_hlo_printer_pass.h"
 #include "xla/xla_npu/service/transform/npu_multi_output_fusion.h"
 #include "xla/xla_npu/service/transform/npu_nest_gemm_fusion.h"
@@ -72,11 +71,6 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
 
     // Print initial HLO
     fusion.AddPass<NpuHloPrinterPass>("Npu fusion initial");
-
-    // GELU fusion rewriter - identify and fuse GELU activation patterns
-    // Run BEFORE priority fusion to prevent GELU operations from being split into small fusions
-    fusion.AddPass<NpuGeluFusionRewriter>();
-    // fusion.AddPass<NpuHloPrinterPass>("NpuGeluFusionRewriter");
 
     // NpuGemmFusionSwapOperands - swap GEMM operands for better NPU layout
     // Run BEFORE priority fusion to optimize GEMM operand order
