@@ -7,6 +7,7 @@
 #include "Conversion/AFIRToASCIRText/AFIRToASCIRText.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "Dialect/AFIR/AFIR.h"
 #include "llvm/ADT/SmallString.h"
@@ -652,7 +653,18 @@ std::string AFIRToASCIRTextPass::generateIrAttrDef(Operation* op) {
                         Type elemType = shapedType.getElementType();
                         if (elemType.isF32()) {
                             float val = elementsAttr.getSplatValue<float>();
-                            os << "          s: \"" << val << "f\"\n";
+                            // Handle special floating point values
+                            if (std::isinf(val) && val < 0) {
+                                // -INFINITY: use minimum float value
+                                os << "          s: \"-3.4028234663852886e+38f\"\n";
+                            } else if (std::isinf(val)) {
+                                // INFINITY: use maximum float value
+                                os << "          s: \"3.4028234663852886e+38f\"\n";
+                            } else if (std::isnan(val)) {
+                                os << "          s: \"0.0f/0.0f\"\n";
+                            } else {
+                                os << "          s: \"" << val << "f\"\n";
+                            }
                         } else if (elemType.isInteger(32)) {
                             int32_t val = elementsAttr.getSplatValue<int32_t>();
                             os << "          s: \"" << val << "s32\"\n";
@@ -663,7 +675,17 @@ std::string AFIRToASCIRTextPass::generateIrAttrDef(Operation* op) {
                         os << "          s: \"" << elementsAttr << "\"\n";
                     }
                 } else if (auto floatAttr = dyn_cast<FloatAttr>(valueAttr)) {
-                    os << "          s: \"" << floatAttr.getValueAsDouble() << "f\"\n";
+                    double val = floatAttr.getValueAsDouble();
+                    // Handle special floating point values
+                    if (std::isinf(val) && val < 0) {
+                        os << "          s: \"-3.4028234663852886e+38f\"\n";
+                    } else if (std::isinf(val)) {
+                        os << "          s: \"3.4028234663852886e+38f\"\n";
+                    } else if (std::isnan(val)) {
+                        os << "          s: \"0.0f/0.0f\"\n";
+                    } else {
+                        os << "          s: \"" << val << "f\"\n";
+                    }
                 } else if (auto intAttr = dyn_cast<IntegerAttr>(valueAttr)) {
                     os << "          s: \"" << intAttr.getInt() << "s32\"\n";
                 } else {
