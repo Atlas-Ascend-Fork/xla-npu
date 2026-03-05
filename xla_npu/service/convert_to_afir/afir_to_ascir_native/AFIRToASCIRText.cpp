@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 
 #include "Dialect/AFIR/AFIR.h"
 #include "llvm/ADT/SmallString.h"
@@ -59,6 +60,9 @@ struct AFIRToASCIRTextPass : public ::impl::ConvertAFIRToASCIRTextPassBase<AFIRT
         int computeType;
         bool isBroadcast;
     };
+
+    // Helper function to format special floating point values
+    std::string formatFloatValue(double val, Type type);
 
     OpInfo getOpInfo(StringRef opName);
     std::string convertModuleToASCIRText(ModuleOp module);
@@ -651,20 +655,12 @@ std::string AFIRToASCIRTextPass::generateIrAttrDef(Operation* op) {
                     if (shapedType && shapedType.getRank() == 0) {
                         // Scalar value - get element type
                         Type elemType = shapedType.getElementType();
-                        if (elemType.isF32()) {
+                        if (elemType.isF32() || elemType.isF16() || elemType.isBF16()) {
                             float val = elementsAttr.getSplatValue<float>();
-                            // Handle special floating point values
-                            if (std::isinf(val) && val < 0) {
-                                // -INFINITY: use minimum float value
-                                os << "          s: \"-3.4028234663852886e+38f\"\n";
-                            } else if (std::isinf(val)) {
-                                // INFINITY: use maximum float value
-                                os << "          s: \"3.4028234663852886e+38f\"\n";
-                            } else if (std::isnan(val)) {
-                                os << "          s: \"0.0f/0.0f\"\n";
-                            } else {
-                                os << "          s: \"" << val << "f\"\n";
-                            }
+                            os << "          s: \"" << formatFloatValue(val, elemType) << "\"\n";
+                        } else if (elemType.isF64()) {
+                            double val = elementsAttr.getSplatValue<double>();
+                            os << "          s: \"" << formatFloatValue(val, elemType) << "\"\n";
                         } else if (elemType.isInteger(32)) {
                             int32_t val = elementsAttr.getSplatValue<int32_t>();
                             os << "          s: \"" << val << "s32\"\n";
@@ -676,16 +672,8 @@ std::string AFIRToASCIRTextPass::generateIrAttrDef(Operation* op) {
                     }
                 } else if (auto floatAttr = dyn_cast<FloatAttr>(valueAttr)) {
                     double val = floatAttr.getValueAsDouble();
-                    // Handle special floating point values
-                    if (std::isinf(val) && val < 0) {
-                        os << "          s: \"-3.4028234663852886e+38f\"\n";
-                    } else if (std::isinf(val)) {
-                        os << "          s: \"3.4028234663852886e+38f\"\n";
-                    } else if (std::isnan(val)) {
-                        os << "          s: \"0.0f/0.0f\"\n";
-                    } else {
-                        os << "          s: \"" << val << "f\"\n";
-                    }
+                    Type type = floatAttr.getType();
+                    os << "          s: \"" << formatFloatValue(val, type) << "\"\n";
                 } else if (auto intAttr = dyn_cast<IntegerAttr>(valueAttr)) {
                     os << "          s: \"" << intAttr.getInt() << "s32\"\n";
                 } else {
@@ -1123,6 +1111,42 @@ int AFIRToASCIRTextPass::parseDataType(Type type) {
             return 0;
         })
         .Default([](Type) { return 0; });
+}
+
+std::string AFIRToASCIRTextPass::formatFloatValue(double val, Type type) {
+    // Handle special floating point values
+    if (std::isinf(val) && val < 0) {
+        if (type.isF16() || type.isBF16()) {
+            return "-65504.0f";
+        } else if (type.isF64()) {
+            return "-1.7976931348623157e+308";
+        } else {
+            // Default to F32
+            return "-3.4028234663852886e+38f";
+        }
+    } else if (std::isinf(val)) {
+        if (type.isF16() || type.isBF16()) {
+            return "65504.0f";
+        } else if (type.isF64()) {
+            return "1.7976931348623157e+308";
+        } else {
+            // Default to F32
+            return "3.4028234663852886e+38f";
+        }
+    } else if (std::isnan(val)) {
+        return "0.0f/0.0f";
+    } else {
+        // Regular value, format with appropriate suffix
+        if (type.isF64()) {
+            std::ostringstream oss;
+            oss << val;
+            return oss.str();
+        } else {
+            std::ostringstream oss;
+            oss << val << "f";
+            return oss.str();
+        }
+    }
 }
 
 std::unique_ptr<Pass> createConvertAFIRToASCIRTextPass() { return std::unique_ptr<Pass>(new AFIRToASCIRTextPass()); }
