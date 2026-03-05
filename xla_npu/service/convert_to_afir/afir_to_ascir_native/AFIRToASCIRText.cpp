@@ -20,6 +20,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Pass/Pass.h"
+#include "xla/xla_npu/common/npu_config.h"
 
 #define GEN_PASS_DECL_CONVERTAFIRTOASCIRTEXTPASS
 #define GEN_PASS_DEF_CONVERTAFIRTOASCIRTEXTPASS
@@ -348,7 +349,8 @@ std::string AFIRToASCIRTextPass::generateGraphAttr(Attribute graphAttr) {
     os << "  tiling_key: " << tilingKey << "\n";
 
     auto axes = ascGraphAttr.getAxes();
-
+    // Check if using old CANN style (int32 for align parameter)
+    bool use_old_cann_style = xla::NpuConfig::GetInstance().GetTypedValue<bool>(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
     for (auto axis : axes) {
         int64_t id = axis.getId();
         std::string name = axis.getName().str();
@@ -363,7 +365,11 @@ std::string AFIRToASCIRTextPass::generateGraphAttr(Attribute graphAttr) {
         os << "    size: \"" << size << "\"\n";
         // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
         // 老版本cann包定义为int32类型（不需要加双引号）
-        os << "    align: " << align << "\n";
+        if (use_old_cann_style) {
+            os << "    align: " << align << "\n";
+        } else {
+            os << "    align: \"" << align << "\"\n";
+        }
         os << "    allow_unaligned_tail: true\n";
         os << "  }\n";
     }

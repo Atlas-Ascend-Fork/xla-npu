@@ -47,6 +47,7 @@ cc_library(
     includes = [".."],
     deps = [
         ":passes_inc_gen",
+        "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/dependency/external/afir:AFIRDialect",
         "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "@llvm-project//llvm:Support",
