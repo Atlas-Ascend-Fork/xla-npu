@@ -171,7 +171,7 @@ def Air_ConcatV2Op : Air_Op<"ConcatV2", [Pure]> {
     let arguments = (ins
     Arg<Variadic<TensorOf<[Air_BasicType]>>, [{List of `N` Tensors to concatenate. Their ranks and types must match,
     and their sizes must match in all dimensions except `concat_dim`.}]>:$x,
-    Arg<Air_I32OrI64, [{0-D.  The dimension along which to concatenate.}]>:$concat_dim,
+    Arg<TensorOf<[Air_BasicType]>, [{0-D.  The dimension along which to concatenate.}]>:$concat_dim,
     DefaultValuedAttr<I64Attr, "1">:$N
     );
 

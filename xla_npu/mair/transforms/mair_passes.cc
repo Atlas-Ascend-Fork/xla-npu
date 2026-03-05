@@ -176,13 +176,16 @@ namespace {
                                     ConversionPatternRewriter &rewriter) const final {
           mlir::ValueRange inputs = adaptor.getInputs();
           int64_t concatDim = op.getDimension();
-          mlir::Type resultType = op.getType();
-          mlir::Type indexType = rewriter.getI64Type();
+          auto resultType = op.getType();
+          auto indexType = rewriter.getI64Type();
           mlir::RankedTensorType scalarTensorType = mlir::RankedTensorType::get({}, indexType);
-          mlir::DenseElementsAttr dimElementsAttr = mlir::DenseElementsAttr::get(scalarTensorType, concatDim);
+          mlir::DenseElementsAttr dimElementsAttr = mlir::DenseElementsAttr::get(
+              scalarTensorType,
+              concatDim
+          );
           auto constantOp = rewriter.create<mlir::air::ConstantOp>(
               op.getLoc(),
-              indexType,
+              scalarTensorType,
               dimElementsAttr
           );
           mlir::Value concatDimValue = constantOp.getResult();

@@ -437,7 +437,7 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
                 llvm::errs() << oss.str() << "\n";
 
                 geOp.SetAttr("value", valueTensor);
-
+                geOp.UpdateOutputDesc("y", desc);
             } else {
                 llvm::errs() << "Failed Const operatro. Not ElementsAttr \n";
             }
