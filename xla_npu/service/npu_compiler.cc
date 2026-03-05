@@ -314,7 +314,7 @@
 #include "xla/xla_npu/service/npu_hlo_schedule.h"
 #include "xla/xla_npu/service/npu_ir_emitter_context.h"
 #include "xla/xla_npu/service/npu_ir_emitter_unnested.h"
-#include "xla/xla_npu/service/transform/npu_fusion_pipeline.h"
+#include "xla/xla_npu/service/transform/npu_pipeline.h"
 
 namespace xla {
 
@@ -934,30 +934,6 @@ namespace {
 //     pipeline.AddPass<HostOffloadLegalize>();
 //     return pipeline.Run(hlo_module, {HloInstruction::kMainExecutionThread}).status();
 // }
-
-absl::Status RunFusionPasses(HloModule* hlo_module, const Compiler::GpuTargetConfig& gpu_target_config,
-                             tsl::thread::ThreadPool* thread_pool, HloCostAnalysis::ShapeSizeFunction shape_size_fn,
-                             SymbolicExprContext* symbolic_expr_context) {
-    const se::DeviceDescription& gpu_device_info = gpu_target_config.device_description;
-
-    HloPassPipeline pre_fusion("pre-npu-fusion");
-    // TODO: Implement NPU-specific AddTrackingSuffixToInstructionNames pass
-    // pre_fusion.AddPass<gpu::AddTrackingSuffixToInstructionNames>();
-    TF_RETURN_IF_ERROR(pre_fusion.Run(hlo_module).status());
-
-    TF_RETURN_IF_ERROR(NpuFusionPipeline(hlo_module->config().debug_options(), shape_size_fn, thread_pool,
-                                         gpu_device_info, symbolic_expr_context)
-                           .Run(hlo_module, {HloInstruction::kMainExecutionThread})
-                           .status());
-
-    // if (VLOG_IS_ON(2)) {
-    //     HloFusionStatsVisitor stats;
-    //     TF_RETURN_IF_ERROR(hlo_module->entry_computation()->Accept(&stats));
-    //     VLOG(2) << stats.ToString();
-    // }
-
-    return absl::OkStatus();
-}
 
 // // Adds unrolling while loop optimization. Mostly to get rid of extra D2D
 // // copies, but also there are some performance benefits (better comm-compute
@@ -1724,8 +1700,11 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
         /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
         /*default_thread_pool=*/options.thread_pool,
         /*default_parallelism=*/tsl::port::MaxParallelism());
-    TF_RETURN_IF_ERROR(RunFusionPasses(module.get(), gpu_target_config, thread_pool.get_mutable(),
-                                       ShapeSizeBytesFunction(), &symbolic_expr_context_));
+    const se::DeviceDescription& npu_device_info = gpu_target_config.device_description;
+    TF_RETURN_IF_ERROR(NpuPipeline(module->config().debug_options(), ShapeSizeBytesFunction(), thread_pool.get_mutable(),
+                                   npu_device_info, &symbolic_expr_context_)
+                           .Run(module.get(), {HloInstruction::kMainExecutionThread})
+                           .status());
 
     // NpuTool::PrintHloModule(module.get(), "Xla hlo module after run npu hlo fusion");
 

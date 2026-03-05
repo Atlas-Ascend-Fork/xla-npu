@@ -24,7 +24,6 @@ limitations under the License.
 #include "xla/hlo/pass/hlo_pass_fix.h"
 #include "xla/hlo/pass/hlo_pass_pipeline.h"
 #include "xla/hlo/transforms/simplifiers/hlo_dce.h"
-#include "xla/hlo/transforms/simplifiers/flatten_call_graph.h"
 #include "xla/service/cpu_gpu_shape_verifier.h"
 #include "xla/service/hlo_cost_analysis.h"
 #include "xla/service/hlo_cse.h"
@@ -74,11 +73,6 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
     // Print initial HLO
     fusion.AddPass<NpuHloPrinterPass>("Npu fusion initial");
 
-    // Flatten call graph - must run before buffer assignment
-    // This ensures each call site has a unique computation, which is required
-    // for correct buffer assignment and dataflow analysis.
-    fusion.AddPass<FlattenCallGraph>();
-
     // GELU fusion rewriter - identify and fuse GELU activation patterns
     // Run BEFORE priority fusion to prevent GELU operations from being split into small fusions
     fusion.AddPass<NpuGeluFusionRewriter>();
@@ -103,7 +97,7 @@ HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
     // fusion.AddPass<NpuHloPrinterPass>("CSE + DCE after PriorityFusion");
 
     // Multi-output fusion for NPU
-    fusion.AddPass<NpuMultiOutputFusion>(npu_device_info, shape_size_bytes_function, symbolic_expr_context);
+    // fusion.AddPass<NpuMultiOutputFusion>(npu_device_info, shape_size_bytes_function, symbolic_expr_context);
     // fusion.AddPass<NpuHloPrinterPass>("NpuMultiOutputFusion");
 
     // Copy fusion for NPU

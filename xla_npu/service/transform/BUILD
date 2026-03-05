@@ -4,6 +4,15 @@ package(
     default_visibility = ["//xla:internal"],
 )
 
+# NPU Transform Pass 集合库
+cc_library(
+    name = "npu_transform_passes",
+    deps = [
+        ":npu_pipeline",
+        ":npu_fusion_passes",
+    ],
+)
+
 # NPU Fusion Pass 集合库
 cc_library(
     name = "npu_fusion_passes",
@@ -22,6 +31,24 @@ cc_library(
         ":npu_gemm_fusion_swap_operands",
         ":npu_fusion_dispatch_pipeline",
         ":npu_hlo_printer_pass",
+    ],
+)
+
+# NpuPipeline - Main entry point for all NPU optimization passes
+cc_library(
+    name = "npu_pipeline",
+    srcs = ["npu_pipeline.cc"],
+    hdrs = ["npu_pipeline.h"],
+    deps = [
+        ":npu_fusion_pipeline",
+        ":npu_hlo_printer_pass",
+        "//xla/hlo/pass:hlo_pass",
+        "//xla/hlo/pass:hlo_pass_pipeline",
+        "//xla/hlo/transforms/simplifiers:flatten_call_graph",
+        "//xla/service:cpu_gpu_shape_verifier",
+        "//xla/service:hlo_verifier",
+        "//xla/service:layout_assignment",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -54,7 +81,6 @@ cc_library(
         "//xla/hlo/analysis:hlo_dfs_reachability",
         "//xla/hlo/analysis:symbolic_expr",
         "//xla/hlo/transforms/simplifiers:hlo_dce",
-        "//xla/hlo/transforms/simplifiers:flatten_call_graph",
         "//xla/service:cpu_gpu_shape_verifier",
         "//xla/service:hlo_verifier",
         "//xla/service:hlo_cost_analysis",

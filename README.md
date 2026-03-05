@@ -50,6 +50,34 @@ rm -rf build/
 
 ---
 
+## 环境变量说明
+
+### 编译环境变量
+
+编译前需要设置以下环境变量:
+
+- `JAVA_HOME`: Java开发工具包路径
+- `PATH`: 需包含Java bin目录和Bazel可执行文件目录
+- `XDG_CACHE_HOME`: (可选) 缓存目录,用于存储Bazel编译过程中的缓存文件
+
+### 条件编译选项
+
+通过设置 `NPU_AUTO_FUSE_BACKEND` 环境变量控制算子编译所使用的后端:
+
+- `0`: 不支持融合, 仅使用aclnn执行
+- `1`: 使用afir后端
+- `2`: 使用npuir后端  
+- `3`: 使用ge后端
+
+### 运行环境变量
+
+运行测试前需要在xla代码仓目录下的xla_configure.bazelrc文件(由执行configure.py生成)中设置以下环境变量:
+
+- `ASCEND_MLIR_PYTHON_PATH`: 环境上Python可执行文件路径
+- `NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
+
+---
+
 ## 快速上手
 
 ### 1. 在 JAX 中使用 NPU 后端

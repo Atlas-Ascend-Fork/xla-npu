@@ -18,17 +18,11 @@ def main():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    print("=" * 60)
-    print("Running CPU inference...")
-    print("=" * 60)
     result_cpu = subprocess.run(
         [sys.executable, os.path.join(script_dir, "cpu_test.py")],
         capture_output=False
     )
 
-    print("\n" + "=" * 60)
-    print("Running NPU inference...")
-    print("=" * 60)
     result_npu = subprocess.run(
         [sys.executable, os.path.join(script_dir, "npu_test.py")],
         capture_output=False
