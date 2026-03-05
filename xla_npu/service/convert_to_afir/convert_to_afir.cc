@@ -59,6 +59,10 @@ class HloToAfirConverter {
     // Convert a single HLO computation
     absl::StatusOr<mlir::func::FuncOp> ConvertComputation(const HloComputation& computation, bool is_entry);
 
+    // Set module-level graph attributes
+    void SetModuleGraphAttr(const HloModule& hlo_module);
+    void SetModuleGraphAttr(const HloComputation& computation);
+
    private:
     // Convert a single HLO instruction
     absl::StatusOr<mlir::Value> ConvertInstruction(const HloInstruction* instruction);
@@ -94,7 +98,6 @@ class HloToAfirConverter {
     mlir::AffineMap GetIdentityAffineMap(int64_t rank);
     mlir::ArrayAttr CreateIndexingMaps(llvm::ArrayRef<mlir::AffineMap> maps);
     mlir::afir::AscTensorGroupsAttr CreateDefaultOutputAttr(mlir::Type tensor_type);
-    void SetModuleGraphAttr(const HloModule& hlo_module);
 
     // Helper: Check if reshape only adds/removes dimensions of size 1
     // Returns true if it's a no-op reshape (only 1-dim changes), and the effective type to use
@@ -1523,15 +1526,73 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
         return;
     }
 
-    // Use the first parameter's shape to determine axes
-    const Shape& param_shape = entry->parameter_instruction(0)->shape();
-    int64_t rank = param_shape.dimensions_size();
+    // Find the maximum rank across all parameters
+    int64_t max_rank = 0;
+    for (int64_t i = 0; i < entry->num_parameters(); ++i) {
+        const Shape& param_shape = entry->parameter_instruction(i)->shape();
+        int64_t param_rank = param_shape.dimensions_size();
+        if (param_rank > max_rank) {
+            max_rank = param_rank;
+        }
+    }
+
+    // Use the first parameter's shape for axis sizes, but ensure we have axes for max_rank
+    const Shape& first_param_shape = entry->parameter_instruction(0)->shape();
+    int64_t first_rank = first_param_shape.dimensions_size();
 
     // Create axis attributes
     llvm::SmallVector<mlir::afir::AxisAttr> axes;
-    for (int64_t i = 0; i < rank; ++i) {
+    for (int64_t i = 0; i < max_rank; ++i) {
         std::string axis_name = "z" + std::to_string(i);
-        std::string size_str = std::to_string(param_shape.dimensions(i));
+        std::string size_str = (i < first_rank) ? std::to_string(first_param_shape.dimensions(i)) : "1";
+
+        auto axis_attr = mlir::afir::AxisAttr::get(context_,
+                                                   i,  // id
+                                                   builder_.getStringAttr(axis_name), mlir::afir::AxisType::Original,
+                                                   false,  // bind_block
+                                                   builder_.getStringAttr(size_str),
+                                                   nullptr,                   // align
+                                                   llvm::ArrayRef<int64_t>()  // from
+        );
+        axes.push_back(axis_attr);
+    }
+
+    // Create asc_graph_attr
+    auto asc_graph_attr = mlir::afir::AscGraphAttrGroupsAttr::get(context_,
+                                                                  -1,  // tiling_key
+                                                                  axes, mlir::afir::AscGraphType::Compute,
+                                                                  llvm::ArrayRef<mlir::StringAttr>()  // size_var
+    );
+
+    // Set module attribute
+    getModule()->setAttr("afir.asc_graph_attr", asc_graph_attr);
+}
+
+void HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
+    // Check if computation has parameters
+    if (computation.num_parameters() == 0) {
+        return;
+    }
+
+    // Find the maximum rank across all parameters
+    int64_t max_rank = 0;
+    for (int64_t i = 0; i < computation.num_parameters(); ++i) {
+        const Shape& param_shape = computation.parameter_instruction(i)->shape();
+        int64_t param_rank = param_shape.dimensions_size();
+        if (param_rank > max_rank) {
+            max_rank = param_rank;
+        }
+    }
+
+    // Use the first parameter's shape for axis sizes, but ensure we have axes for max_rank
+    const Shape& first_param_shape = computation.parameter_instruction(0)->shape();
+    int64_t first_rank = first_param_shape.dimensions_size();
+
+    // Create axis attributes
+    llvm::SmallVector<mlir::afir::AxisAttr> axes;
+    for (int64_t i = 0; i < max_rank; ++i) {
+        std::string axis_name = "z" + std::to_string(i);
+        std::string size_str = (i < first_rank) ? std::to_string(first_param_shape.dimensions(i)) : "1";
 
         auto axis_attr = mlir::afir::AxisAttr::get(context_,
                                                    i,  // id
@@ -1614,6 +1675,11 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
 
     // Convert entry computation last
     TF_ASSIGN_OR_RETURN(auto func, converter.ConvertComputation(computation, /*is_entry=*/true));
+
+    // Set module-level asc_graph_attr if emit_afir_dialect is enabled
+    if (options.emit_afir_dialect) {
+        converter.SetModuleGraphAttr(computation);
+    }
 
     if (options.verify_module) {
         if (failed(mlir_module->verify())) {

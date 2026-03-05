@@ -136,60 +136,6 @@ absl::StatusOr<std::string> ExtractGraphName(const std::string& ascir_text) {
     return graph_name;
 }
 
-// Helper function to add axis information to ASCIR text
-// This is needed when converting individual computations that lack axis context
-std::string AddAxisInfoToAscir(const std::string& ascir_text, const std::vector<int64_t>& shape) {
-    std::string result = ascir_text;
-
-    // Find the asc_graph_attr section
-    size_t attr_pos = result.find("asc_graph_attr {");
-    if (attr_pos == std::string::npos) {
-        return result;  // No asc_graph_attr found, return as-is
-    }
-
-    // Find the closing brace of asc_graph_attr
-    size_t attr_end = result.find("}", attr_pos);
-    if (attr_end == std::string::npos) {
-        return result;
-    }
-
-    // Build axis information with proper id fields
-    std::string axis_info;
-    // Check if using old CANN style (int32 for align parameter)
-    bool use_old_cann_style = NpuConfig::GetInstance().GetTypedValue<bool>(NpuConfig::Key::USE_OLD_CANN_STYLE);
-    for (size_t i = 0; i < shape.size(); ++i) {
-        // All axes need id field
-        // 注意，align参数的类型在新老版本cann包的proto文件中的定义不同，新版本cann包定义为string类型（需要加双引号）
-        // 老版本cann包定义为int32类型（不需要加双引号）
-        if (use_old_cann_style) {
-            axis_info += absl::StrFormat(
-                "  axis {\n"
-                "    id: %zu\n"
-                "    name: \"z%zu\"\n"
-                "    size: \"%lld\"\n"
-                "    align: 1\n"
-                "    allow_unaligned_tail: true\n"
-                "  }\n",
-                i, i, shape[i]);
-        } else {
-            axis_info += absl::StrFormat(
-                "  axis {\n"
-                "    id: %zu\n"
-                "    name: \"z%zu\"\n"
-                "    size: \"%lld\"\n"
-                "    align: \"1\"\n"
-                "    allow_unaligned_tail: true\n"
-                "  }\n",
-                i, i, shape[i]);
-        }
-    }
-
-    // Insert axis info before the closing brace
-    result.insert(attr_end, axis_info);
-
-    return result;
-}
-
 // Helper function to fix sched.axis and outputs.attr.axis_ids to ensure consistency
 std::string FixNodeAxisInfo(const std::string& ascir_text) {
     std::string result = ascir_text;
@@ -997,24 +943,7 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
 
     // Step 2: Convert AFIR to AscIR
     TF_ASSIGN_OR_RETURN(auto ascir_text, ConvertAfirToAscir(afir_string, options));
-
     NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertAfirToAscir completed, ASCIR size: %d bytes", ascir_text.size());
-
-    // Extract shape information from computation's root instruction
-    // to add axis information to ASCIR
-    const HloInstruction* root = entry_computation->root_instruction();
-    const Shape& root_shape = root->shape();
-    std::vector<int64_t> shape_dims;
-    if (root_shape.IsArray()) {
-        auto dims_span = root_shape.dimensions();
-        shape_dims.assign(dims_span.begin(), dims_span.end());
-    }
-
-    // Add axis information if shape is available
-    if (!shape_dims.empty()) {
-        ascir_text = AddAxisInfoToAscir(ascir_text, shape_dims);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Added axis info for shape with %d dimensions", shape_dims.size());
-    }
 
     // Fix sched.axis and outputs.attr.axis for all nodes in order to using one set of axes for the entire graph.
     ascir_text = FixNodeAxisInfo(ascir_text);
