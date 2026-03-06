@@ -78,3 +78,30 @@ cc_library(
     srcs = ["Ascend-MLIR/build/lib/libAFIRUtils.a"],
     deps = [":AFIRHeaders"],
 )
+
+cc_library(
+    name = "AFIRTransforms",
+    srcs = [
+        "Ascend-MLIR/lib/Dialect/AFIR/Transforms/AFIRAddAxis.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Transforms/AFIRInferShapes.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Transforms/Canonicalize.cpp",
+    ],
+    hdrs = glob([
+        "Ascend-MLIR/build/include/Dialect/AFIR/Transforms/*.inc",
+    ]),
+    includes = [
+        "Ascend-MLIR/build/include",
+        "Ascend-MLIR/include",
+    ],
+    deps = [
+        ":AFIRDialect",
+        ":AFIRHeaders",
+        ":AFIRUtils",
+        "@llvm-project//mlir:FuncDialect",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Pass",
+        "@llvm-project//mlir:Support",
+        "@llvm-project//mlir:TensorDialect",
+        "@llvm-project//mlir:Transforms",
+    ],
+)

@@ -28,6 +28,7 @@ limitations under the License.
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/parser/hlo_parser.h"
@@ -37,6 +38,7 @@ limitations under the License.
 
 // Ascend-MLIR AFIR Dialect
 #include "Dialect/AFIR/AFIR.h"
+#include "Dialect/AFIR/Transforms/Passes.h"
 
 ABSL_FLAG(std::string, input, "", "Input HLO file path");
 ABSL_FLAG(std::string, output, "", "Output file path (default: stdout)");
@@ -114,6 +116,14 @@ absl::Status Run(const HloToAfirOptions& options) {
 
         // Convert HloComputation to AFIR
         TF_ASSIGN_OR_RETURN(mlir_module, ConvertHloComputationToAfir(*computation, &context, options));
+
+        // Run AFIRAddAxis pass to add missing axes for reshape operations
+        mlir::PassManager pm(&context);
+        pm.addPass(mlir::afir::createAFIRAddAxisPass());
+        if (mlir::failed(pm.run(*mlir_module))) {
+            return absl::InternalError("Failed to run AFIRAddAxis pass");
+        }
+        std::cout << "AFIRAddAxis pass completed" << std::endl;
     } else { // convert entire hlo module
         // Get input file
         std::string input_file = absl::GetFlag(FLAGS_input);

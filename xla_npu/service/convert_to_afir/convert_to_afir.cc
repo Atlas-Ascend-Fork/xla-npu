@@ -1569,30 +1569,37 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
 }
 
 void HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
-    // Check if computation has parameters
-    if (computation.num_parameters() == 0) {
-        return;
-    }
-
-    // Find the maximum rank across all parameters
+    // For computations without parameters, derive axis information from the root instruction's output shape
+    const Shape* shape_for_axes = nullptr;
     int64_t max_rank = 0;
-    for (int64_t i = 0; i < computation.num_parameters(); ++i) {
-        const Shape& param_shape = computation.parameter_instruction(i)->shape();
-        int64_t param_rank = param_shape.dimensions_size();
-        if (param_rank > max_rank) {
-            max_rank = param_rank;
+
+    // For computations without parameters, use the root instruction's output shape
+    // For computations with parameters, use the maximum rank across all parameters
+    const HloInstruction* root = computation.root_instruction();
+    if (root != nullptr && root->shape().IsArray()) {
+        shape_for_axes = &root->shape();
+        max_rank = shape_for_axes->dimensions_size();
+    }
+    if (computation.num_parameters() > 0) {
+        // Find the maximum rank across all parameters
+        for (int64_t i = 0; i < computation.num_parameters(); ++i) {
+            const Shape& param_shape = computation.parameter_instruction(i)->shape();
+            int64_t param_rank = param_shape.dimensions_size();
+            if (param_rank > max_rank) {
+                max_rank = param_rank;
+                shape_for_axes = &param_shape;
+            }
         }
     }
 
-    // Use the first parameter's shape for axis sizes, but ensure we have axes for max_rank
-    const Shape& first_param_shape = computation.parameter_instruction(0)->shape();
-    int64_t first_rank = first_param_shape.dimensions_size();
+    // Use the derived shape for axis sizes
+    int64_t first_rank = shape_for_axes->dimensions_size();
 
     // Create axis attributes
     llvm::SmallVector<mlir::afir::AxisAttr> axes;
     for (int64_t i = 0; i < max_rank; ++i) {
         std::string axis_name = "z" + std::to_string(i);
-        std::string size_str = (i < first_rank) ? std::to_string(first_param_shape.dimensions(i)) : "1";
+        std::string size_str = (i < first_rank) ? std::to_string(shape_for_axes->dimensions(i)) : "1";
 
         auto axis_attr = mlir::afir::AxisAttr::get(context_,
                                                    i,  // id

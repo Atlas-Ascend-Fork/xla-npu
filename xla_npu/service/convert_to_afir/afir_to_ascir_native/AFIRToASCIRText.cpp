@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <sstream>
 
 #include "Dialect/AFIR/AFIR.h"
@@ -1145,11 +1146,11 @@ std::string AFIRToASCIRTextPass::formatFloatValue(double val, Type type) {
         // Regular value, format with appropriate suffix
         if (type.isF64()) {
             std::ostringstream oss;
-            oss << val;
+            oss << std::showpoint << val;
             return oss.str();
         } else {
             std::ostringstream oss;
-            oss << val << "f";
+            oss << std::showpoint << val << "f";
             return oss.str();
         }
     }
