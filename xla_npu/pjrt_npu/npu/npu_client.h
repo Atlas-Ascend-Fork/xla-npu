@@ -25,8 +25,8 @@
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_topology_description.h"
 #include "xla/xla_npu/pjrt_npu/plugin/npu_device_description.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api.h"
 
 namespace xla {
 

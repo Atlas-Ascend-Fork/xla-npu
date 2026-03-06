@@ -14,7 +14,7 @@
 #include <string>
 #include "ge_error_codes.h"
 #include "ge_api_types.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/ascend_string.h"
 
 #ifdef __GNUC__
 #define ATTRIBUTED_DEPRECATED(replacement) __attribute__((deprecated("Please use " #replacement " instead.")))

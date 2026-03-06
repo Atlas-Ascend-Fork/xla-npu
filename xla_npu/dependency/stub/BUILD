@@ -11,8 +11,8 @@ cc_binary(
         "ge_api_stub.cc",
     ],
     deps = [
-        "//xla/xla_npu/third_party/metadef:metadef_hdrs",
-        "//xla/xla_npu/third_party/air:air_hdrs",
+        "//xla/xla_npu/dependency/header/metadef:metadef_hdrs",
+        "//xla/xla_npu/dependency/header/ge:ge_hdrs",
     ],
     linkshared = True,
     linkopts = ["-Wl,-soname,libge_runner.so"],
@@ -31,7 +31,7 @@ cc_binary(
         "operator_factory_stub.cc",
     ],
     deps = [
-        "//xla/xla_npu/third_party/metadef:metadef_hdrs",
+        "//xla/xla_npu/dependency/header/metadef:metadef_hdrs",
     ],
     linkshared = True,
     linkopts = ["-Wl,-soname,libgraph.so"],
@@ -45,8 +45,8 @@ cc_import(
 cc_library(
     name = "ge_hdrs",
     deps = [
-        "//xla/xla_npu/third_party/metadef:metadef_hdrs",
-        "//xla/xla_npu/third_party/air:air_hdrs",
+        "//xla/xla_npu/dependency/header/metadef:metadef_hdrs",
+        "//xla/xla_npu/dependency/header/ge:ge_hdrs",
         ":ge_runner_stub",
         ":graph_stub",
     ],

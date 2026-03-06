@@ -1,5 +1,5 @@
 #include "xla/xla_npu/pjrt_npu/npu/tracked_npu_device_buffer.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/pjrt/common_pjrt_client.h"
 #include "raw_buffer.h"
 
@@ -37,7 +37,7 @@ public:
   ~AlignedMemory() final {
     //tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
     std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
-    npu::AclrtFree(base_);
+    npu::aclrtFree(base_);
   }
 
   void* base() const final { return base_; }
@@ -54,7 +54,7 @@ public:
       size_t size_bytes, size_t alignment) const final {
     std::cout << "AlignedAllocator::Allocate size_bytes:" << size_bytes << std::endl;
     void *base = nullptr;
-    aclError acl_malloc = npu::AclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+    aclError acl_malloc = npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
     if (acl_malloc == ACL_SUCCESS) {
       return std::make_unique<AlignedMemory>(base, size_bytes);
     }

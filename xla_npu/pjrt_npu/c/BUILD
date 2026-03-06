@@ -32,7 +32,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//xla/xla_npu/pjrt_npu/npu:npu_client",
-        "//xla/xla_npu/third_party/register:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
         
         "//xla/pjrt/c:pjrt_c_api_ffi_extension_hdrs",
         "//xla/pjrt/c:pjrt_c_api_ffi_internal",

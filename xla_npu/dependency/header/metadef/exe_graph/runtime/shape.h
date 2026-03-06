@@ -16,7 +16,7 @@
 #include <cstring>
 #include <type_traits>
 #include <limits>
-#include "xla/xla_npu/third_party/metadef/external/utils/extern_math_util.h"
+#include "xla/xla_npu/dependency/header/metadef/utils/extern_math_util.h"
 
 namespace gert {
 struct Shape {

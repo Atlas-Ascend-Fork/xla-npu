@@ -1,4 +1,4 @@
-#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/operator_factory.h"
 
 namespace ge {
 Operator OperatorFactory::CreateOperator(

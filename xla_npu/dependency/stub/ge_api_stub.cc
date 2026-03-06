@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "xla/xla_npu/third_party/metadef/external/exe_graph/runtime/tensor.h"
-#include "xla/xla_npu/third_party/metadef/external/exe_graph/runtime/tensor_data.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/types.h"
+#include "xla/xla_npu/dependency/header/metadef/exe_graph/runtime/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/exe_graph/runtime/tensor_data.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/types.h"
 
 namespace {
 constexpr size_t kOutptSize = 512 * 1024 * 1024;

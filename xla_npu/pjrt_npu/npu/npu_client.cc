@@ -20,11 +20,11 @@
 #include "xla/xla_npu/pjrt_npu/npu/ge/graph_data.h"
 #include "xla/xla_npu/pjrt_npu/npu/service/npu_executable.h"
 #include "xla/xla_npu/pjrt_npu/host_memory_spaces.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/graph.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/ascend_string.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/operator_factory.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/mair/test/test_mair_gen.h"
 #include "xla/xla_npu/mair/stablehlo2mair_converter.h"
 
@@ -848,16 +848,16 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> output_tracked_buffers;
     output_tracked_buffers.reserve(outputs.size());
     void* output_memory_ptr = NULL;
-    auto acl_ret = npu::AclrtMallocHost(&output_memory_ptr, output_data_size);
+    auto acl_ret = npu::aclrtMallocHost(&output_memory_ptr, output_data_size);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("malloc host memory failed, error code: ", acl_ret));
     }
-    acl_ret = npu::AclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr, output_data_size, ACL_MEMCPY_HOST_TO_HOST);
+    acl_ret = npu::aclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr, output_data_size, ACL_MEMCPY_HOST_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("memcpy from host to host failed, error code: ", acl_ret));
     }
     auto deleter = [output_memory_ptr]() {
-        npu::AclrtFreeHost(output_memory_ptr);
+        npu::aclrtFreeHost(output_memory_ptr);
     };
     tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory = NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, output_data_size, deleter);
     auto output_tracked_buffer = TrackedNpuDeviceBuffer(

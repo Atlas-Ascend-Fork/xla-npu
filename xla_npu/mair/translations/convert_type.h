@@ -5,8 +5,8 @@
 #include "mlir/IR/Types.h"         // from @llvm-project
 #include "mlir/IR/BuiltinTypes.h"  // from @llvm-project
 
-#include "xla/xla_npu/third_party/metadef/external/graph/types.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/types.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
 #include "./status.h"
 #include "./utils.h"
 

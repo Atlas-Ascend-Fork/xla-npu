@@ -1,8 +1,8 @@
 #ifndef XLA_XLA_NPU_PJRT_NPU_NPU_GE_GRAPH_DATA_H_
 #define XLA_XLA_NPU_PJRT_NPU_NPU_GE_GRAPH_DATA_H_
 
-#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/graph.h"
 
 
 namespace xla {

@@ -24,14 +24,14 @@
 #include "mlir/Pass/PassManager.h"           // from @llvm-project
 #include "mlir/Support/DebugStringHelper.h"  // from @llvm-project
 #include "mlir/Support/LogicalResult.h"      // from @llvm-project
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/gnode.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/ascend_string.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator_factory.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/operator.h"
-#include "xla/xla_npu/third_party/register/aclInterface.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_api.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/graph.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/gnode.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/ascend_string.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/operator_factory.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/operator.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api.h"
 
 #include "./status.h"
 // #include "translations/statusor.h"

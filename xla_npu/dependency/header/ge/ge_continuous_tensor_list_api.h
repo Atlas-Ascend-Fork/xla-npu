@@ -11,7 +11,7 @@
 #define INC_EXTERNAL_GE_GE_CONTINUOUS_TENSOR_LIST_API_H
 #include <memory>
 #include <vector>
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
 #include "ge_error_codes.h"
 
 namespace ge {

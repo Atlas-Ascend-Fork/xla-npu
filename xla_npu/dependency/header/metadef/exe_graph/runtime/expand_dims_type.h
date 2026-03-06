@@ -11,8 +11,8 @@
 #define METADEF_CXX_INC_EXE_GRAPH_RUNTIME_EXPAND_DIMS_TYPE_H_
 #include <cstdint>
 #include <cstddef>
-#include "xla/xla_npu/third_party/metadef/external/graph/ge_error_codes.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/types.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/ge_error_codes.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/types.h"
 #include "shape.h"
 
 namespace gert {

@@ -15,15 +15,15 @@
 #include <string>
 #include <vector>
 
-#include "xla/xla_npu/third_party/air/external/ge/ge_api_error_codes.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_api_types.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_data_flow_api.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_continuous_tensor_list_api.h"
-#include "xla/xla_npu/third_party/air/external/ge/ge_graph_compile_summary.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/graph.h"
-#include "xla/xla_npu/third_party/metadef/external/graph/tensor.h"
-#include "xla/xla_npu/third_party/metadef/external/ge/ge_allocator.h"
-#include "xla/xla_npu/third_party/metadef/external/exe_graph/runtime/tensor.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api_error_codes.h"
+#include "xla/xla_npu/dependency/header/ge/ge_api_types.h"
+#include "xla/xla_npu/dependency/header/ge/ge_data_flow_api.h"
+#include "xla/xla_npu/dependency/header/ge/ge_continuous_tensor_list_api.h"
+#include "xla/xla_npu/dependency/header/ge/ge_graph_compile_summary.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/graph.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
+#include "xla/xla_npu/dependency/header/metadef/ge/ge_allocator.h"
+#include "xla/xla_npu/dependency/header/metadef/exe_graph/runtime/tensor.h"
 namespace ge {
 typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
 

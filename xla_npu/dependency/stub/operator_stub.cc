@@ -1,4 +1,4 @@
-#include "xla/xla_npu/third_party/metadef/external/graph/operator.h"
+#include "xla/xla_npu/dependency/header/metadef/graph/operator.h"
 
 namespace ge {
 

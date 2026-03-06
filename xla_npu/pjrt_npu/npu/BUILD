@@ -28,7 +28,7 @@ cc_library(
     deps = [
         ":npu_event",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
-        "//xla/xla_npu/third_party/register:acl_interface",
+        "//xla/xla_npu/dependency/interface:acl_interface",
         
         "//xla:future",
         "//xla:literal",
@@ -110,8 +110,8 @@ cc_library(
         "//xla/xla_npu/pjrt_npu:npu_tool",
         "//xla/xla_npu/pjrt_npu:host_memory_spaces",
         "//xla/xla_npu/pjrt_npu/plugin:npu_topology_description",
-        "//xla/xla_npu/third_party/register:acl_interface",
-        "//xla/xla_npu/third_party/stub:ge_hdrs",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/stub:ge_hdrs",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_buffer_assignment",
         "//xla/xla_npu/pjrt_npu/npu/service:npu_executable",
         "//xla/xla_npu/pjrt_npu/npu/ge:graph_data_hdrs",
