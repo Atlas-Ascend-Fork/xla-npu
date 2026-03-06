@@ -194,7 +194,7 @@ namespace {
               resultType,
               inputs,
               concatDimValue,
-              rewriter.getI64IntegerAttr(1)
+              rewriter.getI64IntegerAttr(inputs.size())
           );
           rewriter.replaceOp(op, newConcatOp.getResult());
           return success();
