@@ -24,8 +24,6 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/common/npu_tool.h"
-#include "xla/xla_npu/dependency/header/acl_nn_op/aclnn_matmul.h"
-#include "xla/xla_npu/dependency/header/acl_nn_op/aclnn_cat.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_op_interface.h"
@@ -66,7 +64,8 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code, const std::vector<Shape
         case HloOpcode::kReduce:
             // Reduce 操作: 输入 + 初始值 + 输出 = 3 个参数
             if (param_shapes.size() != 3) {
-                NPU_LOG_FORMAT_PRINT(ERROR, "Reduce param shape size %d does not meet target value 3", param_shapes.size());
+                NPU_LOG_FORMAT_PRINT(ERROR, "Reduce param shape size %d does not meet target value 3",
+                                     param_shapes.size());
                 return false;
             }
             break;
@@ -89,6 +88,11 @@ NpuAclnnThunk::NpuAclnnThunk(std::string fingerprint, ThunkInfo thunk_info, std:
 
 absl::Status NpuAclnnThunk::Initialize(const InitializeParams& params) {
     absl::Status ret = absl::OkStatus();
+
+    // 在 Initialize 阶段处理所有常量 buffer 中的特殊值 (-inf, +inf, nan)
+    // 这些特殊值只在图分配时写入，计算过程中不会产生
+    TF_RETURN_IF_ERROR(NpuThunk::InitializeSpecialValues(params, args_));
+
     // // Calling AsDnn outside call_once ensures that cuDNN handles get created for
     // // all GPUs in programs using cuDNN during the executable initialization
     // // phase. It's sufficient to deserialize the graph once using just one of
@@ -112,8 +116,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     NPU_LOG_FORMAT_PRINT(DEBUG, "==== Launch aclnn kernel with %d param ====", args_.size());
     NPU_LOG_FORMAT_PRINT(DEBUG, "---- Corresponding hlo instruction: %s ----", thunk_info().hloInstrDesc);
 
-    InitializeParams initialize_params;
-    TF_RETURN_IF_ERROR(Initialize(initialize_params));  // TODO 排查外部是否有额外调用
+    // Initialize 应该在执行前已经调用过，这里不应该再次调用
 
     if (params.stream == nullptr) {
         NPU_LOG_FORMAT_PRINT(ERROR, "Stream need to be created or init before execute npu thunk.");
@@ -167,7 +170,8 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             // Synchronize stream to ensure copy completes
             ret = npu::aclrtSynchronizeStream(stream);
             if (ret != ACL_SUCCESS) {
-                const std::string err_msg = absl::StrFormat("Synchronize stream after reshape failed. Error code: %d", ret);
+                const std::string err_msg =
+                    absl::StrFormat("Synchronize stream after reshape failed. Error code: %d", ret);
                 NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                 return absl::InternalError(err_msg);
             }
@@ -179,7 +183,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         case HloOpcode::kBroadcast: {
             std::vector<int64_t> output_param_size_data = NpuTool::ConvertXlaShape2VectorShape(param_shapes.back());
             std::vector<int64_t> input_shape_data = NpuTool::ConvertXlaShape2VectorShape(param_shapes[0]);
-            
+
             // Debug: print broadcast shapes
             std::string shape_str = "[";
             for (size_t i = 0; i < output_param_size_data.size(); ++i) {
@@ -187,10 +191,9 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 shape_str += std::to_string(output_param_size_data[i]);
             }
             shape_str += "]";
-            NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast: input shape %s, target size %s", 
-                                 NpuTool::GetXlaShapeString(param_shapes[0]).c_str(),
-                                 shape_str.c_str());
-            
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast: input shape %s, target size %s",
+                                 NpuTool::GetXlaShapeString(param_shapes[0]).c_str(), shape_str.c_str());
+
             // Check if input and output shapes are the same (identity broadcast)
             bool is_identity_broadcast = (input_shape_data == output_param_size_data);
             if (is_identity_broadcast) {
@@ -202,22 +205,23 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
                 // Calculate data size
                 int64_t data_size = NpuTool::GetXlaShapeSize(param_shapes.back()) *
-                                   ShapeUtil::ByteSizeOfPrimitiveType(param_shapes.back().element_type());
+                                    ShapeUtil::ByteSizeOfPrimitiveType(param_shapes.back().element_type());
 
                 // Perform device-to-device memory copy using stream
                 exec_ret = params.stream->Memcpy(&output_addr, input_addr, data_size);
                 if (!exec_ret.ok()) {
-                    NPU_LOG_FORMAT_PRINT(ERROR, "Stream Memcpy for identity broadcast failed: %s", exec_ret.ToString().c_str());
+                    NPU_LOG_FORMAT_PRINT(ERROR, "Stream Memcpy for identity broadcast failed: %s",
+                                         exec_ret.ToString().c_str());
                     return exec_ret;
                 }
 
                 break;
             }
-            
+
             aclIntArray* output_param_size =
                 npu::aclCreateIntArray(output_param_size_data.data(), output_param_size_data.size());
 
-            // 调用aclnnExpand第一段接口
+            // 调用 aclnnExpand 第一段接口
             ret = npu::aclnnExpandGetWorkspaceSize(acl_tensor_ptr_vector[0], output_param_size,
                                                    acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
             if (ret != ACL_SUCCESS) {
@@ -278,7 +282,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         }
 
         case HloOpcode::kDot: {
-            int8_t cubeMathType = 1; // ALLOW_FP32_DOWN_PRECISION
+            int8_t cubeMathType = 1;  // ALLOW_FP32_DOWN_PRECISION
             ret =
                 npu::aclnnMatmulGetWorkspaceSize(acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
                                                  acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize, &executor);
@@ -380,17 +384,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             for (size_t i = 0; i < acl_tensor_ptr_vector.size() - 1; ++i) {
                 input_tensors.push_back(acl_tensor_ptr_vector[i]);
             }
-            aclTensorList* tensor_list = npu::aclCreateTensorList(
-                input_tensors.data(), input_tensors.size());
+            aclTensorList* tensor_list = npu::aclCreateTensorList(input_tensors.data(), input_tensors.size());
             if (tensor_list == nullptr) {
                 const std::string err_msg = "Failed to create aclTensorList for concatenate";
                 NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                 return absl::InternalError(err_msg);
             }
 
-            // 调用aclnnCatGetWorkspaceSize
-            ret = npu::aclnnCatGetWorkspaceSize(tensor_list, dim, acl_tensor_ptr_vector.back(),
-                                                &workspaceSize, &executor);
+            // 调用 aclnnCatGetWorkspaceSize
+            ret = npu::aclnnCatGetWorkspaceSize(tensor_list, dim, acl_tensor_ptr_vector.back(), &workspaceSize,
+                                                &executor);
             if (ret != ACL_SUCCESS) {
                 const std::string err_msg =
                     absl::StrFormat("Call aclnnCatGetWorkspaceSize failed. Error code: %d", ret);
@@ -401,7 +404,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
             exec_ret = ExecuteAclnn(stream, workspaceSize, executor, npu::aclnnCat);
 
-            // 清理tensor_list
+            // 清理 tensor_list
             npu::aclDestroyTensorList(tensor_list);
             break;
         }
@@ -431,7 +434,9 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             // 所以这里使用acl_tensor_ptr_vector[0]作为输入,acl_tensor_ptr_vector[2]作为输出
             // 注意:acl_tensor_ptr_vector[1]是初始值,不应该传给aclnnReduceSum
             if (acl_tensor_ptr_vector.size() < 3) {
-                const std::string err_msg = absl::StrFormat("Reduce operation expects 3 parameters (input, init, output), but got %d", acl_tensor_ptr_vector.size());
+                const std::string err_msg =
+                    absl::StrFormat("Reduce operation expects 3 parameters (input, init, output), but got %d",
+                                    acl_tensor_ptr_vector.size());
                 NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                 npu::aclDestroyIntArray(dims);
                 return absl::InternalError(err_msg);
@@ -467,10 +472,11 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
                 // 调用 aclnnAmax 第一段接口
                 // aclnnAmax 接口参数: input, dim, keepDim, out, workspaceSize, executor
-                ret = npu::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false,
-                                                     acl_tensor_ptr_vector[2], &workspaceSize, &executor);
+                ret = npu::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false, acl_tensor_ptr_vector[2],
+                                                     &workspaceSize, &executor);
                 if (ret != ACL_SUCCESS) {
-                    const std::string err_msg = absl::StrFormat("Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
+                    const std::string err_msg =
+                        absl::StrFormat("Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
                     NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                     npu::aclDestroyIntArray(dims);
                     return absl::InternalError(err_msg);
@@ -489,7 +495,8 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 ret = npu::aclnnReduceSumGetWorkspaceSize(acl_tensor_ptr_vector[0], dims, false, out_dtype,
                                                           acl_tensor_ptr_vector[2], &workspaceSize, &executor);
                 if (ret != ACL_SUCCESS) {
-                    const std::string err_msg = absl::StrFormat("Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d", ret);
+                    const std::string err_msg =
+                        absl::StrFormat("Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d", ret);
                     NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
                     npu::aclDestroyIntArray(dims);
                     return absl::InternalError(err_msg);
@@ -595,7 +602,7 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream, uint64_t workspace
                                          AclnnExecFunc aclnnExecFunc) {
     aclnnStatus ret = 0;
 
-    // 根据第一段接口计算出的workspaceSize申请device内存
+    // 根据第一段接口计算出的 workspaceSize 申请 device 内存
     void* workspaceAddr = nullptr;
     if (workspaceSize > 0) {
         NPU_LOG_FORMAT_PRINT(DEBUG, "Additional aclnn WorkspaceSize is %d, need to apply", workspaceSize);
@@ -608,7 +615,7 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream, uint64_t workspace
     } else {
         NPU_LOG_FORMAT_PRINT(DEBUG, "Additional aclnn WorkspaceSize is 0, no need to apply");
     }
-    // 调用aclnnExecFunc第二段接口
+    // 调用 aclnnExecFunc 第二段接口
     ret = aclnnExecFunc(workspaceAddr, workspaceSize, executor, stream);
     if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat("Execute aclnnExecFunc failed. Error code: %d", ret);

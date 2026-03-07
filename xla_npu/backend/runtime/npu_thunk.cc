@@ -1,6 +1,7 @@
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <ostream>
@@ -38,6 +39,8 @@
 #include "xla/util.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
@@ -426,5 +429,75 @@ void NpuThunk::ForAllThunksMutable(absl::FunctionRef<void(NpuThunk*)> fn) { fn(t
 //     proto.set_thunk_id(thunk_id.value());
 //     return proto;
 // }
+
+// 在 Initialize 阶段处理所有常量 buffer 中的特殊值
+// 这些特殊值 (-inf, +inf, nan) 只在图分配时写入，计算过程中不会产生
+absl::Status NpuThunk::InitializeSpecialValues(const InitializeParams& params, 
+                                                const std::vector<BufferAllocation::Slice>& args) {
+    const auto* allocations = params.buffer_allocations;
+    
+    // 遍历所有 args，检查并替换特殊值
+    // 注意：我们只处理标量浮点类型的 buffer
+    for (const auto& slice : args) {
+        // 获取 buffer 对应的 shape (从 thunk_info 中)
+        // 由于我们没有直接的 shape 信息，这里使用一个简单的策略:
+        // 检查所有小的 buffer (< 16 bytes)，这些很可能是标量常量
+        auto addr = allocations->GetDeviceAddress(slice);
+        void* device_addr = addr.opaque();
+        size_t size = addr.size();
+        
+        // 只处理小 buffer (可能是标量)
+        if (size > sizeof(float) * 4) {
+            continue;
+        }
+        
+        // 只处理 4 字节或 8 字节的 buffer (float 或 double)
+        if (size != sizeof(float) && size != sizeof(double)) {
+            continue;
+        }
+        
+        // 尝试作为 float 处理
+        if (size == sizeof(float)) {
+            float value_host = 0.0f;
+            aclError ret = npu::aclrtMemcpy(&value_host, sizeof(float), device_addr,
+                                            sizeof(float), ACL_MEMCPY_DEVICE_TO_HOST);
+            
+            if (ret != ACL_SUCCESS) {
+                continue;  // 跳过读取失败的
+            }
+            
+            // 检查并替换特殊值
+            bool need_replace = false;
+            float replacement_value = 0.0f;
+            
+            if (std::isinf(value_host) && value_host < 0) {
+                need_replace = true;
+                replacement_value = -3.4028235e+38f;  // -FLT_MAX
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Initialize: Detected -inf in buffer (slice %d:%d), replacing with -FLT_MAX", 
+                                     slice.index(), slice.offset());
+            } else if (std::isinf(value_host) && value_host > 0) {
+                need_replace = true;
+                replacement_value = 3.4028235e+38f;  // FLT_MAX
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Initialize: Detected +inf in buffer (slice %d:%d), replacing with FLT_MAX", 
+                                     slice.index(), slice.offset());
+            } else if (std::isnan(value_host)) {
+                need_replace = true;
+                replacement_value = 0.0f;
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Initialize: Detected nan in buffer (slice %d:%d), replacing with 0.0f", 
+                                     slice.index(), slice.offset());
+            }
+            
+            if (need_replace) {
+                ret = npu::aclrtMemcpy(device_addr, sizeof(float), &replacement_value,
+                                       sizeof(float), ACL_MEMCPY_HOST_TO_DEVICE);
+                if (ret == ACL_SUCCESS) {
+                    NPU_LOG_FORMAT_PRINT(DEBUG, "Initialize: Successfully replaced special value in buffer");
+                }
+            }
+        }
+    }
+    
+    return absl::OkStatus();
+}
 
 }  // namespace xla

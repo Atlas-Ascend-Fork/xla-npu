@@ -24,9 +24,8 @@ limitations under the License.
 
 namespace xla {
 
-// FusionDynamicMemcpyRewriter-like pass for NPU, completely independent of GPU implementation.
-// Detects fusions that can be emitted using DynamicMemcpyFusion and annotates
-// them accordingly.
+// FusionDynamicMemcpyRewriter-like pass for NPU.
+// Detects fusions that can be emitted using DynamicMemcpyFusion and annotates them accordingly.
 class NpuFusionDynamicMemcpyRewriter : public HloModulePass {
    public:
     absl::string_view name() const override { return "npu-fusion-dynamic-memcpy-rewriter"; }

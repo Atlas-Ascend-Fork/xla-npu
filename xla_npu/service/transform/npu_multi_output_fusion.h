@@ -31,8 +31,7 @@ limitations under the License.
 
 namespace xla {
 
-// Multi-output fusion pass for NPU, completely independent of GPU implementation.
-// Uses base HloCostAnalysis (not GPU-specific).
+// Multi-output fusion pass for NPU.
 class NpuMultiOutputFusion : public HloModulePass {
    public:
     NpuMultiOutputFusion(const se::DeviceDescription& device_description,
