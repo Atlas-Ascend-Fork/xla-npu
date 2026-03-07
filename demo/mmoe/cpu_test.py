@@ -18,9 +18,6 @@ from model import (
 
 def run_cpu_test():
     """Run CPU inference test."""
-    print("=" * 60)
-    print("Running CPU inference...")
-    print("=" * 60)
     model, params, x = setup_model_and_data()
     output = run_inference_and_save(model, params, x, "CPU", "/tmp/mmoe_cpu_output.npz")
     return output, x
@@ -28,4 +25,3 @@ def run_cpu_test():
 
 if __name__ == "__main__":
     output, x = run_cpu_test()
-    print("\nCPU test completed successfully!")

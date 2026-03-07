@@ -21,7 +21,6 @@ cc_library(
         ":npu_priority_fusion",
         ":npu_multi_output_fusion",
         ":npu_copy_fusion",
-        ":npu_gelu_fusion_rewriter",
         ":npu_dynamic_slice_fusion_rewriter",
         ":npu_fusion_dynamic_memcpy_rewriter",
         ":npu_gemm_fusion",
@@ -61,7 +60,6 @@ cc_library(
         ":npu_priority_fusion",
         ":npu_multi_output_fusion",
         ":npu_copy_fusion",
-        ":npu_gelu_fusion_rewriter",
         ":npu_dynamic_slice_fusion_rewriter",
         ":npu_fusion_dynamic_memcpy_rewriter",
         ":npu_fusion_wrapper",
@@ -180,23 +178,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "//xla/tsl/platform:errors",
-    ],
-)
-
-# NpuGeluFusionRewriter
-cc_library(
-    name = "npu_gelu_fusion_rewriter",
-    srcs = ["npu_gelu_fusion_rewriter.cc"],
-    hdrs = ["npu_gelu_fusion_rewriter.h"],
-    deps = [
-        "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/service:backend_config_cc",
-        "//xla/hlo/ir:hlo",
-        "//xla/hlo/ir:backend_config",
-        "//xla/hlo/pass:hlo_pass",
-        "//xla/hlo/transforms/simplifiers:hlo_dce",
-        "//xla:shape_util",
-        "@com_google_absl//absl/status",
     ],
 )
 

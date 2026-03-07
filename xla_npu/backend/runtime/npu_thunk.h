@@ -472,6 +472,12 @@ class NpuThunk {
     // Precondition: Prepare(initialize_params) has been called.
     virtual absl::Status Initialize(const InitializeParams& params) { return absl::OkStatus(); }
 
+    // 在 Initialize 阶段处理所有常量 buffer 中的特殊值 (-inf, +inf, nan)
+    // 这些特殊值只在图分配时写入，计算过程中不会产生，所以在初始化阶段统一处理
+    // 参数：params - 初始化参数，args - thunk 的 buffer slices
+    absl::Status InitializeSpecialValues(const InitializeParams& params,
+                                         const std::vector<BufferAllocation::Slice>& args);
+
     // Executes thunk on the given stream. This method must be called after
     // Initialize and can be called multiple times over NpuThunk's lifetime.
     //
@@ -559,6 +565,7 @@ class NpuThunk {
 
     virtual bool IsAsyncDone() const { return false; }
 
+   protected:
    private:
     Kind kind_;
     ThunkInfo thunk_info_;

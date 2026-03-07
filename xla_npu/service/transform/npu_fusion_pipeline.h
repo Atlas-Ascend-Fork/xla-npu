@@ -27,7 +27,6 @@ namespace xla {
 
 // Function wrapper around the (non-horizontal) XLA NPU fusion pipeline.
 // Thread pool may be nullptr.
-// This is the NPU-specific version, independent of the GPU implementation.
 HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
                                   HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
                                   tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,

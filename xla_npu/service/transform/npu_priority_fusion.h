@@ -31,8 +31,7 @@ limitations under the License.
 
 namespace xla {
 
-// PriorityFusion-like pass for NPU, completely independent of GPU implementation.
-// Uses base HloCostAnalysis (not GpuHloCostAnalysis).
+// PriorityFusion-like pass for NPU.
 class NpuPriorityFusion : public HloModulePass {
    public:
     NpuPriorityFusion(tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& device,

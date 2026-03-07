@@ -18,21 +18,49 @@ def main():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
+    print("\n" + "=" * 60)
+    print("Running CPU inference...")
+    print("=" * 60)
     result_cpu = subprocess.run(
         [sys.executable, os.path.join(script_dir, "cpu_test.py")],
         capture_output=False
     )
 
+    print("\n" + "=" * 60)
+    print("Running NPU inference...")
+    print("=" * 60)
     result_npu = subprocess.run(
         [sys.executable, os.path.join(script_dir, "npu_test.py")],
         capture_output=False
     )
 
-    from model import compare_results
+    from model import compare_results, print_results, CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS
 
-    cpu_data = np.load("/tmp/mmoe_cpu_output.npz")
-    npu_data = np.load("/tmp/mmoe_npu_output.npz")
+    cpu_output_path = "/tmp/mmoe_cpu_output.npz"
+    npu_output_path = "/tmp/mmoe_npu_output.npz"
 
+    if not os.path.exists(cpu_output_path):
+        print(f"WARNING: CPU output file not found: {cpu_output_path}")
+        sys.exit(1)
+
+    if not os.path.exists(npu_output_path):
+        print(f"WARNING: NPU output file not found: {npu_output_path}")
+        sys.exit(1)
+
+    cpu_data = np.load(cpu_output_path)
+    npu_data = np.load(npu_output_path)
+
+    print("\n" + "=" * 60)
+    print("=== CPU and NPU Results Summary ===")
+    print("=" * 60)
+    
+    print(f"\nInput shape: {cpu_data['input'].shape}")
+    print(f"Output shape: {cpu_data['output'].shape}")
+    print(f"Expected output shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
+    
+    print_results(cpu_data['output'], "CPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
+    print_results(npu_data['output'], "NPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
+    
     compare_results(cpu_data['output'], npu_data['output'], cpu_data['input'], npu_data['input'])
 
     if os.path.exists("/tmp/mmoe_cpu_output.npz"):

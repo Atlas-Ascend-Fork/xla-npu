@@ -392,11 +392,7 @@ def setup_model_and_data():
 
 def run_inference_and_save(model, params, x, device_name, output_file):
     """Run inference and save results."""
-    print(f"Input shape: {x.shape}")
     output = run_inference(model, params, x)
-    print(f"Output shape: {output.shape}")
-    print(f"Expected output shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
-    print_results(output, device_name, CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
 
     np.savez(output_file, output=output, input=x)
     return output
