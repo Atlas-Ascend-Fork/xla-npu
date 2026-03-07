@@ -8,6 +8,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <mutex>
+#include <unordered_map>
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
@@ -87,6 +89,25 @@
 #endif
 
 namespace xla {
+
+namespace {
+
+// 编译结果缓存结构 - 直接使用 computation 名称 (calls 后的名称) 作为 key
+struct CompileCache {
+    // 全局编译缓存 (线程安全)
+    static std::unordered_map<std::string, NpuCompileResult>& GetCache() {
+        static std::unordered_map<std::string, NpuCompileResult> cache;
+        return cache;
+    }
+    
+    // 缓存锁
+    static std::mutex& GetMutex() {
+        static std::mutex cache_mutex;
+        return cache_mutex;
+    }
+};
+
+}  // namespace
 
 namespace {
 
@@ -1254,11 +1275,38 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
         }
     }
 
-    AscirBackend ascir_backend;
-    AscirBackendOptions ascir_backend_compile_option;
-    ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
-    ascir_backend_compile_option.soc_version = "Ascend910B1"; // TODO 支持自动感知, 或者用户通过环境变量配置
-    TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(computation_map, ascir_backend_compile_option));
+    // 生成缓存 key - 直接使用 fusion computation 的名称 (calls 后的名称)
+    std::string cache_key = std::string(fused_computation->name());
+    
+    // 检查缓存
+    bool cache_hit = false;
+    {
+        std::lock_guard<std::mutex> lock(CompileCache::GetMutex());
+        auto cache_iter = CompileCache::GetCache().find(cache_key);
+        if (cache_iter != CompileCache::GetCache().end()) {
+            NPU_LOG_FORMAT_PRINT(INFO, "Cache hit for fusion computation: %s", cache_key.c_str());
+            npu_compile_result = cache_iter->second;
+            cache_hit = true;
+        }
+    }
+    
+    // 如果缓存未命中，执行编译
+    if (!cache_hit) {
+        NPU_LOG_FORMAT_PRINT(INFO, "Cache miss for fusion computation: %s, compiling...", cache_key.c_str());
+        
+        AscirBackend ascir_backend;
+        AscirBackendOptions ascir_backend_compile_option;
+        ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
+        ascir_backend_compile_option.soc_version = "Ascend910B1";
+        TF_ASSIGN_OR_RETURN(npu_compile_result, ascir_backend.Compile(computation_map, ascir_backend_compile_option));
+        
+        // 更新缓存
+        {
+            std::lock_guard<std::mutex> lock(CompileCache::GetMutex());
+            CompileCache::GetCache()[cache_key] = npu_compile_result;
+            NPU_LOG_FORMAT_PRINT(INFO, "Cached compilation result for fusion computation: %s", cache_key.c_str());
+        }
+    }
 #elif NPU_AUTO_FUSE_BACKEND == 2
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on npuir.");
     mlir::hfusion::GraphGenTester::test();

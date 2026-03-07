@@ -58,6 +58,10 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
         return absl::InternalError(errMsg);
     }
 
+    // [调试代码] 为 custom kernel thunk 创建独立的流
+    TF_ASSIGN_OR_RETURN(auto debug_stream, params.stream->parent()->CreateStream());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream created: %p", debug_stream->platform_specific_handle().stream);
+
     se::StreamExecutor* executor = params.stream->parent();
 
     se::Kernel* kernel = [&] {
@@ -95,7 +99,7 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
     se::KernelArgsDeviceMemoryArray args(buffer_args, custom_kernel_.shared_memory_bytes());
 
     auto ret = kernel->Launch(custom_kernel_.thread_dims(), custom_kernel_.block_dims(), custom_kernel_.cluster_dims(),
-                              params.stream, args);
+                              debug_stream.get(), args);
 
     id = 0;
     for (const BufferAllocation::Slice& arg : args_) {
@@ -107,6 +111,20 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
 
         id++;
     }
+
+    // [调试代码] 在独立流上同步
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Block host until debug stream done");
+    auto status = debug_stream->BlockHostUntilDone();
+    if (!status.ok()) {
+        const std::string err_msg = absl::StrFormat("BlockHostUntilDone failed: %s", status.ToString().c_str());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return status;
+    }
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream synchronized successfully");
+
+    // [调试代码] 销毁独立流
+    debug_stream.reset();
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream destroyed");
 
     return ret;
 }

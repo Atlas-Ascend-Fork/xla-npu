@@ -181,13 +181,43 @@ class NpuTool {
         const auto& data_shape = ConvertXlaShape2VectorShape(xla_data_shape);
         const auto& data_type = ConvertXlaType2AclDataType(xla_data_type);
 
-        // 计算连续tensor的strides
-        std::vector<int64_t> strides(data_shape.size(), 1);
-        for (int64_t i = data_shape.size() - 2; i >= 0; i--) {
-            strides[i] = data_shape[i + 1] * strides[i + 1];
+        // 从 XLA shape 的 layout 中获取正确的 strides
+        // 如果 shape 没有 layout 信息或 layout 是默认的，则使用连续布局的 strides
+        std::vector<int64_t> strides;
+        if (xla_data_shape.has_layout()) {
+            // 从 layout 中获取 strides
+            const auto& layout = xla_data_shape.layout();
+            const auto& minor_to_major = layout.minor_to_major();
+            
+            // 根据 minor_to_major 顺序计算 strides
+            // minor_to_major[0] 是最 minor 的维度（stride=1）
+            strides.resize(data_shape.size());
+            int64_t stride = 1;
+            for (size_t i = 0; i < minor_to_major.size(); ++i) {
+                int64_t dim = minor_to_major[i];
+                strides[dim] = stride;
+                stride *= data_shape[dim];
+            }
+            NPU_LOG_FORMAT_PRINT(DEBUG, "CreateAclTensorPtr: Using layout-based strides");
+        } else {
+            // 使用默认的连续 tensor strides (从后往前累乘)
+            strides.resize(data_shape.size(), 1);
+            for (int64_t i = data_shape.size() - 2; i >= 0; i--) {
+                strides[i] = data_shape[i + 1] * strides[i + 1];
+            }
         }
 
-        // 调用aclCreateTensor接口创建aclTensor
+        // Debug: print strides
+        std::string strides_str = "[";
+        for (size_t i = 0; i < strides.size(); ++i) {
+            if (i > 0) strides_str += ", ";
+            strides_str += std::to_string(strides[i]);
+        }
+        strides_str += "]";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "CreateAclTensorPtr: shape=%s, strides=%s", 
+                             GetXlaShapeString(xla_data_shape).c_str(), strides_str.c_str());
+
+        // 调用 aclCreateTensor 接口创建 aclTensor
         auto tensor = npu::aclCreateTensor(data_shape.data(), data_shape.size(), data_type, strides.data(), 0,
                                            aclFormat::ACL_FORMAT_ND, data_shape.data(), data_shape.size(), device_addr);
 
