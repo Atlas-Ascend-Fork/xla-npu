@@ -1826,7 +1826,20 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
     std::cerr << "emit_afir_dialect = " << options.emit_afir_dialect << std::endl;
     if (options.emit_afir_dialect) {
         int64_t max_rank = converter.SetModuleGraphAttr(computation);
-        converter.FixTensorShapes(computation, max_rank);
+
+        // Check if the computation contains any concatenate operations
+        bool has_concat = false;
+        for (const HloInstruction* instr : computation.instructions()) {
+            if (instr->opcode() == HloOpcode::kConcatenate) {
+                has_concat = true;
+                break;
+            }
+        }
+
+        // Only call FixTensorShapes if there's a concatenate operation
+        if (has_concat) {
+            converter.FixTensorShapes(computation, max_rank);
+        }
     }
 
     if (options.verify_module) {
