@@ -1636,7 +1636,35 @@ void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int6
     std::cerr << "FixTensorShapes called with max_rank = " << max_rank << std::endl;
     std::cerr << "value_map_ has " << value_map_.size() << " entries" << std::endl;
 
-    // Iterate through all instructions in the computation and fix their MLIR value types
+    // First pass: Collect target shapes from reshape operations
+    // that feed into concat or broadcast operations
+    llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>> target_shapes;
+    for (const HloInstruction* instr : computation.instructions()) {
+        if (instr->opcode() == HloOpcode::kReshape) {
+            // Check if this reshape is used by a concat or broadcast
+            for (const HloInstruction* user : instr->users()) {
+                if (user->opcode() == HloOpcode::kConcatenate ||
+                    user->opcode() == HloOpcode::kBroadcast) {
+                    // Use the reshape's output shape as the target shape
+                    const Shape& shape = instr->shape();
+                    llvm::SmallVector<int64_t> shape_vec(shape.dimensions().begin(),
+                                                           shape.dimensions().end());
+                    target_shapes[user] = shape_vec;
+                    std::cerr << "Found target shape from reshape " << instr->name()
+                             << " (used by " << user->name() << ")"
+                             << ": [";
+                    for (size_t i = 0; i < shape_vec.size(); ++i) {
+                        if (i > 0) std::cerr << ", ";
+                        std::cerr << shape_vec[i];
+                    }
+                    std::cerr << "]" << std::endl;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Second pass: Fix tensor shapes based on target shapes
     for (const HloInstruction* instruction : computation.instructions()) {
         auto it = value_map_.find(instruction);
         if (it == value_map_.end()) {
@@ -1682,6 +1710,31 @@ void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int6
             continue;
         }
 
+        // Find the target shape for this instruction
+        // Look for a concat/broadcast operation that uses this instruction's output
+        const HloInstruction* target_op = nullptr;
+        for (const HloInstruction* user : instruction->users()) {
+            if (target_shapes.count(user)) {
+                target_op = user;
+                break;
+            }
+        }
+
+        // If no target shape found, skip
+        if (!target_op) {
+            std::cerr << "  No target concat/broadcast found, skipping" << std::endl;
+            continue;
+        }
+
+        const llvm::SmallVector<int64_t>& target_shape = target_shapes[target_op];
+        std::cerr << "  Target shape from " << target_op->name()
+                 << ": [";
+        for (size_t i = 0; i < target_shape.size(); ++i) {
+            if (i > 0) std::cerr << ", ";
+            std::cerr << target_shape[i];
+        }
+        std::cerr << "]" << std::endl;
+
         // If rank is 0 (scalar), create shape [1, 1, ..., 1] with max_rank dimensions
         if (current_rank == 0) {
             llvm::SmallVector<int64_t> new_shape(max_rank, 1);
@@ -1710,24 +1763,16 @@ void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int6
             continue;
         }
 
-        // For rank > 0 but < max_rank, we need to insert dimensions of size 1
-        // Insert at position 1 (after the first dimension) to handle [2,2] -> [2,1,2]
-        int64_t num_dims_to_add = max_rank - current_rank;
-        llvm::SmallVector<int64_t> new_shape;
-
-        // Insert dimensions after the first dimension
-        for (int64_t i = 0; i < current_rank; ++i) {
-            new_shape.push_back(tensor_type.getShape()[i]);
-            if (i == 0 && num_dims_to_add > 0) {
-                // Insert all missing dimensions here
-                for (int64_t j = 0; j < num_dims_to_add; ++j) {
-                    new_shape.push_back(1);
-                }
-            }
-        }
+        // Use the target shape directly
+        llvm::SmallVector<int64_t> new_shape(target_shape.begin(), target_shape.end());
 
         auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
-        std::cerr << "  New type rank: " << new_type.getRank() << std::endl;
+        std::cerr << "  New shape: [";
+        for (size_t i = 0; i < new_shape.size(); ++i) {
+            if (i > 0) std::cerr << ", ";
+            std::cerr << new_shape[i];
+        }
+        std::cerr << "]" << std::endl;
 
         // Update the block argument
         value_to_update.setType(new_type);
