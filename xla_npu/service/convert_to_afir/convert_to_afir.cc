@@ -1827,17 +1827,22 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
     if (options.emit_afir_dialect) {
         int64_t max_rank = converter.SetModuleGraphAttr(computation);
 
-        // Check if the computation contains any concatenate operations
+        // Check if the computation contains any concatenate/brc operations
         bool has_concat = false;
+        bool has_brc = false;
         for (const HloInstruction* instr : computation.instructions()) {
             if (instr->opcode() == HloOpcode::kConcatenate) {
                 has_concat = true;
                 break;
             }
+            if (instr->opcode() == HloOpcode::kBroadcast) {
+                has_brc = true;
+                break;
+            }
         }
 
-        // Only call FixTensorShapes if there's a concatenate operation
-        if (has_concat) {
+        // Only call FixTensorShapes if there's a concatenate or broadcast operation
+        if (has_concat || has_brc) {
             converter.FixTensorShapes(computation, max_rank);
         }
     }
