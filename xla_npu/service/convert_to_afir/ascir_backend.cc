@@ -504,14 +504,6 @@ absl::StatusOr<std::vector<std::string>> AscirBackend::ConvertHloToAfirModule(
         TF_ASSIGN_OR_RETURN(auto mlir_module,
                             ConvertHloComputationToAfir(*computation, context.get(), afir_options));
 
-        // Run AFIRAddAxis pass to add missing axes for reshape operations
-        mlir::PassManager pm(context.get());
-        pm.addPass(mlir::afir::createAFIRAddAxisPass());
-        if (mlir::failed(pm.run(*mlir_module))) {
-            return absl::InternalError("Failed to run AFIRAddAxis pass");
-        }
-        NPU_LOG_PRINT(INFO, "AFIRAddAxis pass completed");
-
         // Serialize MLIR module to string immediately
         std::string afir_string;
         llvm::raw_string_ostream stream(afir_string);

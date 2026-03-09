@@ -61,7 +61,11 @@ class HloToAfirConverter {
 
     // Set module-level graph attributes
     void SetModuleGraphAttr(const HloModule& hlo_module);
-    void SetModuleGraphAttr(const HloComputation& computation);
+    int64_t SetModuleGraphAttr(const HloComputation& computation);
+
+    // Fix tensor shapes to match max_rank from asc_graph_attr
+    // This handles cases like [2,2] -> [2,1,2] reshape by inserting dimensions
+    void FixTensorShapes(const HloComputation& computation, int64_t max_rank);
 
    private:
     // Convert a single HLO instruction
@@ -994,7 +998,7 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstru
         }
 
         if (is_one_dim_reshape) {
-            // Reshape only adds/removes dimensions of size 1
+            // Reshape only adds or removes dimensions of size 1
             // The underlying data layout is the same, so we can just return the operand
             return operand;
         }
@@ -1158,10 +1162,13 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConcatenateOp(const HloIn
 
         int64_t result_rank = result_tensor_type.getRank();
 
-        // Build identity indexing map for inputs (AFIR ConcatOp uses identity map)
+        // Build identity indexing maps for all inputs (AFIR ConcatOp uses identity maps)
         auto identity_map = GetIdentityAffineMap(result_rank);
         llvm::SmallVector<mlir::AffineMap> maps;
-        maps.push_back(identity_map);
+        // Each input gets an identity map
+        for (size_t i = 0; i < operands.size(); ++i) {
+            maps.push_back(identity_map);
+        }
         auto indexing_maps_attr = CreateIndexingMaps(maps);
 
         // Build outputs attribute
@@ -1568,7 +1575,7 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
     getModule()->setAttr("afir.asc_graph_attr", asc_graph_attr);
 }
 
-void HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
+int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
     // For computations without parameters, derive axis information from the root instruction's output shape
     const Shape* shape_for_axes = nullptr;
     int64_t max_rank = 0;
@@ -1621,6 +1628,138 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
 
     // Set module attribute
     getModule()->setAttr("afir.asc_graph_attr", asc_graph_attr);
+
+    return max_rank;
+}
+
+void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int64_t max_rank) {
+    std::cerr << "FixTensorShapes called with max_rank = " << max_rank << std::endl;
+    std::cerr << "value_map_ has " << value_map_.size() << " entries" << std::endl;
+
+    // Iterate through all instructions in the computation and fix their MLIR value types
+    for (const HloInstruction* instruction : computation.instructions()) {
+        auto it = value_map_.find(instruction);
+        if (it == value_map_.end()) {
+            continue;
+        }
+
+        mlir::Value value = it->second;
+        std::cerr << "Processing instruction: " << instruction->name() << std::endl;
+
+        // Check if this value is produced by a load operation
+        // If so, we need to update the load's input (the block argument)
+        mlir::Value value_to_update = value;
+        if (mlir::Operation* op = value.getDefiningOp()) {
+            if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
+                // This is a load operation, get its input (block argument)
+                value_to_update = loadOp.getInput();
+                std::cerr << "  Found load op, will update its input (block argument)" << std::endl;
+            }
+        }
+
+        // Check if the value to update is a block argument
+        auto blockArg = dyn_cast<mlir::BlockArgument>(value_to_update);
+        if (!blockArg) {
+            std::cerr << "  This is NOT a BlockArgument, skipping" << std::endl;
+            continue;
+        }
+
+        std::cerr << "  This is a BlockArgument, arg_num = " << blockArg.getArgNumber() << std::endl;
+
+        auto tensor_type = dyn_cast<mlir::RankedTensorType>(value.getType());
+        if (!tensor_type) {
+            std::cerr << "  Not a tensor type" << std::endl;
+            continue;
+        }
+
+        std::cerr << "  Current rank: " << tensor_type.getRank() << std::endl;
+
+        int64_t current_rank = tensor_type.getRank();
+
+        // If rank already matches max_rank, no need to fix
+        if (current_rank == max_rank) {
+            std::cerr << "  Rank already matches max_rank, skipping" << std::endl;
+            continue;
+        }
+
+        // If rank is 0 (scalar), create shape [1, 1, ..., 1] with max_rank dimensions
+        if (current_rank == 0) {
+            llvm::SmallVector<int64_t> new_shape(max_rank, 1);
+            auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
+            value_to_update.setType(new_type);
+
+            // Update function signature
+            if (auto func = dyn_cast<mlir::func::FuncOp>(blockArg.getOwner()->getParentOp())) {
+                auto func_type = func.getFunctionType();
+                llvm::SmallVector<mlir::Type> inputs(func_type.getInputs().begin(),
+                                                      func_type.getInputs().end());
+                inputs[blockArg.getArgNumber()] = new_type;
+                auto new_func_type = mlir::FunctionType::get(func.getContext(), inputs, func.getResultTypes());
+                func.setType(new_func_type);
+                blockArg.setType(new_type);
+            }
+
+            // Update load operation if this value is produced by a load
+            if (mlir::Operation* op = value.getDefiningOp()) {
+                if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
+                    loadOp.getResult().setType(new_type);
+                    loadOp.setIndexingMapsAttr(CreateIndexingMaps({GetIdentityAffineMap(max_rank)}));
+                }
+            }
+
+            continue;
+        }
+
+        // For rank > 0 but < max_rank, we need to insert dimensions of size 1
+        // Insert at position 1 (after the first dimension) to handle [2,2] -> [2,1,2]
+        int64_t num_dims_to_add = max_rank - current_rank;
+        llvm::SmallVector<int64_t> new_shape;
+
+        // Insert dimensions after the first dimension
+        for (int64_t i = 0; i < current_rank; ++i) {
+            new_shape.push_back(tensor_type.getShape()[i]);
+            if (i == 0 && num_dims_to_add > 0) {
+                // Insert all missing dimensions here
+                for (int64_t j = 0; j < num_dims_to_add; ++j) {
+                    new_shape.push_back(1);
+                }
+            }
+        }
+
+        auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
+        std::cerr << "  New type rank: " << new_type.getRank() << std::endl;
+
+        // Update the block argument
+        value_to_update.setType(new_type);
+
+        // Update function signature
+        if (auto func = dyn_cast<mlir::func::FuncOp>(blockArg.getOwner()->getParentOp())) {
+            auto func_type = func.getFunctionType();
+            llvm::SmallVector<mlir::Type> inputs(func_type.getInputs().begin(),
+                                                  func_type.getInputs().end());
+            inputs[blockArg.getArgNumber()] = new_type;
+
+            auto new_func_type = mlir::FunctionType::get(func.getContext(), inputs, func.getResultTypes());
+
+            std::cerr << "Updating function " << func.getName().str()
+                     << " arg " << blockArg.getArgNumber()
+                     << " from rank " << cast<mlir::RankedTensorType>(func_type.getInputs()[blockArg.getArgNumber()]).getRank()
+                     << " to rank " << new_type.getRank() << std::endl;
+
+            func.setType(new_func_type);
+            blockArg.setType(new_type);
+
+            std::cerr << "After update: rank " << cast<mlir::RankedTensorType>(func.getFunctionType().getInputs()[blockArg.getArgNumber()]).getRank() << std::endl;
+        }
+
+        // Update load operation's output type and indexing maps
+        if (mlir::Operation* op = value.getDefiningOp()) {
+            if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
+                loadOp.getResult().setType(new_type);
+                loadOp.setIndexingMapsAttr(CreateIndexingMaps({GetIdentityAffineMap(max_rank)}));
+            }
+        }
+    }
 }
 
 }  // namespace
@@ -1683,9 +1822,11 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
     // Convert entry computation last
     TF_ASSIGN_OR_RETURN(auto func, converter.ConvertComputation(computation, /*is_entry=*/true));
 
-    // Set module-level asc_graph_attr if emit_afir_dialect is enabled
+    // Set module-level asc_graph_attr and fix tensor shapes if emit_afir_dialect is enabled
+    std::cerr << "emit_afir_dialect = " << options.emit_afir_dialect << std::endl;
     if (options.emit_afir_dialect) {
-        converter.SetModuleGraphAttr(computation);
+        int64_t max_rank = converter.SetModuleGraphAttr(computation);
+        converter.FixTensorShapes(computation, max_rank);
     }
 
     if (options.verify_module) {

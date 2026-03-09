@@ -117,13 +117,6 @@ absl::Status Run(const HloToAfirOptions& options) {
         // Convert HloComputation to AFIR
         TF_ASSIGN_OR_RETURN(mlir_module, ConvertHloComputationToAfir(*computation, &context, options));
 
-        // Run AFIRAddAxis pass to add missing axes for reshape operations
-        mlir::PassManager pm(&context);
-        pm.addPass(mlir::afir::createAFIRAddAxisPass());
-        if (mlir::failed(pm.run(*mlir_module))) {
-            return absl::InternalError("Failed to run AFIRAddAxis pass");
-        }
-        std::cout << "AFIRAddAxis pass completed" << std::endl;
     } else { // convert entire hlo module
         // Get input file
         std::string input_file = absl::GetFlag(FLAGS_input);

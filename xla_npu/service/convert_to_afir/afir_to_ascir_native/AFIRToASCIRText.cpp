@@ -90,12 +90,12 @@ struct AFIRToASCIRTextPass : public ::impl::ConvertAFIRToASCIRTextPassBase<AFIRT
 
 AFIRToASCIRTextPass::OpInfo AFIRToASCIRTextPass::getOpInfo(StringRef opName) {
     static const llvm::StringMap<OpInfo> opInfoMap = {
-        {"load", {1, 2, 11, false}},        {"store", {1, 2, 1, false}},      {"scalar", {1, 1, 11, false}},
-        {"index_expr", {1, 1, 11, false}},  {"broadcast", {2, 7, 11, true}},  {"cast", {1, 5, 3, false}},
-        {"select", {1, 5, 3, false}},       {"where", {1, 5, 3, false}},      {"concat", {1, 5, 3, false}},
-        {"max", {1, 5, 3, false}},          {"min", {1, 5, 3, false}},        {"sum", {1, 5, 3, false}},
-        {"mean", {1, 5, 3, false}},         {"prod", {1, 5, 3, false}},       {"any", {1, 5, 3, false}},
-        {"all", {1, 5, 3, false}},          {"abs", {1, 5, 3, false}},        {"exp", {1, 5, 3, false}},
+        {"load", {1, 2, 0, false}},         {"store", {1, 2, 1, false}},      {"scalar", {1, 1, 11, false}},
+        {"index_expr", {1, 1, 11, false}},  {"broadcast", {2, 7, 4, true}},   {"cast", {1, 5, 3, false}},
+        {"select", {1, 5, 3, false}},       {"where", {1, 5, 3, false}},      {"concat", {1, 5, 7, false}},
+        {"max", {1, 5, 3, false}},          {"min", {1, 5, 3, false}},        {"sum", {1, 5, 5, false}},
+        {"mean", {1, 5, 5, false}},         {"prod", {1, 5, 5, false}},       {"any", {1, 5, 5, false}},
+        {"all", {1, 5, 5, false}},          {"abs", {1, 5, 3, false}},        {"exp", {1, 5, 3, false}},
         {"ln", {1, 5, 3, false}},           {"sqrt", {1, 5, 3, false}},       {"rsqrt", {1, 5, 3, false}},
         {"reciprocal", {1, 5, 3, false}},   {"erf", {1, 5, 3, false}},        {"tanh", {1, 5, 3, false}},
         {"relu", {1, 5, 3, false}},         {"neg", {1, 5, 3, false}},        {"sigmoid", {1, 5, 3, false}},
@@ -122,13 +122,18 @@ std::string AFIRToASCIRTextPass::calculateStrides(ArrayRef<int64_t> shape) {
     llvm::raw_string_ostream os(result);
 
     int rank = shape.size();
+    // Calculate strides using column-major layout
+    // For shape [d0, d1, d2, ...], strides are [d1*d2*..., d2*..., ..., 1]
+    // Note: Size-1 dimensions are treated as broadcast dimensions with stride=0
     for (int i = 0; i < rank; i++) {
         if (shape[i] == 1) {
+            // Size-1 dimension - broadcast dimension, stride is 0
             os << "      strides: \"0\"\n";
         } else {
+            // Calculate stride for this dimension (column-major)
             int64_t stride = 1;
             for (int j = i + 1; j < rank; j++) {
-                if (shape[j] > 0 && shape[j] != 1) {
+                if (shape[j] > 0) {
                     stride *= shape[j];
                 }
             }
@@ -542,15 +547,10 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
             // Generate strides directly using column-major layout
             // For a tensor with shape [d0, d1, d2, ...], strides are [d1*d2*..., d2*..., ..., 1]
             for (int i = 0; i < std::min(numAxes, rank); i++) {
-                // Check if the corresponding repeat is 1 (scalar/broadcast dimension)
-                // For the first (rank - numAxes) dimensions that were dropped, check the original repeats
-                int64_t repeat_val = 1;
-                if (i < rank) {
-                    repeat_val = shape[i];
-                }
+                int64_t repeat_val = shape[i];
 
                 if (repeat_val == 1) {
-                    // Broadcast dimension - stride is 0
+                    // dimension with shape 1, stride is 0
                     os << "      strides: \"0\"\n";
                 } else {
                     // Calculate stride for this dimension (column-major)
@@ -741,11 +741,18 @@ std::string AFIRToASCIRTextPass::generateIrDef(Operation* op) {
 
     os << "  ir_def {\n";
 
-    for (int i = 0; i < inputNums; i++) {
-        if (inputNums == 1) {
-            os << "    input_names: \"x\"\n";
-        } else {
-            os << "    input_names: \"x" << (i + 1) << "\"\n";
+    // For concat operations, always use a single "x" input name
+    // regardless of the number of operands, because concat is registered
+    // with a single dynamic input in autofuse
+    if (baseOpName == "concat") {
+        os << "    input_names: \"x\"\n";
+    } else {
+        for (int i = 0; i < inputNums; i++) {
+            if (inputNums == 1) {
+                os << "    input_names: \"x\"\n";
+            } else {
+                os << "    input_names: \"x" << (i + 1) << "\"\n";
+            }
         }
     }
 
@@ -753,8 +760,13 @@ std::string AFIRToASCIRTextPass::generateIrDef(Operation* op) {
         os << "    output_names: \"y\"\n";
     }
 
-    for (int i = 0; i < inputNums; i++) {
-        os << "    input_ir_type: 0\n";
+    // For concat operations, only generate one input_ir_type
+    if (baseOpName == "concat") {
+        os << "    input_ir_type: 2\n";
+    } else {
+        for (int i = 0; i < inputNums; i++) {
+            os << "    input_ir_type: 0\n";
+        }
     }
 
     for (int i = 0; i < outputNums; i++) {
@@ -768,8 +780,13 @@ std::string AFIRToASCIRTextPass::generateIrDef(Operation* op) {
 
     os << "    type: \"" << capitalizedOpName << "\"\n";
 
-    for (int i = 0; i < inputNums; i++) {
-        os << "    input_nums: 1\n";
+    // For concat operations, only generate one input_nums
+    if (baseOpName == "concat") {
+        os << "    input_nums: " << inputNums << "\n";  // The single input has inputNums tensors
+    } else {
+        for (int i = 0; i < inputNums; i++) {
+            os << "    input_nums: 1\n";
+        }
     }
 
     for (int i = 0; i < outputNums; i++) {
