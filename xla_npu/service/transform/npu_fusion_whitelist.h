@@ -38,9 +38,9 @@ class NpuFusionWhitelist {
     // Returns true if given opcode should skip fusion.
     static bool ShouldSkipFusion(HloOpcode opcode) {
         // Hardcoded whitelist of opcodes to skip fusion
+        // Note: Exp, Add, and Subtract are added to avoid numerical instability in fused kernels
         static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {
-            HloOpcode::kDot,     HloOpcode::kReshape,   HloOpcode::kConcatenate, HloOpcode::kConstant,
-            HloOpcode::kMaximum, HloOpcode::kBroadcast, HloOpcode::kReduce,
+            HloOpcode::kDot,
         };
         return kSkipFusionOpcodes.contains(opcode);
     }

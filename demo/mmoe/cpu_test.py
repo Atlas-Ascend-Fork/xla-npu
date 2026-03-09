@@ -1,27 +1,78 @@
 # -*- coding:utf-8 -*-
 """
-MMOE CPU Test - Run inference on CPU
+MMOE CPU Test - Run inference on CPU multiple times
 """
 
 import os
 import sys
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from model import (
-    setup_model_and_data,
-    run_inference_and_save,
-    CONFIG_BATCH_SIZE,
-    CONFIG_NUM_TASKS,
-)
+# Global variables for caching
+_model = None
+_params = None
+_initialized = False
 
 
-def run_cpu_test():
-    """Run CPU inference test."""
-    model, params, x = setup_model_and_data()
-    output = run_inference_and_save(model, params, x, "CPU", "/tmp/mmoe_cpu_output.npz")
-    return output, x
+def get_model_and_params():
+    """Get or create model and parameters (cached)."""
+    global _model, _params
+    
+    if _model is None or _params is None:
+        from model import setup_model_and_data
+        _model, _params, _ = setup_model_and_data()
+    
+    return _model, _params
+
+
+def run_cpu_test(num_runs=1, test_idx=1):
+    """Run CPU inference test multiple times.
+    
+    Args:
+        num_runs: Number of runs to execute
+        test_idx: Test index (1-based), used to generate different inputs
+    """
+    import jax.numpy as jnp
+    from model import (
+        CONFIG_BATCH_SIZE,
+        CONFIG_INPUT_DIM,
+    )
+    
+    # Get cached model and params
+    model, params = get_model_and_params()
+    
+    # Prepare input data with test-specific sequence
+    # Use deterministic increasing sequence based on test_idx
+    total_elements = CONFIG_BATCH_SIZE * CONFIG_INPUT_DIM
+    start_value = 1
+    x_values = np.arange(start_value, start_value + total_elements, dtype=np.float32)
+    x = jnp.array(x_values.reshape((CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)))
+    
+    # Run inference multiple times
+    from model import run_inference_and_save
+    outputs = []
+    
+    for i in range(num_runs):
+        print(f"[CPU] Running inference {i+1}/{num_runs}...", flush=True)
+        output_file = f"/tmp/mmoe_cpu_output.npz"
+        output = run_inference_and_save(model, params, x, "CPU", output_file)
+        outputs.append(output.copy())
+        print(f"[CPU] Run {i+1}/{num_runs} completed", flush=True)
+    
+    # Save all outputs for comparison
+    all_outputs = np.stack(outputs, axis=0)
+    np.savez("/tmp/mmoe_cpu_all_outputs.npz", 
+             input=x, 
+             outputs=all_outputs,
+             num_runs=num_runs)
+    
+    print(f"[CPU] All {num_runs} runs completed and saved", flush=True)
+    return outputs, x
 
 
 if __name__ == "__main__":
-    output, x = run_cpu_test()
+    # Get num_runs and test_idx from environment
+    num_runs = int(os.environ.get('NUM_RUNS', '1'))
+    test_idx = int(os.environ.get('TEST_IDX', '1'))
+    outputs, x = run_cpu_test(num_runs, test_idx)

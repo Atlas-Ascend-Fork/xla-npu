@@ -1252,6 +1252,8 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     const HloComputation* fused_computation = fusion.fused_instructions_computation();
 
     NpuCompileResult npu_compile_result;
+    const std::string entry_computation_key_name = NpuConstant::entryComputationKeyName;
+
 #if NPU_AUTO_FUSE_BACKEND == 1
     // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
     NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse switch is set open, run fusion compile based on afir.");
@@ -1259,7 +1261,6 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(NpuIrEmitterContex
     // 构建 computation map: key 为 "main" 表示 entry computation
     // 如果有 reduce 指令，将其 to_apply computation 也加入 map
     std::unordered_map<std::string, const HloComputation*> computation_map;
-    const std::string entry_computation_key_name = NpuConstant::entryComputationKeyName;
     computation_map[entry_computation_key_name] = fused_computation;
 
     // 遍历所有指令,查找 reduce 类型指令

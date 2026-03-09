@@ -1,49 +1,61 @@
 # -*- coding:utf-8 -*-
 """
-初始化MMOE模型参数并保存到文件
+Initialize MMOE model parameters and save to file
+Automatically reads configuration from model.py
 """
 
 import os
+import sys
 import jax
 import jax.numpy as jnp
 import numpy as np
-from mmoe import create_mmoe, save_params_with_npz
+
+# Import configuration from model.py
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from model import (
+    create_mmoe,
+    save_params_with_npz,
+    CONFIG_INPUT_DIM,
+    CONFIG_BATCH_SIZE,
+    CONFIG_NUM_EXPERTS,
+    CONFIG_NUM_TASKS,
+    CONFIG_EXPERT_DNN_HIDDEN_UNITS,
+    CONFIG_GATE_DNN_HIDDEN_UNITS,
+    CONFIG_TOWER_DNN_HIDDEN_UNITS,
+    CONFIG_DNN_ACTIVATION,
+    CONFIG_TASK_TYPES,
+    CONFIG_MODEL_PARAMS_FILE,
+)
 
 
 def main():
-    # Configuration - 与mmoe.py中的配置保持一致
-    # 当前配置: input_dim=4, batch_size=2, num_experts=2, num_tasks=2
-    #           expert_dnn_hidden_units=(4, 2), gate_dnn_hidden_units=(2,), tower_dnn_hidden_units=(2,)
-    input_dim = 4
-    batch_size = 2
-    num_experts = 2
-    num_tasks = 2
-
     print("Initializing MMOE model parameters...")
-    print(f"Input dim: {input_dim}, Batch size: {batch_size}")
-    print(f"Num experts: {num_experts}, Num tasks: {num_tasks}")
+    print(f"Input dim: {CONFIG_INPUT_DIM}, Batch size: {CONFIG_BATCH_SIZE}")
+    print(f"Num experts: {CONFIG_NUM_EXPERTS}, Num tasks: {CONFIG_NUM_TASKS}")
+    print(f"Expert hidden units: {CONFIG_EXPERT_DNN_HIDDEN_UNITS}")
+    print(f"Gate hidden units: {CONFIG_GATE_DNN_HIDDEN_UNITS}")
+    print(f"Tower hidden units: {CONFIG_TOWER_DNN_HIDDEN_UNITS}")
 
-    # Create model - 使用更小的隐藏层
-    # expert_dnn_hidden_units=(4, 2), gate_dnn_hidden_units=(2,), tower_dnn_hidden_units=(2,)
+    # Create model with configuration from model.py
     model = create_mmoe(
-        input_dim=input_dim,
-        num_experts=num_experts,
-        num_tasks=num_tasks,
-        expert_dnn_hidden_units=(4, 2),
-        gate_dnn_hidden_units=(2,),
-        tower_dnn_hidden_units=(2,),
-        dnn_activation='relu',
-        task_types=('binary', 'binary'),
+        input_dim=CONFIG_INPUT_DIM,
+        num_experts=CONFIG_NUM_EXPERTS,
+        num_tasks=CONFIG_NUM_TASKS,
+        expert_dnn_hidden_units=CONFIG_EXPERT_DNN_HIDDEN_UNITS,
+        gate_dnn_hidden_units=CONFIG_GATE_DNN_HIDDEN_UNITS,
+        tower_dnn_hidden_units=CONFIG_TOWER_DNN_HIDDEN_UNITS,
+        dnn_activation=CONFIG_DNN_ACTIVATION,
+        task_types=CONFIG_TASK_TYPES,
     )
 
-    # Initialize parameters (all ones for debugging)
+    # Initialize parameters with random seed
     key = jax.random.PRNGKey(42)
-    dummy_input = jnp.ones((1, input_dim))
+    dummy_input = jnp.ones((1, CONFIG_INPUT_DIM))
     key, init_key = jax.random.split(key)
     params = model.init(init_key, dummy_input, train=False)
 
     # Save parameters
-    save_filepath = os.path.join(os.path.dirname(__file__), "model_params_small.npz")
+    save_filepath = os.path.join(os.path.dirname(__file__), CONFIG_MODEL_PARAMS_FILE)
     save_params_with_npz(params, save_filepath)
     print(f"\nParameters saved to: {save_filepath}")
 

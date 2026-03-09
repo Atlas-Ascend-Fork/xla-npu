@@ -330,12 +330,27 @@ def load_params_with_npz(filepath: str):
     return params_jax
 
 
-def run_inference(model, params, x):
-    """运行推理并返回结果."""
-    @jax.jit
-    def jitted_forward(params, x):
-        return model.apply(params, x, train=False)
+# Module-level JIT cache
+_jit_cache = {}
 
+def get_jitted_forward(model):
+    """Get or create JIT-compiled forward function for the model."""
+    # Use model ID as cache key
+    model_id = id(model)
+    if model_id not in _jit_cache:
+        @jax.jit
+        def jitted_forward(params, x):
+            return model.apply(params, x, train=False)
+        _jit_cache[model_id] = jitted_forward
+    return _jit_cache[model_id]
+
+def run_inference(model, params, x):
+    """Run inference and return results."""
+    # Clear JIT cache before each inference to force recompilation
+    # This avoids stale cache issues and ensures fresh compilation each time
+    _jit_cache.clear()
+    
+    jitted_forward = get_jitted_forward(model)
     output = jitted_forward(params, x)
     return np.array(output)
 
@@ -351,7 +366,7 @@ def print_results(output, device_name, batch_size, num_tasks):
     print(f"  Std: {output.std():.6f}")
 
 
-# Model Configuration
+# Model Configuration - Original small size
 CONFIG_INPUT_DIM = 4
 CONFIG_BATCH_SIZE = 2
 CONFIG_NUM_EXPERTS = 2
@@ -360,9 +375,8 @@ CONFIG_EXPERT_DNN_HIDDEN_UNITS = (4, 2)
 CONFIG_GATE_DNN_HIDDEN_UNITS = (2,)
 CONFIG_TOWER_DNN_HIDDEN_UNITS = (2,)
 CONFIG_DNN_ACTIVATION = 'relu'
-CONFIG_TASK_TYPES = ('binary', 'binary')
-CONFIG_MODEL_PARAMS_FILE = "model_params_small.npz"
-
+CONFIG_TASK_TYPES = ('binary', 'binary')  # Must match CONFIG_NUM_TASKS
+CONFIG_MODEL_PARAMS_FILE = "model_params.npz"
 
 def get_model_params_path():
     """Get the path to model parameters file."""
@@ -385,7 +399,9 @@ def setup_model_and_data():
     save_filepath = get_model_params_path()
     params = load_params_with_npz(save_filepath)
 
-    x = np.arange(1, CONFIG_BATCH_SIZE * CONFIG_INPUT_DIM + 1, dtype=np.float32).reshape(CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
+    # 使用随机数作为输入 (固定随机种子以保证可重复性)
+    np.random.seed(42)
+    x = np.random.rand(CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM).astype(np.float32)
 
     return model, params, x
 
