@@ -359,12 +359,47 @@ def Air_CastOp : Air_Op<"Cast", [Pure]> {
     AnyType:$y
   );
 }
-// --- func.call (for calling other functions like @relu) ---
-// This would typically reuse existing func.call or define a similar call op
-// def Air_CallOp : Air_Op<"call", [NoMemoryEffect]> { ... }
 
-// --- func.func (for defining functions like @relu) ---
-// This would typically reuse existing func.func or define a similar func op
-// def Air_FuncOp : Air_Op<"func", [IsolatedFromAbove, Symbol]> { ... }
+//===--------------------------------------------------------------------------===//
+// SqueezeV3Op
+//===--------------------------------------------------------------------------===//
+def Air_SqueezeV3Op : Air_Op<"SqueezeV3", [Pure]> {
+  let summary = "Removes dimensions of size 1 from the shape of a tensor.";
+  let description = [{
+    The SqueezeV3 operation removes specified dimensions of size 1 from the shape of a tensor.
+    If the optional 'axes' input is provided, only the dimensions listed in 'axes' will be removed,
+    and those dimensions must have a size of 1. If 'axes' is not provided (is None),
+    all dimensions of size 1 will be removed automatically.
+  }];
+
+  let arguments = (ins
+    Air_Tensor:$x,
+    Optional<Air_Tensor>:$axes
+  );
+
+  let results = (outs
+    Air_Tensor:$output
+  );
+}
+
+//===--------------------------------------------------------------------------===//
+// UnsqueezeV3Op
+//===--------------------------------------------------------------------------===//
+def Air_UnsqueezeV3Op : Air_Op<"UnsqueezeV3", [Pure]> {
+  let summary = "Inserts dimensions of size 1 into the shape of a tensor.";
+  let description = [{
+    The UnsqueezeV3 operation inserts new dimensions of size 1 at specified positions in the shape of a tensor.
+    The positions are given by the 'axes' input tensor, which is a 1-D tensor of type int64.
+  }];
+
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$axes
+  );
+
+  let results = (outs
+    Air_Tensor:$output
+  );
+}
 
 #endif // MAIR_OPS
