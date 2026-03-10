@@ -36,13 +36,6 @@
 namespace mlir {
 namespace air {
 namespace {
-  // Returns the shape of the given value in a Constant Op.
-  ConstantOp ShapeToConst(PatternRewriter &rewriter, Value value) {
-    ArrayRef<int64_t> shape = mlir::dyn_cast<ShapedType>(value.getType()).getShape();
-    auto attr_type = RankedTensorType::get({static_cast<int64_t>(shape.size())}, rewriter.getIntegerType(64));
-    auto attr = DenseElementsAttr::get(attr_type, shape);
-    return rewriter.create<ConstantOp>(value.getLoc(), attr_type, attr);
-  }
   std::uint32_t getReduceTypeString(mlir::stablehlo::AllReduceOp allReduceOp) {
     // 获取 computation 区域
     mlir::Region& computationRegion = allReduceOp.getComputation();
@@ -104,13 +97,154 @@ namespace {
         return success();
       };
   };
-  class ConvertBroadcastOp : public OpConversionPattern<stablehlo::BroadcastInDimOp> {
+
+  // 暂未考虑BroadcastInDim包含转置的情况，转置需要新增transpose进行处理
+  class ConvertBroadcastInDimOp : public OpConversionPattern<stablehlo::BroadcastInDimOp> {
     public:
       using OpConversionPattern::OpConversionPattern;
       LogicalResult matchAndRewrite(stablehlo::BroadcastInDimOp op, OpAdaptor adaptor,
                                     ConversionPatternRewriter &rewriter) const final {
-        auto const_op = ShapeToConst(rewriter, op.getResult());
-        rewriter.replaceOpWithNewOp<BroadcastOp>(op, op.getType(), op.getOperand(), const_op.getResult());
+        Value operand = op.getOperand();
+        auto operandType = dyn_cast<RankedTensorType>(operand.getType());
+        auto resultType = dyn_cast<RankedTensorType>(op.getType());
+        auto broadcastDims = op.getBroadcastDimensions();
+        auto operandShape = operandType.getShape();
+        auto resultShape = resultType.getShape();
+        // 维度减小，如果需要移除维度不为1，返回报错
+        if (operandType.getRank() > resultType.getRank()) {
+            llvm::SmallDenseSet<int64_t> operandDimsUsedInResult(broadcastDims.begin(), broadcastDims.end());
+            SmallVector<int64_t> axesToSqueeze;
+            for (int i = 0; i < operandType.getRank(); ++i) {
+                if (operandDimsUsedInResult.count(i) == 0) {
+                    if (operandShape[i] != 1) {
+                        return failure();
+                    }
+                    axesToSqueeze.push_back(i);
+                }
+            }
+
+            auto axesTensorType = RankedTensorType::get(
+                {static_cast<int64_t>(axesToSqueeze.size())}, rewriter.getI64Type());
+            auto axesAttr = DenseIntElementsAttr::get(axesTensorType, axesToSqueeze);
+            auto axesConstOp = rewriter.create<air::ConstantOp>(
+                op.getLoc(),
+                axesTensorType,
+                axesAttr
+            );
+            auto newOp = rewriter.create<air::SqueezeV3Op>(
+                op.getLoc(),
+                resultType,
+                operand,
+                axesConstOp.getResult()
+            );
+            rewriter.replaceOp(op, newOp.getResult());
+            return success();
+        }
+        // 维度增加分两种情况, 如果新增维度为1直接增加，如果新增维度不为1, 先新增维度在执行BroadcastOp
+        if (operandType.getRank() < resultType.getRank()) {
+          llvm::SmallDenseSet<int64_t> resultDimsUsedInOperand(broadcastDims.begin(), broadcastDims.end());
+          SmallVector<int64_t> axesToUnsqueeze;
+          bool needBroadcastAfterUnsqueeze = false;
+          for (int i = 0; i < resultType.getRank(); ++i) {
+              if (resultDimsUsedInOperand.count(i) == 0) {
+                  if (resultShape[i] != 1) {
+                      needBroadcastAfterUnsqueeze = true;
+                  }
+                  axesToUnsqueeze.push_back(i);
+              }
+          }
+
+          if (needBroadcastAfterUnsqueeze) {
+              SmallVector<int64_t> intermediateShape;
+              int operand_idx = 0;
+              for (int i = 0; i < resultType.getRank(); ++i) {
+                  if (resultDimsUsedInOperand.count(i) > 0) {
+                      intermediateShape.push_back(operandShape[operand_idx]);
+                      operand_idx++;
+                  } else {
+                      intermediateShape.push_back(1);
+                  }
+              }
+              auto intermediateType = RankedTensorType::get(intermediateShape, resultType.getElementType());
+
+              auto unsqueezeAxesTensorType = RankedTensorType::get(
+                  {static_cast<int64_t>(axesToUnsqueeze.size())}, rewriter.getI64Type());
+              auto unsqueezeAxesAttr = DenseIntElementsAttr::get(unsqueezeAxesTensorType, axesToUnsqueeze);
+              auto unsqueezeAxesConstOp = rewriter.create<air::ConstantOp>(
+                  op.getLoc(),
+                  unsqueezeAxesTensorType,
+                  unsqueezeAxesAttr
+              );
+
+              auto unsqueezeOp = rewriter.create<air::UnsqueezeV3Op>(
+                  op.getLoc(),
+                  intermediateType,
+                  operand,
+                  unsqueezeAxesConstOp.getResult()
+              );
+              Value intermediateValue = unsqueezeOp.getResult();
+
+              auto targetShape = resultType.getShape();
+              SmallVector<int64_t> shapeValues(targetShape.begin(), targetShape.end());
+              auto shapeTensorType = RankedTensorType::get(
+                  {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
+              auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, shapeValues);
+              auto shapeConstOp = rewriter.create<air::ConstantOp>(
+                  op.getLoc(),
+                  shapeTensorType,
+                  shapeAttr
+              );
+
+              auto newOp = rewriter.create<air::BroadcastOp>(
+                  op.getLoc(),
+                  resultType,
+                  intermediateValue,
+                  shapeConstOp.getResult()
+              );
+
+              rewriter.replaceOp(op, newOp.getResult());
+              return success();
+          } else {
+              auto axesTensorType = RankedTensorType::get(
+                  {static_cast<int64_t>(axesToUnsqueeze.size())}, rewriter.getI64Type());
+              auto axesAttr = DenseIntElementsAttr::get(axesTensorType, axesToUnsqueeze);
+              auto axesConstOp = rewriter.create<air::ConstantOp>(
+                  op.getLoc(),
+                  axesTensorType,
+                  axesAttr
+              );
+
+              auto newOp = rewriter.create<air::UnsqueezeV3Op>(
+                  op.getLoc(),
+                  resultType,
+                  operand,
+                  axesConstOp.getResult()
+              );
+              rewriter.replaceOp(op, newOp.getResult());
+              return success();
+          }
+        }
+        // 维度不变直接转换BroadcastOp
+        auto targetShape = resultType.getShape();
+        SmallVector<int64_t> shapeValues(targetShape.begin(), targetShape.end());
+
+        auto shapeTensorType = RankedTensorType::get(
+            {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
+        auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, shapeValues);
+        auto shapeConstOp = rewriter.create<air::ConstantOp>(
+            op.getLoc(),
+            shapeTensorType,
+            shapeAttr
+        );
+
+        auto newOp = rewriter.create<air::BroadcastOp>(
+            op.getLoc(),
+            resultType,
+            operand,
+            shapeConstOp.getResult()
+        );
+
+        rewriter.replaceOp(op, newOp.getResult());
         return success();
       };
   };
@@ -427,7 +561,7 @@ void LegalizeToMairPass::runOnOperation() {
   RewritePatternSet patterns(&getContext());
   patterns.add<ConvertAddOp>(&getContext());
   patterns.add<ConvertMulOp>(&getContext());
-  patterns.add<ConvertBroadcastOp>(&getContext());
+  patterns.add<ConvertBroadcastInDimOp>(&getContext());
   patterns.add<ConvertConstantOp>(&getContext());
   patterns.add<ConvertTanhOp>(&getContext());
   patterns.add<ConvertAllReduceOp>(&getContext());

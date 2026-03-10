@@ -53,6 +53,8 @@ const std::unordered_map<std::string, std::vector<std::string>> Exporter::inputN
     {"ReduceMin", {"x", "axes"}},
     {"ConcatV2", {"x", "concat_dim"}},
     {"Cast", {"x"}},
+    {"UnsqueezeV3", {"x", "axes"}},
+    {"SqueezeV3", {"x", "axes"}},
 };
 
 const std::map<ge::DataType, std::string> DataTypeNames = {
