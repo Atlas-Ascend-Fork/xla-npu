@@ -1,63 +1,9 @@
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_MOE_TOKEN_UNPERMUTE_WITH_ROUTING_MAP_GRAD_H_
-#define ACLNN_MOE_TOKEN_UNPERMUTE_WITH_ROUTING_MAP_GRAD_H_
-
-#include "acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnMoeTokenUnpermuteWithRoutingMapGradGetWorkspaceSize
- * parameters :
- * unpermutedTokensGrad : required
- * outIndex : required
- * permuteTokenId : required
- * routingMapOptional : optional
- * permutedTokensOptional : optional
- * probsOptional : optional
- * dropAndPad : optional
- * restoreShapeOptional : optional
- * permutedTokensGradOut : required
- * probsGradOutOptional : optional
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
+/**
+ * Copyright (c)2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License in the root of the software repository for the full text of the License.
  */
-__attribute__((visibility("default")))
-aclnnStatus aclnnMoeTokenUnpermuteWithRoutingMapGradGetWorkspaceSize(
-    const aclTensor *unpermutedTokensGrad,
-    const aclTensor *outIndex,
-    const aclTensor *permuteTokenId,
-    const aclTensor *routingMapOptional,
-    const aclTensor *permutedTokensOptional,
-    const aclTensor *probsOptional,
-    bool dropAndPad,
-    const aclIntArray *restoreShapeOptional,
-    const aclTensor *permutedTokensGradOut,
-    const aclTensor *probsGradOutOptional,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnMoeTokenUnpermuteWithRoutingMapGrad
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnMoeTokenUnpermuteWithRoutingMapGrad(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

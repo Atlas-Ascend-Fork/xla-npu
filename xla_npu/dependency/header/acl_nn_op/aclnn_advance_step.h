@@ -1,61 +1,9 @@
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_ADVANCE_STEP_H_
-#define ACLNN_ADVANCE_STEP_H_
-
-#include "acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnAdvanceStepGetWorkspaceSize
- * parameters :
- * inputTokens : required
- * sampledTokenIds : required
- * inputPositions : required
- * seqLens : required
- * slotMapping : required
- * blockTables : required
- * numSeqs : required
- * numQueries : required
- * blockSize : required
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
+/**
+ * Copyright (c)2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License in the root of the software repository for the full text of the License.
  */
-__attribute__((visibility("default")))
-aclnnStatus aclnnAdvanceStepGetWorkspaceSize(
-    const aclTensor *inputTokens,
-    const aclTensor *sampledTokenIds,
-    const aclTensor *inputPositions,
-    const aclTensor *seqLens,
-    const aclTensor *slotMapping,
-    const aclTensor *blockTables,
-    int64_t numSeqs,
-    int64_t numQueries,
-    int64_t blockSize,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnAdvanceStep
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnAdvanceStep(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

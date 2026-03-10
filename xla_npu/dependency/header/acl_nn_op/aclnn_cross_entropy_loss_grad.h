@@ -1,65 +1,9 @@
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_CROSS_ENTROPY_LOSS_GRAD_H_
-#define ACLNN_CROSS_ENTROPY_LOSS_GRAD_H_
-
-#include "acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnCrossEntropyLossGradGetWorkspaceSize
- * parameters :
- * gradLoss : required
- * logProb : required
- * target : required
- * weightOptional : optional
- * gradZlossOptional : optional
- * lseForZlossOptional : optional
- * reductionOptional : optional
- * ignoreIndex : optional
- * labelSmoothing : optional
- * lseSquareScaleForZloss : optional
- * out : required
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
+/**
+ * Copyright (c)2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License in the root of the software repository for the full text of the License.
  */
-__attribute__((visibility("default")))
-aclnnStatus aclnnCrossEntropyLossGradGetWorkspaceSize(
-    const aclTensor *gradLoss,
-    const aclTensor *logProb,
-    const aclTensor *target,
-    const aclTensor *weightOptional,
-    const aclTensor *gradZlossOptional,
-    const aclTensor *lseForZlossOptional,
-    char *reductionOptional,
-    int64_t ignoreIndex,
-    double labelSmoothing,
-    double lseSquareScaleForZloss,
-    const aclTensor *out,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnCrossEntropyLossGrad
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnCrossEntropyLossGrad(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

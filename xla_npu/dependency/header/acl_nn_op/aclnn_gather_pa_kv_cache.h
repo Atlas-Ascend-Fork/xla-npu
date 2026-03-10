@@ -1,63 +1,9 @@
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_GATHER_PA_KV_CACHE_H_
-#define ACLNN_GATHER_PA_KV_CACHE_H_
-
-#include "acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnGatherPaKvCacheGetWorkspaceSize
- * parameters :
- * keyCache : required
- * valueCache : required
- * blockTables : required
- * seqLens : required
- * keyRef : required
- * valueRef : required
- * seqOffsetOptional : optional
- * cacheModeOptional : optional
- * isSeqLensCumsum : optional
- * keyRef : required
- * valueRef : required
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
+/**
+ * Copyright (c)2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License in the root of the software repository for the full text of the License.
  */
-__attribute__((visibility("default")))
-aclnnStatus aclnnGatherPaKvCacheGetWorkspaceSize(
-    const aclTensor *keyCache,
-    const aclTensor *valueCache,
-    const aclTensor *blockTables,
-    const aclTensor *seqLens,
-    aclTensor *keyRef,
-    aclTensor *valueRef,
-    const aclTensor *seqOffsetOptional,
-    char *cacheModeOptional,
-    bool isSeqLensCumsum,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnGatherPaKvCache
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnGatherPaKvCache(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

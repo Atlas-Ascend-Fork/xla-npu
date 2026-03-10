@@ -1,59 +1,9 @@
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_MOE_TOKEN_PERMUTE_WITH_EP_GRAD_H_
-#define ACLNN_MOE_TOKEN_PERMUTE_WITH_EP_GRAD_H_
-
-#include "acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnMoeTokenPermuteWithEpGradGetWorkspaceSize
- * parameters :
- * permutedTokensOutputGrad : required
- * sortedIndices : required
- * permutedProbsOutputGradOptional : optional
- * numTopk : required
- * rangeOptional : optional
- * paddedMode : optional
- * tokenGradOut : required
- * probsGradOut : required
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
+/**
+ * Copyright (c)2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See the License in the root of the software repository for the full text of the License.
  */
-__attribute__((visibility("default")))
-aclnnStatus aclnnMoeTokenPermuteWithEpGradGetWorkspaceSize(
-    const aclTensor *permutedTokensOutputGrad,
-    const aclTensor *sortedIndices,
-    const aclTensor *permutedProbsOutputGradOptional,
-    int64_t numTopk,
-    const aclIntArray *rangeOptional,
-    bool paddedMode,
-    const aclTensor *tokenGradOut,
-    const aclTensor *probsGradOut,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnMoeTokenPermuteWithEpGrad
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnMoeTokenPermuteWithEpGrad(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
