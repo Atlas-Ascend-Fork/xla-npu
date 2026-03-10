@@ -62,6 +62,7 @@ CPU_OUTPUT_FILE = "/tmp/mmoe_cpu_output.npz"
 NPU_OUTPUT_FILE = "/tmp/mmoe_npu_output.npz"
 CPU_ALL_OUTPUTS_FILE = "/tmp/mmoe_cpu_all_outputs.npz"
 NPU_ALL_OUTPUTS_FILE = "/tmp/mmoe_npu_all_outputs.npz"
+INPUT_DATA_FILE = "/tmp/mmoe_input_data.npz"
 
 # ============================================================================
 # Print Settings

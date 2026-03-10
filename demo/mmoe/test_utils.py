@@ -23,16 +23,30 @@ from init_params import (
 # Input Generation
 # ============================================================================
 
-def generate_input():
-    """Generate deterministic input data.
+def generate_input(seed=None):
+    """Generate random input data suitable for MMOE model.
+    
+    The input data follows a normal distribution with mean 0 and std 1,
+    which is suitable for neural network inference after typical feature normalization.
+    
+    Args:
+        seed: Random seed for reproducibility. If None, uses random seed.
     
     Returns:
         jnp.ndarray: Input tensor with shape (CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
     """
-    total_elements = CONFIG_BATCH_SIZE * CONFIG_INPUT_DIM
-    start_value = 1
-    x_values = np.arange(start_value, start_value + total_elements, dtype=np.float32)
-    x = jnp.array(x_values.reshape((CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)))
+    if seed is None:
+        seed = int(np.random.randint(0, 10000))
+    
+    # Generate input from standard normal distribution (mean=0, std=1)
+    # This is appropriate for MMOE as:
+    # 1. Matches typical normalized feature distributions
+    # 2. Works well with ReLU activations (symmetric around 0)
+    # 3. Prevents extreme values that could cause numerical instability
+    x = jax.random.normal(
+        jax.random.PRNGKey(seed),
+        (CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
+    )
     return x
 
 

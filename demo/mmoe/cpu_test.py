@@ -26,11 +26,12 @@ def get_model_and_params():
     return _model, _params
 
 
-def run_cpu_test(num_runs=1):
+def run_cpu_test(num_runs=1, input_data=None):
     """Run CPU inference test multiple times.
     
     Args:
         num_runs: Number of runs to execute
+        input_data: Pre-generated input data. If None, generates new input.
     """
     from test_utils import generate_input, run_inference_and_save
     from config import CPU_OUTPUT_FILE, CPU_ALL_OUTPUTS_FILE
@@ -38,8 +39,11 @@ def run_cpu_test(num_runs=1):
     # Get cached model and params
     model, params = get_model_and_params()
     
-    # Generate input data (shared utility function)
-    x = generate_input()
+    # Generate or use provided input data
+    if input_data is None:
+        x = generate_input()
+    else:
+        x = input_data
     
     # Run inference multiple times
     outputs = []
@@ -64,4 +68,12 @@ def run_cpu_test(num_runs=1):
 if __name__ == "__main__":
     # Get num_runs from environment
     num_runs = int(os.environ.get('NUM_RUNS', '1'))
-    outputs, x = run_cpu_test(num_runs)
+    
+    # Check if input data is provided via environment variable
+    input_data = None
+    input_file = os.environ.get('INPUT_DATA_FILE', None)
+    if input_file and os.path.exists(input_file):
+        data = np.load(input_file)
+        input_data = data['input']
+    
+    outputs, x = run_cpu_test(num_runs, input_data)

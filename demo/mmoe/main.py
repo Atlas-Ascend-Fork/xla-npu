@@ -13,12 +13,13 @@ import argparse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def run_inference(run_type, num_runs=1):
+def run_inference(run_type, num_runs=1, input_file=None):
     """Run inference on CPU or NPU for multiple runs in a single process.
     
     Args:
         run_type: 'CPU' or 'NPU'
         num_runs: Number of runs to execute
+        input_file: Path to input data file (optional)
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     script_name = f"{run_type.lower()}_test.py"
@@ -27,6 +28,8 @@ def run_inference(run_type, num_runs=1):
     # Set environment
     env = os.environ.copy()
     env['NUM_RUNS'] = str(num_runs)
+    if input_file:
+        env['INPUT_DATA_FILE'] = input_file
     
     print(f"\n{'=' * 60}")
     print(f"Running {run_type} inference ({num_runs} runs in single process)...")
@@ -48,10 +51,10 @@ def compare_all_results(num_runs=1):
         num_runs: Number of runs to compare
     """
     from test_utils import compare_results, print_results
-    from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS
+    from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS, CPU_ALL_OUTPUTS_FILE, NPU_ALL_OUTPUTS_FILE
     
-    cpu_output_path = "/tmp/mmoe_cpu_all_outputs.npz"
-    npu_output_path = "/tmp/mmoe_npu_all_outputs.npz"
+    cpu_output_path = CPU_ALL_OUTPUTS_FILE
+    npu_output_path = NPU_ALL_OUTPUTS_FILE
     
     if not os.path.exists(cpu_output_path):
         print(f"WARNING: CPU output file not found: {cpu_output_path}")
@@ -102,8 +105,9 @@ def compare_all_results(num_runs=1):
     print("=" * 60)
     
     files_to_remove = [
-        "/tmp/mmoe_cpu_all_outputs.npz",
-        "/tmp/mmoe_npu_all_outputs.npz"
+        CPU_ALL_OUTPUTS_FILE,
+        NPU_ALL_OUTPUTS_FILE,
+        INPUT_DATA_FILE
     ]
     
     for file_path in files_to_remove:
@@ -171,20 +175,32 @@ def main():
             print(f"Using existing parameter file: {params_file}")
             print("=" * 60)
     
-    # Run single test iteration
+    # Run test
     print("\n" + "=" * 60)
-    print(f"TEST ITERATION 1/1")
+    print("Running CPU vs NPU comparison test")
     print("=" * 60)
+    
+    # Generate random input data once and share between CPU and NPU
+    print("\nGenerating random input data...")
+    from test_utils import generate_input
+    input_data = generate_input()
+    
+    # Save input data to temporary file
+    from config import INPUT_DATA_FILE
+    input_file = INPUT_DATA_FILE
+    np.savez(input_file, input=np.array(input_data))
+    print(f"Input data saved to: {input_file}")
+    print(f"Input shape: {input_data.shape}")
     
     # Run CPU inference (multiple runs in single process)
     if not args.skip_cpu:
-        if not run_inference("CPU", num_runs=args.num_runs):
+        if not run_inference("CPU", num_runs=args.num_runs, input_file=input_file):
             print(f"ERROR: CPU inference failed")
             sys.exit(1)
     
     # Run NPU inference (multiple runs in single process)
     if not args.skip_npu:
-        if not run_inference("NPU", num_runs=args.num_runs):
+        if not run_inference("NPU", num_runs=args.num_runs, input_file=input_file):
             print(f"ERROR: NPU inference failed")
             sys.exit(1)
     
@@ -193,13 +209,13 @@ def main():
         test_passed = compare_all_results(num_runs=args.num_runs)
         print(f"\n{'=' * 60}")
         if test_passed:
-            print(f"✅ TEST 1/1 PASSED")
+            print(f"✅ TEST PASSED")
         else:
-            print(f"❌ TEST 1/1 FAILED")
+            print(f"❌ TEST FAILED")
         print("=" * 60)
     else:
         print(f"\n{'=' * 60}")
-        print(f"⚠️  Skipped comparison for test 1 (CPU or NPU was skipped)")
+        print(f"⚠️  Skipped comparison (CPU or NPU was skipped)")
         print("=" * 60)
     
     # Final summary
