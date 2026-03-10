@@ -10,11 +10,9 @@ Reference:
     https://dl.acm.org/doi/10.1145/3219819.3220007
 """
 
-import os
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
-import numpy as np
 from typing import Tuple, List
 
 
@@ -290,149 +288,16 @@ def create_mmoe(
     return model
 
 
-def save_params_with_npz(params, filepath: str):
-    params_np = jax.tree_util.tree_map(lambda x: np.array(x), params)
-
-    def flatten_dict(d, parent_key='', sep='.'):
-        items = {}
-        for k, v in d.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            if isinstance(v, dict):
-                items.update(flatten_dict(v, new_key, sep=sep))
-            else:
-                items[new_key] = v
-        return items
-
-    flat_params = flatten_dict(params_np)
-
-    np.savez(filepath, **flat_params)
-
-    print(f"参数已保存到: {filepath}")
-
-
-def load_params_with_npz(filepath: str):
-    data = np.load(filepath)
-
-    def unflatten_dict(flat_dict, sep='.'):
-        result = {}
-        for key, value in flat_dict.items():
-            parts = key.split(sep)
-            current = result
-            for part in parts[:-1]:
-                if part not in current:
-                    current[part] = {}
-                current = current[part]
-            current[parts[-1]] = np.array(value)
-        return result
-
-    params_jax = unflatten_dict(dict(data))
-
-    return params_jax
-
-
-# Module-level JIT cache
-_jit_cache = {}
-
-def get_jitted_forward(model):
-    """Get or create JIT-compiled forward function for the model."""
-    # Use model ID as cache key
-    model_id = id(model)
-    if model_id not in _jit_cache:
-        @jax.jit
-        def jitted_forward(params, x):
-            return model.apply(params, x, train=False)
-        _jit_cache[model_id] = jitted_forward
-    return _jit_cache[model_id]
-
-def run_inference(model, params, x):
-    """Run inference and return results."""
-    # Clear JIT cache before each inference to force recompilation
-    # This avoids stale cache issues and ensures fresh compilation each time
-    _jit_cache.clear()
-    
-    jitted_forward = get_jitted_forward(model)
-    output = jitted_forward(params, x)
-    return np.array(output)
-
-
-def print_results(output, device_name, batch_size, num_tasks):
-    """打印推理结果."""
-    print(f"\n{device_name} Output (first 5 samples):")
-    print(output[:5])
-    print(f"\n{device_name} Output statistics:")
-    print(f"  Min: {output.min():.6f}")
-    print(f"  Max: {output.max():.6f}")
-    print(f"  Mean: {output.mean():.6f}")
-    print(f"  Std: {output.std():.6f}")
-
-
-# Model Configuration - Original small size
-CONFIG_INPUT_DIM = 4
-CONFIG_BATCH_SIZE = 2
-CONFIG_NUM_EXPERTS = 2
-CONFIG_NUM_TASKS = 2
-CONFIG_EXPERT_DNN_HIDDEN_UNITS = (4, 2)
-CONFIG_GATE_DNN_HIDDEN_UNITS = (2,)
-CONFIG_TOWER_DNN_HIDDEN_UNITS = (2,)
-CONFIG_DNN_ACTIVATION = 'relu'
-CONFIG_TASK_TYPES = ('binary', 'binary')  # Must match CONFIG_NUM_TASKS
-CONFIG_MODEL_PARAMS_FILE = "model_params.npz"
-
-def get_model_params_path():
-    """Get the path to model parameters file."""
-    return os.path.join(os.path.dirname(__file__), CONFIG_MODEL_PARAMS_FILE)
-
-
-def setup_model_and_data():
-    """Setup model, load parameters and create input data."""
-    model = create_mmoe(
-        input_dim=CONFIG_INPUT_DIM,
-        num_experts=CONFIG_NUM_EXPERTS,
-        num_tasks=CONFIG_NUM_TASKS,
-        expert_dnn_hidden_units=CONFIG_EXPERT_DNN_HIDDEN_UNITS,
-        gate_dnn_hidden_units=CONFIG_GATE_DNN_HIDDEN_UNITS,
-        tower_dnn_hidden_units=CONFIG_TOWER_DNN_HIDDEN_UNITS,
-        dnn_activation=CONFIG_DNN_ACTIVATION,
-        task_types=CONFIG_TASK_TYPES,
-    )
-
-    save_filepath = get_model_params_path()
-    params = load_params_with_npz(save_filepath)
-
-    # 使用随机数作为输入 (固定随机种子以保证可重复性)
-    np.random.seed(42)
-    x = np.random.rand(CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM).astype(np.float32)
-
-    return model, params, x
-
-
-def run_inference_and_save(model, params, x, device_name, output_file):
-    """Run inference and save results."""
-    output = run_inference(model, params, x)
-
-    np.savez(output_file, output=output, input=x)
-    return output
-
-
-def compare_results(output_cpu, output_npu, x_cpu, x_npu):
-    """Compare CPU and NPU results."""
-    if not np.allclose(x_cpu, x_npu):
-        print("Warning: CPU and NPU inputs are different!")
-
-    print("\n" + "=" * 60)
-    print("--- Result Comparison (CPU vs NPU) ---")
-    print("=" * 60)
-    diff = np.abs(output_cpu - output_npu)
-    rel_diff = diff / (np.abs(output_cpu) + 1e-8)
-    print(f"Absolute difference (first 5 samples):")
-    print(diff[:5])
-    print(f"\nDifference statistics:")
-    print(f"  Max absolute difference: {diff.max():.6e}")
-    print(f"  Mean absolute difference: {diff.mean():.6e}")
-    print(f"  Max relative difference: {rel_diff.max():.6e}")
-    print(f"  Mean relative difference: {rel_diff.mean():.6e}")
-
-    tolerance = 1e-4
-    is_match = np.allclose(output_cpu, output_npu, rtol=tolerance, atol=tolerance)
-    print(f"\nResults match (tolerance={tolerance}): {is_match}")
-    return is_match
+# Import configuration from config.py
+from config import (
+    CONFIG_INPUT_DIM,
+    CONFIG_BATCH_SIZE,
+    CONFIG_NUM_EXPERTS,
+    CONFIG_NUM_TASKS,
+    CONFIG_EXPERT_DNN_HIDDEN_UNITS,
+    CONFIG_GATE_DNN_HIDDEN_UNITS,
+    CONFIG_TOWER_DNN_HIDDEN_UNITS,
+    CONFIG_DNN_ACTIVATION,
+    CONFIG_TASK_TYPES,
+    CONFIG_MODEL_PARAMS_FILE,
+)

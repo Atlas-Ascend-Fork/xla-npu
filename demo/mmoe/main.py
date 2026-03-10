@@ -13,13 +13,12 @@ import argparse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def run_inference(run_type, num_runs=1, test_idx=1):
+def run_inference(run_type, num_runs=1):
     """Run inference on CPU or NPU for multiple runs in a single process.
     
     Args:
         run_type: 'CPU' or 'NPU'
         num_runs: Number of runs to execute
-        test_idx: Test index (1-based), used to generate different inputs
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     script_name = f"{run_type.lower()}_test.py"
@@ -28,10 +27,9 @@ def run_inference(run_type, num_runs=1, test_idx=1):
     # Set environment
     env = os.environ.copy()
     env['NUM_RUNS'] = str(num_runs)
-    env['TEST_IDX'] = str(test_idx)
     
     print(f"\n{'=' * 60}")
-    print(f"Running {run_type} inference (test_idx={test_idx}, {num_runs} runs in single process)...")
+    print(f"Running {run_type} inference ({num_runs} runs in single process)...")
     print(f"{'=' * 60}")
     
     result = subprocess.run(
@@ -49,7 +47,8 @@ def compare_all_results(num_runs=1):
     Args:
         num_runs: Number of runs to compare
     """
-    from model import compare_results, print_results, CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS
+    from test_utils import compare_results, print_results
+    from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS
     
     cpu_output_path = "/tmp/mmoe_cpu_all_outputs.npz"
     npu_output_path = "/tmp/mmoe_npu_all_outputs.npz"
@@ -118,8 +117,8 @@ def compare_all_results(num_runs=1):
 def main():
     """Run CPU and NPU tests and compare results."""
     parser = argparse.ArgumentParser(description='MMOE JAX Implementation Test')
-    parser.add_argument('--num-tests', type=int, default=1,
-                       help='Number of test iterations (default: 1)')
+    parser.add_argument('--num-runs', type=int, default=1,
+                       help='Number of runs in single process (default: 1, supports one-time compilation and multiple runs)')
     parser.add_argument('--skip-cpu', action='store_true',
                        help='Skip CPU inference, only run NPU')
     parser.add_argument('--skip-npu', action='store_true',
@@ -132,7 +131,7 @@ def main():
     print("MMOE JAX Implementation Test")
     print("=" * 50)
     print(f"Configuration:")
-    print(f"  Number of tests: {args.num_tests}")
+    print(f"  Number of runs: {args.num_runs}")
     print(f"  Skip CPU: {args.skip_cpu}")
     print(f"  Skip NPU: {args.skip_npu}")
     print(f"  Init Params: {args.init}")
@@ -172,49 +171,45 @@ def main():
             print(f"Using existing parameter file: {params_file}")
             print("=" * 60)
     
-    # Run multiple test iterations
-    all_passed = True
-    for test_idx in range(1, args.num_tests + 1):
-        print("\n" + "=" * 60)
-        print(f"TEST ITERATION {test_idx}/{args.num_tests}")
-        print("=" * 60)
-        
-        # Run CPU inference (single run in process)
-        if not args.skip_cpu:
-            if not run_inference("CPU", num_runs=1, test_idx=test_idx):
-                print(f"ERROR: CPU inference failed in test {test_idx}")
-                sys.exit(1)
-        
-        # Run NPU inference (single run in process)
-        if not args.skip_npu:
-            if not run_inference("NPU", num_runs=1, test_idx=test_idx):
-                print(f"ERROR: NPU inference failed in test {test_idx}")
-                sys.exit(1)
-        
-        # Comparison phase (only if both CPU and NPU ran)
-        if not args.skip_cpu and not args.skip_npu:
-            test_passed = compare_all_results(num_runs=1)
-            all_passed = all_passed and test_passed
-            
-            print(f"\n{'=' * 60}")
-            if test_passed:
-                print(f"✅ TEST {test_idx}/{args.num_tests} PASSED")
-            else:
-                print(f"❌ TEST {test_idx}/{args.num_tests} FAILED")
-            print("=" * 60)
+    # Run single test iteration
+    print("\n" + "=" * 60)
+    print(f"TEST ITERATION 1/1")
+    print("=" * 60)
+    
+    # Run CPU inference (multiple runs in single process)
+    if not args.skip_cpu:
+        if not run_inference("CPU", num_runs=args.num_runs):
+            print(f"ERROR: CPU inference failed")
+            sys.exit(1)
+    
+    # Run NPU inference (multiple runs in single process)
+    if not args.skip_npu:
+        if not run_inference("NPU", num_runs=args.num_runs):
+            print(f"ERROR: NPU inference failed")
+            sys.exit(1)
+    
+    # Comparison phase (only if both CPU and NPU ran)
+    if not args.skip_cpu and not args.skip_npu:
+        test_passed = compare_all_results(num_runs=args.num_runs)
+        print(f"\n{'=' * 60}")
+        if test_passed:
+            print(f"✅ TEST 1/1 PASSED")
         else:
-            print(f"\n{'=' * 60}")
-            print(f"⚠️  Skipped comparison for test {test_idx} (CPU or NPU was skipped)")
-            print("=" * 60)
+            print(f"❌ TEST 1/1 FAILED")
+        print("=" * 60)
+    else:
+        print(f"\n{'=' * 60}")
+        print(f"⚠️  Skipped comparison for test 1 (CPU or NPU was skipped)")
+        print("=" * 60)
     
     # Final summary
     print("\n" + "=" * 60)
     print("FINAL SUMMARY")
     print("=" * 60)
-    if all_passed:
-        print(f"✅ ALL {args.num_tests} TESTS PASSED")
+    if test_passed:
+        print(f"✅ TEST PASSED")
     else:
-        print(f"❌ SOME TESTS FAILED")
+        print(f"❌ TEST FAILED")
     print("=" * 60)
 
 
