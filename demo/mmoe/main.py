@@ -51,7 +51,7 @@ def compare_all_results(num_runs=1):
         num_runs: Number of runs to compare
     """
     from test_utils import compare_results, print_results
-    from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS, CPU_ALL_OUTPUTS_FILE, NPU_ALL_OUTPUTS_FILE
+    from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS, CPU_ALL_OUTPUTS_FILE, NPU_ALL_OUTPUTS_FILE, INPUT_DATA_FILE
     
     cpu_output_path = CPU_ALL_OUTPUTS_FILE
     npu_output_path = NPU_ALL_OUTPUTS_FILE
