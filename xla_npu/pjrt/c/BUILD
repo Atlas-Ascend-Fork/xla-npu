@@ -55,9 +55,7 @@ cc_library(
         "@com_google_absl//absl/status",
     ] + select({
         ":npu_ge_backend": [
-            "//xla/xla_npu/pjrt/air/npu:npu_client",
-            "//xla/xla_npu/dependency/interface:acl_interface",
-            ],
+            "//xla/xla_npu/pjrt/air/npu:npu_client"],
         "//conditions:default": ["//xla/xla_npu/client:npu_stream_client"],
     }),
 )

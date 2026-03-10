@@ -172,7 +172,7 @@ public:
 
 private:
     friend class PjRtNpuExecutable;
-    friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices);
+    friend absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient();
 
     int process_index_;
     // Includes all devices, including non-addressable devices.
@@ -389,9 +389,32 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
 };
 
 
-inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRtNpuDevice>> devices)
+inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient()
 {
-  return std::unique_ptr<PjRtClient>(new PjRtNpuClient(process_index, std::move(devices)));
+    std::cout << "NPU PJRT_CLIENT_CREATE" << std::endl;
+    int device_id = 0;
+    int process_index = 0;
+    std::vector<std::unique_ptr<xla::PjRtNpuDevice>> devices;
+    
+    aclError acl_init = npu::aclInit(nullptr);
+    if (acl_init != ACL_SUCCESS) {
+        return absl::InternalError("ACL init failed.");
+    }
+    uint32_t device_count = -1;
+    aclError acl_device_count = npu::aclrtGetDeviceCount(&device_count);
+    if (acl_device_count != ACL_SUCCESS) {
+        return absl::InternalError("ACL get device count failed.");
+    }
+    if (device_count <= 0) {
+        return absl::InternalError("Threre is no valid device.");
+    }
+    aclError acl_set_device = npu::aclrtSetDevice(device_id);
+    if (acl_set_device != ACL_SUCCESS) {
+        return absl::InternalError("ACL set device failed.");
+    }
+    
+    devices.push_back(std::make_unique<xla::PjRtNpuDevice>(process_index, device_id));
+    return std::unique_ptr<PjRtClient>(new PjRtNpuClient(process_index, std::move(devices)));
 }
 
 }  // namespace xla
