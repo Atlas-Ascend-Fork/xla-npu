@@ -1588,6 +1588,7 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
 int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
     // For computations without parameters, derive axis information from the root instruction's output shape
     const Shape* shape_for_axes = nullptr;
+    std::unique_ptr<Shape> merged_shape;  // For storing merged shape when comparing shapes
     int64_t max_rank = 0;
 
     // For computations without parameters, use the root instruction's output shape
@@ -1605,7 +1606,38 @@ int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation
             if (param_rank > max_rank) {
                 max_rank = param_rank;
                 shape_for_axes = &param_shape;
+                // Reset merged shape when we find a larger rank
+                merged_shape = nullptr;
+            } else if (param_rank == max_rank && shape_for_axes != nullptr) {
+                // When ranks are equal, compare corresponding axis sizes and take the maximum
+                if (!merged_shape) {
+                    // Initialize merged_shape with a copy of shape_for_axes
+                    std::vector<int64_t> dims;
+                    for (int64_t dim = 0; dim < max_rank; ++dim) {
+                        dims.push_back(shape_for_axes->dimensions(dim));
+                    }
+                    merged_shape = std::make_unique<Shape>(
+                        ShapeUtil::MakeShape(shape_for_axes->element_type(), dims));
+                }
+
+                // Merge dimensions: take the maximum size for each axis
+                std::vector<int64_t> merged_dims;
+                for (int64_t dim = 0; dim < max_rank; ++dim) {
+                    int64_t existing_size = merged_shape->dimensions(dim);
+                    int64_t new_size = param_shape.dimensions(dim);
+                    int64_t max_size = std::max(existing_size, new_size);
+                    merged_dims.push_back(max_size);
+                }
+
+                // Update merged_shape
+                merged_shape = std::make_unique<Shape>(
+                    ShapeUtil::MakeShape(shape_for_axes->element_type(), merged_dims));
             }
+        }
+
+        // If we created a merged shape, use it
+        if (merged_shape) {
+            shape_for_axes = merged_shape.get();
         }
     }
 

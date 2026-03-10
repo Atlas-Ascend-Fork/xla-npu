@@ -93,7 +93,7 @@ AFIRToASCIRTextPass::OpInfo AFIRToASCIRTextPass::getOpInfo(StringRef opName) {
         {"load", {1, 2, 0, false}},         {"store", {1, 2, 1, false}},      {"scalar", {1, 1, 11, false}},
         {"index_expr", {1, 1, 11, false}},  {"broadcast", {2, 7, 4, true}},   {"cast", {1, 5, 3, false}},
         {"select", {1, 5, 3, false}},       {"where", {1, 5, 3, false}},      {"concat", {1, 5, 7, false}},
-        {"max", {1, 5, 3, false}},          {"min", {1, 5, 3, false}},        {"sum", {1, 5, 5, false}},
+        {"max", {1, 5, 5, false}},          {"min", {1, 5, 3, false}},        {"sum", {1, 5, 5, false}},
         {"mean", {1, 5, 5, false}},         {"prod", {1, 5, 5, false}},       {"any", {1, 5, 5, false}},
         {"all", {1, 5, 5, false}},          {"abs", {1, 5, 3, false}},        {"exp", {1, 5, 3, false}},
         {"ln", {1, 5, 3, false}},           {"sqrt", {1, 5, 3, false}},       {"rsqrt", {1, 5, 3, false}},
