@@ -138,12 +138,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         return absl::InternalError("");
     }
     auto stream = stream_handle.stream;
-
-    // [调试代码] 为 aclnn thunk 创建独立的流
-    TF_ASSIGN_OR_RETURN(auto debug_stream, params.stream->parent()->CreateStream());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream created: %p", debug_stream->platform_specific_handle().stream);
-    auto debug_stream_handle = debug_stream->platform_specific_handle();
-    auto debug_acl_stream = static_cast<aclrtStream>(debug_stream_handle.stream);
+    auto acl_stream = static_cast<aclrtStream>(stream_handle.stream);
 
     const NpuBufferAllocations* allocations = params.buffer_allocations;
     const auto& param_shapes = thunk_info().param_shapes;
@@ -237,7 +232,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnExpand);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExpand);
             break;
         }
 
@@ -255,7 +250,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnAdd);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAdd);
             break;
         }
 
@@ -269,7 +264,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnTanh);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnTanh);
             break;
         }
 
@@ -283,7 +278,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnMul);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMul);
             break;
         }
 
@@ -299,7 +294,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnMatmul);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMatmul);
             break;
         }
 
@@ -313,7 +308,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnDiv);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnDiv);
             break;
         }
 
@@ -330,7 +325,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnSub);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnSub);
             break;
         }
 
@@ -344,7 +339,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnNeg);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnNeg);
             break;
         }
 
@@ -358,7 +353,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnExp);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExp);
             break;
         }
 
@@ -372,7 +367,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnMaximum);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMaximum);
             break;
         }
 
@@ -408,7 +403,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                 return absl::InternalError(err_msg);
             }
 
-            exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnCat);
+            exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnCat);
 
             // 清理 tensor_list
             npu::aclDestroyTensorList(tensor_list);
@@ -488,7 +483,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                     return absl::InternalError(err_msg);
                 }
 
-                exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnAmax);
+                exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAmax);
                 if (!exec_ret.ok()) {
                     NPU_LOG_FORMAT_PRINT(ERROR, "ExecuteAclnn for aclnnAmax failed: %s", exec_ret.ToString().c_str());
                     npu::aclDestroyIntArray(dims);
@@ -508,7 +503,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
                     return absl::InternalError(err_msg);
                 }
 
-                exec_ret = ExecuteAclnn(debug_acl_stream, workspaceSize, executor, npu::aclnnReduceSum);
+                exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnReduceSum);
             }
 
             // 清理维度数组
@@ -522,22 +517,6 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
             return absl::InternalError(err_msg);
     }
-
-    if (exec_ret.ok()) {
-        // [调试代码] 在独立流上同步
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Block host until debug stream done");
-        auto status = debug_stream->BlockHostUntilDone();
-        if (!status.ok()) {
-            const std::string err_msg = absl::StrFormat("BlockHostUntilDone failed: %s", status.ToString().c_str());
-            NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-            return status;
-        }
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream synchronized successfully");
-    }
-
-    // [调试代码] 销毁独立流
-    debug_stream.reset();
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Debug stream destroyed");
 
     PrintOutputTensor(allocations, param_shapes);
 
