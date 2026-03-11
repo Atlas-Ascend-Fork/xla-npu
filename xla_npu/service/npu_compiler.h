@@ -29,10 +29,6 @@
 #include "xla/pjrt/distributed/key_value_store_interface.h"
 #include "xla/service/compiler.h"
 #include "xla/service/executable.h"
-// #include "xla/service/gpu/alias_info.h"
-// #include "xla/service/gpu/autotuning/autotuner_util.h"
-// #include "xla/service/gpu/compile_module_to_llvm_ir.h"
-// #include "xla/service/gpu/ir_emission_utils.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/service/hlo_cost_analysis.h"
 #include "xla/service/hlo_module_config.h"
@@ -77,11 +73,6 @@ class NpuCompiler : public LLVMCompiler {
 
     HloCostAnalysis::ShapeSizeFunction ShapeSizeBytesFunction() const override;
 
-    // // Returns a (deserialized) AotCompilationResult from a serialized
-    // // AotCompilationResult.
-    // absl::StatusOr<std::unique_ptr<AotCompilationResult>> LoadAotCompilationResult(
-    //     const std::string& serialized_aot_result) override;
-
     absl::StatusOr<std::unique_ptr<AotCompilationResult>> Export(Executable* executable) const override;
 
     absl::Status RunPostSchedulingPipelines(HloModule* module, int64_t scheduler_mem_limit,
@@ -122,72 +113,12 @@ class NpuCompiler : public LLVMCompiler {
         kGpuConvoluationCanonicalization,
     };
 
-    // static AlgebraicSimplifierOptions GetAlgebraicSimplifierOptions(AlgebraicSimplifierMode mode,
-    //                                                                 const DebugOptions& debug_options, bool is_rocm);
-
-    // absl::StatusOr<std::unique_ptr<Executable>> LoadExecutableFromAotResult(
-    //     const AotCompilationResult& aot_result, const se::StreamExecutor& stream_exec) override;
-
    protected:
     struct BackendCompileResult {
         std::string asm_text;
         std::vector<uint8_t> binary;
         // BinaryMap dnn_compiled_graphs;
     };
-
-    // // During compilation with device, stream_exec != null and autotune_results
-    // // == null. During deviceless AOT compilation, stream_exec == null and
-    // // autotune_results != null.
-    // // thread_pool is used to speed up compilation during autotuning.
-    // virtual absl::Status OptimizeHloPostLayoutAssignment(HloModule* hlo_module, se::StreamExecutor* stream_exec,
-    //                                                      const CompileOptions& options,
-    //                                                      const GpuTargetConfig& gpu_target_config,
-    //                                                      const NpuAliasInfo* alias_info,
-    //                                                      tsl::thread::ThreadPool* thread_pool);
-
-    // // CollectivesScheduleLinearizer enforces a total ordering between collectives
-    // // to work around divergence in executables introduced due to auto tuning,
-    // // specifically the use of extra scratch space for convolutions. This
-    // // function decided whether to apply this pass. If convolutions are present in
-    // // the code and we are using "online" autotuning (i.e., not AOT) we need to
-    // // use the pass, else we do not need to enable the pass.
-    // virtual bool RequiresCollectiveScheduleLinearizer(const HloModule* module, se::StreamExecutor* stream_exec) {
-    //     return false;
-    // }
-
-    // // Add autotuning passes for convolution and gemm (except triton).
-    // // target_config must outlive the pipeline.
-    // virtual absl::Status AddConvAndGemmAutotuningPasses(
-    //     HloPassPipeline* pipeline, const se::GpuComputeCapability& gpu_version, const CompileOptions& options,
-    //     HloModule* hlo_module, AutotuneConfig& autotune_config, tsl::thread::ThreadPool* thread_pool,
-    //     se::StreamExecutor* stream_exec, const Compiler::GpuTargetConfig* target_config) {
-    //     return absl::OkStatus();
-    // }
-
-    // // Add autotuning passes for GEMM fusions.
-    // virtual absl::Status AddGemmFusionAutotuningPasses(HloPassPipeline* pipeline, HloModule* hlo_module,
-    //                                                    AutotuneConfig& autotune_config,
-    //                                                    tsl::thread::ThreadPool* thread_pool,
-    //                                                    const MultiProcessKeyValueStore& key_value_store,
-    //                                                    const se::SemanticVersion& toolkit_version,
-    //                                                    stream_executor::StreamExecutor* stream_executor) {
-    //     return absl::OkStatus();
-    // }
-
-    // // target_config must outlive the pipeline.
-    // virtual absl::Status AddFusionAutotuningPass(HloPassPipeline* pipeline, HloModule* hlo_module,
-    //                                              const CompileOptions& options, tsl::thread::ThreadPool* thread_pool,
-    //                                              stream_executor::StreamExecutor* stream_executor,
-    //                                              const Compiler::GpuTargetConfig* target_config,
-    //                                              HloCostAnalysis::ShapeSizeFunction shape_size_fn) {
-    //     return absl::OkStatus();
-    // }
-
-    // // Runs cuDNN fusion and custom call compiler passes.
-    // virtual absl::Status RunCudnnCompilerPasses(HloModule* module, se::StreamExecutor* stream_exec,
-    //                                             BinaryMap* dnn_compiled_graphs) {
-    //     return absl::OkStatus();
-    // }
 
    private:
     struct CompileResultWithMetadata {
@@ -200,37 +131,10 @@ class NpuCompiler : public LLVMCompiler {
                                                                      const CompileOptions& options,
                                                                      const se::DeviceDescription& gpu_device_info);
 
-    // absl::StatusOr<BackendCompileResult> CompileAndLink(const HloModuleConfig& module_config,
-    //                                                     NpuCompileModuleResults& compile_module_results,
-    //                                                     const stream_executor::DeviceDescription& device_description,
-    //                                                     const CompileOptions& options, const HloModule*
-    //                                                     debug_module);
-
     absl::StatusOr<BackendCompileResult> CompileSingleModule(
         const HloModuleConfig& module_config, const stream_executor::DeviceDescription& device_description,
         const HloModule* debug_module, llvm::Module* llvm_module, bool relocatable, const CompileOptions& options,
         std::optional<int> shard_number);
-
-    // absl::Status LoadAutotuneResultsFromFile(const DebugOptions& debug_options);
-    // absl::Status SerializeAutotuneResultsToFile(const DebugOptions& debug_options);
-
-    // absl::Status RunPreSchedulingPasses(HloModule* module, const se::DeviceDescription& gpu_device_info,
-    //                                     const NpuAliasInfo* alias_info);
-    // absl::Status RunCollectiveScheduleLinearizerPasses(HloModule* hlo_module, se::StreamExecutor* stream_exec);
-
-    // During compilation with device, stream_exec != null and autotune_results
-    // == null. During deviceless AOT compilation, stream_exec == null and
-    // autotune_results != null.
-    // absl::Status OptimizeHloModule(HloModule* hlo_module, se::StreamExecutor* stream_exec,
-    //                                const CompileOptions& options, const GpuTargetConfig& gpu_target_config,
-    //                                const NpuAliasInfo* alias_info);
-
-    // virtual absl::Status OptimizeHloConvolutionCanonicalization(HloModule* hlo_module,
-    //                                                             const se::GpuComputeCapability& gpu_version,
-    //                                                             se::dnn::VersionInfo dnn_version,
-    //                                                             const se::SemanticVersion& toolkit_version) {
-    //     return absl::OkStatus();  // 原本的纯虚函数改为空实现
-    // }
 
     // TODO(timshen): Replace `debug_module` with some portable debug information
     // that accommodates both HLO and MLIR.
@@ -240,11 +144,6 @@ class NpuCompiler : public LLVMCompiler {
         const CompileOptions& options, std::optional<int> shard_number) {
         return BackendCompileResult{};  // 原本的纯虚函数改为空实现
     }
-
-    // // Inserts and optimizes mandatory copies. Necessary for correctness.
-    // absl::Status RunPreSchedulingCopyInsertion(HloModule& hlo_module, const se::DeviceDescription&
-    // device_description,
-    //                                            const NpuAliasInfo* alias_info);
 
     virtual absl::StatusOr<std::vector<uint8_t>> LinkModules(
         const stream_executor::DeviceDescription& device_description, std::vector<std::vector<uint8_t>> modules,

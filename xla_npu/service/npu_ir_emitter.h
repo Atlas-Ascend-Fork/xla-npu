@@ -20,8 +20,6 @@
 #include "llvm/Support/AtomicOrdering.h"
 #include "xla/hlo/ir/dfs_hlo_visitor_with_default.h"
 #include "xla/hlo/ir/hlo_instruction.h"
-// #include "xla/service/gpu/hlo_to_ir_bindings.h"
-// #include "xla/service/gpu/ir_emitter_context.h"
 #include "xla/service/llvm_ir/fused_ir_emitter.h"
 #include "xla/service/llvm_ir/ir_array.h"
 #include "xla/service/llvm_ir/ir_builder_mixin.h"

@@ -43,7 +43,6 @@
 #include "mlir/Support/LogicalResult.h"
 #include "tsl/profiler/lib/scoped_annotation.h"
 #include "tsl/profiler/lib/traceme.h"
-// #include "xla/backends/gpu/runtime/sequential_thunk.h"
 #include "xla/hlo/analysis/hlo_ordering.h"
 #include "xla/hlo/analysis/symbolic_expr.h"
 #include "xla/hlo/ir/hlo_instruction.h"
@@ -51,21 +50,11 @@
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/buffer_value.h"
 #include "xla/service/dump.h"
-// #include "xla/service/gpu/alias_info.h"
-// #include "xla/service/gpu/execution_stream_assignment.h"
-// #include "xla/service/gpu/gpu_constants.h"
-// #include "xla/service/gpu/gpu_executable.h"
-// #include "xla/service/gpu/gpu_memory_space_assignment.h"
-// #include "xla/service/gpu/ir_emitter_context.h"
-// #include "xla/service/gpu/ir_emitter_unnested.h"
-// #include "xla/service/gpu/metrics.h"
 #include "xla/service/logical_buffer.h"
 #include "xla/shape.h"
 #include "xla/status_macros.h"
-// #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/stream_executor/platform.h"
-// #include "xla/stream_executor/rocm/rocm_platform_id.h"
 #include "tsl/platform/path.h"
 #include "xla/tsl/platform/env.h"
 #include "xla/tsl/platform/errors.h"
@@ -94,30 +83,6 @@ static mlir::LogicalResult DiagnosticHandler(mlir::Diagnostic& diag) {
     return mlir::failure();
 }
 
-// // Removes all globals from the given module that are both uninitialized and
-// // have no uses within that module.
-// void RemoveUnusedAndUninitializedGlobals(se::Platform::Id platform_id, const DebugOptions& options,
-//                                          llvm::Module* llvm_module,
-//                                          const std::vector<NpuExecutable::ConstantInfo>& constants) {
-//     bool supports_runtime_managed_constants =
-//         platform_id != se::rocm::kROCmPlatformId && options.xla_gpu_enable_shared_constants();
-//     if (!supports_runtime_managed_constants) {
-//         return;
-//     }
-
-//     for (const auto& info : constants) {
-//         // Empty content means the constant is initialized in the LLVM IR, so we
-//         // must not remove it.
-//         if (!info.content.span().empty()) {
-//             llvm::GlobalVariable* global = llvm_module->getGlobalVariable(info.symbol_name);
-//             CHECK(global != nullptr);
-//             if (global->use_empty()) {
-//                 global->eraseFromParent();
-//             }
-//         }
-//     }
-// }
-
 NpuCompileModuleResults InitializeResults(const HloModule* hlo_module, llvm::LLVMContext* llvm_context,
                                           const std::string& target_triple, const std::string& data_layout,
                                           const bool split_constants_module) {
@@ -140,16 +105,6 @@ NpuCompileModuleResults InitializeResults(const HloModule* hlo_module, llvm::LLV
     results.execution_stream_assignment = std::make_unique<NpuExecutionStreamAssignment>(hlo_module);
     return results;
 }
-
-// std::string GetDumpName(const se::DeviceDescription& device_desc) {
-//     std::string prefix;
-//     if (auto* cc = device_desc.gpu_compute_capability().cuda_compute_capability()) {
-//         prefix = absl::StrCat("sm_", cc->ToString());
-//     } else if (auto* cc = device_desc.gpu_compute_capability().rocm_compute_capability()) {
-//         prefix = cc->gfx_version();
-//     }
-//     return absl::StrCat(prefix, "_gpu_", kAfterOptimizationsDumpName);
-// }
 
 std::unique_ptr<mlir::MLIRContext> CreateMlirContext() {
     mlir::DialectRegistry registry;
@@ -177,67 +132,19 @@ absl::StatusOr<std::unique_ptr<NpuSequentialThunk>> LowerHlo(const HloModule* hl
     ScopedAnnotation annotation(Phase("XlaEmitLlvmIr", hlo_module));
     uint64_t start_usecs = tsl::Env::Default()->NowMicros();
 
-    // if (use_cache) {
-    //     TF_RETURN_IF_ERROR(NpuLoadCache(ir_emitter_context, options.xla_gpu_kernel_cache_file()));
-    // }
     std::unique_ptr<NpuIrEmitterUnnested> ir_emitter = NpuIrEmitterUnnested::Create(&ir_emitter_context);
     {
         XLA_SCOPED_LOGGING_TIMER(absl::StrCat("NpuCompiler::RunBackend - IR emission for ", hlo_module->name()));
 
         TF_RETURN_IF_ERROR(ir_emitter->EmitHloComputation(hlo_module->entry_computation()));
-
-        // RemoveUnusedAndUninitializedGlobals(platform_id, options, ir_emitter_context.llvm_module_constants(),
-        //                                     ir_emitter_context.constants());
-
-        // // This won't record values for calls that error out (because if they error
-        // // out we have no way of telling how far through the process we got).
-        // uint64_t end_usecs = tsl::Env::Default()->NowMicros();
-        // RecordHloToLlvmDuration(end_usecs - start_usecs);
     }
     return ir_emitter->ConsumeThunkSequence();
 }
 
 }  // namespace
 
-// absl::Status NpuLoadCache(NpuIrEmitterContext& ir_emitter_context, absl::string_view cache_file_path) {
-//     tsl::profiler::TraceMe traceme("NpuLoadCache");
-//     CHECK(!cache_file_path.empty());
-//     std::string resolved_path;
-//     if (!tsl::io::ResolveTestPrefixes(cache_file_path, resolved_path)) {
-//         return FailedPrecondition("File path can not be resolved: %s", cache_file_path);
-//     }
-//     if (tsl::Env::Default()->FileExists(resolved_path).ok()) {
-//         std::string serialized;
-//         TF_RETURN_IF_ERROR(tsl::ReadFileToString(tsl::Env::Default(), resolved_path, &serialized));
-//         CompilationCacheProto proto;
-//         if (!proto.ParseFromString(serialized)) {
-//             return Internal("Failed to parse serialized CompilationCacheProto.");
-//         }
-//         // Register all cached kernel names with the name uniquer to avoid
-//         // naming conflicts.
-//         for (const auto& [name, _] : proto.entries()) {
-//             TF_RET_CHECK(ir_emitter_context.name_uniquer()->GetUniqueName(name) == name)
-//                 << "Failed registering " << name << "in NameUniquer.";
-//         }
-//         TF_RETURN_IF_ERROR(ir_emitter_context.kernel_cache().Load(proto));
-//     } else {
-//         VLOG(1) << "Compilation cache file does not exist: " << resolved_path;
-//     }
-//     return absl::OkStatus();
-// }
-
 absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
     const HloModule* module, const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function) {
-    // ScopedAnnotation annotation(Phase("XlaBufferAssignment", module));
-
-    // const DebugOptions& options = module->config().debug_options();
-
-    // std::optional<BufferValue::Color> color =
-    //     options.xla_gpu_temp_buffer_use_separate_color()
-    //         ? std::optional<BufferValue::Color>((int)MemorySpaceColor::kTempBuffer)
-    //         : std::nullopt;
-    // std::optional<BufferValue::Color> color = std::nullopt;
-
     if (!module->has_schedule()) {
         const std::string err_msg = "Module need to be scheduled.";
         NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
@@ -248,16 +155,8 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
                         BufferAssigner::Run(
                             module, std::make_unique<SequentialHloOrdering>(module->schedule()),
                             std::move(buffer_size_bytes_function), alias_info,
-                            /*color_alignment=*/
                             [](LogicalBuffer::Color) { return 256; },
                             /*allocate_buffers_for_constants=*/true
-                            // /*colorer=*/CreateColorer(options),
-                            // /*must_not_live_out=*/{},
-                            // /*preset_assignments*/ {},
-                            // /*private_stack*/ {},
-                            // /*heap_buffer_interval_compare*/ nullptr,
-                            // /*isolation_options*/ std::nullopt,
-                            // color
                             ));
 
     VLOG(1) << "Buffer Assignment Stats for " << module->name() << "\n" << buffer_assignment->StatsString(alias_info);
@@ -281,7 +180,6 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     // capture the output shape after buffer assignment because it may change
     // during buffer assignment (nevertheless the const hlo_module)
     results.output_shape = hlo_module->result_shape();
-    // DumpHloModuleIfEnabled(*hlo_module, *results.buffer_assignment, GetDumpName(device_desc));
 
     VLOG(1) << "After optimization module fingerprint for " << hlo_module->name() << ": "
             << hlo_module->GetFingerprint128();
@@ -302,9 +200,6 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
                                                      results.llvm_module_constants.get(), platform->id(), use_cache));
 
     results.constants = std::move(ir_emitter_context.constants());
-    // if (use_cache) {
-    //     results.kernel_compilation_cache = ir_emitter_context.kernel_cache().Export();
-    // }
 
     return results;
 }

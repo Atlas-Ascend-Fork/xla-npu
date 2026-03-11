@@ -21,7 +21,6 @@
 #include "xla/codegen/ir_emission_utils.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/utils/hlo_traversal.h"
-// #include "xla/service/gpu/backend_configs.pb.h"
 #include "xla/stream_executor/device_description.h"
 
 namespace xla {
@@ -87,8 +86,6 @@ class NpuHloFusionAnalysis {
 
     const se::DeviceDescription& device_info() const { return *device_info_; }
 
-    // const FusionBackendConfig& fusion_backend_config() const { return fusion_backend_config_; }
-
     // Returns the tiled transpose description. Requires that emitter_fusion_kind_
     // is kTranspose.
     const TransposeDescription& tiled_transpose() const {
@@ -100,13 +97,10 @@ class NpuHloFusionAnalysis {
 
    private:
     NpuHloFusionAnalysis(
-        // FusionBackendConfig fusion_backend_config,
         HloFusionSpec fusion_spec, EmitterFusionKind emitter_fusion_kind, const se::DeviceDescription* device_info,
         std::optional<TransposeDescription> tiled_transpose, InputOutputInfo input_output_info);
 
     bool HasConsistentTransposeHeros() const;
-
-    // FusionBackendConfig fusion_backend_config_;
 
     HloFusionSpec fusion_spec_;
     EmitterFusionKind emitter_fusion_kind_;
