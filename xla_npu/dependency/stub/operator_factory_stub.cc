@@ -11,21 +11,18 @@
 #include "xla/xla_npu/dependency/header/metadef/graph/operator_factory.h"
 
 namespace ge {
-Operator OperatorFactory::CreateOperator(
-    const char* operator_name,
-    const char* operator_type) {
+Operator OperatorFactory::CreateOperator(const char* operator_name,
+                                         const char* operator_type) {
   return Operator();
 }
 
-Operator OperatorFactory::CreateOperator(const std::string &operator_name, const std::string &operator_type) {
+Operator OperatorFactory::CreateOperator(const std::string& operator_name,
+                                         const std::string& operator_type) {
   return Operator();
 }
 
 OperatorCreatorRegister::OperatorCreatorRegister(
-    const char* operator_type,
-    const OpCreatorV2& op_creator) {}
+    const char* operator_type, const OpCreatorV2& op_creator) {}
 
-bool OperatorFactory::IsExistOp(const char* operator_type) {
-  return true;
-}
-} // namespace ge
+bool OperatorFactory::IsExistOp(const char* operator_type) { return true; }
+}  // namespace ge

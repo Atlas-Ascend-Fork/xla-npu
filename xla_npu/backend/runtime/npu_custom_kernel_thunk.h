@@ -21,11 +21,8 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-// #include "xla/backends/gpu/runtime/thunk.h"
 #include "xla/codegen/emitters/kernel_arguments.h"
 #include "xla/service/buffer_assignment.h"
-// #include "xla/service/gpu/kernels/custom_kernel.h"
-// #include "xla/service/gpu/launch_dimensions.h"
 #include "xla/stream_executor/kernel.h"
 #include "xla/stream_executor/stream.h"
 #include "xla/stream_executor/stream_executor.h"
@@ -38,43 +35,41 @@ namespace xla {
 // (which in practice means hand written CUDA C++ kernel), instead of a kernel
 // compiled by XLA and loaded from an executable source.
 class NpuCustomKernelThunk : public NpuThunk {
-   public:
-    NpuCustomKernelThunk(NpuThunk::ThunkInfo thunk_info, NpuCustomKernel custom_kernel,
-                         const emitters::KernelArguments& kernel_arguments);
+ public:
+  NpuCustomKernelThunk(NpuThunk::ThunkInfo thunk_info,
+                       NpuCustomKernel custom_kernel,
+                       const emitters::KernelArguments& kernel_arguments);
 
-    std::string ToString(int indent) const override;
+  std::string ToString(int indent) const override;
 
-    absl::Status Initialize(const InitializeParams& params) override;
-    absl::Status ExecuteOnStream(const ExecuteParams& params) override;
+  absl::Status Initialize(const InitializeParams& params) override;
+  absl::Status ExecuteOnStream(const ExecuteParams& params) override;
 
-    const NpuCustomKernel& custom_kernel() const { return custom_kernel_; }
+  const NpuCustomKernel& custom_kernel() const { return custom_kernel_; }
 
-    const std::vector<BufferAllocation::Slice>& arguments() const { return args_; }
+  const std::vector<BufferAllocation::Slice>& arguments() const {
+    return args_;
+  }
 
-    absl::string_view custom_kernel_name() const { return custom_kernel_.name(); }
+  absl::string_view custom_kernel_name() const { return custom_kernel_.name(); }
 
-    const std::vector<bool>& written() const { return written_; }
+  const std::vector<bool>& written() const { return written_; }
 
-    // LaunchDimensions launch_dimensions() const {
-    //     return LaunchDimensions(custom_kernel_.block_dims(), custom_kernel_.thread_dims());
-    // }
+  BufferUses buffer_uses() const override;
 
-    // int64_t shmem_bytes() const { return custom_kernel_.shared_memory_bytes(); }
+ private:
+  // Buffer slices passed to the kernel as arguments.
+  std::vector<BufferAllocation::Slice> args_;
 
-    BufferUses buffer_uses() const override;
+  // args_[i] is written iff (written_[i] == true).
+  std::vector<bool> written_;
 
-   private:
-    // Buffer slices passed to the kernel as arguments.
-    std::vector<BufferAllocation::Slice> args_;
+  NpuCustomKernel custom_kernel_;
 
-    // args_[i] is written iff (written_[i] == true).
-    std::vector<bool> written_;
-
-    NpuCustomKernel custom_kernel_;
-
-    // Loaded kernels for each `StreamExecutor`.
-    mutable absl::Mutex mutex_;
-    absl::flat_hash_map<se::StreamExecutor*, std::unique_ptr<se::Kernel>> kernel_cache_ ABSL_GUARDED_BY(mutex_);
+  // Loaded kernels for each `StreamExecutor`.
+  mutable absl::Mutex mutex_;
+  absl::flat_hash_map<se::StreamExecutor*, std::unique_ptr<se::Kernel>>
+      kernel_cache_ ABSL_GUARDED_BY(mutex_);
 };
 
 }  // namespace xla

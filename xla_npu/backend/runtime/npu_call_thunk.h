@@ -46,7 +46,9 @@ class NpuCallThunk : public NpuThunk {
   void ForAllThunks(absl::FunctionRef<void(const NpuThunk*)> fn) const override;
   void ForAllThunksMutable(absl::FunctionRef<void(NpuThunk*)> fn) override;
   absl::Status TransformAllNestedThunks(
-      absl::FunctionRef<absl::StatusOr<std::unique_ptr<NpuThunk>>(std::unique_ptr<NpuThunk>)> fn) override;
+      absl::FunctionRef<
+          absl::StatusOr<std::unique_ptr<NpuThunk>>(std::unique_ptr<NpuThunk>)>
+          fn) override;
 
  private:
   // The thunk sequence from the called computation.

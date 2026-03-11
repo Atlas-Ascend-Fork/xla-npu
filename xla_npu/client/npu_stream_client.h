@@ -16,7 +16,8 @@
 
 namespace xla {
 
-absl::StatusOr<std::unique_ptr<NpuPjrtStreamExecutorClient>> GetNpuPjrtStreamExecutorClient();
+absl::StatusOr<std::unique_ptr<NpuPjrtStreamExecutorClient>>
+GetNpuPjrtStreamExecutorClient();
 
 }  // namespace xla
 

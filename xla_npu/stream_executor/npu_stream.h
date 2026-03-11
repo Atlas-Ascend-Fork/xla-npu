@@ -28,30 +28,35 @@ namespace stream_executor {
 // streams, NpuStream is fully synchronous and launches all operations in the
 // caller thread.
 class NpuStream : public StreamCommon {
-   public:
-    explicit NpuStream(StreamExecutor* executor);
-    ~NpuStream() override;
+ public:
+  explicit NpuStream(StreamExecutor* executor);
+  ~NpuStream() override;
 
-    absl::Status Init();
+  absl::Status Init();
 
-    PlatformSpecificHandle platform_specific_handle() const override;
+  PlatformSpecificHandle platform_specific_handle() const override;
 
-    absl::Status BlockHostUntilDone() override;
+  absl::Status BlockHostUntilDone() override;
 
-    absl::Status WaitFor(Stream* other) override;
-    absl::Status WaitFor(Event* event) override;
-    absl::Status RecordEvent(Event* event) override;
-    absl::Status MemZero(DeviceMemoryBase* location, uint64_t size) override;
-    absl::Status Memset32(DeviceMemoryBase* location, uint32_t pattern, uint64_t size) override;
-    absl::Status Memcpy(DeviceMemoryBase* npu_dst, const DeviceMemoryBase& npu_src, uint64_t size) override;
-    absl::Status Memcpy(DeviceMemoryBase* npu_dst, const void* host_src, uint64_t size) override;
-    absl::Status Memcpy(void* host_dst, const DeviceMemoryBase& npu_src, uint64_t size) override;
-    absl::Status DoHostCallbackWithStatus(absl::AnyInvocable<absl::Status() &&> callback) override;
+  absl::Status WaitFor(Stream* other) override;
+  absl::Status WaitFor(Event* event) override;
+  absl::Status RecordEvent(Event* event) override;
+  absl::Status MemZero(DeviceMemoryBase* location, uint64_t size) override;
+  absl::Status Memset32(DeviceMemoryBase* location, uint32_t pattern,
+                        uint64_t size) override;
+  absl::Status Memcpy(DeviceMemoryBase* npu_dst,
+                      const DeviceMemoryBase& npu_src, uint64_t size) override;
+  absl::Status Memcpy(DeviceMemoryBase* npu_dst, const void* host_src,
+                      uint64_t size) override;
+  absl::Status Memcpy(void* host_dst, const DeviceMemoryBase& npu_src,
+                      uint64_t size) override;
+  absl::Status DoHostCallbackWithStatus(
+      absl::AnyInvocable<absl::Status() &&> callback) override;
 
-   private:
-    int device_ordinal_;
-    aclrtStream stream_;  // aclrtStream = void*
-    bool stream_init_ = false;
+ private:
+  int device_ordinal_;
+  aclrtStream stream_;  // aclrtStream = void*
+  bool stream_init_ = false;
 };
 
 }  // namespace stream_executor
