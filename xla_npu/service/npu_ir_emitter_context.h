@@ -24,20 +24,12 @@
 #include "llvm/IR/Module.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Operation.h"
-// #include "xla/backends/gpu/runtime/collective_thunk.h"
-// #include "xla/backends/gpu/runtime/host_execute_thunk.h"
-// #include "xla/backends/gpu/runtime/thunk_id.h"
 #include "xla/hlo/analysis/symbolic_expr.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/call_inliner.h"
-// #include "xla/service/gpu/execution_stream_assignment.h"
-// #include "xla/service/gpu/gpu_executable.h"
-// #include "xla/service/gpu/ir_emission_utils.h"
-// #include "xla/service/gpu/kernel_reuse_cache.h"
 #include "xla/service/name_uniquer.h"
-// #include "xla/stream_executor/cuda/cuda_compute_capability.h"
 #include "xla/stream_executor/device_description.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
 #include "xla/xla_npu/service/npu_executable.h"
@@ -45,20 +37,6 @@
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 
 namespace xla {
-
-// // Maps async start ops to their async events so we can emit done thunk
-// // sharing events with corresponding start thunk. Async events may be null if
-// // the start op is degenerate (so not emitted).
-// using NpuCollectivesAsyncEvents =
-//     absl::flat_hash_map<std::variant<mlir::Operation*, const HloInstruction*>,
-//                         std::shared_ptr<CollectiveThunk::AsyncEvents>>;
-
-// // Maps host offloading start ops to their async events so we can emit done
-// // thunk sharing events with corresponding start thunk.
-// using NpuInstructionToHostExecuteAsyncEvents =
-//     absl::flat_hash_map<const HloInstruction*,
-//                         std::shared_ptr<HostExecuteAsyncEvents>>;
-
 // NpuIrEmitterContext encapsulates common (mutable and immutable) data structures
 // used by both IrEmitterNested and IrEmitterUnnested, such as the buffer
 // assignment and the name uniquer.
@@ -126,16 +104,6 @@ class NpuIrEmitterContext {
 
     const DebugOptions& debug_options() const { return hlo_module_->config().debug_options(); }
 
-    // KernelReuseCache& kernel_cache() { return kernel_cache_; }
-    // NpuCollectivesAsyncEvents& collectives_async_events() {
-    //   return collectives_async_events_;
-    // }
-
-    // NpuInstructionToHostExecuteAsyncEvents&
-    // instruction_to_host_execute_async_events() {
-    //   return instruction_to_host_execute_async_events_;
-    // }
-
     bool emit_kernels() const { return emit_kernels_; }
 
     NpuThunkId GetNextThunkId() { return thunk_id_generator_.GetNextThunkId(); }
@@ -154,11 +122,7 @@ class NpuIrEmitterContext {
     llvm::Module* llvm_module_constants_;
     NameUniquer name_uniquer_;
     std::vector<NpuExecutable::ConstantInfo> constants_;
-    // KernelReuseCache kernel_cache_;
     std::unique_ptr<InlinedModule> inlined_module_;
-
-    // NpuCollectivesAsyncEvents collectives_async_events_;
-    // NpuInstructionToHostExecuteAsyncEvents instruction_to_host_execute_async_events_;
 
     // We should not emit kernels when loading thunks from a compilation result.
     const bool emit_kernels_;

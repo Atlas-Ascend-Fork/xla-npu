@@ -16,7 +16,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-// #include "xla/backends/cpu/runtime/xfeed_manager.h"
 #include "xla/literal.h"
 #include "xla/service/generic_transfer_manager.h"
 #include "xla/service/transfer_manager.h"

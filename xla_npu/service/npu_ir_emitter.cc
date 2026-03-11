@@ -14,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-// IWYU pragma: no_include "llvm/IR/Intrinsics.gen.inc"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -25,8 +24,6 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "xla/service/elemental_ir_emitter.h"
-// #include "xla/service/gpu/ir_emitter_context.h"
-// #include "xla/service/gpu/ir_emitter_nested.h"
 #include "xla/service/llvm_ir/fused_ir_emitter.h"
 #include "xla/service/llvm_ir/ir_array.h"
 #include "xla/service/llvm_ir/llvm_util.h"
@@ -132,13 +129,6 @@ absl::Status NpuIrEmitter::HandleParameter(HloInstruction* parameter) { return a
 
 absl::Status NpuIrEmitter::HandleCall(HloInstruction* call) {
     return absl::UnimplementedError("NpuIrEmitter::HandleCall is not supported.");
-
-    // std::vector<llvm::Value*> operand_addresses;
-    // for (HloInstruction* operand : call->operands()) {
-    //   operand_addresses.push_back(GetBasePointer(*operand));
-    // }
-    // return CallNestedComputation(&b_, *ir_emitter_context_, *call->to_apply(),
-    //                              operand_addresses, GetBasePointer(*call));
 }
 
 absl::Status NpuIrEmitter::HandleCustomCall(HloInstruction*) { return Unimplemented("custom-call"); }

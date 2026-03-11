@@ -31,9 +31,6 @@
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/hlo/utils/hlo_traversal.h"
 #include "xla/primitive_util.h"
-// #include "xla/service/gpu/backend_configs.pb.h"
-// #include "xla/service/gpu/ir_emission_utils.h"
-// #include "xla/service/gpu/reduction_utils.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/stream_executor/device_description.h"
@@ -100,57 +97,6 @@ NpuHloFusionAnalysis::EmitterFusionKind GetEmitterFusionKind(
     // const FusionBackendConfig& fusion_backend_config,
     absl::Span<const HloInstructionAdaptor> fusion_roots, absl::Span<const HloInstructionAdaptor> fusion_heroes,
     const std::optional<TransposeDescription>& tiled_transpose, const se::DeviceDescription& device_info) {
-    // if (fusion_backend_config.kind() == kCustomFusionKind) {
-    //     return NpuHloFusionAnalysis::EmitterFusionKind::kCustomFusion;
-    // }
-
-    // if (fusion_backend_config.kind() == kTritonFusionKind || fusion_backend_config.kind() == kTritonGemmFusionKind ||
-    //     fusion_backend_config.kind() == kTritonNestedGemmFusionKind ||
-    //     fusion_backend_config.kind() == kTritonScaledDotFusionKind ||
-    //     fusion_backend_config.kind() == kTritonCollectiveFusionKind) {
-    //     return NpuHloFusionAnalysis::EmitterFusionKind::kTriton;
-    // }
-
-    // if (fusion_backend_config.kind() == kDynamicMemcpyFusionKind) {
-    //     return NpuHloFusionAnalysis::EmitterFusionKind::kDynamicMemcpy;
-    // }
-
-    // if (fusion_backend_config.kind() == kCuDnnFusionKind) {
-    //     return NpuHloFusionAnalysis::EmitterFusionKind::kCuDnn;
-    // }
-
-    // std::optional<HloInstructionAdaptor> first_reduce_hero;
-    // for (auto [root, hero] : llvm::zip(fusion_roots, fusion_heroes)) {
-    //     if (IsRealReductionHero(root.instruction(), hero.instruction(), device_info)) {
-    //         first_reduce_hero = hero;
-    //         break;
-    //     }
-    // }
-    // if (first_reduce_hero.has_value()) {
-    //     bool valid_shapes = true;
-    //     Shape hero_operand_shape = first_reduce_hero->GetOperand(0).shape();
-    //     for (auto [root, hero] : llvm::zip(fusion_roots, fusion_heroes)) {
-    //         if (root == *first_reduce_hero) {
-    //             continue;
-    //         }
-    //         if (!IsRealReductionHero(root.instruction(), hero.instruction(), device_info)) {
-    //             // Needs to have a compatible shape to the reduce operand (compatible
-    //             // meaning same number of elements).
-    //             if (ShapeUtil::ElementsIn(root.shape()) != ShapeUtil::ElementsIn(hero_operand_shape)) {
-    //                 valid_shapes = false;
-    //                 break;
-    //             }
-    //         } else if (!AreReductionsMultiOutputFusionCompatible(&hero.instruction(),
-    //                                                              &first_reduce_hero->instruction())) {
-    //             valid_shapes = false;
-    //             break;
-    //         }
-    //     }
-    //     if (valid_shapes) {
-    //         return NpuHloFusionAnalysis::EmitterFusionKind::kReduction;
-    //     }
-    // }
-
     // We expect that the last dimension is swapped with a different dimension.
     if (tiled_transpose.has_value()) {
         return NpuHloFusionAnalysis::EmitterFusionKind::kTranspose;
@@ -189,19 +135,13 @@ int SmallestBitWidth(const Container& args) {
 }  // namespace
 
 bool IsNpuFusionKind(const HloInstruction& hlo, absl::string_view kind) {
-    // auto gpu_config = hlo.backend_config<GpuBackendConfig>();
-    // if (!gpu_config.ok()) {
-    //     return false;
-    // }
-    // return gpu_config->fusion_backend_config().kind() == kind;
     return false;  // TODO 实现NPU的fusion instruction类型判断
 }
 
 NpuHloFusionAnalysis::NpuHloFusionAnalysis(
-    //  FusionBackendConfig fusion_backend_config,
     HloFusionSpec fusion_spec, EmitterFusionKind emitter_fusion_kind, const se::DeviceDescription* device_info,
     std::optional<TransposeDescription> tiled_transpose, NpuHloFusionAnalysis::InputOutputInfo input_output_info)
-    :  // fusion_backend_config_(std::move(fusion_backend_config)),
+    :
       fusion_spec_(std::move(fusion_spec)),
       emitter_fusion_kind_(emitter_fusion_kind),
       device_info_(device_info),
@@ -210,7 +150,6 @@ NpuHloFusionAnalysis::NpuHloFusionAnalysis(
 
 // static
 NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(
-    // FusionBackendConfig backend_config,
     std::unique_ptr<HloFusionAdaptor> fusion, const se::DeviceDescription* device_info) {
     absl::InlinedVector<HloInstructionAdaptor, 2> roots = fusion->GetRoots();
     absl::InlinedVector<HloInstructionAdaptor, 2> heroes;
@@ -226,7 +165,6 @@ NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(
     std::optional<TransposeDescription> tiled_transpose_hero = FindConsistentTransposeHero(roots, heroes);
 
     EmitterFusionKind emitter_fusion_kind = GetEmitterFusionKind(
-        // backend_config,
         roots, heroes, tiled_transpose_hero, *device_info);
 
     // The loop emitter always uses the roots as heroes. Even if we found some
@@ -241,40 +179,19 @@ NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(
     HloFusionSpec fusion_spec(std::move(fusion), std::move(roots), std::move(heroes));
 
     return NpuHloFusionAnalysis(
-        // std::move(backend_config),
         std::move(fusion_spec), emitter_fusion_kind, device_info, tiled_transpose_hero, std::move(input_output_info));
 }
 
 // static
 NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(const HloInstruction& instruction,
                                                   const se::DeviceDescription& device_info) {
-    // absl::StatusOr<GpuBackendConfig> gpu_backend_config = instruction.backend_config<GpuBackendConfig>();
-
-    // FusionBackendConfig fusion_backend_config =
-    //     gpu_backend_config.ok() ? gpu_backend_config->fusion_backend_config() :
-    //     FusionBackendConfig::default_instance();
     return Create(
-        // std::move(fusion_backend_config),
         HloFusionAdaptor::ForInstruction(&instruction), &device_info);
 }
 
 // static
 NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(const HloInstruction& producer, const HloInstruction& consumer,
                                                   const se::DeviceDescription& device_info) {
-    // absl::StatusOr<GpuBackendConfig> gpu_backend_config;
-
-    // if (consumer.has_backend_config()) {
-    //     gpu_backend_config = consumer.backend_config<GpuBackendConfig>();
-    // }
-
-    // if (!gpu_backend_config.ok() && producer.has_backend_config()) {
-    //     gpu_backend_config = producer.backend_config<GpuBackendConfig>();
-    // }
-
-    // FusionBackendConfig fusion_backend_config =
-    //     gpu_backend_config.ok() ? gpu_backend_config->fusion_backend_config() :
-    //     FusionBackendConfig::default_instance();
-
     return NpuHloFusionAnalysis::Create(
         // std::move(fusion_backend_config),
         HloFusionAdaptor::ForProducerConsumer(&producer, &consumer), &device_info);
@@ -283,22 +200,6 @@ NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(const HloInstruction& producer
 const HloInstruction* NpuHloFusionAnalysis::FindHeroReduction() const {
     // TODO implement
     return nullptr;
-
-    // if (emitter_fusion_kind_ != EmitterFusionKind::kReduction) {
-    //     return nullptr;
-    // }
-    // const auto& roots = fusion_roots();
-    // CHECK(!roots.empty());
-    // // We always use the first reduce root that triggers unnested reduction
-    // // emitter as the hero reduction, since all the reductions are required to
-    // // have the same shape and layout as verified by
-    // // `IsFusedReductionOutputConsistent()`.
-    // for (auto [root, hero] : llvm::zip(roots, fusion_heroes())) {
-    //     if (IsRealReductionHero(root.instruction(), hero.instruction(), *device_info_)) {
-    //         return &hero.instruction();
-    //     }
-    // }
-    // LOG(FATAL) << "Did not find a hero reduction";
 }
 
 }  // namespace xla

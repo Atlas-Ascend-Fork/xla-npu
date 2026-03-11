@@ -21,15 +21,9 @@
 #include "absl/strings/string_view.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-// #include "xla/backends/gpu/runtime/sequential_thunk.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/service/buffer_value.h"
-// #include "xla/service/gpu/alias_info.h"
-// #include "xla/service/gpu/execution_stream_assignment.h"
-// #include "xla/service/gpu/gpu_executable.h"
-// #include "xla/service/gpu/ir_emitter_context.h"
-// #include "xla/service/gpu/kernel_reuse_cache.pb.h"
 #include "xla/service/hlo.pb.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
@@ -55,15 +49,12 @@ struct NpuCompileModuleResults {
     absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo> output_info;
     Shape output_shape;
     std::string module_name;
-    // CompilationCacheProto kernel_compilation_cache;
 
     // If true, the compiled module uses buffer allocations owned by
     // buffer_assignment. Otherwise the compiled module uses buffer allocations
     // stored in allocations.
     bool use_original_allocations;
 };
-
-// absl::Status NpuLoadCache(NpuIrEmitterContext& ir_emitter_context, absl::string_view cache_file_path);
 
 absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
     const HloModule* hlo_module, llvm::LLVMContext* llvm_context, const std::string& target_triple,
