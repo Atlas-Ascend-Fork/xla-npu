@@ -8,21 +8,6 @@
  * See LICENSE in the root of the software repository for the full text of the License.
  */
 
-/* Copyright 2025 The OpenXLA Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
-
 #include "xla/xla_npu/service/transform/npu_gemm_fusion.h"
 
 #include <memory>
@@ -186,10 +171,6 @@ ActivationMode NpuGemmFusion::GetActivationMode(const HloInstruction* instr) {
     switch (instr->opcode()) {
         case HloOpcode::kMaximum:
             return ActivationMode::kRelu;
-        // Note: kGelu is not available as a basic opcode in current XLA version
-        // It's typically implemented as a custom call or sequence of operations
-        // case HloOpcode::kGelu:
-        //     return ActivationMode::kGelu;
         case HloOpcode::kLogistic:
             return ActivationMode::kSigmoid;
         case HloOpcode::kTanh:
