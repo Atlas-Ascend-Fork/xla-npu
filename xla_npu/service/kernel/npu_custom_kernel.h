@@ -53,12 +53,6 @@ class NpuCustomKernel {
     NpuCustomKernel(NpuCustomKernel&&) noexcept;
     NpuCustomKernel& operator=(NpuCustomKernel&&) noexcept;
 
-    // NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
-    //                 se::ThreadDim thread_dims, size_t shared_memory_bytes);
-
-    // NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
-    //                 se::ThreadDim thread_dims, se::ClusterDim cluster_dims, size_t shared_memory_bytes);
-
     absl::string_view name() const { return name_; }
 
     const se::KernelLoaderSpec& kernel_spec() { return kernel_spec_; }

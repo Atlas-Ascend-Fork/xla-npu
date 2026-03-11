@@ -72,24 +72,6 @@ NpuCustomKernel& NpuCustomKernel::operator=(NpuCustomKernel&& other) noexcept {
     return *this;
 }
 
-// NpuCustomKernel::NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
-//                                  se::ThreadDim thread_dims, size_t shared_memory_bytes)
-//     : name_(std::move(name)),
-//       kernel_spec_(std::move(kernel_spec)),
-//       block_dims_(block_dims),
-//       thread_dims_(thread_dims),
-//       cluster_dims_(std::nullopt),
-//       shared_memory_bytes_(shared_memory_bytes) {}
-
-// NpuCustomKernel::NpuCustomKernel(std::string name, se::KernelLoaderSpec kernel_spec, se::BlockDim block_dims,
-//                                  se::ThreadDim thread_dims, se::ClusterDim cluster_dims, size_t shared_memory_bytes)
-//     : name_(std::move(name)),
-//       kernel_spec_(std::move(kernel_spec)),
-//       block_dims_(block_dims),
-//       thread_dims_(thread_dims),
-//       cluster_dims_(cluster_dims),
-//       shared_memory_bytes_(shared_memory_bytes) {}
-
 std::string NpuCustomKernel::ToString() const {
     return absl::StrFormat("%s block_dim: %d shared_memory: %d bytes", name_, block_dims_.x, shared_memory_bytes_);
 }

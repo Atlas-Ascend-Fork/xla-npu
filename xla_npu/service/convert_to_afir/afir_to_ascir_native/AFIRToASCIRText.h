@@ -8,12 +8,6 @@
  * See LICENSE in the root of the software repository for the full text of the License.
  */
 
-//===- AFIRToASCIRText.h - AFIR to ASCIR text conversion ------*- C++ -*-===//
-//
-// Part of the Ascend-MLIR Project
-//
-//===----------------------------------------------------------------------===//
-
 #ifndef ASCEND_MLIR_CONVERSION_AFIRTOASCIR_AFIRTOASCIRTEXT_H
 #define ASCEND_MLIR_CONVERSION_AFIRTOASCIR_AFIRTOASCIRTEXT_H
 
