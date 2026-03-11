@@ -1,11 +1,13 @@
 /**
  * Copyright (c)2026 Huawei Technologies Co., Ltd.
- * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
- * CANN Open Software License Agreement Version 2.0 (the "License").
- * Please refer to the License for details. You may not use this file except in compliance with the License.
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
- * See LICENSE in the root of the software repository for the full text of the License.
+ * This program is free software, you can redistribute it and/or modify it under
+ * the terms and conditions of CANN Open Software License Agreement Version 2.0
+ * (the "License"). Please refer to the License for details. You may not use
+ * this file except in compliance with the License. THIS SOFTWARE IS PROVIDED ON
+ * AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS
+ * FOR A PARTICULAR PURPOSE. See LICENSE in the root of the software repository
+ * for the full text of the License.
  */
 
 #ifndef XLA_XLA_NPU_BACKEND_RUNTIME_NPU_THUNK_PASS_PIPELINE_H_
@@ -20,7 +22,6 @@
 #include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-// #include "xla/backends/gpu/runtime/sequential_thunk.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
 #include "xla/stream_executor/device_description.h"
@@ -29,44 +30,50 @@
 namespace xla {
 
 class NpuThunkPassBufferAllocator {
-   public:
-    virtual ~NpuThunkPassBufferAllocator() = default;
+ public:
+  virtual ~NpuThunkPassBufferAllocator() = default;
 
-    // Creates a new allocation of the provided size.
-    // The ownership of the returned pointer stays with the
-    // NpuThunkPassBufferAllocator object.
-    virtual absl::StatusOr<BufferAllocation* absl_nonnull> NewEmptyAllocation(int64_t size) = 0;
+  // Creates a new allocation of the provided size.
+  // The ownership of the returned pointer stays with the
+  // NpuThunkPassBufferAllocator object.
+  virtual absl::StatusOr<BufferAllocation* absl_nonnull> NewEmptyAllocation(
+      int64_t size) = 0;
 };
 
 class NpuThunkPassInterface {
-   public:
-    virtual ~NpuThunkPassInterface() = default;
+ public:
+  virtual ~NpuThunkPassInterface() = default;
 
-    virtual absl::StatusOr<bool> Run(NpuSequentialThunk* root_thunk, const DebugOptions& debug_options,
-                                     const HloModule* absl_nullable hlo_module,
-                                     const se::DeviceDescription& device_info,
-                                     NpuThunkPassBufferAllocator& allocator) = 0;
+  virtual absl::StatusOr<bool> Run(NpuSequentialThunk* root_thunk,
+                                   const DebugOptions& debug_options,
+                                   const HloModule* absl_nullable hlo_module,
+                                   const se::DeviceDescription& device_info,
+                                   NpuThunkPassBufferAllocator& allocator) = 0;
 
-    virtual absl::string_view name() const = 0;
+  virtual absl::string_view name() const = 0;
 };
 
 class NpuThunkPassPipeline : public NpuThunkPassInterface {
-   public:
-    explicit NpuThunkPassPipeline(absl::string_view name) : name_(name) {}
+ public:
+  explicit NpuThunkPassPipeline(absl::string_view name) : name_(name) {}
 
-    void AddPass(std::unique_ptr<NpuThunkPassInterface> pass) { passes_.push_back(std::move(pass)); }
+  void AddPass(std::unique_ptr<NpuThunkPassInterface> pass) {
+    passes_.push_back(std::move(pass));
+  }
 
-    absl::string_view name() const override { return name_; }
+  absl::string_view name() const override { return name_; }
 
-    // Runs all optimization passes on the given thunk sequence.
-    // Returns true if any pass changed the thunk tree.
-    absl::StatusOr<bool> Run(NpuSequentialThunk* root_thunk, const DebugOptions& debug_options,
-                             const HloModule* absl_nullable hlo_module, const se::DeviceDescription& device_info,
-                             NpuThunkPassBufferAllocator& allocator) override;
+  // Runs all optimization passes on the given thunk sequence.
+  // Returns true if any pass changed the thunk tree.
+  absl::StatusOr<bool> Run(NpuSequentialThunk* root_thunk,
+                           const DebugOptions& debug_options,
+                           const HloModule* absl_nullable hlo_module,
+                           const se::DeviceDescription& device_info,
+                           NpuThunkPassBufferAllocator& allocator) override;
 
-   private:
-    std::string name_;
-    std::vector<std::unique_ptr<NpuThunkPassInterface>> passes_;
+ private:
+  std::string name_;
+  std::vector<std::unique_ptr<NpuThunkPassInterface>> passes_;
 };
 
 }  // namespace xla

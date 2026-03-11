@@ -1,11 +1,13 @@
 /**
  * Copyright (c)2026 Huawei Technologies Co., Ltd.
- * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
- * CANN Open Software License Agreement Version 2.0 (the "License").
- * Please refer to the License for details. You may not use this file except in compliance with the License.
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
- * See LICENSE in the root of the software repository for the full text of the License.
+ * This program is free software, you can redistribute it and/or modify it under
+ * the terms and conditions of CANN Open Software License Agreement Version 2.0
+ * (the "License"). Please refer to the License for details. You may not use
+ * this file except in compliance with the License. THIS SOFTWARE IS PROVIDED ON
+ * AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS
+ * FOR A PARTICULAR PURPOSE. See LICENSE in the root of the software repository
+ * for the full text of the License.
  */
 
 #include <iostream>
@@ -22,17 +24,11 @@ Graph::Graph(const char* name) {
 Graph graph("test");
 GNode gnode;
 
-graphStatus Graph::AddOp(const ge::Operator &op) {
-  return 0;
-}
+graphStatus Graph::AddOp(const ge::Operator& op) { return 0; }
 
-Graph& Graph::SetInputs(const std::vector<Operator>& inputs) {
-  return graph;
-}
+Graph& Graph::SetInputs(const std::vector<Operator>& inputs) { return graph; }
 
-Graph& Graph::SetOutputs(const std::vector<Operator>& outputs) {
-  return graph;
-}
+Graph& Graph::SetOutputs(const std::vector<Operator>& outputs) { return graph; }
 
 Graph& Graph::SetOutputs(
     const std::vector<std::pair<Operator, std::vector<size_t>>>&
@@ -40,47 +36,36 @@ Graph& Graph::SetOutputs(
   return graph;
 }
 
-graphStatus Graph::GetAllOpName(std::vector<AscendString> &names) const{
+graphStatus Graph::GetAllOpName(std::vector<AscendString>& names) const {
   return 0;
 }
 
-std::vector<GNode> Graph::GetAllNodes() const {
-  return {};
-};
+std::vector<GNode> Graph::GetAllNodes() const { return {}; };
 
-GNode AddNodeByOp(const Operator &op) {
-  return gnode;
-}
+GNode AddNodeByOp(const Operator& op) { return gnode; }
 AscendString::AscendString(const char* name) {}
-bool AscendString::operator<(const AscendString& d) const {
-  return true;
-}
-const char* AscendString::GetString() const {
-  return 0;
-}
-bool AscendString::operator==(const AscendString& d) const {
-  return true;
-}
+bool AscendString::operator<(const AscendString& d) const { return true; }
+const char* AscendString::GetString() const { return 0; }
+bool AscendString::operator==(const AscendString& d) const { return true; }
 
 TensorDesc::TensorDesc() {}
 TensorDesc::TensorDesc(const TensorDesc& desc) {}
 TensorDesc::TensorDesc(TensorDesc&& desc) {}
 TensorDesc::TensorDesc(Shape shape, Format format, DataType dt) {}
-void TensorDesc::SetShape(const Shape &shape) {}
+void TensorDesc::SetShape(const Shape& shape) {}
 void TensorDesc::SetPlacement(Placement placement) {};
 void TensorDesc::SetFormat(Format format) {};
 void TensorDesc::SetOriginFormat(Format origin_format) {};
-void TensorDesc::SetOriginShape(const Shape &origin_shape) {};
+void TensorDesc::SetOriginShape(const Shape& origin_shape) {};
 void TensorDesc::SetDataType(DataType dt) {};
-Shape TensorDesc::GetShape() const {
-  return {};
-}
+Shape TensorDesc::GetShape() const { return {}; }
 DataType TensorDesc::GetDataType() const { return DataType::DT_FLOAT; }
-TensorDesc &TensorDesc::operator=(TensorDesc &&desc){};
-void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len) {}
+TensorDesc& TensorDesc::operator=(TensorDesc&& desc) {};
+void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer,
+                  const size_t& const_data_len) {}
 
 /* Shape */
-Shape::Shape(){}
+Shape::Shape() {}
 Shape::Shape(const std::vector<int64_t>& dims) {}
 int64_t Shape::GetDim(size_t idx) const { return 0; }
 graphStatus Shape::SetDim(size_t idx, int64_t value) { return 0; }
@@ -88,72 +73,57 @@ std::vector<int64_t> Shape::GetDims() const { return {}; }
 int64_t Shape::GetShapeSize() const { return 0; }
 
 Tensor::Tensor() {}
-Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) {}
-Tensor::Tensor(const TensorDesc &tensor_desc) {}
-graphStatus Tensor::SetData(const uint8_t *data, size_t size) {return 0;}
-graphStatus Tensor::SetData(const char_t *data) {return 0;}
-graphStatus Tensor::SetTensorDesc(const TensorDesc &tensor_desc) {return 0;}
-const uint8_t* Tensor::GetData() const {
-  return nullptr;
-}
-uint8_t* Tensor::GetData() {
-  return nullptr;
-}
-size_t Tensor::GetSize() const {
+Tensor::Tensor(const TensorDesc& tensor_desc, const uint8_t* data,
+               size_t size) {}
+Tensor::Tensor(const TensorDesc& tensor_desc) {}
+graphStatus Tensor::SetData(const uint8_t* data, size_t size) { return 0; }
+graphStatus Tensor::SetData(const char_t* data) { return 0; }
+graphStatus Tensor::SetTensorDesc(const TensorDesc& tensor_desc) { return 0; }
+const uint8_t* Tensor::GetData() const { return nullptr; }
+uint8_t* Tensor::GetData() { return nullptr; }
+size_t Tensor::GetSize() const { return 0; }
+TensorDesc Tensor::GetTensorDesc() const { return {}; }
+graphStatus Tensor::ResetData(uint8_t* data, size_t size,
+                              const Tensor::DeleteFunc& deleter_func) {
   return 0;
 }
-TensorDesc Tensor::GetTensorDesc() const {
-  return {};
-}
-graphStatus Tensor::ResetData(uint8_t *data, size_t size, const Tensor::DeleteFunc &deleter_func) {
-  return 0;
-}
-graphStatus Tensor::SetShapeDimNum(const size_t dim_num) {
-  return 0;
-}
+graphStatus Tensor::SetShapeDimNum(const size_t dim_num) { return 0; }
 graphStatus Tensor::SetShapeDim(const size_t idx, const int64_t dim_value) {
   return 0;
 }
 
-std::vector<GNode> Graph::GetDirectNode() const {
-  return {};
-}
+std::vector<GNode> Graph::GetDirectNode() const { return {}; }
 
 GNode::GNode() {}
-graphStatus GNode::GetType(AscendString& type) const {
+graphStatus GNode::GetType(AscendString& type) const { return 0; }
+graphStatus GNode::SetAttr(const AscendString& name,
+                           int64_t& attr_value) const {
   return 0;
 }
-graphStatus GNode::SetAttr(const AscendString& name, int64_t& attr_value)
-    const {
-  return 0;
-}
-graphStatus GNode::SetAttr(const AscendString& name, int32_t& attr_value)
-    const {
+graphStatus GNode::SetAttr(const AscendString& name,
+                           int32_t& attr_value) const {
   return 0;
 }
 graphStatus GNode::SetAttr(const AscendString& name, float& attr_value) const {
   return 0;
 }
-graphStatus GNode::SetAttr(const AscendString& name, AscendString& attr_value)
-    const {
+graphStatus GNode::SetAttr(const AscendString& name,
+                           AscendString& attr_value) const {
   return 0;
 }
 graphStatus GNode::SetAttr(const AscendString& name, bool& attr_value) const {
   return 0;
 }
-graphStatus GNode::SetAttr(
-    const AscendString& name,
-    std::vector<int64_t>& attr_value) const {
+graphStatus GNode::SetAttr(const AscendString& name,
+                           std::vector<int64_t>& attr_value) const {
   return 0;
 }
-graphStatus GNode::SetAttr(
-    const AscendString& name,
-    std::vector<float>& attr_value) const {
+graphStatus GNode::SetAttr(const AscendString& name,
+                           std::vector<float>& attr_value) const {
   return 0;
 }
-graphStatus GNode::SetAttr(
-    const AscendString& name,
-    std::vector<bool>& attr_value) const {
+graphStatus GNode::SetAttr(const AscendString& name,
+                           std::vector<bool>& attr_value) const {
   return 0;
 }
 graphStatus GNode::SetAttr(
@@ -162,5 +132,5 @@ graphStatus GNode::SetAttr(
   return 0;
 }
 
-graphStatus GNode::GetName(AscendString &name) const{return 0;}
-} // namespace ge
+graphStatus GNode::GetName(AscendString& name) const { return 0; }
+}  // namespace ge

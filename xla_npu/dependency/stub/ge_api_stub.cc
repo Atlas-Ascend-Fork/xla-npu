@@ -1,11 +1,13 @@
 /**
  * Copyright (c)2026 Huawei Technologies Co., Ltd.
- * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
- * CANN Open Software License Agreement Version 2.0 (the "License").
- * Please refer to the License for details. You may not use this file except in compliance with the License.
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
- * See LICENSE in the root of the software repository for the full text of the License.
+ * This program is free software, you can redistribute it and/or modify it under
+ * the terms and conditions of CANN Open Software License Agreement Version 2.0
+ * (the "License"). Please refer to the License for details. You may not use
+ * this file except in compliance with the License. THIS SOFTWARE IS PROVIDED ON
+ * AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS
+ * FOR A PARTICULAR PURPOSE. See LICENSE in the root of the software repository
+ * for the full text of the License.
  */
 
 #include <cstdint>
@@ -37,36 +39,20 @@ class CompiledGraphSummary::SummaryData {
  public:
   SummaryData() = default;
   ~SummaryData() = default;
-  bool IsStatic() const {
-    return is_static_;
-  }
+  bool IsStatic() const { return is_static_; }
   bool IsFeatureMemoryBaseRefreshable() const {
     return is_feature_mem_refreshable_;
   }
-  size_t GetConstMemorySize() const {
-    return const_mem_size_;
-  }
-  size_t GetFeatureMemorySize() const {
-    return feature_mem_size_;
-  }
-  size_t GetFixedFeatureMemorySize() const {
-    return fixed_mem_size_;
-  }
+  size_t GetConstMemorySize() const { return const_mem_size_; }
+  size_t GetFeatureMemorySize() const { return feature_mem_size_; }
+  size_t GetFixedFeatureMemorySize() const { return fixed_mem_size_; }
   size_t GetRefreshableFeatureMemorySize() const {
     return refreshable_mem_size_;
   }
-  size_t GetStreamNum() const {
-    return stream_num_;
-  }
-  size_t GetEventNum() const {
-    return event_num_;
-  }
-  std::vector<ge::Shape> GetOutputShapes() {
-    return netoutput_shapes_;
-  }
-  std::vector<ge::DataType> GetOutputDtypes() {
-    return output_dtypes_;
-  }
+  size_t GetStreamNum() const { return stream_num_; }
+  size_t GetEventNum() const { return event_num_; }
+  std::vector<ge::Shape> GetOutputShapes() { return netoutput_shapes_; }
+  std::vector<ge::DataType> GetOutputDtypes() { return output_dtypes_; }
 
   bool is_static_{false};
   bool is_feature_mem_refreshable_{false};
@@ -84,7 +70,8 @@ class CompiledGraphSummary::Builder {
  public:
   Builder() = default;
   ~Builder() = default;
-  static CompiledGraphSummaryPtr Build(const CompiledGraphSummary::SummaryData &data) {
+  static CompiledGraphSummaryPtr Build(
+      const CompiledGraphSummary::SummaryData& data) {
     CompiledGraphSummaryPtr summary(new CompiledGraphSummary);
     summary->data_ = std::make_shared<SummaryData>();
     *summary->data_ = data;
@@ -93,61 +80,58 @@ class CompiledGraphSummary::Builder {
 };
 
 CompiledGraphSummary::~CompiledGraphSummary() = default;
-bool CompiledGraphSummary::IsStatic() const {
-  return data_->IsStatic();
-}
-Status CompiledGraphSummary::GetFeatureMemoryBaseRefreshable(bool &v) const {
+bool CompiledGraphSummary::IsStatic() const { return data_->IsStatic(); }
+Status CompiledGraphSummary::GetFeatureMemoryBaseRefreshable(bool& v) const {
   v = data_->IsFeatureMemoryBaseRefreshable();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetConstMemorySize(size_t &size) const {
+Status CompiledGraphSummary::GetConstMemorySize(size_t& size) const {
   size = data_->GetConstMemorySize();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetFeatureMemorySize(size_t &size) const {
+Status CompiledGraphSummary::GetFeatureMemorySize(size_t& size) const {
   size = data_->GetFeatureMemorySize();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetFixedFeatureMemorySize(size_t &size) const {
+Status CompiledGraphSummary::GetFixedFeatureMemorySize(size_t& size) const {
   size = data_->GetFixedFeatureMemorySize();
   return SUCCESS;
 }
 
-Status CompiledGraphSummary::GetRefreshableFeatureMemorySize(size_t &size) const {
+Status CompiledGraphSummary::GetRefreshableFeatureMemorySize(
+    size_t& size) const {
   size = data_->GetRefreshableFeatureMemorySize();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetStreamNum(size_t &num) const {
+Status CompiledGraphSummary::GetStreamNum(size_t& num) const {
   num = data_->GetStreamNum();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetEventNum(size_t &num) const {
+Status CompiledGraphSummary::GetEventNum(size_t& num) const {
   num = data_->GetEventNum();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetOutputShapes(std::vector<ge::Shape> &shapes) const {
+Status CompiledGraphSummary::GetOutputShapes(
+    std::vector<ge::Shape>& shapes) const {
   shapes = data_->GetOutputShapes();
   return SUCCESS;
 }
-Status CompiledGraphSummary::GetOutputDtypes(std::vector<ge::DataType> &dtypes) const {
+Status CompiledGraphSummary::GetOutputDtypes(
+    std::vector<ge::DataType>& dtypes) const {
   dtypes = data_->GetOutputDtypes();
   return SUCCESS;
 }
 
-std::string GEGetErrorMsg() {
-  return "[STUB] Something error";
-}
+std::string GEGetErrorMsg() { return "[STUB] Something error"; }
 
-std::string GEGetWarningMsg() {
-  return "[STUB] Something warn";
-}
+std::string GEGetWarningMsg() { return "[STUB] Something warn"; }
 
 ge::AscendString GEGetWarningMsgV2() {
   std::string warning_msg = "[STUB] Something warn";
   return ge::AscendString(warning_msg.c_str(), warning_msg.length());
 }
 
-Session::Session(const std::map<AscendString, AscendString> &options) {
+Session::Session(const std::map<AscendString, AscendString>& options) {
   std::cerr << "[STUB] Session::Session created" << std::endl;
 }
 
@@ -158,22 +142,23 @@ Session::~Session() {
 namespace {
 class GraphSpecManager {
  public:
-  static CompiledGraphSummary::SummaryData &GetSpec(uint32_t id) {
+  static CompiledGraphSummary::SummaryData& GetSpec(uint32_t id) {
     return Instance().Get(id);
   }
 
-  static CompiledGraphSummary::SummaryData &Add(uint32_t id, const ge::Graph &graph,
-                                                const std::map<AscendString, AscendString> &options) {
-    auto &spec = Instance().Get(id);
+  static CompiledGraphSummary::SummaryData& Add(
+      uint32_t id, const ge::Graph& graph,
+      const std::map<AscendString, AscendString>& options) {
+    auto& spec = Instance().Get(id);
 
     spec.is_static_ = true;
-    for (auto &node : graph.GetDirectNode()) {
+    for (auto& node : graph.GetDirectNode()) {
       AscendString type;
       node.GetType(type);
       TensorDesc desc;
       if (type == "Data" || type == "RefData") {
         node.GetOutputDesc(0, desc);
-        const auto &dims = desc.GetShape().GetDims();
+        const auto& dims = desc.GetShape().GetDims();
         for (const auto i : dims) {
           if (i < 0) {
             spec.is_static_ = false;
@@ -184,14 +169,18 @@ class GraphSpecManager {
         size_t input_size = node.GetInputsSize();
         for (size_t i = 0u; i < input_size; ++i) {
           node.GetInputDesc(i, desc);
-          char *st_mxfpx_dtype_cp = std::getenv("ST_MXFPX_DTYPE_STUB");
+          char* st_mxfpx_dtype_cp = std::getenv("ST_MXFPX_DTYPE_STUB");
           std::string st_mxfpx_dtype = "";
           if (st_mxfpx_dtype_cp != NULL) {
             st_mxfpx_dtype = st_mxfpx_dtype_cp;
           }
-          if (ge::stubCustomTypeToGeDataTypeMap.find(st_mxfpx_dtype) != ge::stubCustomTypeToGeDataTypeMap.end()) {
-            spec.output_dtypes_.push_back(ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype]);
-            std::cerr << "[STUB] Output dtype is " << ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype] << std::endl;
+          if (ge::stubCustomTypeToGeDataTypeMap.find(st_mxfpx_dtype) !=
+              ge::stubCustomTypeToGeDataTypeMap.end()) {
+            spec.output_dtypes_.push_back(
+                ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype]);
+            std::cerr << "[STUB] Output dtype is "
+                      << ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype]
+                      << std::endl;
           } else {
             spec.output_dtypes_.push_back(desc.GetDataType());
           }
@@ -203,7 +192,8 @@ class GraphSpecManager {
     auto iter = options.find("ge.featureBaseRefreshable");
     if (iter != options.end()) {
       spec.is_feature_mem_refreshable_ = iter->second == "1";
-      std::cerr << "[STUB] Session::Add graph, is_feature_mem_refreshable_ = " << spec.is_feature_mem_refreshable_ << std::endl;
+      std::cerr << "[STUB] Session::Add graph, is_feature_mem_refreshable_ = "
+                << spec.is_feature_mem_refreshable_ << std::endl;
     }
 
     return spec;
@@ -211,23 +201,25 @@ class GraphSpecManager {
 
  private:
   GraphSpecManager() = default;
-  static GraphSpecManager &Instance() {
+  static GraphSpecManager& Instance() {
     static GraphSpecManager instance;
     return instance;
   }
-  CompiledGraphSummary::SummaryData &Get(uint32_t id) {
+  CompiledGraphSummary::SummaryData& Get(uint32_t id) {
     std::lock_guard<std::mutex> lock(mutex_);
     return specs_[id];
-  }  
+  }
 
   std::mutex mutex_;
   std::map<uint32_t, CompiledGraphSummary::SummaryData> specs_;
 };
 }  // namespace
 
-Status Session::AddGraph(uint32_t id, const ge::Graph &graph, const std::map<AscendString, AscendString> &options) {
-  auto &spec = GraphSpecManager::Add(id, graph, options);
-  std::cerr << "[STUB] Session::AddGraph graph " << id << ", num outputs " << spec.output_dtypes_.size() << std::endl;
+Status Session::AddGraph(uint32_t id, const ge::Graph& graph,
+                         const std::map<AscendString, AscendString>& options) {
+  auto& spec = GraphSpecManager::Add(id, graph, options);
+  std::cerr << "[STUB] Session::AddGraph graph " << id << ", num outputs "
+            << spec.output_dtypes_.size() << std::endl;
   return ge::SUCCESS;
 }
 
@@ -236,9 +228,12 @@ Status Session::CompileGraph(uint32_t id) {
   return ge::SUCCESS;
 }
 
-std::shared_ptr<ge::CompiledGraphSummary> Session::GetCompiledGraphSummary(uint32_t id) {
-  std::cerr << "[STUB] Session::GetCompiledGraphSummary graph " << id << std::endl;
-  auto summary = CompiledGraphSummary::Builder::Build(GraphSpecManager::GetSpec(id));
+std::shared_ptr<ge::CompiledGraphSummary> Session::GetCompiledGraphSummary(
+    uint32_t id) {
+  std::cerr << "[STUB] Session::GetCompiledGraphSummary graph " << id
+            << std::endl;
+  auto summary =
+      CompiledGraphSummary::Builder::Build(GraphSpecManager::GetSpec(id));
   return summary;
 }
 
@@ -248,34 +243,35 @@ Status Session::RemoveGraph(uint32_t id) {
 }
 
 static std::vector<int64_t> ParseEnvShape(const char* s) {
-    std::vector<int64_t> dims;
-    if (s == nullptr) {
-        return dims;
-    }
-    std::string str(s);
-    for (char& c : str) {
-        if (c == 'x' || c == 'X') {
-            c = ',';
-        }
-    }
-    std::stringstream ss(str);
-    std::string item;
-    while (std::getline(ss, item, ',')) {
-        try {
-            int64_t v = std::stoll(item);
-            if (v > 0) {
-                dims.push_back(v);
-            } else {
-                return {};
-            }
-        } catch (...) {
-            return {};
-        }
-    }
+  std::vector<int64_t> dims;
+  if (s == nullptr) {
     return dims;
+  }
+  std::string str(s);
+  for (char& c : str) {
+    if (c == 'x' || c == 'X') {
+      c = ',';
+    }
+  }
+  std::stringstream ss(str);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    try {
+      int64_t v = std::stoll(item);
+      if (v > 0) {
+        dims.push_back(v);
+      } else {
+        return {};
+      }
+    } catch (...) {
+      return {};
+    }
+  }
+  return dims;
 }
 
-Status Session::RunGraph(uint32_t id, const std::vector<ge::Tensor> &inputs, std::vector<ge::Tensor> &outputs) {
+Status Session::RunGraph(uint32_t id, const std::vector<ge::Tensor>& inputs,
+                         std::vector<ge::Tensor>& outputs) {
   std::cerr << "[STUB] Session::RunGraph graph " << id << std::endl;
   if (inputs.size() < 1U) {
     std::cerr << "[STUB] Input size is empty" << id << std::endl;
@@ -283,7 +279,8 @@ Status Session::RunGraph(uint32_t id, const std::vector<ge::Tensor> &inputs, std
   }
   auto spec = GraphSpecManager::GetSpec(id);
 
-  const char* env_shape = std::getenv("ST_RUN_STUB_OUTPUTSHAPE"); // 可以通过配置环境变量来设置执行时的输出shape
+  const char* env_shape = std::getenv(
+      "ST_RUN_STUB_OUTPUTSHAPE");  // 可以通过配置环境变量来设置执行时的输出shape
   auto custom_dims = ParseEnvShape(env_shape);
   if (custom_dims.empty()) {
     custom_dims = {2, 2};
@@ -298,15 +295,18 @@ Status Session::RunGraph(uint32_t id, const std::vector<ge::Tensor> &inputs, std
 
     static std::vector<double> data;
     data.resize(1024, 3.0);
-    output.SetData(reinterpret_cast<uint8_t *>(data.data()), sizeof(double) * data.size());
+    output.SetData(reinterpret_cast<uint8_t*>(data.data()),
+                   sizeof(double) * data.size());
     outputs.push_back(output);
   }
   return ge::SUCCESS;
 }
 
-Status Session::RunGraphWithStreamAsync(uint32_t id, void *stream, const std::vector<ge::Tensor> &inputs,
-                                        std::vector<ge::Tensor> &outputs) {
-  std::cerr << "[STUB] Session::RunGraphWithStreamAsync graph " << id << std::endl;
+Status Session::RunGraphWithStreamAsync(uint32_t id, void* stream,
+                                        const std::vector<ge::Tensor>& inputs,
+                                        std::vector<ge::Tensor>& outputs) {
+  std::cerr << "[STUB] Session::RunGraphWithStreamAsync graph " << id
+            << std::endl;
   std::cerr << "[STUB] Input size is " << inputs.size() << std::endl;
   if (inputs.size() < 1U) {
     std::cerr << "[STUB] Input size is empty " << id << std::endl;
@@ -315,7 +315,8 @@ Status Session::RunGraphWithStreamAsync(uint32_t id, void *stream, const std::ve
 
   Placement placement = ge::Placement::kPlacementHost;
   for (size_t i = 0; i < inputs.size(); ++i) {
-    if (inputs[i].GetTensorDesc().GetPlacement() != ge::Placement::kPlacementHost) {
+    if (inputs[i].GetTensorDesc().GetPlacement() !=
+        ge::Placement::kPlacementHost) {
       placement = ge::Placement::kPlacementDevice;
       break;
     }
@@ -326,7 +327,7 @@ Status Session::RunGraphWithStreamAsync(uint32_t id, void *stream, const std::ve
     ge::Tensor output;
     ge::TensorDesc desc;
     desc.SetDataType(spec.output_dtypes_[i]);
-    char *st_muti_gear_stub = std::getenv("ST_GEARS_STUB_OUTPUTSHAPE");
+    char* st_muti_gear_stub = std::getenv("ST_GEARS_STUB_OUTPUTSHAPE");
     if (st_muti_gear_stub != NULL) {
       std::vector<int64_t> dims;
       dims.resize(inputs[0].GetShapeDimNum());
@@ -342,52 +343,61 @@ Status Session::RunGraphWithStreamAsync(uint32_t id, void *stream, const std::ve
 
     static std::vector<float> data;
     data.resize(kOutptSize, 0.0);
-    output.SetData(reinterpret_cast<uint8_t *>(data.data()), sizeof(float) * data.size());
+    output.SetData(reinterpret_cast<uint8_t*>(data.data()),
+                   sizeof(float) * data.size());
     outputs.push_back(output);
   }
   return ge::SUCCESS;
 }
 
-Status Session::RegisterExternalAllocator(const void *const stream, std::shared_ptr<ge::Allocator> allocator) const {
+Status Session::RegisterExternalAllocator(
+    const void* const stream, std::shared_ptr<ge::Allocator> allocator) const {
   (void)stream;
   (void)allocator;
   return ge::SUCCESS;
 }
 
-Status Session::UnregisterExternalAllocator(const void *const stream) const {
+Status Session::UnregisterExternalAllocator(const void* const stream) const {
   (void)stream;
   return ge::SUCCESS;
 }
 
-Status Session::SetGraphConstMemoryBase(uint32_t id, const void *const memory, size_t size) {
+Status Session::SetGraphConstMemoryBase(uint32_t id, const void* const memory,
+                                        size_t size) {
   (void)id;
   (void)memory;
   (void)size;
   return ge::SUCCESS;
 }
 
-Status Session::UpdateGraphFeatureMemoryBase(uint32_t id, const void *const memory, size_t size) {
+Status Session::UpdateGraphFeatureMemoryBase(uint32_t id,
+                                             const void* const memory,
+                                             size_t size) {
   (void)id;
   (void)memory;
   (void)size;
   return ge::SUCCESS;
 }
 
-Status Session::SetGraphFixedFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size) {
+Status Session::SetGraphFixedFeatureMemoryBase(uint32_t graph_id,
+                                               const void* const memory,
+                                               size_t size) {
   (void)graph_id;
   (void)memory;
   (void)size;
   return ge::SUCCESS;
 }
 
-Status Session::UpdateGraphRefreshableFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size) {
+Status Session::UpdateGraphRefreshableFeatureMemoryBase(
+    uint32_t graph_id, const void* const memory, size_t size) {
   (void)graph_id;
   (void)memory;
   (void)size;
   return ge::SUCCESS;
 }
 
-Status GEInitialize(const std::map<ge::AscendString, ge::AscendString> &options) {
+Status GEInitialize(
+    const std::map<ge::AscendString, ge::AscendString>& options) {
   std::cerr << "[STUB] GEInitialize" << std::endl;
   return ge::SUCCESS;
 }
@@ -397,9 +407,15 @@ Status GEFinalize() {
   return ge::SUCCESS;
 }
 
-Status GEStreamAllocationSummaryGetStringInfos(const ge::CompiledGraphSummary &compiled_graph_summary, std::map<ge::AscendString, std::vector<ge::AscendString>> &graph_to_string_infos) {
+Status GEStreamAllocationSummaryGetStringInfos(
+    const ge::CompiledGraphSummary& compiled_graph_summary,
+    std::map<ge::AscendString, std::vector<ge::AscendString>>&
+        graph_to_string_infos) {
   ge::AscendString graph_name("Stub graph_1");
-  ge::AscendString logical_stream_info("logic_stream_id: 0, user_stream_label: 1, is_assigned_by_user_stream_pass: false, attached_stream_ids: , physical_model_stream_num: 1, hccl_followed_stream_num: 0.");
+  ge::AscendString logical_stream_info(
+      "logic_stream_id: 0, user_stream_label: 1, "
+      "is_assigned_by_user_stream_pass: false, attached_stream_ids: , "
+      "physical_model_stream_num: 1, hccl_followed_stream_num: 0.");
 
   std::vector<ge::AscendString> infos;
   infos.push_back(logical_stream_info);
@@ -410,25 +426,31 @@ Status GEStreamAllocationSummaryGetStringInfos(const ge::CompiledGraphSummary &c
 }  // namespace ge
 
 extern "C" {
-ge::Status GeSessionLoadGraph(ge::Session &session, uint32_t graph_id,
-                              const std::map<ge::AscendString, ge::AscendString> &option, void *stream) {
-  std::cerr << "[STUB] GeSessionLoadGraph, graph id is" << graph_id << std::endl;
+ge::Status GeSessionLoadGraph(
+    ge::Session& session, uint32_t graph_id,
+    const std::map<ge::AscendString, ge::AscendString>& option, void* stream) {
+  std::cerr << "[STUB] GeSessionLoadGraph, graph id is" << graph_id
+            << std::endl;
   return ge::SUCCESS;
 }
 
-ge::graphStatus manager(gert::TensorAddress addr, gert::TensorOperateType operate_type, void **out) {
+ge::graphStatus manager(gert::TensorAddress addr,
+                        gert::TensorOperateType operate_type, void** out) {
   if (operate_type == gert::kGetTensorAddress) {
     *out = addr;
   }
   return ge::GRAPH_SUCCESS;
 }
 
-ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t graph_id, void *stream,
-                                                const std::vector<gert::Tensor> &inputs,
-                                                std::vector<gert::Tensor> &outputs) {
-  std::cerr << "[STUB] GeSessionExecuteGraphWithStreamAsync, graph id is " << graph_id << std::endl;
+ge::Status GeSessionExecuteGraphWithStreamAsync(
+    ge::Session& session, uint32_t graph_id, void* stream,
+    const std::vector<gert::Tensor>& inputs,
+    std::vector<gert::Tensor>& outputs) {
+  std::cerr << "[STUB] GeSessionExecuteGraphWithStreamAsync, graph id is "
+            << graph_id << std::endl;
   if (inputs.size() < 1U) {
-    std::cerr << "[STUB] Input size is empty for graph" << graph_id << std::endl;
+    std::cerr << "[STUB] Input size is empty for graph" << graph_id
+              << std::endl;
     return ge::SUCCESS;
   }
   std::cerr << "[STUB] Input size is " << inputs.size() << std::endl;
@@ -444,22 +466,26 @@ ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t g
 
   auto spec = ge::GraphSpecManager::GetSpec(graph_id);
   if (outputs.size() != spec.output_dtypes_.size()) {
-    std::cerr << "[STUB] Output size " << outputs.size() << " is incompatible with expected "
-              << spec.output_dtypes_.size() << std::endl;
+    std::cerr << "[STUB] Output size " << outputs.size()
+              << " is incompatible with expected " << spec.output_dtypes_.size()
+              << std::endl;
     return ge::FAILED;
   }
   std::cerr << "[STUB] Output size is " << outputs.size() << std::endl;
 
   for (size_t i = 0; i < spec.output_dtypes_.size(); ++i) {
-    gert::Tensor &output_i = outputs[i];
-    char *st_mxfpx_dtype_cp = std::getenv("ST_MXFPX_DTYPE_STUB");
+    gert::Tensor& output_i = outputs[i];
+    char* st_mxfpx_dtype_cp = std::getenv("ST_MXFPX_DTYPE_STUB");
     std::string st_mxfpx_dtype = "";
     if (st_mxfpx_dtype_cp != NULL) {
       st_mxfpx_dtype = st_mxfpx_dtype_cp;
     }
-    if (ge::stubCustomTypeToGeDataTypeMap.find(st_mxfpx_dtype) != ge::stubCustomTypeToGeDataTypeMap.end()) {
+    if (ge::stubCustomTypeToGeDataTypeMap.find(st_mxfpx_dtype) !=
+        ge::stubCustomTypeToGeDataTypeMap.end()) {
       output_i.SetDataType(ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype]);
-      std::cerr << "[STUB] Output dtype is " << ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype] << std::endl;
+      std::cerr << "[STUB] Output dtype is "
+                << ge::stubCustomTypeToGeDataTypeMap[st_mxfpx_dtype]
+                << std::endl;
     } else {
       output_i.SetDataType(spec.output_dtypes_[i]);
     }
@@ -467,8 +493,9 @@ ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t g
     output_i.SetOriginFormat(ge::FORMAT_ND);
     output_i.SetStorageFormat(ge::FORMAT_ND);
 
-    char *st_muti_gear_stub = std::getenv("ST_GEARS_STUB_OUTPUTSHAPE");
-    char *st_output_reuse_input_addr_stub = std::getenv("ST_OUTPUT_REUSE_INPUT_ADDR");
+    char* st_muti_gear_stub = std::getenv("ST_GEARS_STUB_OUTPUTSHAPE");
+    char* st_output_reuse_input_addr_stub =
+        std::getenv("ST_OUTPUT_REUSE_INPUT_ADDR");
     std::vector<int64_t> dims;
     if (st_muti_gear_stub != NULL) {
       dims.resize(inputs[0].GetShape().GetOriginShape().GetDimNum());
@@ -492,58 +519,74 @@ ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t g
       mgr = &manager;
     }
     if (i == 0 && st_output_reuse_input_addr_stub != NULL) {
-      std::cerr << "[STUB] Output 0 reuse input 0 addr, and set manager is nullptr. " << std::endl;
+      std::cerr
+          << "[STUB] Output 0 reuse input 0 addr, and set manager is nullptr. "
+          << std::endl;
       // 模拟复用输入内存的场景
-      output_i.SetData(gert::TensorData(inputs[0].GetTensorData().GetAddr(), nullptr,
-                                        inputs[0].GetSize(), placement));
-    } else {
-      output_i.SetData(gert::TensorData(datas.data(), mgr, sizeof(float) * datas.size(),
+      output_i.SetData(gert::TensorData(inputs[0].GetTensorData().GetAddr(),
+                                        nullptr, inputs[0].GetSize(),
                                         placement));
+    } else {
+      output_i.SetData(gert::TensorData(
+          datas.data(), mgr, sizeof(float) * datas.size(), placement));
     }
   }
 
   return ge::SUCCESS;
 }
 
-ge::Status GetRegisteredIrDef(const char *op_type, std::vector<std::pair<ge::AscendString, ge::AscendString>> &inputs,
-                              std::vector<std::pair<ge::AscendString, ge::AscendString>> &outputs,
-                              std::vector<std::pair<ge::AscendString, ge::AscendString>> &attrs) {
-  if (std::string(op_type) == "MyOpTest"){
+ge::Status GetRegisteredIrDef(
+    const char* op_type,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>>& inputs,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>>& outputs,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>>& attrs) {
+  if (std::string(op_type) == "MyOpTest") {
     inputs.emplace_back(ge::AscendString("var"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("indices"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("updates"), ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("indices"),
+                        ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("updates"),
+                        ge::AscendString("required"));
     outputs.emplace_back(ge::AscendString("y"), ge::AscendString("required"));
   }
-  if (std::string(op_type) == "MyOpTestv1"){
+  if (std::string(op_type) == "MyOpTestv1") {
     inputs.emplace_back(ge::AscendString("var"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("indices"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("updates"), ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("indices"),
+                        ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("updates"),
+                        ge::AscendString("required"));
     outputs.emplace_back(ge::AscendString("y"), ge::AscendString("required"));
   }
-  if (std::string(op_type) == "MyOpTestv2"){
+  if (std::string(op_type) == "MyOpTestv2") {
     inputs.emplace_back(ge::AscendString("var"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("indices"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("updates"), ge::AscendString("required"));
-    attrs.emplace_back(ge::AscendString("use_indices"), ge::AscendString("VT_INT"));
+    inputs.emplace_back(ge::AscendString("indices"),
+                        ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("updates"),
+                        ge::AscendString("required"));
+    attrs.emplace_back(ge::AscendString("use_indices"),
+                       ge::AscendString("VT_INT"));
     outputs.emplace_back(ge::AscendString("y"), ge::AscendString("required"));
   }
-  if (std::string(op_type) == "MyOpTestv3"){
+  if (std::string(op_type) == "MyOpTestv3") {
     inputs.emplace_back(ge::AscendString("var"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("indices"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("updates"), ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("indices"),
+                        ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("updates"),
+                        ge::AscendString("required"));
     outputs.emplace_back(ge::AscendString("y"), ge::AscendString("required"));
   }
-  if (std::string(op_type) == "MyOpTestv4"){
+  if (std::string(op_type) == "MyOpTestv4") {
     inputs.emplace_back(ge::AscendString("var"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("indices"), ge::AscendString("required"));
-    inputs.emplace_back(ge::AscendString("updates"), ge::AscendString("required"));
-    attrs.emplace_back(ge::AscendString("use_indices"), ge::AscendString("VT_NAMED_ATTRS"));
+    inputs.emplace_back(ge::AscendString("indices"),
+                        ge::AscendString("required"));
+    inputs.emplace_back(ge::AscendString("updates"),
+                        ge::AscendString("required"));
+    attrs.emplace_back(ge::AscendString("use_indices"),
+                       ge::AscendString("VT_NAMED_ATTRS"));
     outputs.emplace_back(ge::AscendString("y"), ge::AscendString("required"));
   }
-  if (std::string(op_type) == "MyOpTestv5"){
+  if (std::string(op_type) == "MyOpTestv5") {
     return ge::FAILED;
   }
   return ge::SUCCESS;
 }
-} // extern "C"
-
+}  // extern "C"
