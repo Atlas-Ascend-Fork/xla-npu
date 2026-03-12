@@ -216,11 +216,6 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
       on_done_with_host_buffer = nullptr;
     }
   } else {
-    // bool should_sync_copy =
-    //     host_buffer_semantics ==
-    //         PjRtClient::HostBufferSemantics::kImmutableOnlyDuringCall ||
-    //     (byte_size < kSmallDataTransferByteSize);
-    // if (should_sync_copy) {
     auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
@@ -229,30 +224,6 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
         std::move(on_done_with_host_buffer)();
         on_done_with_host_buffer = nullptr;
     }
-        // 暂不支持基于流的异步拷贝
-    // } else {
-    //   tsl::AsyncValueRef<NpuEvent> copy_event =
-    //       tsl::MakeConstructedAsyncValueRef<NpuEvent>();
-    //   auto result = tsl::MakeRef<NpuTrackedDeviceEvent>(
-    //       copy_event.CopyRef(), "CpuRawBuffer", "CopyFromHostBuffer");
-    //   async_work_runner->Schedule([device_buffer, dst_data_ptr, data, byte_size,
-    //                                copy_event = std::move(copy_event),
-    //                                on_done_with_host_buffer = std::move(
-    //                                    on_done_with_host_buffer)]() mutable {
-    //     tsl::profiler::TraceMe traceme("H2D Dispatch");
-    //     auto acl_ret = npu::AclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
-    //     if (on_done_with_host_buffer) {
-    //       std::move(on_done_with_host_buffer)();
-    //       on_done_with_host_buffer = nullptr;
-    //     }
-    //     // Signal copy is complete.
-    //     if (acl_ret != ACL_SUCCESS) {
-    //       copy_event.SetError(absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret)));
-    //     } else {
-    //       copy_event.SetStateConcrete();
-    //     }
-    //   });
-      // return result;
   }
   return tsl::MakeRef<NpuTrackedDeviceEvent>(tsl::MakeAvailableAsyncValueRef<NpuEvent>());
 }

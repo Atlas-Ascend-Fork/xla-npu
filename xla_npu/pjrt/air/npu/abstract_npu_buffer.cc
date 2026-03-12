@@ -37,12 +37,10 @@
 #include "xla/pjrt/transpose.h"
 #include "xla/pjrt/utils.h"
 #include "xla/primitive_util.h"
-// #include "xla/service/cpu/cpu_xfeed.h"
 #include "xla/service/shaped_buffer.h"
 #include "xla/shape.h"
 #include "xla/shape_tree.h"
 #include "xla/shape_util.h"
-// #include "xla/stream_executor/device_address.h"
 #include "xla/tsl/concurrency/async_value.h"
 #include "xla/tsl/concurrency/async_value_ref.h"
 #include "xla/tsl/concurrency/ref_count.h"
@@ -106,14 +104,6 @@ void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
     if (primitive_util::IsSubByteNonPredType(type)) {
       return false;
     }
-
-    // If the input buffer has a default layout and is sufficiently aligned, we
-    // can simply point to the input array's data without any further copies. At
-    // the time of writing we require a 16-byte alignment because XLA may generate
-    // code which requires it.
-    // if ((absl::bit_cast<std::uintptr_t>(data) & (npu::MinAlign() - 1)) != 0) {
-    //   return false;
-    // }
     return true;
 }
 

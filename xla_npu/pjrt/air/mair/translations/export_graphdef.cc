@@ -19,13 +19,6 @@
 #include <iomanip>
 
 #include "../ir/mair_ops.h"
-// #include "utils/utils.h"
-// #include "translations/export_utils.h"
-// #include "utils/convert_type.h"
-// #include "utils/convert_tensor.h"
-// #include "graph/operator_factory.h"
-// #include "graph/operator.h"
-
 #include <utility>
 #include <map>
 namespace mlir::air {
@@ -126,18 +119,12 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
         return Status::OK();
     }
 
-
-    // =========================================================
     // start to build ge graph
-    // =========================================================
     mlir::func::FuncOp function = entry_func.value();
     mlir::Block& entryBlock = function.getBody().front();
     log("===================Get mlir function done. Start to get arguments of the function.");
-    // ==================================
-    // build input arguments
-    // ==================================
 
-    // for (auto arg : entryBlock.getArguments()) {
+    // build input arguments    
     for (int i = 0; i < entryBlock.getNumArguments(); i++) {
         mlir::BlockArgument arg = entryBlock.getArgument(i);
         std::string mlirSymbol = "%arg" + std::to_string(arg.getArgNumber());
@@ -155,16 +142,13 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
 
         auto format = ge::FORMAT_ND;
         ge::TensorDesc data_desc(shape, format, dtype);
-
-        // ge::TensorDesc desc(ge::Shape({10, 10}), ge::FORMAT_ND, ge::DT_FLOAT);
-
         log("Gen ArgumentNode Data:[" + realSymbol + "] InputDesc/OutputDesc[" + mlir::debugString(arg_type) +"]");
         auto data = ge::OperatorFactory::CreateOperator(realSymbol.c_str(), "Data");
         data.SetAttr("index", i);
         data.UpdateInputDesc("x", data_desc);
         data.UpdateOutputDesc("y", data_desc);
 
-        // // 记录入参信息
+        // 记录入参信息
         inputInfos.push_back({mlirSymbol, data, data_desc});
 
         // 建立映射
@@ -198,7 +182,6 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
 
     for (mlir::Operation& op : entryBlock.getOperations()) {
         log("================================Start to deal with the op:" + op.getName().getStringRef().str());
-        // ReturnOp
         if (mlir::isa<mlir::func::ReturnOp>(op)) {
             SymbolInfo symbolInfo = processReturnOp(op);
             log("Return op is " + std::string(getOpName(symbolInfo.geOp)));
@@ -217,9 +200,7 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     }
 
     graphPtr->SetInputs(inputs).SetOutputs(outputs);
-
     log("============Finish All Operator");
-
     std::vector<GNode> nodes = graphPtr->GetAllNodes();
     log("============Get All GNodes size:" + std::to_string(nodes.size()));
     for (size_t i = 0; i < nodes.size(); i++) {
@@ -227,8 +208,6 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
         nodes.at(i).GetName(nodeName);
         llvm::errs() << "Nodes [" << i << "] name[" << nodeName.GetString()<<"]\n";
     }
-
-
     return Status::OK();
 }
 
@@ -272,15 +251,11 @@ bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter, ge::Grap
 
     // 2. 创建目标操作
     ge::Operator geOp = ge::OperatorFactory::CreateOperator((opType + std::to_string(opCounter)).c_str(), opType.c_str());
-    // ge::Operator geOp;
 
     // 3. 处理输入
     if (!processOperationInputs(mlirOp, geOp, opType)) {
         return false;
     }
-    // geOp.SetInput("x1",symbolMap.find("%arg0")->second.geOp);
-    // geOp.SetInput("x2",symbolMap.find("%arg1")->second.geOp);
-
     llvm::errs() << "Input number of this op is " << geOp.GetInputsSize() << "\n";
 
     // 4. 处理输出
@@ -405,35 +380,7 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             llvm::errs() << "错误：无法获取结果符号\n";
             return false;
         }
-
-        // if (opType == "Const")
-        // {
-        //     mlir::Attribute valueAttr = mlirOp.getAttr("value");
-        //     float constData = extractFloatValueSimple(valueAttr);
-        //     llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << " ; constData = " << constData << "\n";
-
-        //             // 获取参数类型和形状
-        //     mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(result.getType());
-        //     ge::DataType dtype;
-        //     ConvertToDataType(arg_type.getElementType(), &dtype);
-        //     auto shape = ge::Shape();
-        //     ConvertToShape(arg_type, &shape);
-        //     auto format = ge::FORMAT_ND;
-        //     ge::TensorDesc data_desc(shape, format, dtype);
-
-        //     uint32_t len = shape.GetShapeSize() * sizeof(float);
-        //     ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&constData), len);
-        //     // if (!valueTensor.SetData(reinterpret_cast<uint8_t*>(&constData), len))
-        //     // {
-        //     //     log("Fail to Set the const out put value!!");
-        //     // }
-        //     geOp.SetAttr("value", valueTensor);
-
-        //     log("Set the const out put value " + std::to_string(constData));
-        // }
-
         if (opType == "Const") {
-            // TODO
             mlir::Attribute valueAttr = mlirOp.getAttr("value");
             llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << "\n";
             if (auto denseAttr = mlir::dyn_cast<mlir::ElementsAttr>(valueAttr)) {
@@ -460,38 +407,12 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             } else {
                 llvm::errs() << "Failed Const operatro. Not ElementsAttr \n";
             }
-
-
-
-            // if (auto denseAttr = mlir::dyn_cast<mlir::DenseElementsAttr>(valueAttr)) {
-            //     if (denseAttr.isSplat() && denseAttr.getElementType().isF32()) {
-            //         auto v = denseAttr.getSplatValue<float>();
-            //         auto shape = ge::Shape();
-            //         ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_FLOAT);
-            //         uint32_t len = shape.GetShapeSize() * sizeof(float);
-            //         len = 4;
-            //         std::cout << "Const float len: " << len << std::endl;
-            //         ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
-            //         geOp.SetAttr("value", valueTensor);
-            //     }
-            //     // 如果是f64，转换为float
-            //     if (denseAttr.isSplat() && denseAttr.getElementType().isInteger(64)) {
-            //         auto v = denseAttr.getSplatValue<int64_t>();
-            //         auto shape = ge::Shape({1,});
-            //         ge::TensorDesc data_desc(shape, ge::FORMAT_ND, ge::DT_INT64);
-            //         uint32_t len = shape.GetShapeSize() * sizeof(int64_t);
-            //         std::cout << "Const int64 len: " << len << std::endl;
-            //         ge::Tensor valueTensor(data_desc, reinterpret_cast<uint8_t*>(&v), len);
-            //         geOp.SetAttr("value", valueTensor);
-            //     }
-            // }
         }
 
         // 建立映射
         symbolMap[mlirSymbol] = {
             .orgSymbol = mlirSymbol,
             .geOp = geOp,
-            // .tensorDesc = data_desc
         };
 
         llvm::errs() << "  输出[" << i << "]: MLIR符号=" << mlirSymbol << "\n";

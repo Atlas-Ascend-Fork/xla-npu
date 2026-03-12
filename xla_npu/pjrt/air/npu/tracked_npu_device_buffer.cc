@@ -45,7 +45,6 @@ public:
       : base_(base), size_bytes_(size_bytes) {}
 
   ~AlignedMemory() final {
-    //tsl::port::AlignedSizedFree(base_, cpu::MinAlign(), size_bytes_);
     std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
     npu::aclrtFree(base_);
   }
@@ -81,10 +80,6 @@ std::unique_ptr<NpuDeviceMemory::Allocator>
 NpuDeviceMemory::MakeDefaultAllocator() {
   return std::make_unique<AlignedAllocator>();
 }
-
-//===----------------------------------------------------------------------===//
-// CpuDeviceMemory implementations.
-//===----------------------------------------------------------------------===//
 
 class NpuDeviceMemoryOwned final : public NpuDeviceMemory {
 public:
@@ -295,21 +290,7 @@ void TrackedNpuDeviceBuffer::Delete(PjRtMemorySpace* memory_space) {
 Future<> TrackedNpuDeviceBuffer::GetReadyFuture(PjRtMemorySpace* memory_space) {
     auto [promise, future] = Future<>::MakePromise();
     promise.Set();
-
-    // tensorflow::down_cast<CommonPjRtClient*>(memory_space->client())
-    //     ->TrackFuture(memory_space, "BufferDefinitionEvent", future);
-
-    // definition_event().AndThen([definition_event = definition_event().AsPtr(),
-    //                             promise = std::move(promise)]() mutable {
-    //   if (definition_event.IsError()) {
-    //     const absl::Status& s = definition_event.GetError();
-    //     promise.Set(tsl::errors::CreateWithUpdatedMessage(
-    //         s, absl::StrCat("Buffer Definition Event: ", s.message())));
-    //   } else {
-    //     promise.Set();
-    //   }
-    // });
-
+    
     return future;
 }
 

@@ -44,11 +44,8 @@
 #include "xla/xla_npu/dependency/header/ge/ge_api.h"
 
 #include "./status.h"
-// #include "translations/statusor.h"
-// #include "utils/utils.h"
 
 namespace mlir::air {
-
 class Exporter {
 public:
     
