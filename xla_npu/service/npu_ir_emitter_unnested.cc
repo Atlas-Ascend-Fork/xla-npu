@@ -185,8 +185,7 @@ absl::Status NpuIrEmitterUnnested::EmitCall(const HloInstruction* instr) {
 static const HloInstruction* FindCanonicalSendRecvStartOp(const HloInstruction* inst) {
     CHECK(inst->opcode() == HloOpcode::kSend || inst->opcode() == HloOpcode::kRecv ||
           inst->opcode() == HloOpcode::kSendDone || inst->opcode() == HloOpcode::kRecvDone);
-    // If the instruction is wrapped in an async computation, return
-    // the instruction itself.
+    // If the instruction is wrapped in an async computation, return the instruction itself.
     if (inst->parent()->IsAsyncComputation()) {
         return inst;
     }
@@ -199,8 +198,7 @@ static const HloInstruction* FindCanonicalSendRecvStartOp(const HloInstruction* 
         CHECK_EQ(inst->users().size(), 1);
         const HloInstruction* unique_user = inst->users().front();
 
-        // Return send/recv inst directly if this is a simple send/recv
-        // pair.
+        // Return send/recv inst directly if this is a simple send/recv pair.
         if (unique_user->opcode() == HloOpcode::kSendDone || unique_user->opcode() == HloOpcode::kRecvDone) {
             return inst;
         }
@@ -227,8 +225,7 @@ static const HloInstruction* FindCanonicalSendRecvStartOp(const HloInstruction* 
     if (inst->opcode() == HloOpcode::kSendDone || inst->opcode() == HloOpcode::kRecvDone) {
         const HloInstruction* operand = inst->operand(0);
 
-        // Return send/recv inst directly if this is a simple send/recv
-        // pair.
+        // Return send/recv inst directly if this is a simple send/recv  pair.
         if (operand->opcode() == HloOpcode::kSend || operand->opcode() == HloOpcode::kRecv) {
             return operand;
         }
