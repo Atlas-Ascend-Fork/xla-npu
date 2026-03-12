@@ -8,10 +8,6 @@
  * See LICENSE in the root of the software repository for the full text of the License.
  */
 
-//
-// Created by m00526841 on 25-12-19.
-//
-
 #ifndef NPU_EVENT_H_
 #define NPU_EVENT_H_
 namespace xla {

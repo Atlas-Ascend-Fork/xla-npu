@@ -65,6 +65,7 @@ private:
     SymbolInfo processReturnOp(mlir::Operation& returnOp);
     bool processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr &graphPtr);
     bool processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
+    bool processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
     bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter, std::string opType);
 
     std::string getMlirSymbol(mlir::Value value);

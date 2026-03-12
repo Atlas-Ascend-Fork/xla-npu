@@ -267,62 +267,61 @@ bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter, ge::Grap
 
     return true;
 }
-bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType) {
-    if (mlirOp.getName().getStringRef() == "mair.ConcatV2") {
-        auto concatV2Op = dyn_cast<mlir::air::ConcatV2Op>(mlirOp);
-        mlir::ValueRange x_value = concatV2Op.getX();
-        geOp.DynamicInputRegisterByIndex("x", x_value.size(), 0);
-        unsigned i = 0;
-        for (mlir::Value val : x_value) {
-            log("----------trans the input x of ConcatV2: " + mlir::debugString(val));
-            // 获取MLIR符号
-            std::string mlirSymbol = getMlirSymbol(val);
-            if (mlirSymbol.empty()) {
-                llvm::errs() << "错误：无法获取操作数符号\n";
-                return false;
-            }
-            // 查找真实geOperator
-            auto it = symbolMap.find(mlirSymbol);
-            if (it == symbolMap.end()) {
-                llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
-                return false;
-            }
-
-            log("Find input :");
-            printSymbolInfo(it->second);
-            ge::Operator inputOp = it->second.geOp;
-            geOp.SetInput(i++, inputOp, 0U);
-        }
-
-        mlir::Value dim_value = concatV2Op.getConcatDim();
-        const std::string* inputName= getGeOpInputName(opType, 1);
-        log("----------trans the input dim of ConcatV2: " + mlir::debugString(dim_value));
-
-        // 获取MLIR符号
-        std::string mlirSymbol = getMlirSymbol(dim_value);
+bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType) {
+    auto concatV2Op = dyn_cast<mlir::air::ConcatV2Op>(mlirOp);
+    mlir::ValueRange x_value = concatV2Op.getX();
+    geOp.DynamicInputRegisterByIndex("x", x_value.size(), 0);
+    unsigned i = 0;
+    for (mlir::Value val : x_value) {
+        log("----------trans the input x of ConcatV2: " + mlir::debugString(val));
+        std::string mlirSymbol = getMlirSymbol(val);
         if (mlirSymbol.empty()) {
             llvm::errs() << "错误：无法获取操作数符号\n";
             return false;
         }
-
-        // 查找真实geOperator
         auto it = symbolMap.find(mlirSymbol);
         if (it == symbolMap.end()) {
             llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
             return false;
         }
+
         log("Find input :");
         printSymbolInfo(it->second);
         ge::Operator inputOp = it->second.geOp;
-        geOp.SetInput(inputName->c_str(), inputOp);
-        // 处理N的属性值
-        auto nAttr = mlirOp.getAttr("N");
-        if (auto intAttr = mlir::dyn_cast<mlir::IntegerAttr>(nAttr)) {
-            geOp.SetAttr("N", intAttr.getInt());
-            return true;
-        }
-        llvm::errs() << "ERROR: N value is illegal.\n";
+        geOp.SetInput(i++, inputOp, 0U);
+    }
+
+    mlir::Value dim_value = concatV2Op.getConcatDim();
+    const std::string* inputName= getGeOpInputName(opType, 1);
+    log("----------trans the input dim of ConcatV2: " + mlir::debugString(dim_value));
+
+    std::string mlirSymbol = getMlirSymbol(dim_value);
+    if (mlirSymbol.empty()) {
+        llvm::errs() << "错误：无法获取操作数符号\n";
         return false;
+    }
+
+    auto it = symbolMap.find(mlirSymbol);
+    if (it == symbolMap.end()) {
+        llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
+        return false;
+    }
+    log("Find input :");
+    printSymbolInfo(it->second);
+    ge::Operator inputOp = it->second.geOp;
+    geOp.SetInput(inputName->c_str(), inputOp);
+    auto nAttr = mlirOp.getAttr("N");
+    if (auto intAttr = mlir::dyn_cast<mlir::IntegerAttr>(nAttr)) {
+        geOp.SetAttr("N", intAttr.getInt());
+        return true;
+    }
+    llvm::errs() << "ERROR: N value is illegal.\n";
+    return false;
+}
+
+bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType) {
+    if (mlirOp.getName().getStringRef() == "mair.ConcatV2") {
+        return processConcatV2Inputs(mlirOp, geOp, opType);
     }
 
     unsigned numOperands = mlirOp.getNumOperands();
@@ -330,14 +329,12 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
         mlir::Value operand = mlirOp.getOperand(i);
         log("----------trans the input: " + mlir::debugString(operand));
 
-        // 获取MLIR符号
         std::string mlirSymbol = getMlirSymbol(operand);
         if (mlirSymbol.empty()) {
             llvm::errs() << "错误：无法获取操作数符号\n";
             return false;
         }
 
-        // 查找真实geOperator
         auto it = symbolMap.find(mlirSymbol);
         if (it == symbolMap.end()) {
             llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
@@ -347,11 +344,9 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
         log("Find input :");
         printSymbolInfo(it->second);
 
-        // 获取输入符号
         const std::string* inputName= getGeOpInputName(opType, i);
 
         ge::Operator inputOp = it->second.geOp;
-        // 设置输入描述
         geOp.SetInput(inputName->c_str(), inputOp);
 
         llvm::errs() << "  Set opInput[" << i << "]: origin=" << mlirSymbol
