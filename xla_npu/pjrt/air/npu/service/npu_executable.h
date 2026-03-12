@@ -90,10 +90,6 @@ class NpuExecutable : public Executable {
   // structures that might have been used at compile time.
   void Finalize();
 
-  // const TargetMachineOptionsProto& target_machine_options() const {
-  //   return target_machine_options_;
-  // }
-
  private:
   // Creates an array suitable for passing as the "buffer_table" argument to the
   // JIT compiled function pointer.

@@ -42,9 +42,6 @@ std::string Status::ToString() const {
     return "OK";
   } else {
     std::string result = "status error";
-    // string result(error_name(code()));
-    // result += ": ";
-    // result += state_->msg;
     return result;
   }
 }
@@ -74,21 +71,9 @@ std::ostream &operator<<(std::ostream &os, const Status &x) {
 // cancelling/aborting a step.
 static const char *kDerivedMarker = "[_Derived_]";
 
-// Status StatusGroup::MakeDerived(const Status& s) {
-//   if (IsDerived(s)) {
-//     return s;
-//   } else {
-//     return Status(s.code(), strings::StrCat(kDerivedMarker, s.error_message()));
-//   }
-// }
-
 bool StatusGroup::IsDerived(const Status &s) {
   return s.error_message().find(kDerivedMarker) != std::string::npos;
 }
-
-// void StatusGroup::ConfigureLogHistory() {
-//   StatusLogSink::GetInstance()->enable();
-// }
 
 void StatusGroup::Update(const Status &s) {
   if (s.ok()) {
@@ -98,10 +83,5 @@ void StatusGroup::Update(const Status &s) {
     children_.push_back(s);
   }
 }
-
-// void StatusGroup::AttachLogMessages() {
-//   recent_logs_.clear();
-//   StatusLogSink::GetInstance()->GetMessages(&recent_logs_);
-// }
 
 }  // namespace mlir::air
