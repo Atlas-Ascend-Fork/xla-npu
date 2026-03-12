@@ -225,8 +225,8 @@ namespace {
           }
         }
         // 维度不变直接转换BroadcastOp
-        auto targetShape = resultType.getShape();
-        SmallVector<int64_t> shapeValues(targetShape.begin(), targetShape.end());
+        auto target_shape = resultType.getShape();
+        SmallVector<int64_t> shapeValues(target_shape.begin(), target_shape.end());
 
         auto shapeTensorType = RankedTensorType::get(
             {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
