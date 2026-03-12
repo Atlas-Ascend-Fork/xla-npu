@@ -79,14 +79,12 @@ absl::StatusOr<bool> NpuFusionDispatchPipeline::RunImpl(
 
     // Swap GEMM operands for better layout
     NpuGemmFusionSwapOperands swap_operands_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        swap_operands_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed, swap_operands_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Create GEMM fusions (this creates NPU ACLNN GEMM fusions)
     NpuGemmFusion gemm_fusion_pass(device_description_, &mlir_context);
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        gemm_fusion_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed, gemm_fusion_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Phase 3: Clean up after GEMM fusion
@@ -102,32 +100,28 @@ absl::StatusOr<bool> NpuFusionDispatchPipeline::RunImpl(
     VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 4: Custom kernels";
 
     NpuCustomKernelFusionRewriter custom_kernel_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        custom_kernel_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed,  custom_kernel_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Phase 5: Block-level fusion conversion
     VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 5: Block-level fusion";
 
     NpuFusionBlockLevelRewriter block_level_pass(device_description_);
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        block_level_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed, block_level_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Phase 6: Nested GEMM fusion
     VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 6: Nested GEMM";
 
     NpuNestGemmFusion nest_gemm_pass(device_description_, symbolic_expr_context_);
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        nest_gemm_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed, nest_gemm_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Phase 7: Dynamic memcpy rewriter
     VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 7: Dynamic memcpy";
 
     NpuFusionDynamicMemcpyRewriter dynamic_memcpy_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed,
-                        dynamic_memcpy_pass.Run(module, execution_threads));
+    TF_ASSIGN_OR_RETURN(pass_changed, dynamic_memcpy_pass.Run(module, execution_threads));
     changed |= pass_changed;
 
     // Phase 8: Final cleanup

@@ -17,8 +17,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/status/statusor.h"
 #include "xla/hlo/ir/hlo_casting_utils.h"
 #include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/ir/hlo_instruction.h"
@@ -47,42 +47,33 @@ using npu_backend_config::FusionBackendConfig;
 using npu_backend_config::NpuBlockLevelConfig;
 using npu_backend_config::NpuGemmConfig;
 
-absl::StatusOr<bool> NpuNestGemmFusion::RunImpl(
-        HloModule* module,
+absl::StatusOr<bool> NpuNestGemmFusion::RunImpl(HloModule* module,
         const absl::flat_hash_set<absl::string_view>& execution_threads) {
     bool changed = false;
-    for (HloComputation* computation :
-         module->MakeNonfusionComputations(execution_threads)) {
+    for (HloComputation* computation : module->MakeNonfusionComputations(execution_threads)) {
         TF_ASSIGN_OR_RETURN(bool computation_changed, RunOnComputation(computation));
         changed |= computation_changed;
     }
     return changed;
 }
 
-absl::StatusOr<bool> NpuNestGemmFusion::RunOnComputation(
-        HloComputation* computation) {
+absl::StatusOr<bool> NpuNestGemmFusion::RunOnComputation(HloComputation* computation) {
     bool changed = false;
-
     // Get all instructions in post-order
     std::vector<HloInstruction*> instrs = computation->MakeInstructionPostOrder();
-
     for (HloInstruction* instr : instrs) {
         // Only process custom fusion instructions
         if (instr->opcode() != HloOpcode::kFusion) {
             continue;
         }
-
         HloFusionInstruction* fusion = Cast<HloFusionInstruction>(instr);
         if (!IsNpuGemmFusion(fusion)) {
             continue;
         }
-
         VLOG(3) << "Transforming NPU GEMM fusion to nested: " << fusion->ToString();
-
         TF_ASSIGN_OR_RETURN(bool transformed, TransformGemmFusionToNested(fusion));
         changed |= transformed;
     }
-
     return changed;
 }
 

@@ -301,12 +301,11 @@ absl::StatusOr<HloInstruction*> NpuGemmFusion::CreateDotFusion(
         }
     }
     if (!mutable_parent_computation) {
-        return absl::NotFoundError("Cannot find parent computation");
+        return absl::NotFoundError("CreateDotFusion Cannot find parent computation");
     }
     HloInstruction* fusion = mutable_parent_computation->AddInstruction(
             HloInstruction::CreateFusion(computation->root_instruction()->shape(),
-                                         HloInstruction::FusionKind::kCustom,
-                                         fusion_params, computation));
+                                         HloInstruction::FusionKind::kCustom, fusion_params, computation));
     fusion->set_metadata(dot.metadata());
     fusion->GetModule()->SetAndUniquifyInstrName(fusion, fusion_name);
 

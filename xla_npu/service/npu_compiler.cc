@@ -491,8 +491,7 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
 
     if (options.is_autotuning_compilation) {
         if (module->config().debug_options().xla_embed_ir_in_executable()) {
-            LOG(WARNING) << "Doing autotuning compilations with "
-                            "xla_embed_ir_in_executable wastes memory!";
+            LOG(WARNING) << "Doing autotuning compilations with xla_embed_ir_in_executable wastes memory!";
         }
     }
 
@@ -503,44 +502,32 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
                         CompileToBackendResult(module.get(), &llvm_context, options, gpu_device_info));
 
     if (DumpingEnabledForHloModule(*module)) {
-        DumpToFileInDirOrStdout(*module, "", "thunk_sequence.txt",
-                                res.compile_module_results.executable->ToString(/*indent=*/0));
+        DumpToFileInDirOrStdout(*module, "", "thunk_sequence.txt", res.compile_module_results.executable->ToString(0));
     }
-
-    // The module is being moved into the NpuExecutable below and we need to
-    // read a few config values from the module, before it becomes invalid.
-    bool embed_ir_in_executable = module->config().debug_options().xla_embed_ir_in_executable();
 
     tsl::profiler::ScopedAnnotation annotation(
         [&] { return absl::StrFormat("XlaCreateGpuExecutable:#module=%s#", module->name()); });
 
     std::unique_ptr<NpuAliasInfo> alias_info = GetAliasInfo(gpu_device_info);
     const NpuAliasInfo* alias_info_ptr = alias_info.get();
-    TF_ASSIGN_OR_RETURN(
-        std::unique_ptr<NpuExecutable> npu_executable,
+    TF_ASSIGN_OR_RETURN(std::unique_ptr<NpuExecutable> npu_executable,
         NpuExecutable::Create(NpuExecutable::Params{
-            /*asm_text=*/(options.is_autotuning_compilation && !res.backend_result.binary.empty())
-                ? std::string()
+            /*asm_text=*/(options.is_autotuning_compilation && !res.backend_result.binary.empty())? std::string()
                 : std::move(res.backend_result.asm_text),
-            /*binary=*/std::move(res.backend_result.binary),
-            /*executable=*/std::move(res.compile_module_results.executable),
+            /*binary=*/std::move(res.backend_result.binary), /*executable=*/std::move(res.compile_module_results.executable),
             /*constants=*/std::move(res.compile_module_results.constants),
             /*output_info=*/std::move(res.compile_module_results.output_info),
             /*module_name=*/std::move(res.compile_module_results.module_name),
-            /*program_shape=*/
-            module->compute_computation_layout().ComputeProgramShape(),
-            /*mlir_allocations=*/
-            (res.compile_module_results.use_original_allocations ? std::optional<std::vector<BufferAllocation>>()
-                                                                 : std::move(res.compile_module_results.allocations)),
+            /*program_shape=*/  module->compute_computation_layout().ComputeProgramShape(),
+            /*mlir_allocations=*/ (res.compile_module_results.use_original_allocations
+                ? std::optional<std::vector<BufferAllocation>>() : std::move(res.compile_module_results.allocations)),
             /*buffer_assignment=*/
             std::move(res.compile_module_results.buffer_assignment),
-            /*alias_info=*/std::move(alias_info),
-            /*debug_options=*/debug_opts,
-            /*device_description=*/gpu_device_info,
+            /*alias_info=*/std::move(alias_info), /*debug_options=*/debug_opts, /*device_description=*/gpu_device_info,
             /*debug_module=*/options.is_autotuning_compilation ? std::unique_ptr<HloModule>() : std::move(module),
             /*enable_debug_info_manager=*/!options.is_autotuning_compilation}));
 
-    if (embed_ir_in_executable) {
+    if (module->config().debug_options().xla_embed_ir_in_executable()) {
         std::string ir_module_string_before_opt = llvm_ir::DumpToString(res.compile_module_results.llvm_module.get());
         npu_executable->set_ir_module_string(ir_module_string_before_opt);
         DCHECK_NE("", ir_module_string_before_opt);
