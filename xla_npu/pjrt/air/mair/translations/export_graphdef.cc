@@ -281,7 +281,7 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp
         }
         auto it = symbolMap.find(mlirSymbol);
         if (it == symbolMap.end()) {
-            llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
+            llvm::errs() << "错误：未找到value符号映射: " << mlirSymbol << "\n";
             return false;
         }
 
@@ -303,7 +303,7 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp
 
     auto it = symbolMap.find(mlirSymbol);
     if (it == symbolMap.end()) {
-        llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
+        llvm::errs() << "错误：未找到dim符号映射: " << mlirSymbol << "\n";
         return false;
     }
     log("Find input :");
