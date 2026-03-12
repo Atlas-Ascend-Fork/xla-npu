@@ -59,7 +59,6 @@ public:
         for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
             const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
             ge_shape_vector.emplace_back(xla_data_shape_dim);
-            // ge_data_shape.SetDim(i, xla_data_shape_dim);
         }
 
         ge::Shape ge_data_shape(ge_shape_vector);

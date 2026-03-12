@@ -23,15 +23,10 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-// #include "xla/backends/cpu/constant_allocation.h"
-// #include "xla/backends/cpu/runtime/function_library.h"
-// #include "xla/backends/cpu/runtime/thunk.h"
-// #include "xla/backends/cpu/runtime/thunk_executor.h"
 #include "xla/executable_run_options.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_module.h"
 #include "xla/service/buffer_assignment.h"
-// #include "xla/service/cpu/executable.pb.h"
 #include "xla/service/custom_call_status.h"
 #include "xla/service/executable.h"
 #include "xla/service/hlo_execution_profile.h"
@@ -39,7 +34,6 @@
 #include "xla/service/hlo_value.h"
 #include "xla/service/maybe_owning_device_memory.h"
 #include "xla/service/service_executable_run_options.h"
-// #include "xla/stream_executor/device_memory_allocator.h"
 #include "xla/xla_npu/pjrt/air/npu/service/npu_buffer_assignment.h"
 #include "xla/xla_npu/pjrt/air/npu/service/npu_executable.h"
 #include "xla/xla_npu/pjrt/air/npu/ge/graph_data.h"
@@ -55,64 +49,17 @@ class NpuExecutable : public Executable {
  public:
   // Creates a NpuExecutable from a thunk sequence.
   static absl::StatusOr<std::unique_ptr<NpuExecutable>> Create(
-      // std::unique_ptr<FunctionLibrary> function_library,
       std::unique_ptr<NpuBufferAssignment> assignment,
       std::unique_ptr<HloModule> hlo_module,
-      // ThunkSequence thunks,
-      // std::vector<ConstantAllocation> constants,
       std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
       std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
       const GraphData& graph_data);
-      // TargetMachineOptionsProto target_machine_options);
 
   ~NpuExecutable() override;
 
   absl::StatusOr<ExecutionOutput> ExecuteAsyncOnStream(
       const ServiceExecutableRunOptions* run_options,
       std::vector<ExecutionInput> arguments) override;
-
-  // Calls emitted thunk sequence with the given arguments using the supplied
-  // buffers.
-  // absl::Status ExecuteThunks(const ExecutableRunOptions* run_options,
-  //                            absl::Span<MaybeOwningDeviceMemory const> buffers);
-
-  // absl::Span<const ObjFileProto> obj_files() const { return obj_files_; }
-
-  // std::vector<SymbolProto> get_compiled_symbols_proto() const {
-  //   std::vector<SymbolProto> symbols;
-  //   for (const auto& symbol : compiled_symbols_) {
-  //     SymbolProto symbol_proto;
-  //     symbol_proto.set_name(symbol.name);
-  //     symbol_proto.set_function_type_id(GetFunctionTypeId(symbol.type_id));
-  //     symbols.push_back(std::move(symbol_proto));
-  //   }
-  //   return symbols;
-  // }
-
-  // void set_obj_files(std::vector<ObjFileProto> obj_files) {
-  //   obj_files_ = std::move(obj_files);
-  // }
-
-  // void set_compiled_symbols(
-  //     std::vector<FunctionLibrary::Symbol> compiled_symbols) {
-  //   compiled_symbols_ = std::move(compiled_symbols);
-  // }
-
-  // void set_symbol_type_id_to_function_type_id(
-  //     absl::flat_hash_map<FunctionLibrary::TypeId, SymbolProto::FunctionTypeId>
-  //         symbol_type_id_to_function_type_id) {
-  //   symbol_type_id_to_function_type_id_ =
-  //       std::move(symbol_type_id_to_function_type_id);
-  // }
-
-  // SymbolProto::FunctionTypeId GetFunctionTypeId(
-  //     const FunctionLibrary::TypeId type_id) const {
-  //   auto it = symbol_type_id_to_function_type_id_.find(type_id);
-  //   if (it == symbol_type_id_to_function_type_id_.end()) {
-  //     return SymbolProto::UNKNOWN;
-  //   }
-  //   return it->second;
-  // }
 
   GraphData GetGraphData() const { return graph_data_; }
 
@@ -127,14 +74,10 @@ class NpuExecutable : public Executable {
 
   static int64_t ShapeSizeBytes(const Shape& shape);
 
-  // bool has_thunks() const { return thunks_.has_value(); }
-  // ThunkExecutor& thunks() { return *thunks_; }
-
   bool has_xnn_fusions() const { return has_xnn_fusions_; }
   bool has_ynn_fusions() const { return has_ynn_fusions_; }
 
   const NpuBufferAssignment& buffer_assignment() const { return *assignment_; }
-  // absl::Span<const ConstantAllocation> constants() const { return constants_; }
 
   int64_t SizeOfGeneratedCodeInBytes() const override;
 
@@ -142,12 +85,6 @@ class NpuExecutable : public Executable {
       const override {
     return alloc_ptrs_;
   }
-
-  // FunctionLibrary* function_library() const { return function_library_.get(); }
-
-  // std::unique_ptr<FunctionLibrary> consume_function_library() && {
-  //   return std::move(function_library_);
-  // }
 
   // Finalize construction of the NpuExecutable and finalize all internal data
   // structures that might have been used at compile time.
@@ -188,25 +125,6 @@ class NpuExecutable : public Executable {
       absl::Span<MaybeOwningDeviceMemory> buffers,
       absl::Span<ExecutionInput> arguments);
 
-  // Returns the instruction value set of the root instruction of the entry
-  // computation. Uses dataflow analysis from buffer assignment.
-  // const InstructionValueSet& GetRootValueSet() const;
-
-  // The FunctionLibrary containing compiled modules.
-  // std::unique_ptr<FunctionLibrary> function_library_;
-
-  // Object files (machine code) compiled from an HLO module by the JIT
-  // compiler. We capture all object files created by JitCompiler so we can
-  // export them to AOT compilation result.
-  // std::vector<ObjFileProto> obj_files_;
-
-  // Generate compiled symbols. We capture all compiled symbols so we can export
-  // them to AOT compilation result.
-  // std::vector<FunctionLibrary::Symbol> compiled_symbols_;
-
-  // absl::flat_hash_map<FunctionLibrary::TypeId, SymbolProto::FunctionTypeId>
-  //     symbol_type_id_to_function_type_id_;
-
   // Buffer assignment for the buffers we need to allocate.
   std::shared_ptr<NpuBufferAssignment> assignment_;
   std::vector<const BufferAllocation*> alloc_ptrs_;
@@ -230,11 +148,6 @@ class NpuExecutable : public Executable {
   // We are currently transitioning from (1) to (2) with a long term plan to
   // unify thunk-based runtime with all XLA backends.
 
-  // A thunk executor created from the compiled thunk sequence.
-  // std::optional<ThunkExecutor> thunks_;
-  // Vector indexed by BufferAllocation::Index for efficient access.
-  // std::vector<ConstantAllocation> constants_;
-
   // Whether the thunk executor contains any XNN fusion thunks.
   bool has_xnn_fusions_ = false;
 
@@ -253,7 +166,6 @@ class NpuExecutable : public Executable {
                 std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map,
                 std::unique_ptr<NpuBufferAssignment> assignment,
                 const GraphData& graph_data);
-                // TargetMachineOptionsProto target_machine_options);
   NpuExecutable(const NpuExecutable&) = delete;
   NpuExecutable& operator=(const NpuExecutable&) = delete;
 };

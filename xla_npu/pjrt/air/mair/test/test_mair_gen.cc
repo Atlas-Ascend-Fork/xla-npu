@@ -11,8 +11,6 @@
 #include "./test_mair_gen.h"
 #include "./test_mair_gen.h"
 
-//MLIR_DEFINE_CAPI_DIALECT_REGISTRATION(mair, mair, mlir::mair::MairDialect)
-
 using namespace mlir;
 using namespace mlir::air;
 
@@ -34,9 +32,6 @@ void GraphGenTester::buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& 
     // 标量类型
     auto scalarType = mlir::RankedTensorType::get({}, f32Type);
 
-    // 后续broadcast操作的目标shape
-    // auto broadcastShapeValue = func.getArgument(0);
-
     auto i32Type = builder.getI32Type();
 
     mlir::RankedTensorType shapeTensorType = mlir::RankedTensorType::get(
@@ -53,42 +48,31 @@ void GraphGenTester::buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& 
     // 获取输入参数x: tensor<10x20xf32>
     auto x = block->getArgument(0);
     
-    // x_cube = x * x * x
     auto x_squared = MulOp::create(builder, loc, inputOutputTensorType, x, x);
     auto x_cube = MulOp::create(builder, loc, inputOutputTensorType, x_squared, x);
 
-    // a_scalar = 0.044715
     auto a_scalar = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(0.044715f));
     auto a_scalar_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, a_scalar, broadcastShapeValue);
 
-    // x3_mul_scalar = x3 * 0.044715
     auto x3_mul_scalar = MulOp::create(builder, loc, inputOutputTensorType, a_scalar_tensor.getResult(), x_cube.getResult());
 
-    // x3_mul_scalar_add_x = x + x3 * 0.044715
     auto x3_mul_scalar_add_x = AddOp::create(builder, loc, inputOutputTensorType, x3_mul_scalar.getResult(), x);
 
-    // scalar_sqrt_2_dev_pi = 0.797884583  sqrt(2/pi)
     auto scalar_sqrt_2_dev_pi = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(0.797884583f));
     auto scalar_sqrt_2_dev_pi_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, scalar_sqrt_2_dev_pi, broadcastShapeValue);
 
-    // x_calc_1 = sqrt(2/pi) * (x + x3 * 0.044715 )
     auto x_calc_1 = MulOp::create(builder, loc, inputOutputTensorType, scalar_sqrt_2_dev_pi_tensor.getResult(), x3_mul_scalar_add_x.getResult());
 
-    // tanh_x_calc_1 = tanh(x_calc_1)
     auto tanh_x_calc_1 = TanhOp::create(builder, loc, inputOutputTensorType, x_calc_1.getResult());
 
-    // scalar_1 = 1
     auto scalar_1 = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(1.0f));
     auto scalar_1_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, scalar_1, broadcastShapeValue);
     
-    // x_cale_2 = 1+tanh(sqrt(2/pi) * (x + x3 * 0.044715 ))
     auto x_calc_2 = AddOp::create(builder, loc, inputOutputTensorType, scalar_1_tensor.getResult(), tanh_x_calc_1.getResult());
 
-    // scalar_1_dev_2 = 0.5
     auto scalar_1_dev_2 = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(0.5f));
     auto scalar_1_dev_2_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, scalar_1_dev_2, broadcastShapeValue);
 
-    // result = 0.5 * x * x_calc_2
     auto result = MulOp::create(builder, loc, inputOutputTensorType,  MulOp::create(builder, loc, inputOutputTensorType, scalar_1_dev_2_tensor.getResult(), x_calc_2.getResult()), x);
 
     // 返回结果
@@ -129,11 +113,9 @@ void GraphGenTester::buildAddMulModule(mlir::ModuleOp& module, mlir::MLIRContext
     // add
     auto add = AddOp::create(builder, loc, inputOutputTensorType, x1, x2);
 
-    // a_scalar = 0.044715
     auto a_scalar = ConstantOp::create(builder, loc, scalarType, builder.getF32FloatAttr(0.044715f));
     auto a_scalar_tensor = BroadcastOp::create(builder, loc, inputOutputTensorType, a_scalar, broadcastShapeValue);
 
-    // x3_mul_scalar = x3 * 0.044715
     auto result = MulOp::create(builder, loc, inputOutputTensorType, a_scalar_tensor.getResult(), add.getResult());
 
     // 返回结果
@@ -299,17 +281,11 @@ int main(int argc, char** argv) {
     context.getOrLoadDialect<mlir::air::AirDialect>();
 
     auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
-
-    // GraphGenTester::buildAddModule(module, context);
-    // GraphGenTester::buildAddMulModule(module, context);
-    // GraphGenTester::buildAEmptyModule(module, context);
-    // GraphGenTester::buildGeluModule(module, context);
     GraphGenTester::buildConstModule(module, context);
     
     std::cout << "Generated MLIR:\n";
     module.print(llvm::outs());
     std::cout << std::endl;
-
 
     ge::GraphPtr graphPtr = std::make_shared<ge::Graph>("XLAGraph");;
     if (!module) {
@@ -318,7 +294,6 @@ int main(int argc, char** argv) {
     
     GraphGenTester::Convert(module, graphPtr);
     std::cout << "Finished convert to GE Grap:\n";
-    // module.print(llvm::outs());
     std::cout << std::endl;
 
     return 0;
