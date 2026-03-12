@@ -381,22 +381,16 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(const HloInstr
             if (options_.emit_afir_dialect) {
                 // Create identity indexing map
                 int64_t rank = tensor_type.getRank();
-                auto identity_map = GetIdentityAffineMap(rank);
-                auto indexing_maps_attr = CreateIndexingMaps({identity_map});
+                auto indexing_maps_attr = CreateIndexingMaps({GetIdentityAffineMap(rank)});
 
-                // Create output attribute
-                auto output_attr = CreateDefaultOutputAttr(result_type);
                 llvm::SmallVector<mlir::Attribute> output_attrs;
-                output_attrs.push_back(output_attr);
+                output_attrs.push_back(CreateDefaultOutputAttr(result_type));
                 auto outputs_array = builder_.getArrayAttr(output_attrs);
 
                 // Create AFIR scalar constant with value attribute
                 auto value_attr = mlir::FloatAttr::get(tensor_type.getElementType(), value);
                 auto scalar_op = builder_.create<mlir::afir::ScalarOp>(loc, result_type, value_attr, indexing_maps_attr,
-                                                                       nullptr,                         // loop_axis
-                                                                       builder_.getDictionaryAttr({}),  // ir_attr_def
-                                                                       nullptr,                         // tmp_buffers
-                                                                       outputs_array);
+                    nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
                 return scalar_op.getResult();
             } else {
                 // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)
@@ -410,24 +404,17 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(const HloInstr
             auto tensor_type = mlir::cast<mlir::RankedTensorType>(result_type);
 
             if (options_.emit_afir_dialect) {
-                // Create identity indexing map
                 int64_t rank = tensor_type.getRank();
-                auto identity_map = GetIdentityAffineMap(rank);
-                auto indexing_maps_attr = CreateIndexingMaps({identity_map});
+                auto indexing_maps_attr = CreateIndexingMaps({GetIdentityAffineMap(rank)});
 
-                // Create output attribute
-                auto output_attr = CreateDefaultOutputAttr(result_type);
                 llvm::SmallVector<mlir::Attribute> output_attrs;
-                output_attrs.push_back(output_attr);
+                output_attrs.push_back(CreateDefaultOutputAttr(result_type));
                 auto outputs_array = builder_.getArrayAttr(output_attrs);
 
                 // Create AFIR scalar constant with value attribute
                 auto value_attr = mlir::IntegerAttr::get(tensor_type.getElementType(), value);
                 auto scalar_op = builder_.create<mlir::afir::ScalarOp>(loc, result_type, value_attr, indexing_maps_attr,
-                                                                       nullptr,                         // loop_axis
-                                                                       builder_.getDictionaryAttr({}),  // ir_attr_def
-                                                                       nullptr,                         // tmp_buffers
-                                                                       outputs_array);
+                    nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
                 return scalar_op.getResult();
             } else {
                 // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)

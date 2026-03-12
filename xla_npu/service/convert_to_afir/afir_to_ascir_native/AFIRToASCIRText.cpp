@@ -203,14 +203,15 @@ std::string AFIRToASCIRTextPass::convertFuncToASCIRText(func::FuncOp func, Attri
             // Get argument attributes
             if (auto argAttrs = dyn_cast<DictionaryAttr>(argAttrsAttr[dataCounter])) {
                 auto outputsAttr = argAttrs.get("outputs");
-                if (outputsAttr) {
-                    auto outputsArrayAttr = dyn_cast<ArrayAttr>(outputsAttr);
-                    if (outputsArrayAttr && !outputsArrayAttr.empty()) {
-                        argToAttr[ssaName] = outputsArrayAttr[0];
-                    }
+                if (!outputsAttr) {
+                    dataCounter++;
+                    continue;
+                }
+                auto outputsArrayAttr = dyn_cast<ArrayAttr>(outputsAttr);
+                if (outputsArrayAttr && !outputsArrayAttr.empty()) {
+                    argToAttr[ssaName] = outputsArrayAttr[0];
                 }
             }
-
             dataCounter++;
         }
     } else {

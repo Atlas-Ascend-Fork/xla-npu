@@ -212,7 +212,6 @@ absl::Status ExecuteThunksImpl(const DebugOptions* debug_options, const std::str
     se::Stream* main_stream = run_options->stream();
     se::StreamExecutor* executor = main_stream->parent();
     stream_executor::StreamPriority stream_priority = stream_executor::StreamPriority::Default;
-    // TODO(intel-tf): Enable stream priorities for sycl backend.
     if (executor->GetPlatform()->id() == stream_executor::sycl::kSyclPlatformId) {
         use_highest_priority_for_async_stream = false;
     }
@@ -296,10 +295,6 @@ absl::Status MaybeSyncAndProfile(const ServiceExecutableRunOptions* run_options,
         profile->set_compute_time_ns(std::max(absl::ToDoubleNanoseconds(elapsed), 1.0));
     }
 
-    // Make sure kernels are completed before deallocating temporary buffers or
-    // the profiler state.
-    // TODO(b/30100571): we could potentially postpone deallocating the temp
-    // buffers until a different computation is executed.
     if (stream_to_sync) {
         absl::Status block_status = stream_to_sync->BlockHostUntilDone();
         if (!block_status.ok()) {
@@ -490,14 +485,8 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
     se::DeviceMemoryAllocator* const memory_allocator = run_options->allocator();
     se::StreamExecutor* executor = run_options->stream()->parent();
 
-    // NpuExecutable always bound to a single GpuContext during its execution, so
-    // we activate it once to skip expensive context activations later.
     auto activation = executor->Activate();
 
-    // Lock the GPU with a shared lock so that we don't interfere with autotuning
-    // that may be running during JIT compilation while allowing multiple XLA
-    // computations to use the same GPU simultaneously. We do not add locking for
-    // "recursive" invocations, which are done when holding a lock already.
     std::variant<absl::ReaderMutexLock, absl::WriterMutexLock> npu_lock(std::in_place_index_t<0>{},
                                                                         &GetNpuMutex(executor));
 
@@ -509,9 +498,6 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
         TF_ASSIGN_OR_RETURN(globals, ResolveConstantGlobals(run_options->stream()));
     }
 
-    // Use the `device_ordinal` from the `run_options` if it is provided. This is
-    // the ordinal of the logical devices (e.g., virtual GPUs). If it is not
-    // provided, the ordinals of the logical and physical devices are the same.
     const int device_ordinal =
         run_options->device_ordinal() != -1 ? run_options->device_ordinal() : executor->device_ordinal();
     ExecutionOutput result(/*on_device_shape=*/program_shape_.result(), memory_allocator, device_ordinal,
