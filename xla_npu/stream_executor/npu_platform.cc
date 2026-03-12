@@ -10,6 +10,7 @@
 
 #include "xla/xla_npu/stream_executor/npu_platform.h"
 
+#include <csignal>
 #include <memory>
 #include <string>
 #include <utility>
@@ -29,12 +30,30 @@
 #include "xla/xla_npu/stream_executor/npu_platform_id.h"
 
 namespace stream_executor {
+namespace {
+
+volatile sig_atomic_t g_acl_initialized = 0;
+
+void AclCleanup() {
+  if (g_acl_initialized) {
+    aclError ret = npu::aclFinalize();
+    if (ret != ACL_SUCCESS) {
+      NPU_LOG_FORMAT_PRINT(ERROR, "ACL finalize failed in atexit, ret: %d",
+                           ret);
+    } else {
+      NPU_LOG_FORMAT_PRINT(INFO, "ACL finalize success in atexit");
+    }
+    g_acl_initialized = 0;
+  }
+}
+
+}  // namespace
 
 NpuPlatform::NpuPlatform() : name_(xla::NpuConstant::platformName) {}
 
 NpuPlatform::~NpuPlatform() {
   NPU_LOG_FORMAT_PRINT(INFO, "Finalize platform for '%s'.", name_);
-  if (initialized_) {
+  if (g_acl_initialized) {
     auto ret = npu::aclFinalize();
     if (ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(ERROR,
@@ -44,13 +63,13 @@ NpuPlatform::~NpuPlatform() {
       NPU_LOG_FORMAT_PRINT(INFO, "Finalize platform for '%s' success.", name_);
     }
 
-    initialized_ = false;
+    g_acl_initialized = 0;
   }
 }
 
 Platform::Id NpuPlatform::id() const { return kNpuPlatformId; }
 
-bool NpuPlatform::Initialized() const { return initialized_; }
+bool NpuPlatform::Initialized() const { return g_acl_initialized; }
 
 absl::Status NpuPlatform::Initialize() {
   const char* acl_config_json_file_path = nullptr;
@@ -60,7 +79,8 @@ absl::Status NpuPlatform::Initialize() {
     return absl::UnavailableError("Acl init failed.");
   }
 
-  initialized_ = true;
+  g_acl_initialized = 1;
+  std::atexit(AclCleanup);
 
   NPU_LOG_FORMAT_PRINT(INFO, "Init platform for '%s' success.", name_);
   return absl::OkStatus();

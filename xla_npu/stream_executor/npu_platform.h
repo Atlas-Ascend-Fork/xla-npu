@@ -63,8 +63,6 @@ class NpuPlatform : public Platform {
 
   NpuPlatform(const NpuPlatform&) = delete;
   void operator=(const NpuPlatform&) = delete;
-
-  bool initialized_ = false;
 };
 
 }  // namespace stream_executor

@@ -102,10 +102,10 @@ absl::Status NpuAutoFuseKernel::Launch(
                        workspace_size, block_dim);
 
   void* workspace = nullptr;
+  DeviceMemoryBase workspace_memory;
   if (workspace_size > 0) {
-    auto workspace_memory = std::make_unique<DeviceMemoryBase>(
-        executor_->Allocate(workspace_size, /*memory_space=*/0));
-    workspace = workspace_memory->opaque();
+    workspace_memory = executor_->Allocate(workspace_size, /*memory_space=*/0);
+    workspace = workspace_memory.opaque();
     CHECK_COND_AND_PRINT_NPU_LOG(workspace == nullptr,
                                  "Failed to allocate %d bytes for workspace.",
                                  workspace_size);
@@ -148,6 +148,11 @@ absl::Status NpuAutoFuseKernel::Launch(
 
   TF_RETURN_IF_ERROR(
       stream->BlockHostUntilDone());  // TODO 所有算子下发完了再同步
+
+  if (workspace != nullptr) {
+    executor_->Deallocate(&workspace_memory);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace memory freed: %p", workspace);
+  }
 
   NPU_LOG_FORMAT_PRINT(INFO,
                        "  NpuAutoFuseKernel::Launch completed successfully");
