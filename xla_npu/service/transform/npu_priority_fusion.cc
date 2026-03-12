@@ -226,10 +226,8 @@ absl::StatusOr<bool> NpuPriorityFusion::RunImpl(HloModule* module,
                 HloInstruction* producer = consumer->mutable_operand(i);
 
                 // Handle constant fusion
-                if (producer->opcode() == HloOpcode::kConstant) {
-                    if (!CanFuseConstant(producer, consumer)) {
-                        continue;
-                    }
+                if (producer->opcode() == HloOpcode::kConstant && !CanFuseConstant(producer, consumer)) {
+                    continue;
                 }
 
                 // Check basic fusibility
