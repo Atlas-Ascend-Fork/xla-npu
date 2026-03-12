@@ -211,7 +211,7 @@ absl::StatusOr<HloInstruction*> NpuCustomKernelFusionRewriter::RewriteSoftmax(
     }
     HloInstruction* fusion = mutable_parent_computation->AddInstruction(
             HloInstruction::CreateFusion(computation->root_instruction()->shape(),
-                                         HloInstruction::FusionKind::kCustom,fusion_params, computation));
+                                         HloInstruction::FusionKind::kCustom, fusion_params, computation));
     fusion->GetModule()->SetAndUniquifyInstrName(fusion, fusion_name);
 
     // Set the backend config

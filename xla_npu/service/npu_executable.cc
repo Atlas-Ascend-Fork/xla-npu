@@ -203,9 +203,6 @@ absl::Status ExecuteThunksImpl(const DebugOptions* debug_options, const std::str
                                const ServiceExecutableRunOptions* run_options,
                                const NpuBufferAllocations& buffer_allocations, bool block_host_until_done,
                                const absl::flat_hash_set<NpuExecutionStreamId>& execution_stream_ids) {
-
-    int64_t collective_max_nchannels = debug_options ? debug_options->xla_gpu_nccl_collective_max_nchannels() : 0;
-    int64_t p2p_max_nchannels = debug_options ? debug_options->xla_gpu_nccl_p2p_max_nchannels() : 0;
     bool use_highest_priority_for_async_stream =
         debug_options ? debug_options->xla_gpu_enable_highest_priority_async_stream() : false;
 
@@ -234,8 +231,7 @@ absl::Status ExecuteThunksImpl(const DebugOptions* debug_options, const std::str
             }
             VLOG(2) << "Using " << additional_execution_streams.size() << " additional compute streams.";
         } else {
-            VLOG(2) << "No stream borrower created. "
-                    << "Assigning the default stream to all parallel computes.";
+            VLOG(2) << "No stream borrower created. Assigning the default stream to all parallel computes.";
             for (NpuExecutionStreamId stream_id : execution_stream_ids) {
                 additional_execution_streams[stream_id] = main_stream;
             }
@@ -262,11 +258,9 @@ absl::Status ExecuteThunksImpl(const DebugOptions* debug_options, const std::str
                                         // &collective_cliques,
                                         std::move(additional_execution_streams));
 
-    VLOG(1) << "[" << run_options->device_ordinal() << "] "
-            << "Start NpuExecutable::ExecuteOnStream module: " << module_name;
+    VLOG(1) << "[" << run_options->device_ordinal() << "] Start NpuExecutable::ExecuteOnStream module: " << module_name;
     TF_RETURN_IF_ERROR(thunk_sequence.ExecuteOnStream(execute_params));
-    VLOG(1) << "[" << run_options->device_ordinal() << "] "
-            << "End NpuExecutable::ExecuteOnStream module: " << module_name;
+    VLOG(1) << "[" << run_options->device_ordinal() << "] End NpuExecutable::ExecuteOnStream module: " << module_name;
 
     return MaybeSyncAndProfile(run_options, execution_timer.get(), block_host_until_done ? main_stream : nullptr);
 }
@@ -484,12 +478,8 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
     XLA_SCOPED_LOGGING_TIMER(absl::StrCat("NpuExecutable::ExecuteAsyncOnStreamImpl(", module_name_, ")"));
     se::DeviceMemoryAllocator* const memory_allocator = run_options->allocator();
     se::StreamExecutor* executor = run_options->stream()->parent();
-
-    auto activation = executor->Activate();
-
     std::variant<absl::ReaderMutexLock, absl::WriterMutexLock> npu_lock(std::in_place_index_t<0>{},
                                                                         &GetNpuMutex(executor));
-
     const NpuExecutable::BufferAllocToDeviceMemoryMap* globals;
     {
         tsl::profiler::TraceMe hlo_module_activity([&] { return std::string("Resolve constant globals"); },
@@ -535,8 +525,7 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
         VLOG(4) << "Looking at: allocation " << output_info.allocation_index << " @ index: " << index.ToString();
 
         if (result_buffer.is_null()) {
-            // The source instruction should have a non-parameter buffer
-            // assigned.
+            // The source instruction should have a non-parameter buffer assigned.
             result_buffer = buffer_allocations.GetDeviceAddress(output_info.allocation_index);
 
             // If the entire tuple contents is aliased, the copy insertion will *not*
