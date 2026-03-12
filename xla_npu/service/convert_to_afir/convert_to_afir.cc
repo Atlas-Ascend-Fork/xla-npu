@@ -1651,8 +1651,9 @@ void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int6
     std::cerr << "FixTensorShapes called with max_rank = " << max_rank << std::endl;
     std::cerr << "value_map_ has " << value_map_.size() << " entries" << std::endl;
 
-    // First pass: Collect target shapes from reshape operations
-    // that feed into concat or broadcast operations
+    // First pass: Collect target shapes from:
+    // 1. Reshape operations that feed into concat or broadcast operations
+    // 2. Direct broadcast operation (for parameters that directly feed into it)
     llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>> target_shapes;
     for (const HloInstruction* instr : computation.instructions()) {
         if (instr->opcode() == HloOpcode::kReshape) {
@@ -1676,6 +1677,20 @@ void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int6
                     break;
                 }
             }
+        } else if (instr->opcode() == HloOpcode::kBroadcast) {
+            // For direct broadcast operation, use its output shape as target shape
+            // This handles the case where a parameter directly feeds into broadcast
+            const Shape& shape = instr->shape();
+            llvm::SmallVector<int64_t> shape_vec(shape.dimensions().begin(),
+                                                   shape.dimensions().end());
+            target_shapes[instr] = shape_vec;
+            std::cerr << "Found target shape from direct " << instr->name()
+                     << ": [";
+            for (size_t i = 0; i < shape_vec.size(); ++i) {
+                if (i > 0) std::cerr << ", ";
+                std::cerr << shape_vec[i];
+            }
+            std::cerr << "]" << std::endl;
         }
     }
 
