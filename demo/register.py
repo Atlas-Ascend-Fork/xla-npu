@@ -1,22 +1,12 @@
 import os
-# os.environ['TC_CPP_MIN_LOG_LEVEL'] = '0'
-# os.environ['TF_CPP_MAX_VLOG_LEVEL'] = '99'  # 全局VLOG级别设为99
-# os.environ['TF_CPP_VMODULE'] = '*=99'      # 所有文件VLOG级别设为99
-# os.environ['XLA_FLAGS'] = '--xla_dump_to=./xla_dump'      # 设置xla dump目录
-
-import numpy as np
-import jax
-import jax.numpy as jnp
-import warnings
 import traceback
-import sys
-import logging
 
-# logging.basicConfig(level=logging.DEBUG)  # 把jax日志输出到 stderr
+import jax
+import numpy as np
 
 # Note: No need for ctypes.CDLL() anymore, JAX loads the library automatically with the correct ENV var
 # 1. Define the platform name and library path
-PLATFORM_NAME = 'npu' # Use a simple name without underscores for safety
+PLATFORM_NAME = 'npu'  # Use a simple name without underscores for safety
 LIBRARY_PATH = os.path.abspath("pjrt_c_api_npu_plugin.so")
 
 # 2. Set the mandatory environment variable
@@ -38,11 +28,13 @@ try:
     x2 = x1 + 1
     print(f"input array: {x2}")
 
+
     # 定义多融合算子场景的函数
     def multi_fusion_func(x1, x2):
-        y =  jax.nn.gelu(x1) + jax.nn.relu(x2)
+        y = jax.nn.gelu(x1) + jax.nn.relu(x2)
         # y =  jax.nn.gelu(x1)
         return y
+
 
     func = jax.jit(multi_fusion_func)
     y = func(x1, x2)

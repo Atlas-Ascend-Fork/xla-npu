@@ -1,19 +1,10 @@
 # -*- coding:utf-8 -*-
-"""
-JAX implementation of MMOE (Multi-gate Mixture-of-Experts)
 
-Author: JAX Conversion
-Based on PyTorch implementation by zanshuxun
-
-Reference:
-    [1] Jiaqi Ma, Zhe Zhao, Xinyang Yi, et al. Modeling Task Relationships in Multi-task Learning with Multi-gate Mixture-of-Experts[C]
-    https://dl.acm.org/doi/10.1145/3219819.3220007
-"""
+from typing import Tuple, List
 
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
-from typing import Tuple, List
 
 
 class DNN(nn.Module):
@@ -241,17 +232,17 @@ class MMOE(nn.Module):
 
 
 def create_mmoe(
-    input_dim: int,
-    num_experts: int = 3,
-    num_tasks: int = 2,
-    expert_dnn_hidden_units: Tuple[int, ...] = (256, 128),
-    gate_dnn_hidden_units: Tuple[int, ...] = (64,),
-    tower_dnn_hidden_units: Tuple[int, ...] = (64,),
-    dnn_activation: str = 'relu',
-    dnn_dropout: float = 0.0,
-    dnn_use_bn: bool = False,
-    task_types: Tuple[str, ...] = ('binary', 'binary'),
-    task_names: Tuple[str, ...] = ('ctr', 'ctcvr'),
+        input_dim: int,
+        num_experts: int = 3,
+        num_tasks: int = 2,
+        expert_dnn_hidden_units: Tuple[int, ...] = (256, 128),
+        gate_dnn_hidden_units: Tuple[int, ...] = (64,),
+        tower_dnn_hidden_units: Tuple[int, ...] = (64,),
+        dnn_activation: str = 'relu',
+        dnn_dropout: float = 0.0,
+        dnn_use_bn: bool = False,
+        task_types: Tuple[str, ...] = ('binary', 'binary'),
+        task_names: Tuple[str, ...] = ('ctr', 'ctcvr'),
 ) -> MMOE:
     """Create the MMOE model.
 
@@ -286,18 +277,3 @@ def create_mmoe(
     )
 
     return model
-
-
-# Import configuration from config.py
-from config import (
-    CONFIG_INPUT_DIM,
-    CONFIG_BATCH_SIZE,
-    CONFIG_NUM_EXPERTS,
-    CONFIG_NUM_TASKS,
-    CONFIG_EXPERT_DNN_HIDDEN_UNITS,
-    CONFIG_GATE_DNN_HIDDEN_UNITS,
-    CONFIG_TOWER_DNN_HIDDEN_UNITS,
-    CONFIG_DNN_ACTIVATION,
-    CONFIG_TASK_TYPES,
-    CONFIG_MODEL_PARAMS_FILE,
-)
