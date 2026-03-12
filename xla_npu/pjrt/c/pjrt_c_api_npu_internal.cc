@@ -25,8 +25,6 @@
 #include "xla/pjrt/c/pjrt_c_api_wrapper_impl.h"
 #include "xla/pjrt/pjrt_client.h"
 
-// #include "xla/xla_npu/pjrt/npu/npu_client.h" // Not used
-// #include "xla/xla_npu/pjrt/plugin/npu_client_options.h" // Not used
 #if NPU_AUTO_FUSE_BACKEND == 3
 #include "xla/xla_npu/pjrt/air/npu/npu_client.h"
 #else
@@ -44,11 +42,6 @@ PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args) {
     return nullptr;
 #else
     PJRT_ASSIGN_OR_RETURN(std::unique_ptr<xla::PjRtClient> client, xla::GetNpuPjrtStreamExecutorClient());
-
-    // // 暂不使用外部传入参数
-    // xla::NpuClientOptions options;
-    // PJRT_ASSIGN_OR_RETURN(std::unique_ptr<xla::PjRtClient> client, xla::GetPjRtNpuClient(std::move(options)));
-
     args->client = CreateWrapperClient(std::move(client));
     return nullptr;
 #endif

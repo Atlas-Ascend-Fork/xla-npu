@@ -155,7 +155,6 @@ absl::Status NpuStream::WaitFor(Stream* other) {
 }
 
 absl::Status NpuStream::WaitFor(Event* event) {
-  // notification->WaitForNotification();
   return absl::UnimplementedError("NpuStream::WaitFor event is not supported.");
 }
 

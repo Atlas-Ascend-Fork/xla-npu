@@ -18,7 +18,6 @@
 
 #include "absl/types/span.h"
 #include "xla/pjrt/pjrt_common.h"
-// #include "xla/pjrt/plugin/xla_cpu/cpu_topology.pb.h"
 
 namespace xla {
 class NpuTopology {
@@ -38,9 +37,6 @@ class NpuTopology {
     int number_of_devices() const { return npu_devices_.size(); }
     absl::Span<const NpuDevice> devices() const { return npu_devices_; }
     absl::Span<const std::string> machine_attributes() const { return machine_attributes_; }
-
-    // static std::unique_ptr<const NpuTopology> FromProto(const CpuTopologyProto& proto);
-    // CpuTopologyProto ToProto() const;
 
    private:
     const std::vector<NpuDevice> npu_devices_;

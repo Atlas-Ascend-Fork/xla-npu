@@ -28,7 +28,6 @@
 #include "xla/pjrt/pjrt_compiler.h"
 #include "xla/pjrt/pjrt_device_description.h"
 #include "xla/pjrt/pjrt_device_dimensions.h"
-// #include "xla/pjrt/pjrt/plugin/npu_device_description.h"
 
 #include "xla/xla_npu/pjrt/plugin/npu_topology.h"
 
@@ -86,9 +85,6 @@ class NpuTopologyDescription : public PjRtTopologyDescription {
     absl::StatusOr<Layout> GetDefaultLayout(PrimitiveType element_type, absl::Span<const int64_t> dims) const override;
 
     absl::StatusOr<xla::PjRtTopologyDescriptionProto> ToProto() const override;
-
-    // static absl::StatusOr<std::unique_ptr<NpuTopologyDescription>> FromProto(
-    //     const xla::PjRtTopologyDescriptionProto& proto);
 
    private:
     const PjRtPlatformId platform_id_;

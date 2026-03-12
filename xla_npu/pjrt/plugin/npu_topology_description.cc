@@ -27,8 +27,6 @@
 #include "xla/pjrt/pjrt_compiler.h"
 #include "xla/pjrt/pjrt_device_description.h"
 #include "xla/pjrt/pjrt_device_dimensions.h"
-// #include "xla/pjrt/plugin/xla_cpu/cpu_device_description.h"
-// #include "xla/pjrt/plugin/xla_cpu/cpu_topology.h"
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/tsl/lib/strings/proto_serialization.h"
@@ -45,9 +43,6 @@ absl::StatusOr<Layout> NpuTopologyDescription::GetDefaultLayout(PrimitiveType el
 
 absl::StatusOr<std::string> NpuTopologyDescription::Serialize() const {
     std::string result;
-    // if (!tsl::SerializeToStringDeterministic(npu_topology_.ToProto(), &result)) {
-    //     return absl::InternalError("Failed to serialize npu_topology");
-    // }
     return result;
 }
 
@@ -72,32 +67,7 @@ absl::StatusOr<xla::PjRtTopologyDescriptionProto> NpuTopologyDescription::ToProt
     proto.set_platform_version(platform_version());
     proto.set_is_subslice_topology(is_subslice_topology());
 
-    // CpuTopologyProto cpu_topology_proto = npu_topology_.ToProto();
-    // proto.mutable_platform_specific_topology()->PackFrom(cpu_topology_proto);
     return proto;
 }
-
-// absl::StatusOr<std::unique_ptr<NpuTopologyDescription>>
-// NpuTopologyDescription::FromProto(
-//     const xla::PjRtTopologyDescriptionProto& proto) {
-//     if (proto.platform_id() != xla::CpuId()) {
-//         return absl::InvalidArgumentError(
-//             absl::StrCat("The platform_id is not a CPU platform. platform_id: ",
-//                         proto.platform_id()));
-//     }
-
-//     if (!proto.platform_specific_topology().Is<CpuTopologyProto>()) {
-//         return absl::InvalidArgumentError(
-//             "The platform_specific_topology is not a CpuTopologyProto.");
-//     }
-//     CpuTopologyProto cpu_topology_proto;
-//     proto.platform_specific_topology().UnpackTo(&cpu_topology_proto);
-//     auto cpu_topology = std::shared_ptr<const NpuTopology>(NpuTopology::FromProto(cpu_topology_proto));
-//     std::vector<xla::NpuTopology::NpuDevice> npu_devices;
-//     npu_devices.assign(cpu_topology->devices().begin(), cpu_topology->devices().end());
-//     return std::make_unique<NpuTopologyDescription>(
-//         proto.platform_id(), proto.platform_name(), proto.platform_version(),
-//         npu_devices, cpu_topology->machine_attributes());
-// }
 
 }  // namespace xla
