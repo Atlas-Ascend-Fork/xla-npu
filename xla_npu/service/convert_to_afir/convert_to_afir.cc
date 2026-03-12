@@ -27,6 +27,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Types.h"
+#include "mlir/Transforms/Passes.h"
 #include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_opcode.h"
@@ -1903,6 +1904,16 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
         // Only call FixTensorShapes if there's a concatenate or broadcast operation
         if (has_concat || has_brc) {
             converter.FixTensorShapes(computation, max_rank);
+        }
+    }
+
+    // Run DCE pass to eliminate dead code (unused operations)
+    if (options.emit_afir_dialect) {
+        mlir::PassManager pm(context);
+        // Use MLIR's built-in RemoveDeadValues pass
+        pm.addPass(mlir::createRemoveDeadValuesPass());
+        if (failed(pm.run(*mlir_module))) {
+            return absl::InternalError("AFIR DCE pass failed");
         }
     }
 
