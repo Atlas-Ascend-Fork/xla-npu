@@ -438,7 +438,6 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     }
 
     //构建hlo modules,通过JAX的校验
-    //TF_RETURN_IF_ERROR(pjrt::MaybeDumpCompileInputs(options, module, topology_));
     XlaComputation xla_computation;
     ExecutableBuildOptions& exec_build_options = options.executable_build_options;
     TF_RETURN_IF_ERROR(MlirToXlaComputation(

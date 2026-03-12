@@ -17,8 +17,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "xla/literal.h"
-// #include "xla/pjrt/cpu/cpu_async_execution_tracker.h"
-// #include "xla/pjrt/cpu/execution_stream_event_map.h"
 #include "xla/pjrt/host_memory_spaces.h"
 #include "xla/pjrt/pjrt_client.h"
 
@@ -30,10 +28,6 @@ PjRtNpuDevice::PjRtNpuDevice(int id, int process_id)
     : description_(id, process_id)
 {
 }
-// max_inflight_computations_semaphore_(
-//     /*capacity=*/max_inflight_computations),
-// async_execution_tracker_(std::make_unique<CpuAsyncExecutionTracker>()),
-// stream_event_map_(std::make_unique<ExecutionStreamEventMap>()) {}
 
 void PjRtNpuDevice::AttachMemorySpace(PjRtMemorySpace* memory_space)
 {

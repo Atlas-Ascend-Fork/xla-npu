@@ -11,16 +11,14 @@
 #ifndef NPU_CLIENT_H_
 #define NPU_CLIENT_H_
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "xla/literal.h"
-// #include "xla/pjrt/cpu/cpu_async_execution_tracker.h"
-// #include "xla/pjrt/cpu/execution_stream_event_map.h"
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/pjrt/pjrt_common.h"
 #include "xla/pjrt/semaphore.h"
