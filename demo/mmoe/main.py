@@ -51,7 +51,7 @@ def compare_all_results(num_runs=1):
     Args:
         num_runs: Number of runs to compare
     """
-    from test_utils import compare_results, print_results
+    from test_utils import compare_results, print_results, print_input_stats
     from config import CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS, CPU_ALL_OUTPUTS_FILE, NPU_ALL_OUTPUTS_FILE, INPUT_DATA_FILE
 
     cpu_output_path = CPU_ALL_OUTPUTS_FILE
@@ -77,9 +77,12 @@ def compare_all_results(num_runs=1):
     npu_outputs = npu_data['outputs']
     cpu_runs = int(cpu_data['num_runs'])
     npu_runs = int(npu_data['num_runs'])
-
-    print(f"\nInput shape: {cpu_data['input'].shape}")
-    print(f"Output shape per run: {cpu_outputs[0].shape}")
+    
+    # Load inputs for each run
+    cpu_inputs = cpu_data.get('inputs', None)
+    npu_inputs = npu_data.get('inputs', None)
+    
+    print(f"\nOutput shape per run: {cpu_outputs[0].shape}")
     print(f"Expected output shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
     print(f"CPU runs: {cpu_runs}, NPU runs: {npu_runs}")
 
@@ -89,33 +92,37 @@ def compare_all_results(num_runs=1):
         print(f"\n{'=' * 60}")
         print(f"--- Run {run_idx + 1}/{num_runs} ---")
         print(f"{'=' * 60}")
-
+        
+        # Print input info for this run (same for CPU and NPU)
+        if cpu_inputs is not None:
+            print_input_stats(cpu_inputs[run_idx], run_idx=run_idx)
+        
         cpu_output = cpu_outputs[run_idx]
         npu_output = npu_outputs[run_idx]
 
         print_results(cpu_output, "CPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
         print_results(npu_output, "NPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
-
-        match = compare_results(cpu_output, npu_output,
-                                cpu_data['input'], cpu_data['input'])
+        
+        # Use corresponding inputs for comparison
+        cpu_input = cpu_inputs[run_idx] if cpu_inputs is not None else None
+        npu_input = npu_inputs[run_idx] if npu_inputs is not None else None
+        
+        if cpu_input is not None and npu_input is not None:
+            match = compare_results(cpu_output, npu_output, cpu_input, npu_input)
+        else:
+            match = compare_results(cpu_output, npu_output, 
+                                   cpu_data.get('input', np.zeros(1)), 
+                                   npu_data.get('input', np.zeros(1)))
         all_match = all_match and match
-
-    # Cleanup
+    
+    # Print data file locations
     print("\n" + "=" * 60)
-    print("Cleaning up temporary files...")
+    print("Data files saved at:")
     print("=" * 60)
-
-    files_to_remove = [
-        CPU_ALL_OUTPUTS_FILE,
-        NPU_ALL_OUTPUTS_FILE,
-        INPUT_DATA_FILE
-    ]
-
-    for file_path in files_to_remove:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"  Removed: {file_path}")
-
+    print(f"  Input data: {INPUT_DATA_FILE}")
+    print(f"  CPU outputs: {CPU_ALL_OUTPUTS_FILE}")
+    print(f"  NPU outputs: {NPU_ALL_OUTPUTS_FILE}")
+    
     return all_match
 
 
@@ -129,8 +136,10 @@ def main():
     parser.add_argument('--skip-npu', action='store_true',
                         help='Skip NPU inference, only run CPU')
     parser.add_argument('--init', action='store_true', default=False,
-                        help='Initialize model parameters')
-
+                       help='Initialize model parameters (default: False, use existing params)')
+    parser.add_argument('--cleanup', action='store_true', default=False,
+                       help='Clean up temporary input/output files after test (default: False)')
+    
     args = parser.parse_args()
 
     print("MMOE JAX Implementation Test")
@@ -180,19 +189,21 @@ def main():
     print("\n" + "=" * 60)
     print("Running CPU vs NPU comparison test")
     print("=" * 60)
-
-    # Generate random input data once and share between CPU and NPU
-    print("\nGenerating random input data...")
+    
+    # Generate random input data for each run (different per run, same for CPU/NPU per run)
     from test_utils import generate_input
-    input_data = generate_input()
-
-    # Save input data to temporary file
-    from config import INPUT_DATA_FILE
+    from config import INPUT_DATA_FILE, CPU_ALL_OUTPUTS_FILE, NPU_ALL_OUTPUTS_FILE
+    
+    inputs = []
+    for i in range(args.num_runs):
+        input_data = generate_input()
+        inputs.append(np.array(input_data))
+    
+    # Save all inputs to file
     input_file = INPUT_DATA_FILE
-    np.savez(input_file, input=np.array(input_data))
-    print(f"Input data saved to: {input_file}")
-    print(f"Input shape: {input_data.shape}")
-
+    all_inputs = np.stack(inputs, axis=0)
+    np.savez(input_file, inputs=all_inputs, num_runs=args.num_runs)
+    
     # Run CPU inference (multiple runs in single process)
     if not args.skip_cpu:
         if not run_inference("CPU", num_runs=args.num_runs, input_file=input_file):
@@ -204,8 +215,18 @@ def main():
         if not run_inference("NPU", num_runs=args.num_runs, input_file=input_file):
             print(f"ERROR: NPU inference failed")
             sys.exit(1)
-
+    
+    # Print data file locations
+    print("\n" + "=" * 60)
+    print("Data files saved at:")
+    print("=" * 60)
+    print(f"  Input data: {INPUT_DATA_FILE}")
+    print(f"  CPU outputs: {CPU_ALL_OUTPUTS_FILE}")
+    if not args.skip_npu:
+        print(f"  NPU outputs: {NPU_ALL_OUTPUTS_FILE}")
+    
     # Comparison phase (only if both CPU and NPU ran)
+    test_passed = None
     if not args.skip_cpu and not args.skip_npu:
         test_passed = compare_all_results(num_runs=args.num_runs)
         print(f"\n{'=' * 60}")
@@ -223,11 +244,29 @@ def main():
     print("\n" + "=" * 60)
     print("FINAL SUMMARY")
     print("=" * 60)
-    if test_passed:
+    if test_passed is None:
+        print(f"⚠️  Comparison was skipped")
+    elif test_passed:
         print(f"✅ TEST PASSED")
     else:
         print(f"❌ TEST FAILED")
     print("=" * 60)
+    
+    # Cleanup if requested
+    if args.cleanup:
+        print("\nCleaning up temporary files...")
+        files_to_remove = [
+            INPUT_DATA_FILE,
+        ]
+        if not args.skip_cpu and os.path.exists(CPU_ALL_OUTPUTS_FILE):
+            files_to_remove.append(CPU_ALL_OUTPUTS_FILE)
+        if not args.skip_npu and os.path.exists(NPU_ALL_OUTPUTS_FILE):
+            files_to_remove.append(NPU_ALL_OUTPUTS_FILE)
+        
+        for file_path in files_to_remove:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"  Removed: {file_path}")
 
 
 if __name__ == "__main__":

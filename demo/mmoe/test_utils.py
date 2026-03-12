@@ -38,16 +38,46 @@ def generate_input(seed=None):
     if seed is None:
         seed = int(np.random.randint(0, 10000))
     
-    # Generate input from standard normal distribution (mean=0, std=1)
-    # This is appropriate for MMOE as:
-    # 1. Matches typical normalized feature distributions
-    # 2. Works well with ReLU activations (symmetric around 0)
-    # 3. Prevents extreme values that could cause numerical instability
     x = jax.random.normal(
         jax.random.PRNGKey(seed),
         (CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
     )
     return x
+
+
+def print_input_stats(x, run_idx=None, device_name=None):
+    """Print input data statistics.
+    
+    Args:
+        x: Input tensor
+        run_idx: Run index (optional, not used in output)
+        device_name: Device name (optional, not used in output)
+    """
+    x_arr = np.array(x)
+    
+    print(f"\nInput:")
+    print(f"  Shape: {x_arr.shape}")
+    print(f"  Min: {x_arr.min():.6f}")
+    print(f"  Max: {x_arr.max():.6f}")
+    print(f"  Mean: {x_arr.mean():.6f}")
+    print(f"  Std: {x_arr.std():.6f}")
+
+
+def print_results(output, device_name, batch_size, num_tasks):
+    """Print inference results.
+    
+    Args:
+        output: Output tensor
+        device_name: Device name ('CPU' or 'NPU')
+        batch_size: Batch size
+        num_tasks: Number of tasks
+    """
+    print(f"\n[{device_name}] Output:")
+    print(f"[{device_name}]   Shape: {output.shape}")
+    print(f"[{device_name}]   Min: {output.min():.6f}")
+    print(f"[{device_name}]   Max: {output.max():.6f}")
+    print(f"[{device_name}]   Mean: {output.mean():.6f}")
+    print(f"[{device_name}]   Std: {output.std():.6f}")
 
 
 # ============================================================================
@@ -113,24 +143,6 @@ def run_inference_and_save(model, params, x, device_name, output_file):
 # ============================================================================
 # Result Comparison and Printing
 # ============================================================================
-
-def print_results(output, device_name, batch_size, num_tasks):
-    """Print inference results.
-    
-    Args:
-        output: Output tensor
-        device_name: Device name ('CPU' or 'NPU')
-        batch_size: Batch size
-        num_tasks: Number of tasks
-    """
-    print(f"\n{device_name} Output (first {OUTPUT_SAMPLE_SIZE} samples):")
-    print(output[:OUTPUT_SAMPLE_SIZE])
-    print(f"\n{device_name} Output statistics:")
-    print(f"  Min: {output.min():.6f}")
-    print(f"  Max: {output.max():.6f}")
-    print(f"  Mean: {output.mean():.6f}")
-    print(f"  Std: {output.std():.6f}")
-
 
 def compare_results(output_cpu, output_npu, x_cpu, x_npu):
     """Compare CPU and NPU results.

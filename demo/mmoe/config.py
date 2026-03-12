@@ -8,21 +8,21 @@ MMOE Configuration - All constants and configuration parameters
 # ============================================================================
 
 # Input and batch size
-CONFIG_INPUT_DIM = 4          # Input feature dimension
-CONFIG_BATCH_SIZE = 2         # Batch size for inference
+CONFIG_INPUT_DIM = 256         # Input feature dimension
+CONFIG_BATCH_SIZE = 64         # Batch size for inference
 
 # Model structure
-CONFIG_NUM_EXPERTS = 2        # Number of expert networks
-CONFIG_NUM_TASKS = 2          # Number of tasks (must match CONFIG_TASK_TYPES length)
+CONFIG_NUM_EXPERTS = 8         # Number of expert networks
+CONFIG_NUM_TASKS = 8           # Number of tasks (must match CONFIG_TASK_TYPES length)
 
 # DNN hidden units
-CONFIG_EXPERT_DNN_HIDDEN_UNITS = (4, 2)      # Expert DNN hidden layers
-CONFIG_GATE_DNN_HIDDEN_UNITS = (2,)          # Gate DNN hidden layers
-CONFIG_TOWER_DNN_HIDDEN_UNITS = (2,)         # Tower DNN hidden layers
+CONFIG_EXPERT_DNN_HIDDEN_UNITS = (256, 128)   # Expert DNN hidden layers
+CONFIG_GATE_DNN_HIDDEN_UNITS = (128,)          # Gate DNN hidden layers
+CONFIG_TOWER_DNN_HIDDEN_UNITS = (128,)         # Tower DNN hidden layers
 
 # DNN settings
 CONFIG_DNN_ACTIVATION = 'relu'               # Activation function
-CONFIG_TASK_TYPES = ('binary', 'binary')     # Task types (length must equal CONFIG_NUM_TASKS)
+CONFIG_TASK_TYPES = ('binary', 'binary', 'binary', 'binary', 'binary', 'binary', 'binary', 'binary')     # Task types (length must equal CONFIG_NUM_TASKS)
 
 # ============================================================================
 # File Paths
