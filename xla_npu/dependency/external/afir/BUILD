@@ -29,14 +29,14 @@ cc_library(
         "Ascend-MLIR/include/Utils/*.hpp",
         "Ascend-MLIR/include/Interface/*.h",
         "Ascend-MLIR/include/Interface/*.hpp",
-        "Ascend-MLIR/build/include/Dialect/AFIR/**/*.inc",
-        "Ascend-MLIR/build/include/Interface/*.inc",
-        "Ascend-MLIR/build/include/Conversion/*.inc",
-        "Ascend-MLIR/build/externals/pyasc/include/ascir/**/*.inc",
+        "generated/include/Dialect/AFIR/**/*.inc",
+        "generated/include/Interface/*.inc",
+        "generated/include/Conversion/*.inc",
+        "generated/externals/pyasc/include/ascir/**/*.inc",
     ]),
     includes = [
-        "Ascend-MLIR/build/externals/pyasc/include",
-        "Ascend-MLIR/build/include",
+        "generated/externals/pyasc/include",
+        "generated/include",
         "Ascend-MLIR/externals/pyasc/include",
         "Ascend-MLIR/include",
     ],
@@ -48,22 +48,79 @@ cc_library(
 
 cc_library(
     name = "MLIRAsc",
-    srcs = ["Ascend-MLIR/build/lib/libMLIRAsc.a"],
-    hdrs = glob(["Ascend-MLIR/externals/pyasc/include/ascir/**/*.inc"]),
-    includes = ["Ascend-MLIR/externals/pyasc/include"],
+    srcs = [
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/Attributes.cpp",
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/Dialect.cpp",
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/OpInterfaces.cpp",
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/Ops.cpp",
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/TypeInterfaces.cpp",
+        "Ascend-MLIR/externals/pyasc/lib/Dialect/Asc/IR/Types.cpp",
+    ],
+    hdrs = glob([
+        "Ascend-MLIR/externals/pyasc/include/ascir/**/*.h",
+        "Ascend-MLIR/externals/pyasc/include/ascir/**/*.hpp",
+        "generated/externals/pyasc/include/ascir/**/*.inc",
+    ]),
+    includes = [
+        "generated/externals/pyasc/include",
+        "Ascend-MLIR/externals/pyasc/include",
+    ],
     deps = [
         ":AFIRHeaders",
+        "@llvm-project//mlir:CastInterfaces",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:InferTypeOpInterface",
+        "@llvm-project//mlir:Support",
+    ],
+)
+
+cc_library(
+    name = "AFIRUtils",
+    srcs = [
+        "Ascend-MLIR/lib/Utils/AFIRUtils.cpp",
+    ],
+    hdrs = glob([
+        "Ascend-MLIR/include/Utils/*.h",
+        "Ascend-MLIR/include/Utils/*.hpp",
+    ]),
+    includes = [
+        "generated/externals/pyasc/include",
+        "generated/include",
+        "Ascend-MLIR/externals/pyasc/include",
+        "Ascend-MLIR/include",
+    ],
+    deps = [
+        ":AFIRHeaders",
+        ":MLIRAsc",
+        "@llvm-project//mlir:CastInterfaces",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:InferTypeOpInterface",
+        "@llvm-project//mlir:Support",
     ],
 )
 
 cc_library(
     name = "AFIRDialect",
-    srcs = ["Ascend-MLIR/build/lib/libAFIRDialect.a"],
+    srcs = [
+        "Ascend-MLIR/lib/Dialect/AFIR/Dialect.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Adv/concat.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Adv/reduce.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/broadcast.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/cast.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/condition.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/data.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/math.cpp",
+    ],
     hdrs = glob([
-        "Ascend-MLIR/build/include/Dialect/AFIR/*.inc",
-        "Ascend-MLIR/build/include/Interface/*.inc",
+        "generated/include/Dialect/AFIR/*.inc",
+        "generated/include/Interface/*.inc",
     ]),
-    includes = ["Ascend-MLIR/build/include"],
+    includes = [
+        "generated/externals/pyasc/include",
+        "generated/include",
+        "Ascend-MLIR/externals/pyasc/include",
+        "Ascend-MLIR/include",
+    ],
     deps = [
         ":AFIRHeaders",
         ":AFIRUtils",
@@ -74,12 +131,6 @@ cc_library(
 )
 
 cc_library(
-    name = "AFIRUtils",
-    srcs = ["Ascend-MLIR/build/lib/libAFIRUtils.a"],
-    deps = [":AFIRHeaders"],
-)
-
-cc_library(
     name = "AFIRTransforms",
     srcs = [
         "Ascend-MLIR/lib/Dialect/AFIR/Transforms/AFIRAddAxis.cpp",
@@ -87,10 +138,10 @@ cc_library(
         "Ascend-MLIR/lib/Dialect/AFIR/Transforms/Canonicalize.cpp",
     ],
     hdrs = glob([
-        "Ascend-MLIR/build/include/Dialect/AFIR/Transforms/*.inc",
+        "generated/include/Dialect/AFIR/Transforms/*.inc",
     ]),
     includes = [
-        "Ascend-MLIR/build/include",
+        "generated/include",
         "Ascend-MLIR/include",
     ],
     deps = [
