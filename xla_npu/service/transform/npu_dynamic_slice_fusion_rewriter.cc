@@ -360,19 +360,16 @@ absl::StatusOr<bool> NpuDynamicSliceFusionRewriter::RunImpl(
             }
         } else {
             HloInstruction* instr_to_be_replaced = hero;
-            if (sliced_user_paths.empty()) {
-                if (hero->shape().IsTuple()) {
-                    if (hero->user_count() != 1 ||
-                        !DynCast<HloGetTupleElementInstruction>(hero->users().front())) {
-                        return absl::InternalError(
-                            "Expect a single get-tuple-element user of the original "
-                            "tuple-shaped hero op when address computation fusion does "
-                            "not return a tuple");
-                    }
-                    instr_to_be_replaced = hero->users().front();
-                }
-            } else {
+            if (!sliced_user_paths.empty()) {
                 instr_to_be_replaced = sliced_user_paths.front().back();
+            } else if (hero->shape().IsTuple()) {
+                if (hero->user_count() != 1 ||
+                    !DynCast<HloGetTupleElementInstruction>(hero->users().front())) {
+                    return absl::InternalError("Expect a single get-tuple-element user of the original "
+                        "tuple-shaped hero op when address computation fusion does "
+                        "not return a tuple");
+                }
+                instr_to_be_replaced = hero->users().front();
             }
             TF_RETURN_IF_ERROR(parent->ReplaceInstruction(instr_to_be_replaced, fusion));
             if (hero->parent()) {
