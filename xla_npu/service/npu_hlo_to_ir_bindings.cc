@@ -42,11 +42,6 @@ void NpuHloToIrBindings::EmitBasePointersForHlos(absl::Span<const HloInstruction
                                                  absl::Span<const HloInstruction* const> non_io_hlos) {
     CHECK(is_nested_);
 
-    // I/O HLOs are bound to the arguments of the current IR function,
-    // *excluding* the output argument, which is added to non-I/O HLOs.
-    // I.e.,
-    //
-    // void IrFunction(io_0, io_1, ..., io_{m-1}, output_arg);
     llvm::Function* function = b_->GetInsertBlock()->getParent();
     CHECK_EQ(io_hlos.size() + 1, function->arg_size());
 
