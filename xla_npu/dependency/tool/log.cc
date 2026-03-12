@@ -60,12 +60,6 @@ void Log::Print(const char* file_path, int line, const char* func,
   std::cout << "[" << pid_str << ":" << tid_str << "]"
             << "[XLA_NPU." << logLevelString << "]: " << log_str;
 
-  // // 在DEBUG日志中追加打印 [@调用日志接口的函数名(文件名:行号)]
-  // if (log_level == Level::DEBUG) {
-  //     std::cout << "          [@" << func << "(" << pure_filename << ":" <<
-  //     line << ")]";
-  // }
-
   std::cout << std::endl;
 }
 

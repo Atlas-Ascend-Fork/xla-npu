@@ -111,26 +111,6 @@ absl::Status NpuAclnnThunk::Initialize(const InitializeParams& params) {
   // 在 Initialize 阶段处理所有常量 buffer 中的特殊值 (-inf, +inf, nan)
   // 这些特殊值只在图分配时写入，计算过程中不会产生
   TF_RETURN_IF_ERROR(NpuThunk::InitializeSpecialValues(params, args_));
-
-  // // Calling AsDnn outside call_once ensures that cuDNN handles get created
-  // for
-  // // all GPUs in programs using cuDNN during the executable initialization
-  // // phase. It's sufficient to deserialize the graph once using just one of
-  // // them.
-  // se::dnn::DnnSupport* dnn = params.stream->parent()->AsDnn();
-  // absl::call_once(once_flag_, [&] {
-  //     auto result = dnn->DeserializeGraph(*params.stream,
-  //     params.src.dnn_compiled_graphs.at(fingerprint_));
-  //     std::string().swap(fingerprint_);
-  //     if (result.ok()) {
-  //         graph_->swap(*result);
-  //         if (sdpa_dropout_seed_.has_value()) {
-  //             graph_->get()->InitDropoutState(params.local_device_count,
-  //             *sdpa_dropout_seed_, 16);
-  //         }
-  //     }
-  //     ret = result.status();
-  // });
   return ret;
 }
 

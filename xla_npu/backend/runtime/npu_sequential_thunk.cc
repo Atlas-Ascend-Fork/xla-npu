@@ -77,13 +77,9 @@ absl::Status NpuSequentialThunk::Initialize(const InitializeParams& params) {
 absl::Status NpuSequentialThunk::ExecuteOnStream(const ExecuteParams& params) {
   NPU_LOG_FORMAT_PRINT(DEBUG, "Start execute thunk sequence");
 
-  // std::optional<tsl::profiler::ScopedAnnotation> seq_annotation =
-  // GetKernelAnnotation(profile_annotation());
   for (const std::unique_ptr<NpuThunk>& thunk : thunks_) {
     tsl::profiler::TraceMe trace(thunk->profile_annotation());
 
-    // std::optional<tsl::profiler::ScopedAnnotation> annotation =
-    // GetKernelAnnotation(thunk->profile_annotation());
     if (params.mock_collectives && thunk->IsCollective()) {
       continue;
     }
