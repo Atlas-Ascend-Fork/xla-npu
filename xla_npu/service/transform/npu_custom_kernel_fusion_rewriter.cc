@@ -207,12 +207,11 @@ absl::StatusOr<HloInstruction*> NpuCustomKernelFusionRewriter::RewriteSoftmax(
         }
     }
     if (!mutable_parent_computation) {
-        return absl::NotFoundError("Cannot find parent computation");
+        return absl::NotFoundError("RewriteSoftmax Cannot find parent computation");
     }
     HloInstruction* fusion = mutable_parent_computation->AddInstruction(
             HloInstruction::CreateFusion(computation->root_instruction()->shape(),
-                                         HloInstruction::FusionKind::kCustom,
-                                         fusion_params, computation));
+                                         HloInstruction::FusionKind::kCustom,fusion_params, computation));
     fusion->GetModule()->SetAndUniquifyInstrName(fusion, fusion_name);
 
     // Set the backend config

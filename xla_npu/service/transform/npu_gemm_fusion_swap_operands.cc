@@ -64,53 +64,41 @@ int64_t GetDataSize(PrimitiveType type) {
 
 }  // namespace
 
-absl::StatusOr<bool> NpuGemmFusionSwapOperands::RunImpl(
-        HloModule* module,
+absl::StatusOr<bool> NpuGemmFusionSwapOperands::RunImpl(HloModule* module,
         const absl::flat_hash_set<absl::string_view>& execution_threads) {
     bool changed = false;
-    for (HloComputation* computation :
-         module->MakeNonfusionComputations(execution_threads)) {
+    for (HloComputation* computation : module->MakeNonfusionComputations(execution_threads)) {
         TF_ASSIGN_OR_RETURN(bool computation_changed, RunOnComputation(computation));
         changed |= computation_changed;
     }
     return changed;
 }
 
-absl::StatusOr<bool> NpuGemmFusionSwapOperands::RunOnComputation(
-        HloComputation* computation) {
+absl::StatusOr<bool> NpuGemmFusionSwapOperands::RunOnComputation(HloComputation* computation) {
     bool changed = false;
-
     // Get all instructions in post-order
     std::vector<HloInstruction*> instrs = computation->MakeInstructionPostOrder();
-
     for (HloInstruction* instr : instrs) {
         // Only process dot instructions
         if (instr->opcode() != HloOpcode::kDot) {
             continue;
         }
-
         auto* dot = Cast<HloDotInstruction>(instr);
-
         // Skip if operands should not be swapped
         if (!ShouldSwapOperands(dot)) {
             VLOG(4) << "GEMM operands will not be swapped: " << dot->ToString();
             continue;
         }
-
         VLOG(3) << "Attempting to swap GEMM operands: " << dot->ToString();
-
         TF_ASSIGN_OR_RETURN(bool swapped, SwapGemmOperands(dot));
         changed |= swapped;
     }
-
     return changed;
 }
 
-bool NpuGemmFusionSwapOperands::ShouldSwapOperands(
-        const HloDotInstruction* dot) {
+bool NpuGemmFusionSwapOperands::ShouldSwapOperands(const HloDotInstruction* dot) {
     const Shape& lhs_shape = dot->operand(0)->shape();
     const Shape& rhs_shape = dot->operand(1)->shape();
-    const Shape& output_shape = dot->shape();
 
     // Skip batched matrix multiplication for now
     if (lhs_shape.dimensions_size() > 2 || rhs_shape.dimensions_size() > 2) {
@@ -209,11 +197,9 @@ absl::StatusOr<bool> NpuGemmFusionSwapOperands::SwapGemmOperands(
         }
     }
 
-    TF_ASSIGN_OR_RETURN(HloInstruction* lhs_transpose,
-                        CreateLayoutTranspose(lhs, transpose_permutation));
+    TF_ASSIGN_OR_RETURN(HloInstruction* lhs_transpose, CreateLayoutTranspose(lhs, transpose_permutation));
 
-    TF_ASSIGN_OR_RETURN(HloInstruction* rhs_transpose,
-                        CreateLayoutTranspose(rhs, transpose_permutation));
+    TF_ASSIGN_OR_RETURN(HloInstruction* rhs_transpose, CreateLayoutTranspose(rhs, transpose_permutation));
 
     // Swap dimension numbers
     DotDimensionNumbers new_dim_numbers = dot->dot_dimension_numbers();
@@ -247,8 +233,7 @@ absl::StatusOr<bool> NpuGemmFusionSwapOperands::SwapGemmOperands(
 
     // Create new dot with swapped operands
     HloInstruction* new_dot = dot->parent()->AddInstruction(HloInstruction::CreateDot(
-            dot->shape(), lhs_transpose, rhs_transpose, new_dim_numbers,
-            dot->precision_config()));
+            dot->shape(), lhs_transpose, rhs_transpose, new_dim_numbers, dot->precision_config()));
 
     // Replace the old dot
     TF_RETURN_IF_ERROR(dot->parent()->ReplaceInstruction(dot, new_dot));
