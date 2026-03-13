@@ -527,12 +527,6 @@ absl::StatusOr<std::unique_ptr<Executable>> NpuCompiler::RunBackend(std::unique_
             /*debug_module=*/options.is_autotuning_compilation ? std::unique_ptr<HloModule>() : std::move(module),
             /*enable_debug_info_manager=*/!options.is_autotuning_compilation}));
 
-    if (module->config().debug_options().xla_embed_ir_in_executable()) {
-        std::string ir_module_string_before_opt = llvm_ir::DumpToString(res.compile_module_results.llvm_module.get());
-        npu_executable->set_ir_module_string(ir_module_string_before_opt);
-        DCHECK_NE("", ir_module_string_before_opt);
-    }
-
     return static_cast<std::unique_ptr<Executable>>(std::move(npu_executable));
 }
 

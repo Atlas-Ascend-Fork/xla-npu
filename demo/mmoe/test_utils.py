@@ -38,11 +38,9 @@ def generate_input(seed=None):
     if seed is None:
         seed = int(np.random.randint(0, 10000))
     
-    x = jax.random.normal(
-        jax.random.PRNGKey(seed),
-        (CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM)
-    )
-    return x
+    rng = np.random.RandomState(seed)
+    x = rng.randn(CONFIG_BATCH_SIZE, CONFIG_INPUT_DIM).astype(np.float32)
+    return jnp.array(x)
 
 
 def print_input_stats(x, run_idx=None, device_name=None):

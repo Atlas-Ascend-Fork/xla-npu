@@ -16,6 +16,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 #include "absl/base/nullability.h"
@@ -43,6 +44,7 @@
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
@@ -355,6 +357,73 @@ absl::Status NpuThunk::InitializeSpecialValues(
   }
 
   return absl::OkStatus();
+}
+
+//===----------------------------------------------------------------------===n// Print Functions for Debugging
+//===----------------------------------------------------------------------===n
+/*static*/ void NpuThunk::PrintKernelConfig(const NpuKernelConfig* kernel_config) {
+  if (kernel_config == nullptr) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Kernel config is null");
+    return;
+  }
+  
+  NPU_LOG_FORMAT_PRINT(DEBUG, "---- NPU Kernel Config: ----");
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  Kernel type: %d", 
+                       static_cast<int>(kernel_config->npu_kernel_type));
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  Artifact name: %s", 
+                       kernel_config->npu_artifact_info.name.c_str());
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  Artifact dir: %s", 
+                       kernel_config->npu_artifact_info.dir.c_str());
+}
+
+/*static*/ void NpuThunk::PrintComputationGraphs(
+    const std::unordered_map<std::string, std::string>& computation_hlo_map,
+    const std::string& entry_computation_name) {
+  if (computation_hlo_map.empty()) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "No computation graphs available");
+    return;
+  }
+
+  NPU_LOG_FORMAT_PRINT(DEBUG, "---- Computation Graphs (%d total): ----",
+                       computation_hlo_map.size());
+  for (const auto& [name, hlo_text] : computation_hlo_map) {
+    bool is_entry = (name == entry_computation_name);
+    PrintComputationHlo(hlo_text, name, is_entry);
+  }
+}
+
+/*static*/ void NpuThunk::PrintComputationHlo(const std::string& hlo_text,
+                                               const std::string& name,
+                                               bool is_entry) {
+  if (hlo_text.empty()) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Computation %s HLO is empty", name.c_str());
+    return;
+  }
+
+  const char* entry_marker = is_entry ? " [ENTRY]" : "";
+  NPU_LOG_FORMAT_PRINT(DEBUG, "==== Computation: %s%s ====",
+                       name.c_str(), entry_marker);
+
+  // Print HLO text line by line
+  size_t start = 0;
+  size_t end = hlo_text.find('\n');
+  while (end != std::string::npos) {
+    std::string line = hlo_text.substr(start, end - start);
+    if (!line.empty()) {
+      NPU_LOG_FORMAT_PRINT(DEBUG, "  %s", line.c_str());
+    }
+    start = end + 1;
+    end = hlo_text.find('\n', start);
+  }
+  // Print last line if any
+  if (start < hlo_text.length()) {
+    std::string line = hlo_text.substr(start);
+    if (!line.empty()) {
+      NPU_LOG_FORMAT_PRINT(DEBUG, "  %s", line.c_str());
+    }
+  }
+  NPU_LOG_FORMAT_PRINT(DEBUG, "==== End of Computation: %s ====",
+                       name.c_str());
 }
 
 }  // namespace xla

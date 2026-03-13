@@ -12,6 +12,7 @@
 #define XLA_XLA_NPU_SERVICE_KERNEL_NPU_KERNEL_CONFIG_H_
 
 #include <string>
+#include <unordered_map>
 
 #include "xla/xla_npu/service/kernel/npu_compile_result.h"
 
@@ -25,6 +26,9 @@ class NpuKernelConfig {
 
     NpuKernelType npu_kernel_type;
     NpuArtifactInfo npu_artifact_info;
+    
+    // 存储所有相关的 computation HLO 文本，key 是 computation 名称
+    std::unordered_map<std::string, std::string> computation_hlo_map;
 };
 
 }  // namespace xla

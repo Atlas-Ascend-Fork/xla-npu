@@ -58,6 +58,26 @@ class NpuCustomKernelThunk : public NpuThunk {
   BufferUses buffer_uses() const override;
 
  private:
+  // 打印 kernel 启动信息
+  void PrintKernelLaunchInfo(int device_ordinal, se::Kernel* kernel) const;
+  
+  // 打印 kernel spec 详情
+  void PrintKernelSpec() const;
+  
+  // 打印参数形状信息
+  void PrintParamShapes() const;
+  
+  // 打印参数详情（执行前）
+  void PrintParamInfoBeforeExecute(
+      int device_ordinal,
+      const NpuBufferAllocations* buffer_allocations,
+      absl::InlinedVector<se::DeviceMemoryBase, 4>& buffer_args);
+
+  // 打印参数详情（执行后）
+  void PrintParamInfoAfterExecute(
+      int device_ordinal,
+      const NpuBufferAllocations* buffer_allocations);
+
   // Buffer slices passed to the kernel as arguments.
   std::vector<BufferAllocation::Slice> args_;
 

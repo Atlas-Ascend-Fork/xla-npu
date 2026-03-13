@@ -97,7 +97,7 @@ class NpuTool {
   static void PrintNpuDeviceMemoryValue(const std::string& title,
                                         const int64_t& size,
                                         const void* deviceAddr,
-                                        int64_t max_print_count = 10) {
+                                        int64_t max_print_count = 256) {
     NPU_LOG_FORMAT_PRINT(DEBUG, title);
 
     int64_t print_count = std::min(size, max_print_count);

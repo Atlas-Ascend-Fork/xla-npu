@@ -61,7 +61,6 @@ NpuStream* AsNpuStream(Stream* stream) {
 // 注意jax调用xla接口获取客户端时是用的新的线程(非主线程),因此主线程使用这个device时,需要重新set
 // device
 absl::Status NpuExecutor::Init() {
-
   TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(device_ordinal_));
 
   return absl::OkStatus();
@@ -100,22 +99,11 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
   // 保证当前线程执行过set device
   xla::NpuOperation::SetDevice(device_ordinal_);
 
-  // Calculate aligned size: align to kDeviceMemoryAlignmentBytes and add extra
-  // bytes
-  uint64_t aligned_size =
-      ((size + xla::NpuConstant::kDeviceMemoryAlignmentBytes - 1) /
-       xla::NpuConstant::kDeviceMemoryAlignmentBytes) *
-      xla::NpuConstant::kDeviceMemoryAlignmentBytes;
-  uint64_t total_size =
-      aligned_size + xla::NpuConstant::kDeviceMemoryExtraBytes;
-
   void* base = nullptr;
-  aclError ret = npu::aclrtMalloc(&base, total_size, ACL_MEM_MALLOC_HUGE_FIRST);
+  aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(
-        ERROR,
-        "Allocate %d byte (aligned from %d) on npu failed, error code: %d",
-        total_size, size, ret);
+        ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
     return DeviceMemoryBase(nullptr, size);
   }
 
@@ -125,10 +113,8 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     freed_addresses_.erase(base);
   }
 
-  NPU_LOG_FORMAT_PRINT(DEBUG,
-                       "Npu memory allocated, addr %p, requested size %d, "
-                       "aligned size %d, total size %d",
-                       base, size, aligned_size, total_size);
+  NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", base,
+                       size);
   return DeviceMemoryBase(base, size);
 }
 
