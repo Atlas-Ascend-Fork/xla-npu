@@ -189,19 +189,9 @@ namespace {
               auto shapeTensorType = RankedTensorType::get(
                   {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
               auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, shapeValues);
-              auto shapeConstOp = rewriter.create<air::ConstantOp>(
-                  op.getLoc(),
-                  shapeTensorType,
-                  shapeAttr
-              );
-
+              auto shapeConstOp = rewriter.create<air::ConstantOp>(op.getLoc(), shapeTensorType, shapeAttr);
               auto newOp = rewriter.create<air::BroadcastOp>(
-                  op.getLoc(),
-                  resultType,
-                  intermediateValue,
-                  shapeConstOp.getResult()
-              );
-
+                  op.getLoc(), resultType, intermediateValue, shapeConstOp.getResult());
               rewriter.replaceOp(op, newOp.getResult());
               return success();
           } else {
@@ -231,19 +221,9 @@ namespace {
         auto shapeTensorType = RankedTensorType::get(
             {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
         auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, shapeValues);
-        auto shapeConstOp = rewriter.create<air::ConstantOp>(
-            op.getLoc(),
-            shapeTensorType,
-            shapeAttr
-        );
-
+        auto shapeConstOp = rewriter.create<air::ConstantOp>(op.getLoc(), shapeTensorType, shapeAttr);
         auto newOp = rewriter.create<air::BroadcastOp>(
-            op.getLoc(),
-            resultType,
-            operand,
-            shapeConstOp.getResult()
-        );
-
+            op.getLoc(), resultType, operand, shapeConstOp.getResult());
         rewriter.replaceOp(op, newOp.getResult());
         return success();
       };
