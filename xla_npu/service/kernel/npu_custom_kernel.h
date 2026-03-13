@@ -55,7 +55,7 @@ class NpuCustomKernel {
 
     absl::string_view name() const { return name_; }
 
-    const se::KernelLoaderSpec& kernel_spec() { return kernel_spec_; }
+    const se::KernelLoaderSpec& kernel_spec() const { return kernel_spec_; }
 
     se::BlockDim block_dims() const { return block_dims_; }  // npu仅使用第一维,即x轴
 
@@ -67,7 +67,7 @@ class NpuCustomKernel {
 
     std::string ToString() const;
 
-    NpuKernelConfig* npu_kernel_config_ptr() { return npu_kernel_config_ptr_.get(); }
+    NpuKernelConfig* npu_kernel_config_ptr() const { return npu_kernel_config_ptr_.get(); }
 
    private:
     // 注意：npu_kernel_config_ptr_ 必须在 kernel_spec_ 之前声明，

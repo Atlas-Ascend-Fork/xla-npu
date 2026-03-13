@@ -209,6 +209,13 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
       NpuKernelConfig::NpuKernelType::FUSION;
   npu_kernel_config_ptr->npu_artifact_info =
       artifact_infos[entry_computation_key_name];
+
+  // 存储 computation HLO 文本用于调试（避免指针生命周期问题）
+  for (const auto& [name, computation] : computation_map) {
+    npu_kernel_config_ptr->computation_hlo_map[name] = computation->ToString();
+  }
+  NPU_LOG_FORMAT_PRINT(INFO, "Stored %d computation HLOs in kernel config",
+                       npu_kernel_config_ptr->computation_hlo_map.size());
   se::BlockDim block_dims(
       0);  // autofuse算子的block dim由tiling计算得到, 不使用这里设置的值
   size_t shared_memory_bytes = 0;

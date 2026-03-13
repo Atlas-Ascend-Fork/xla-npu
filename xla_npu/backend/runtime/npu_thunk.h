@@ -47,6 +47,9 @@
 
 namespace xla {
 
+// Forward declaration
+class NpuKernelConfig;
+
 // Execution stream id allows to specify what Gpu stream NpuThunk should be
 // using for launching device work (kernels, library calls, etc.). By default
 // all thunks use stream #0, which is the default compute stream of an XLA
@@ -386,6 +389,19 @@ class NpuThunk {
   absl::Status InitializeSpecialValues(
       const InitializeParams& params,
       const std::vector<BufferAllocation::Slice>& args);
+
+  // 打印 kernel 配置信息
+  static void PrintKernelConfig(const NpuKernelConfig* kernel_config);
+
+  // 打印所有 computation graphs
+  static void PrintComputationGraphs(
+      const std::unordered_map<std::string, std::string>& computation_hlo_map,
+      const std::string& entry_computation_name);
+
+  // 打印单个 computation 的 HLO 文本
+  static void PrintComputationHlo(const std::string& hlo_text, 
+                                   const std::string& name,
+                                   bool is_entry);
 
   // Executes thunk on the given stream. This method must be called after
   // Initialize and can be called multiple times over NpuThunk's lifetime.

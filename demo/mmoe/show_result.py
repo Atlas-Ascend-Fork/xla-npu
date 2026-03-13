@@ -54,12 +54,14 @@ def print_output_stats(output, device_name):
         output: Output array
         device_name: Device name ('CPU' or 'NPU')
     """
-    print(f"\n[{device_name}] Output:")
-    print(f"[{device_name}]   Shape: {output.shape}")
-    print(f"[{device_name}]   Min: {output.min():.6f}")
-    print(f"[{device_name}]   Max: {output.max():.6f}")
-    print(f"[{device_name}]   Mean: {output.mean():.6f}")
-    print(f"[{device_name}]   Std: {output.std():.6f}")
+    print("\n" + PRINT_SEPARATOR)
+    print(f"{device_name} Output Statistics")
+    print(PRINT_SEPARATOR)
+    print(f"  Shape: {output.shape}")
+    print(f"  Min: {output.min():.6f}")
+    print(f"  Max: {output.max():.6f}")
+    print(f"  Mean: {output.mean():.6f}")
+    print(f"  Std: {output.std():.6f}")
 
 
 def show_single_output(data_file, device_name, run_idx=0, show_all_elements=False, max_elements=100):
@@ -96,7 +98,6 @@ def show_single_output(data_file, device_name, run_idx=0, show_all_elements=Fals
     print(f"{device_name} Output (Run {run_idx + 1}/{num_runs})")
     print(f"{'=' * 80}")
     print(f"Output shape: {outputs[run_idx].shape}")
-    print(f"Expected shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
     
     # Get specific run data
     output = outputs[run_idx]
@@ -116,7 +117,7 @@ def show_single_output(data_file, device_name, run_idx=0, show_all_elements=Fals
     # Print output statistics
     print_output_stats(output, device_name)
     
-    # Show full output
+    # Show full output (flattened)
     print("\n" + "=" * 80)
     print(f"{device_name} Full Output")
     print("=" * 80)
@@ -129,28 +130,39 @@ def show_single_output(data_file, device_name, run_idx=0, show_all_elements=Fals
     print("\n" + "=" * 80)
     print(f"{device_name} Output Detail (first {elements_to_show} elements)")
     print("=" * 80)
-    print(f"{'Index':>6} | {'Value':>16}")
-    print("-" * 80)
+    print(f"{'Index':>8} | {'Value':>16}")
+    print("-" * 30)
     
     for i in range(elements_to_show):
-        print(f"{i:>6} | {flat_output[i]:>16.6e}")
+        print(f"{i:>8} | {flat_output[i]:>16.6e}")
     
     if not show_all_elements and elements_to_show < output.size:
-        print(f"\n... ({output.size - elements_to_show} more elements)")
+        print(f"... ({output.size - elements_to_show} more elements)")
     
-    # Summary by task
+    # Summary by last dimension (if multi-dimensional)
     print("\n" + "=" * 80)
-    print(f"{device_name} Per-Task Summary")
+    print(f"{device_name} Per-Channel Summary (last dimension)")
     print("=" * 80)
     
-    for task_idx in range(CONFIG_NUM_TASKS):
-        task_output = output[:, task_idx]
-        print(f"\nTask {task_idx}:")
-        print(f"  Samples: {len(task_output)}")
-        print(f"  Min: {task_output.min():.6f}")
-        print(f"  Max: {task_output.max():.6f}")
-        print(f"  Mean: {task_output.mean():.6f}")
-        print(f"  Std: {task_output.std():.6f}")
+    if output.ndim >= 2:
+        # Treat last dimension as channels
+        num_channels = output.shape[-1]
+        for channel_idx in range(num_channels):
+            # Extract all elements for this channel
+            channel_data = output[..., channel_idx]
+            print(f"\nChannel {channel_idx} (shape {channel_data.shape}):")
+            print(f"  Elements: {channel_data.size}")
+            print(f"  Min: {channel_data.min():.6f}")
+            print(f"  Max: {channel_data.max():.6f}")
+            print(f"  Mean: {channel_data.mean():.6f}")
+            print(f"  Std: {channel_data.std():.6f}")
+    else:
+        # 1D output
+        print(f"\nOutput (1D, {output.size} elements):")
+        print(f"  Min: {output.min():.6f}")
+        print(f"  Max: {output.max():.6f}")
+        print(f"  Mean: {output.mean():.6f}")
+        print(f"  Std: {output.std():.6f}")
     
     return True
 

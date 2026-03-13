@@ -26,6 +26,7 @@ cc_library(
 
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/service:npu_buffer_allocations",
+        "//xla/xla_npu/service/kernel:npu_kernel_config",
 
         # "//xla/backends/gpu/runtime:thunk_proto_cc",
 
