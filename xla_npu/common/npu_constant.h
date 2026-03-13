@@ -23,7 +23,7 @@ class NpuConstant {
   static const std::string platformName;
 
   // Minimum alignment for buffers passed as incoming arguments by TensorFlow.
-  static constexpr int64_t kEntryParameterAlignBytes = 32;
+  static constexpr int64_t kEntryParameterAlignBytes = 512;
 
   // Minimum alignment for buffers allocated by XLA: the temp buffers and the
   // live
