@@ -38,6 +38,7 @@
 #include "xla/ffi/ffi_api.h"
 #include "xla/hlo/analysis/while_loop_analysis.h"
 #include "xla/hlo/evaluator/hlo_evaluator.h"
+#include "xla/xla_npu/common/npu_tool.h"
 #include "xla/hlo/ir/hlo_casting_utils.h"
 #include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/ir/hlo_instruction.h"
@@ -211,8 +212,11 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
       artifact_infos[entry_computation_key_name];
 
   // 存储 computation HLO 文本用于调试（避免指针生命周期问题）
+  // 使用 NpuTool::GetDetailedPrintOptions() 获取详细的打印选项
+  HloPrintOptions print_options = NpuTool::GetDetailedPrintOptions();
   for (const auto& [name, computation] : computation_map) {
-    npu_kernel_config_ptr->computation_hlo_map[name] = computation->ToString();
+    npu_kernel_config_ptr->computation_hlo_map[name] =
+        computation->ToString(print_options);
   }
   NPU_LOG_FORMAT_PRINT(INFO, "Stored %d computation HLOs in kernel config",
                        npu_kernel_config_ptr->computation_hlo_map.size());

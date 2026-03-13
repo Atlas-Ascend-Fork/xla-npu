@@ -315,24 +315,6 @@ def show_full_comparison(run_idx=0, show_all_elements=False, max_elements=100,
     if not show_all_elements and elements_to_show < total_count:
         print(f"\n... ({total_count - elements_to_show} more elements)")
     
-    # Summary by task
-    print("\n" + "=" * 80)
-    print("Per-Task Summary")
-    print("=" * 80)
-    
-    for task_idx in range(CONFIG_NUM_TASKS):
-        task_cpu = cpu_output[:, task_idx]
-        task_npu = npu_output[:, task_idx]
-        task_diff = np.abs(task_cpu - task_npu)
-        task_match = np.sum(task_diff <= COMPARISON_TOLERANCE)
-        
-        print(f"\nTask {task_idx}:")
-        print(f"  Samples: {len(task_cpu)}")
-        print(f"  CPU - Min: {task_cpu.min():.6f}, Max: {task_cpu.max():.6f}, Mean: {task_cpu.mean():.6f}")
-        print(f"  NPU - Min: {task_npu.min():.6f}, Max: {task_npu.max():.6f}, Mean: {task_npu.mean():.6f}")
-        print(f"  Matching: {task_match}/{len(task_cpu)} ({100*task_match/len(task_cpu):.2f}%)")
-        print(f"  Max Diff: {task_diff.max():.6e}")
-    
     # Final result
     all_match = match_count == total_count
     print("\n" + "=" * 80)
