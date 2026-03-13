@@ -32,7 +32,7 @@
                 <filteritem type="filename" name="*.pbtxt" desc="skip pbtxt files"/>
                 <filteritem type="filename" name="*.caffemodel" desc="skip caffemodel files"/>
                 <filteritem type="filename" name="BUILD" desc="skip build files"/>
-                <filteritem type="filepath" name="demo/*.py" desc="skip demo python files"/-->
+                <filteritem type="filepath" name="demo/*.py" desc="skip demo python files"/>
                 <!--filteritem type="filepath" name="projectroot/[a-zA-Z0-9]{20,}.sh" desc="Temp files"/-->
             </filefilter>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
