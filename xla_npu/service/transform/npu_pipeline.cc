@@ -40,8 +40,10 @@ HloPassPipeline NpuPipeline(const DebugOptions& debug_options,
     pipeline.AddPass<FlattenCallGraph>();
     pipeline.AddPass<NpuHloPrinterPass>("FlattenCallGraph");
 
+#if NPU_AUTO_FUSE_BACKEND != 0
     pipeline.AddPass(std::make_unique<HloPassPipeline>(NpuFusionPipeline(
         debug_options, std::move(shape_size_bytes_function), thread_pool, npu_device_info, symbolic_expr_context)));
+#endif
 
     return std::move(pipeline);
 }

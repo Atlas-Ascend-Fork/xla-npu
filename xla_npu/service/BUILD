@@ -508,7 +508,7 @@ cc_library(
         ":npu_ir_emitter_context",
         ":npu_executable",
         ":npu_execution_stream_assignment",
-        "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/dependency/tool:config_loader",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/dependency/tool:log",
         "//xla/xla_npu/service/transform:npu_transform_passes",

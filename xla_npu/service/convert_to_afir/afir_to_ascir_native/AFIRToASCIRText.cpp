@@ -368,8 +368,7 @@ std::string AFIRToASCIRTextPass::generateGraphAttr(Attribute graphAttr) {
     os << "  tiling_key: " << tilingKey << "\n";
 
     auto axes = ascGraphAttr.getAxes();
-    // Check if using old CANN style (int32 for align parameter)
-    bool use_old_cann_style = xla::NpuConfig::GetInstance().GetTypedValue<bool>(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
+    bool use_old_cann_style = NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
     for (auto axis : axes) {
         int64_t id = axis.getId();
         std::string name = axis.getName().str();

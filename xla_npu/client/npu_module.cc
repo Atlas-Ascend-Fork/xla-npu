@@ -82,7 +82,7 @@ static void RegisterNpuComputationPlacer() {
 }
 
 void InitNpuSubModule() {
-  NpuConfig::GetInstance().Init();  // TODO 判断返回值
+  NpuConfig::GetInstance().Init();
 
   RegisterNpuPlatform();
   RegisterNpuCompiler();

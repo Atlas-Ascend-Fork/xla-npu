@@ -7,6 +7,31 @@ package(
     licenses = ["notice"],
 )
 
+# 条件编译配置: aclnn=0(默认), afir=1, npuir=2, ge=3
+config_setting(
+    name = "npu_auto_fuse_backend_afir",
+    define_values = {
+        "NPU_AUTO_FUSE_BACKEND": "1",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "npu_auto_fuse_backend_npuir",
+    define_values = {
+        "NPU_AUTO_FUSE_BACKEND": "2",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "npu_ge_backend",
+    define_values = {
+        "NPU_AUTO_FUSE_BACKEND": "3",
+    },
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "npu_constant",
     srcs = ["npu_constant.cc"],
@@ -21,10 +46,7 @@ cc_library(
     srcs = ["npu_config.cc"],
     hdrs = ["npu_config.h"],
     deps = [
-        ":npu_constant",
-        "//xla/xla_npu/dependency/tool:log",
-
-        "//xla/tsl/util:env_var",
+        "//xla/xla_npu/dependency/tool:config_loader",
     ],
 )
 

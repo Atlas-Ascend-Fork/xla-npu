@@ -3,6 +3,7 @@
 MMOE Test Utilities - Common functions for CPU and NPU tests
 """
 
+import os
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -17,6 +18,21 @@ from config import (
 from init_params import (
     setup_model_and_params,
 )
+
+
+# ============================================================================
+# Directory Utilities
+# ============================================================================
+
+def ensure_dir(file_path):
+    """Ensure the directory for the given file path exists.
+    
+    Args:
+        file_path: Path to a file
+    """
+    output_dir = os.path.dirname(file_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
 
 
 # ============================================================================

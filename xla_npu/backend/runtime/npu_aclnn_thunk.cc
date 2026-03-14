@@ -226,13 +226,87 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         break;
       }
 
+      // Handle dimension expansion for aclnnExpand
+      // aclnnExpand requires input and output to have the same number of dimensions
+      // If output has more dimensions, we need to create a view with expanded dimensions
+      aclTensor* input_tensor = acl_tensor_ptr_vector[0];
+
+      if (output_param_size_data.size() > input_shape_data.size()) {
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG, "Broadcast: need to expand dimensions from %d to %d",
+            input_shape_data.size(), output_param_size_data.size());
+
+        // Get dimensions parameter from HLO instruction
+        const auto& broadcast_dims = thunk_info().dimensions;
+
+        // Create expanded shape and strides for the view tensor
+        std::vector<int64_t> expanded_shape(output_param_size_data.size(), 1);
+        std::vector<int64_t> expanded_strides(output_param_size_data.size(), 0);
+
+        // Map input dimensions to output dimensions based on broadcast_dims
+        for (size_t i = 0; i < broadcast_dims.size(); ++i) {
+          int64_t out_dim = broadcast_dims[i];
+          expanded_shape[out_dim] = input_shape_data[i];
+        }
+
+        // Calculate strides for the view tensor
+        // Dimensions with size 1 should have stride 0 (for broadcasting)
+        // Dimensions mapped from input should have proper strides
+        int64_t stride = 1;
+        for (int i = output_param_size_data.size() - 1; i >= 0; --i) {
+          if (expanded_shape[i] == 1) {
+            expanded_strides[i] = 0;  // stride 0 for broadcasting dimension
+          } else {
+            expanded_strides[i] = stride;
+            stride *= expanded_shape[i];
+          }
+        }
+
+        // Debug print
+        std::string expanded_shape_str = "[";
+        for (size_t i = 0; i < expanded_shape.size(); ++i) {
+          if (i > 0) expanded_shape_str += ", ";
+          expanded_shape_str += std::to_string(expanded_shape[i]);
+        }
+        expanded_shape_str += "]";
+
+        std::string expanded_strides_str = "[";
+        for (size_t i = 0; i < expanded_strides.size(); ++i) {
+          if (i > 0) expanded_strides_str += ", ";
+          expanded_strides_str += std::to_string(expanded_strides[i]);
+        }
+        expanded_strides_str += "]";
+
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG, "Broadcast: expanded view shape %s, strides %s",
+            expanded_shape_str.c_str(), expanded_strides_str.c_str());
+
+        // Create a view tensor with expanded dimensions
+        aclDataType data_type =
+            NpuTool::ConvertXlaType2AclDataType(param_shapes[0].element_type());
+
+        auto input_addr = allocations->GetDeviceAddress(args_[0]);
+        void* device_addr = input_addr.opaque();
+
+        input_tensor = npu::aclCreateTensor(
+            expanded_shape.data(), expanded_shape.size(), data_type,
+            expanded_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
+            expanded_shape.data(), expanded_shape.size(), device_addr);
+
+        if (input_tensor == nullptr) {
+          const std::string err_msg = "Failed to create expanded view tensor";
+          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          return absl::InternalError(err_msg);
+        }
+      }
+
       aclIntArray* output_param_size = npu::aclCreateIntArray(
           output_param_size_data.data(), output_param_size_data.size());
 
       // 调用 aclnnExpand 第一段接口
-      ret = npu::aclnnExpandGetWorkspaceSize(
-          acl_tensor_ptr_vector[0], output_param_size,
-          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      ret = npu::aclnnExpandGetWorkspaceSize(input_tensor, output_param_size,
+                                             acl_tensor_ptr_vector.back(),
+                                             &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnExpandGetWorkspaceSize failed. Error code: %d", ret);
@@ -242,6 +316,9 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
       exec_ret =
           ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExpand);
+
+      // Clean up the output_param_size array
+      npu::aclDestroyIntArray(output_param_size);
       break;
     }
 
@@ -431,7 +508,6 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnCatGetWorkspaceSize failed. Error code: %d", ret);
         NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-        npu::aclDestroyTensorList(tensor_list);
         return absl::InternalError(err_msg);
       }
 
@@ -439,7 +515,6 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnCat);
 
       // 清理 tensor_list
-      npu::aclDestroyTensorList(tensor_list);
       break;
     }
 
@@ -561,12 +636,13 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       break;
     }
 
-    default:
+    default: {
       const std::string err_msg =
           absl::StrFormat("Op code(%v) does not support execute now",
                           HloOpcodeString(thunk_info().op_code));
       NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
       return absl::InternalError(err_msg);
+    }
   }
 
   PrintOutputTensor(allocations, param_shapes);
@@ -656,7 +732,7 @@ absl::Status NpuAclnnThunk::PrintOutputTensor(
                        outout_arg_param.ToString(true));
   NPU_LOG_FORMAT_PRINT(DEBUG, "  Device addr: %p", device_addr);
   NpuTool::PrintNpuDeviceMemoryValueByShape(
-      "  Value on device:", outout_arg_param, device_addr);
+      "  Value on device:", outout_arg_param, device_addr, 1024);
 
   return absl::OkStatus();
 }

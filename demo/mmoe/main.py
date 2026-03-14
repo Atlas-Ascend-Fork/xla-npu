@@ -199,8 +199,10 @@ def main():
         input_data = generate_input()
         inputs.append(np.array(input_data))
     
-    # Save all inputs to file
+    # Ensure output directory exists and save all inputs to file
+    from test_utils import ensure_dir
     input_file = INPUT_DATA_FILE
+    ensure_dir(input_file)
     all_inputs = np.stack(inputs, axis=0)
     np.savez(input_file, inputs=all_inputs, num_runs=args.num_runs)
     

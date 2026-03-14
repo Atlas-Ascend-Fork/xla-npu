@@ -13,22 +13,12 @@ package(
     default_visibility = internal_visibility(["//xla:internal"]),
 )
 
-# 条件编译: 走GE流程 3
-config_setting(
-    name = "npu_ge_backend",
-    define_values = {
-        "NPU_AUTO_FUSE_BACKEND": "3",
-    },
-    visibility = ["//visibility:public"],
-)
-
-
 cc_library(
     name = "pjrt_c_api_npu_internal",
     srcs = ["pjrt_c_api_npu_internal.cc"],
     hdrs = ["pjrt_c_api_npu_internal.h"],
     copts = select({
-        ":npu_ge_backend": ["-DNPU_AUTO_FUSE_BACKEND=3"],
+        "//xla/xla_npu/common:npu_ge_backend": ["-DNPU_AUTO_FUSE_BACKEND=3"],
         "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
     }),
     visibility = ["//visibility:public"],
@@ -54,7 +44,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
     ] + select({
-        ":npu_ge_backend": [
+        "//xla/xla_npu/common:npu_ge_backend": [
             "//xla/xla_npu/pjrt/air/npu:npu_client"],
         "//conditions:default": ["//xla/xla_npu/client:npu_stream_client"],
     }),

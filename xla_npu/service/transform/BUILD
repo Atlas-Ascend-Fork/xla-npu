@@ -48,6 +48,12 @@ cc_library(
     name = "npu_pipeline",
     srcs = ["npu_pipeline.cc"],
     hdrs = ["npu_pipeline.h"],
+    copts = select({
+        "//xla/xla_npu/common:npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
+        "//xla/xla_npu/common:npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
+        "//xla/xla_npu/common:npu_ge_backend": ["-DNPU_AUTO_FUSE_BACKEND=3"],
+        "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
+    }),
     deps = [
         ":npu_fusion_pipeline",
         ":npu_hlo_printer_pass",

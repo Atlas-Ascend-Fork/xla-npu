@@ -186,7 +186,7 @@ absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
 
     const auto& output_sub_dir_name = NpuTool::generate_unique_folder_name_absl();
     const auto& output_dir = tsl::io::JoinPath(
-        NpuConfig::GetInstance().GetTypedValue<std::string>(NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR),
+        NPU_CONFIG_GET_STRING(NpuConfig::Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR),
         output_sub_dir_name);
     std::unique_ptr<mlir::MLIRContext> mlir_context = CreateMlirContext();
     auto symbolic_expr_context = std::make_unique<SymbolicExprContext>(mlir_context.get());

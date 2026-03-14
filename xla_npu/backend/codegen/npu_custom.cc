@@ -127,7 +127,6 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
   const std::string entry_computation_key_name =
       NpuConstant::entryComputationKeyName;
 
-#if NPU_AUTO_FUSE_BACKEND == 1
   // 当前autofuse处理的规则是非Entry开头的子computation分别做融合
   NPU_LOG_FORMAT_PRINT(
       INFO,
@@ -152,6 +151,7 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
     }
   }
 
+#if NPU_AUTO_FUSE_BACKEND == 1
   // 生成缓存 key - 直接使用 fusion computation 的名称 (calls 后的名称)
   std::string cache_key = std::string(fused_computation->name());
 
@@ -196,6 +196,9 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
       INFO,
       "Npu auto fuse switch is set open, run fusion compile based on npuir.");
   mlir::hfusion::GraphGenTester::test();
+#else
+  NPU_LOG_FORMAT_PRINT(
+      INFO, "Npu auto fuse switch is set to default, using npuir backend.");
 #endif
 
   auto artifact_infos = npu_compile_result.artifact_infos;

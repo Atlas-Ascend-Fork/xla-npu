@@ -53,7 +53,9 @@ def run_cpu_test(num_runs=1, inputs=None):
         outputs.append(output.copy())
         print(f"[CPU] Run {i+1}/{num_runs} completed", flush=True)
     
-    # Save all outputs for comparison
+    # Ensure output directory exists and save all outputs for comparison
+    from test_utils import ensure_dir
+    ensure_dir(CPU_ALL_OUTPUTS_FILE)
     all_outputs = np.stack(outputs, axis=0)
     all_inputs = np.stack([np.array(inp) for inp in (inputs if inputs else [generate_input()] * num_runs)], axis=0) if inputs else None
     save_dict = {

@@ -130,7 +130,7 @@ inline void GetDefaultError<void>() {
 #define _REMOVE_PARENS(...) __VA_ARGS__
 #define STRIP_PARENS(x) _REMOVE_PARENS x
 
-// 声明待注册的函数(为了便于使用,同时自动完成了代码实现)
+// 声明待注册的函数
 // 参数说明：
 // soName: 库名（如libopapi）
 // ret: 返回值类型（如aclnnStatus）

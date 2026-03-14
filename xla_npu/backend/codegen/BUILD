@@ -7,23 +7,6 @@ package(
     licenses = ["notice"],
 )
 
-# 条件编译: afir 1, npuir 2 
-config_setting(
-    name = "npu_auto_fuse_backend_afir",
-    define_values = {
-        "NPU_AUTO_FUSE_BACKEND": "1",
-    },
-    visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "npu_auto_fuse_backend_npuir",
-    define_values = {
-        "NPU_AUTO_FUSE_BACKEND": "2",
-    },
-    visibility = ["//visibility:public"],
-)
-
 cc_library(
     name = "npu_fusion_emitter",
     srcs = ["npu_fusion_emitter.cc"],
@@ -68,8 +51,8 @@ cc_library(
     srcs = ["npu_custom.cc"],
     hdrs = ["npu_custom.h"],
     copts = select({
-        ":npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
-        ":npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
+        "//xla/xla_npu/common:npu_auto_fuse_backend_afir": ["-DNPU_AUTO_FUSE_BACKEND=1"],
+        "//xla/xla_npu/common:npu_auto_fuse_backend_npuir": ["-DNPU_AUTO_FUSE_BACKEND=2"],
         "//conditions:default": ["-DNPU_AUTO_FUSE_BACKEND=0"],
     }),
     deps = [
@@ -140,8 +123,8 @@ cc_library(
     ] + select({
         # 一定要保证对ascir_backend的依赖在所有@llvm-project依赖之后(包含间接依赖),
         # 否则会出现运行时coredump,报错堆栈在mlir::DialectRegistry函数附近
-        ":npu_auto_fuse_backend_afir": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
-        ":npu_auto_fuse_backend_npuir": ["//xla/xla_npu/service/convert_to_npuir:npuir_backend"],
+        "//xla/xla_npu/common:npu_auto_fuse_backend_afir": ["//xla/xla_npu/service/convert_to_afir:ascir_backend"],
+        "//xla/xla_npu/common:npu_auto_fuse_backend_npuir": ["//xla/xla_npu/service/convert_to_npuir:npuir_backend"],
         "//conditions:default": [],
     }),
 )

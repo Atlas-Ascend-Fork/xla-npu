@@ -8,8 +8,8 @@ MMOE Configuration - All constants and configuration parameters
 # ============================================================================
 
 # Input and batch size
-CONFIG_INPUT_DIM = 64          # Input feature dimension
-CONFIG_BATCH_SIZE = 16         # Batch size for inference
+CONFIG_INPUT_DIM = 32          # Input feature dimension
+CONFIG_BATCH_SIZE = 4          # Batch size for inference
 
 # Model structure
 CONFIG_NUM_EXPERTS = 2         # Number of expert networks
@@ -57,12 +57,15 @@ ENV_JAX_PLATFORMS = 'JAX_PLATFORMS'
 # Temporary File Paths
 # ============================================================================
 
+# Output directory
+OUTPUT_DIR = "/tmp/npu_test"
+
 # Output file paths
-CPU_OUTPUT_FILE = "/tmp/mmoe_cpu_output.npz"
-NPU_OUTPUT_FILE = "/tmp/mmoe_npu_output.npz"
-CPU_ALL_OUTPUTS_FILE = "/tmp/mmoe_cpu_all_outputs.npz"
-NPU_ALL_OUTPUTS_FILE = "/tmp/mmoe_npu_all_outputs.npz"
-INPUT_DATA_FILE = "/tmp/mmoe_input_data.npz"
+CPU_OUTPUT_FILE = f"{OUTPUT_DIR}/mmoe_cpu_output.npz"
+NPU_OUTPUT_FILE = f"{OUTPUT_DIR}/mmoe_npu_output.npz"
+CPU_ALL_OUTPUTS_FILE = f"{OUTPUT_DIR}/mmoe_cpu_all_outputs.npz"
+NPU_ALL_OUTPUTS_FILE = f"{OUTPUT_DIR}/mmoe_npu_all_outputs.npz"
+INPUT_DATA_FILE = f"{OUTPUT_DIR}/mmoe_input_data.npz"
 
 # ============================================================================
 # Print Settings

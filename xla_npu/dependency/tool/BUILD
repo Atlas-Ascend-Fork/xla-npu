@@ -22,3 +22,13 @@ cc_library(
         ":log",
     ],
 )
+
+cc_library(
+    name = "config_loader",
+    srcs = ["config_loader.cc"],
+    hdrs = ["config_loader.h"],
+    deps = [
+        ":log",
+        "//xla/tsl/util:env_var",
+    ],
+)

@@ -11,28 +11,19 @@
 #ifndef XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
 #define XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
 
-#include <string>
-#include <unordered_map>
-#include <variant>
+#include "xla/xla_npu/dependency/tool/config_loader.h"
 
 namespace xla {
 
-// npu动态配置读取类
 class NpuConfig {
  public:
   enum class Key {
     NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR,
-    USE_OLD_CANN_STYLE
-  };
-  enum class Type { STRING, BOOL };
-  using ConfigValue = std::variant<std::string, bool>;
-  struct Desc {
-    std::string str_desc;
-    ConfigValue default_value;
-    Type type;
+    USE_OLD_CANN_STYLE,
+    // 由于存在config_loader和log循环依赖的问题,
+    // XLA_NPU_LOG_LEVEL(控制显示日志级别)环境变量直接定义再了log类中
   };
 
-  // 禁止拷贝和赋值
   NpuConfig(const NpuConfig&) = delete;
   NpuConfig& operator=(const NpuConfig&) = delete;
 
@@ -40,20 +31,12 @@ class NpuConfig {
     static NpuConfig instance;
     return instance;
   }
+
   void Init();
 
-  Desc GetDesc(Key key) const;
-  ConfigValue GetConfigValue(Key key) const;
-  template <typename T>
-  T GetTypedValue(Key key) const;
-
  private:
-  // 禁止外部实例化
-  NpuConfig();
+  NpuConfig() = default;
   ~NpuConfig() = default;
-
-  const std::unordered_map<Key, Desc> key_desc_map_;
-  std::unordered_map<Key, ConfigValue> value_map_;
 };
 
 }  // namespace xla

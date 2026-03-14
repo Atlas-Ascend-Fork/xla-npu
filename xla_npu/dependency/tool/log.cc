@@ -14,12 +14,45 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 namespace npu {
 
+// 获取环境变量设置的日志级别
+static Log::Level GetEnvLogLevel() {
+  const char* env_level = std::getenv("XLA_NPU_LOG_LEVEL");
+  if (env_level == nullptr) {
+    return Log::Level::DEBUG;  // 默认级别为 DEBUG; TODO 修改为INFO
+  }
+
+  std::string level_str = env_level;
+  if (level_str == "DEBUG" || level_str == "0") {
+    return Log::Level::DEBUG;
+  } else if (level_str == "INFO" || level_str == "1") {
+    return Log::Level::INFO;
+  } else if (level_str == "WARN" || level_str == "2") {
+    return Log::Level::WARN;
+  } else if (level_str == "ERROR" || level_str == "3") {
+    return Log::Level::ERROR;
+  }
+  return Log::Level::INFO;  // 默认级别为 INFO
+}
+
+// 检查是否需要打印该级别的日志
+static bool ShouldPrint(Log::Level log_level) {
+  static Log::Level min_level = GetEnvLogLevel();
+  return static_cast<int>(log_level) >= static_cast<int>(min_level);
+}
+
 void Log::Print(const char* file_path, int line, const char* func,
                 Level log_level, const std::string& log_str) {
+  // 根据环境变量过滤日志级别
+  if (!ShouldPrint(log_level)) {
+    return;
+  }
+
   // 日志级别转字符串（无修改）
   std::string logLevelString;
   switch (log_level) {
