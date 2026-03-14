@@ -95,26 +95,7 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
         if (IsScatter(root)) {
             continue;
         }
-        std::vector<HloInstruction*> copies;
-        std::vector<HloInstruction*> other_users;
-        for (auto user : hlo->users()) {
-            HloInstruction* copy_user = user;
-            // Skip get-tuple-element ops.
-            if (HloPredicateIsOp<HloOpcode::kGetTupleElement>(copy_user) && copy_user->user_count() == 1) {
-                copy_user = copy_user->users()[0];
-            }
-            // Skip bitcast ops.
-            if (HloPredicateIsOp<HloOpcode::kBitcast>(copy_user) && copy_user->user_count() == 1) {
-                copy_user = copy_user->users()[0];
-            }
-            if (HloPredicateIsOp<HloOpcode::kCopy>(copy_user) && copy_user->shape() == copy_user->operand(0)->shape() &&
-                !copy_user->shape().IsTuple() && !copy_user->HasControlDependencies() &&
-                FusionFitsInBudget(*hlo, *copy_user)) {
-                copies.push_back(copy_user);
-            } else {
-                other_users.push_back(user);
-            }
-        }
+        auto [copies, other_users] = ClassifyUsers(hlo);
         if (copies.empty()) {
             continue;
         }
@@ -127,7 +108,6 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
         }
         int64_t num_outputs = hlo->IsMultiOutputFusion() ? root->operand_count() : int64_t{1};
         int64_t total_outputs = num_outputs + copies.size();
-
         if (total_outputs > MaxOperandsAndOutputsPerFusion()) {
             VLOG(1) << "Skipping fusion as it would exceed MaxOperandsAndOutputsPerFusion(): "
                     << total_outputs << " > " << MaxOperandsAndOutputsPerFusion();
@@ -137,6 +117,31 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
         TF_RETURN_IF_ERROR(FuseCopyInstructionsIntoComputation(hlo, fused_computation, copies, other_users));
     }
     return changed;
+}
+
+std::pair<std::vector<HloInstruction*>, std::vector<HloInstruction*>> NpuCopyFusion::ClassifyUsers(HloInstruction* hlo) {
+    std::vector<HloInstruction*> copies;
+    std::vector<HloInstruction*> other_users;
+    for (auto user : hlo->users()) {
+        HloInstruction* copy_user = user;
+        if (HloPredicateIsOp<HloOpcode::kGetTupleElement>(copy_user) && copy_user->user_count() == 1) {
+            copy_user = copy_user->users()[0];
+        }
+        if (HloPredicateIsOp<HloOpcode::kBitcast>(copy_user) && copy_user->user_count() == 1) {
+            copy_user = copy_user->users()[0];
+        }
+        if (HloPredicateIsOp<HloOpcode::kCopy>(copy_user) &&
+            copy_user->shape() == copy_user->operand(0)->shape() &&
+            !copy_user->shape().IsTuple() &&
+            !copy_user->HasControlDependencies() &&
+            FusionFitsInBudget(*hlo, *copy_user)) {
+            copies.push_back(copy_user);
+        } else {
+            other_users.push_back(user);
+        }
+    }
+
+    return {copies, other_users};
 }
 
 absl::Status NpuCopyFusion::FuseCopyInstructionsIntoComputation(

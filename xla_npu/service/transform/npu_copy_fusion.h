@@ -42,6 +42,8 @@ class NpuCopyFusion : public HloModulePass {
         const std::vector<HloInstruction*>& copies,
         const std::vector<HloInstruction*>& other_users);
 
+    std::pair<std::vector<HloInstruction*>, std::vector<HloInstruction*>> ClassifyUsers(HloInstruction* hlo);
+
     absl::StatusOr<bool> DoCopyFusion(HloComputation* computation);
 
     const se::DeviceDescription& device_description_;
