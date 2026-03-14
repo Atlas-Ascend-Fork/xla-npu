@@ -82,13 +82,10 @@ bool IsScatter(const HloInstruction* instr) {
 absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
     bool changed = false;
     std::vector<HloInstruction*> defs_before_uses = computation->MakeInstructionPostOrder();
-
     for (HloInstruction* hlo : defs_before_uses) {
         if (HloPredicateIsNotOp<HloOpcode::kFusion>(hlo) || hlo->IsMultiOutputFusion()) {
             continue;
         }
-        std::vector<HloInstruction*> copies;
-        std::vector<HloInstruction*> other_users;
         HloComputation* fused_computation = hlo->fused_instructions_computation();
         if (!OnlyElementwiseOpsReachableFromParams(fused_computation)) {
             continue;
@@ -98,20 +95,19 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
         if (IsScatter(root)) {
             continue;
         }
-
+        std::vector<HloInstruction*> copies;
+        std::vector<HloInstruction*> other_users;
         for (auto user : hlo->users()) {
             HloInstruction* copy_user = user;
             // Skip get-tuple-element ops.
-            if (HloPredicateIsOp<HloOpcode::kGetTupleElement>(copy_user) &&
-                copy_user->user_count() == 1) {
+            if (HloPredicateIsOp<HloOpcode::kGetTupleElement>(copy_user) && copy_user->user_count() == 1) {
                 copy_user = copy_user->users()[0];
             }
             // Skip bitcast ops.
             if (HloPredicateIsOp<HloOpcode::kBitcast>(copy_user) && copy_user->user_count() == 1) {
                 copy_user = copy_user->users()[0];
             }
-            if (HloPredicateIsOp<HloOpcode::kCopy>(copy_user) &&
-                copy_user->shape() == copy_user->operand(0)->shape() &&
+            if (HloPredicateIsOp<HloOpcode::kCopy>(copy_user) && copy_user->shape() == copy_user->operand(0)->shape() &&
                 !copy_user->shape().IsTuple() && !copy_user->HasControlDependencies() &&
                 FusionFitsInBudget(*hlo, *copy_user)) {
                 copies.push_back(copy_user);
@@ -125,12 +121,10 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
         auto fusion_adaptor = HloFusionAdaptor::ForComputation(fused_computation);
         auto dynamic_update_slices = GetOutputDefiningDynamicUpdateSlices(fusion_adaptor->GetRoots());
         // Skip dynamic update slice fusions which might be emitted in-place.
-        if (!dynamic_update_slices.empty() &&
-            (HloPredicateIsNotOp<HloOpcode::kTuple>(root) ||
-             dynamic_update_slices.size() == root->shape().tuple_shapes().size())) {
+        if (!dynamic_update_slices.empty() && (HloPredicateIsNotOp<HloOpcode::kTuple>(root) ||
+            dynamic_update_slices.size() == root->shape().tuple_shapes().size())) {
             continue;
         }
-
         int64_t num_outputs = hlo->IsMultiOutputFusion() ? root->operand_count() : int64_t{1};
         int64_t total_outputs = num_outputs + copies.size();
 
@@ -139,60 +133,61 @@ absl::StatusOr<bool> NpuCopyFusion::DoCopyFusion(HloComputation* computation) {
                     << total_outputs << " > " << MaxOperandsAndOutputsPerFusion();
             continue;
         }
-
         changed = true;
-
-        HloInstruction::InstructionVector tuple_elements;
-        tuple_elements.reserve(copies.size() + num_outputs);
-        if (hlo->IsMultiOutputFusion()) {
-            for (HloInstruction* operand : root->operands()) {
-                tuple_elements.push_back(operand);
-            }
-        } else {
-            tuple_elements.push_back(root);
-        }
-
-        for (auto copy : copies) {
-            HloInstruction* user = copy;
-            std::vector<HloInstruction*> operand_chain;
-            operand_chain.push_back(user);
-            while (user->operand(0) != hlo) {
-                user = user->mutable_operand(0);
-                operand_chain.push_back(user);
-            }
-            HloInstruction* clone_operand = root;
-            if (hlo->IsMultiOutputFusion()) {
-                clone_operand = root->mutable_operand(user->tuple_index());
-                CHECK_EQ(operand_chain.back()->opcode(), HloOpcode::kGetTupleElement);
-                operand_chain.pop_back();
-            }
-            for (int64_t i = operand_chain.size() - 1; i >= 0; --i) {
-                HloInstruction* user = operand_chain[i];
-                clone_operand = fused_computation->AddInstruction(
-                    user->CloneWithNewOperands(user->shape(), {clone_operand}));
-            }
-            tuple_elements.push_back(clone_operand);
-        }
-
-        HloInstruction* new_root = fused_computation->AddInstruction(
-            HloInstruction::CreateTuple(tuple_elements));
-        fused_computation->set_root_instruction(new_root, /*accept_different_shape=*/true);
-        *hlo->mutable_shape() = new_root->shape();
-
-        if (HloPredicateIsOp<HloOpcode::kTuple>(root)) {
-            TF_RETURN_IF_ERROR(fused_computation->RemoveInstruction(root));
-        } else {
-            auto get_tuple_element_root = computation->AddInstruction(
-                HloInstruction::CreateGetTupleElement(hlo, 0));
-            TF_RETURN_IF_ERROR(hlo->ReplaceAllUsesWithDifferentShape(other_users, get_tuple_element_root));
-        }
-        for (int64_t i = 0; i < copies.size(); ++i) {
-            auto get_tuple_element = computation->AddInstruction(
-                HloInstruction::CreateGetTupleElement(hlo, num_outputs + i));
-            TF_RETURN_IF_ERROR(computation->ReplaceInstruction(copies[i], get_tuple_element));
-        }
+        TF_RETURN_IF_ERROR(FuseCopyInstructionsIntoComputation(hlo, fused_computation, copies, other_users));
     }
     return changed;
+}
+
+absl::Status NpuCopyFusion::FuseCopyInstructionsIntoComputation(
+    HloInstruction* hlo,
+    HloComputation* fused_computation,
+    const std::vector<HloInstruction*>& copies,
+    const std::vector<HloInstruction*>& other_users) {
+    HloInstruction* root = fused_computation->root_instruction();
+    int64_t num_outputs = hlo->IsMultiOutputFusion() ? root->operand_count() : int64_t{1};
+    std::vector<HloInstruction*> tuple_elements;
+    tuple_elements.reserve(copies.size() + num_outputs);
+    if (hlo->IsMultiOutputFusion()) {
+        for (HloInstruction* operand : root->operands()) {
+            tuple_elements.push_back(operand);
+        }
+    } else {
+        tuple_elements.push_back(root);
+    }
+    for (auto copy : copies) {
+        HloInstruction* user = copy;
+        std::vector<HloInstruction*> operand_chain;
+        while (user->operand(0) != hlo) {
+          operand_chain.push_back(user);
+          user = user->mutable_operand(0);
+        }
+        HloInstruction* clone = root;
+        if (hlo->IsMultiOutputFusion()) {
+            clone = root->mutable_operand(user->tuple_index());
+            operand_chain.pop_back();
+        }
+        for (auto it = operand_chain.rbegin(); it != operand_chain.rend(); ++it) {
+            clone = fused_computation->AddInstruction((*it)->CloneWithNewOperands((*it)->shape(), {clone}));
+        }
+        tuple_elements.push_back(clone);
+    }
+
+    HloInstruction* new_root = fused_computation->AddInstruction(HloInstruction::CreateTuple(tuple_elements));
+    fused_computation->set_root_instruction(new_root, true);
+    *hlo->mutable_shape() = new_root->shape();
+
+    if (HloPredicateIsOp<HloOpcode::kTuple>(root)) {
+        TF_RETURN_IF_ERROR(fused_computation->RemoveInstruction(root));
+    } else {
+        auto gte = hlo->parent()->AddInstruction(HloInstruction::CreateGetTupleElement(hlo, 0));
+        TF_RETURN_IF_ERROR(hlo->ReplaceAllUsesWithDifferentShape(other_users, gte));
+    }
+    for (int64_t i = 0; i < copies.size(); ++i) {
+        auto gte = hlo->parent()->AddInstruction(HloInstruction::CreateGetTupleElement(hlo, num_outputs + i));
+        TF_RETURN_IF_ERROR(hlo->parent()->ReplaceInstruction(copies[i], gte));
+    }
+    return absl::OkStatus();
 }
 
 absl::StatusOr<bool> NpuCopyFusion::RunImpl(
