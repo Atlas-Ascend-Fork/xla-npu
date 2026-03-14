@@ -134,7 +134,7 @@ void NpuCustomKernelThunk::PrintParamInfoAfterExecute(int device_ordinal,
     NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d (%s) info after execute: ----", id, param_type.c_str());
     NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)",
         device_ordinal, arg.index(), arg.offset(), buf.opaque(), buf.size());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s", hunk_info().param_shapes[id].ToString(true).c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s",thunk_info().param_shapes[id].ToString(true).c_str());
     NpuTool::PrintNpuDeviceMemoryValueByShape("  Value on device:", thunk_info().param_shapes[id], buf.opaque());
     id++;
   }
