@@ -69,7 +69,9 @@ struct AFIRToASCIRTextPass : public ::impl::ConvertAFIRToASCIRTextPassBase<AFIRT
 
     // Helper function to format special floating point values
     std::string formatFloatValue(double val, Type type);
-
+    int64_t calculateStrideForShapeIndex(int64_t index, ArrayRef<int64_t> shape);
+    void generateMemQueBufOpsOutputsAttr(llvm::raw_ostream& os, int64_t tensorId, int64_t queDepth, int queBufNum,
+                                         int64_t positionId, int64_t reuseId);
     OpInfo getOpInfo(StringRef opName);
     std::string convertModuleToASCIRText(ModuleOp module);
     std::string convertFuncToASCIRText(func::FuncOp func, Attribute graphAttr);
@@ -135,12 +137,7 @@ std::string AFIRToASCIRTextPass::calculateStrides(ArrayRef<int64_t> shape) {
             os << "      strides: \"0\"\n";
         } else {
             // Calculate stride for this dimension (column-major)
-            int64_t stride = 1;
-            for (int j = i + 1; j < rank; j++) {
-                if (shape[j] > 0) {
-                    stride *= shape[j];
-                }
-            }
+            int64_t stride = calculateStrideForShapeIndex(i, shape);
             os << "      strides: \"" << stride << "\"\n";
         }
     }
@@ -148,6 +145,17 @@ std::string AFIRToASCIRTextPass::calculateStrides(ArrayRef<int64_t> shape) {
     os.flush();
 
     return result;
+}
+
+int64_t AFIRToASCIRTextPass::calculateStrideForShapeIndex(int64_t index, ArrayRef<int64_t> shape) {
+    int64_t stride = 1;
+    int rank = shape.size();
+    for (int j = index + 1; j < rank; j++) {
+        if (shape[j] > 0) {
+            stride *= shape[j];
+        }
+    }
+    return stride;
 }
 
 std::string AFIRToASCIRTextPass::convertModuleToASCIRText(ModuleOp module) {
@@ -559,12 +567,7 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
                     os << "      strides: \"0\"\n";
                 } else {
                     // Calculate stride for this dimension (column-major)
-                    int64_t stride = 1;
-                    for (int j = i + 1; j < rank; j++) {
-                        if (shape[j] > 0) {
-                            stride *= shape[j];
-                        }
-                    }
+                    int64_t stride = calculateStrideForShapeIndex(i, shape);
                     os << "      strides: \"" << stride << "\"\n";
                 }
             }
@@ -574,7 +577,16 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
             }
         }
     }
+    generateMemQueBufOpsOutputsAttr(os, tensorId, queDepth, queBufNum, positionId, reuseId);
+    os << "    }\n";
+    os << "  }\n";
 
+    os.flush();
+    return result;
+}
+
+void AFIRToASCIRTextPass::generateMemQueBufOpsOutputsAttr(llvm::raw_ostream& os, int64_t tensorId, int64_t queDepth,
+                                                          int queBufNum, int64_t positionId, int64_t reuseId) {
     os << "      mem {\n";
     os << "        tensor_id: " << tensorId << "\n";
     os << "      }\n";
@@ -591,11 +603,6 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
     os << "        ref_tensor: -1\n";
     os << "        merge_scope: -1\n";
     os << "      }\n";
-    os << "    }\n";
-    os << "  }\n";
-
-    os.flush();
-    return result;
 }
 
 std::string AFIRToASCIRTextPass::generateApiAttr(Operation* op) {
@@ -972,22 +979,7 @@ std::string AFIRToASCIRTextPass::generateDataNode(int nodeIndex, int argIndex, T
         }
     }
 
-    os << "      mem {\n";
-    os << "        tensor_id: " << tensorId << "\n";
-    os << "      }\n";
-    os << "      que {\n";
-    os << "        id: -1\n";
-    os << "        depth: " << queDepth << "\n";
-    os << "        buf_num: " << queBufNum << "\n";
-    os << "      }\n";
-    os << "      buf {\n";
-    os << "        id: " << positionId << "\n";
-    os << "      }\n";
-    os << "      opt {\n";
-    os << "        reuse_id: " << reuseId << "\n";
-    os << "        ref_tensor: -1\n";
-    os << "        merge_scope: -1\n";
-    os << "      }\n";
+    generateMemQueBufOpsOutputsAttr(os, tensorId, queDepth, queBufNum, positionId, reuseId);
     os << "    }\n";
     os << "  }\n";
     os << "  attr {\n";
