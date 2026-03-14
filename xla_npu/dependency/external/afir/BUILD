@@ -1,16 +1,10 @@
-# Copyright 2025 The OpenXLA Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright (c) 2026 Huawei Technologies Co., Ltd.
+# This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+# CANN Open Software License Agreement Version 2.0 (the "License").
+# Please refer to the License for details. You may not use this file except in compliance with the License.
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+# See LICENSE in the root of the software repository for the full text of the License.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -154,5 +148,29 @@ cc_library(
         "@llvm-project//mlir:Support",
         "@llvm-project//mlir:TensorDialect",
         "@llvm-project//mlir:Transforms",
+    ],
+)
+
+# ============================================================================
+# AFIR to ASCIR Text Conversion
+# ============================================================================
+
+cc_library(
+    name = "AFIRToASCIRText",
+    srcs = ["Ascend-MLIR/lib/Conversion/AFIRToASCIRText/AFIRToASCIRText.cpp"],
+    hdrs = ["Ascend-MLIR/include/Conversion/AFIRToASCIRText/AFIRToASCIRText.h"],
+    includes = [
+        "generated/include",
+        "Ascend-MLIR/include",
+    ],
+    deps = [
+        ":AFIRHeaders",
+        "//xla/xla_npu/common:npu_config",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:CastInterfaces",
+        "@llvm-project//mlir:FuncDialect",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Pass",
+        "@llvm-project//mlir:Support",
     ],
 )

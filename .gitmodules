@@ -2,7 +2,3 @@
 	path = xla_npu/dependency/external/npuir/AscendNPU-IR
 	url = https://gitcode.com/XDaoHong/AscendNPU-IR.git
 	branch = tmp
-[submodule "xla_npu/dependency/external/afir/Ascend-MLIR"]
-	path = xla_npu/dependency/external/afir/Ascend-MLIR
-	url = https://gitcode.com/niuyuhu/Ascend-MLIR.git
-	branch = dev
