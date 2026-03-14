@@ -70,7 +70,7 @@ cc_library(
         "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "//xla/xla_npu/dependency/external/afir:AFIRTransforms",
         "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/service/convert_to_afir/afir_to_ascir_native:AFIRToASCIRTextNative",
+        "//xla/xla_npu/dependency/external/afir:AFIRToASCIRText",
         "@com_google_absl//absl/strings",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Parser",
