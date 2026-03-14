@@ -159,7 +159,6 @@ absl::Status NpuStream::WaitFor(Event* event) {
 }
 
 absl::Status NpuStream::RecordEvent(Event* event) {
-  // notification->Notify();
   return absl::UnimplementedError("NpuStream::RecordEvent is not supported.");
 }
 

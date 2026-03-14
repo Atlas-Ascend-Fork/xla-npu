@@ -86,11 +86,7 @@ class HloToAfirConverter {
     absl::StatusOr<mlir::Value> ConvertFusionOp(const HloInstruction* instruction);
     absl::StatusOr<mlir::Value> ConvertCallOp(const HloInstruction* instruction);
 
-    struct AfirUnaryOpAttrs {
-      mlir::ArrayAttr indexing_maps;
-      mlir::ArrayAttr outputs;
-    };
-    absl::StatusOr<AfirUnaryOpAttrs> CreateAfirUnaryOpCommonAttrs(mlir::Type result_type);
+    std::pair<mlir::ArrayAttr, mlir::ArrayAttr> CreateBinaryOpCommonAttrs(mlir::Type result_type, int64_t input_num);
 
     absl::StatusOr<mlir::Value> CreateScalarBroadcastOp(
         mlir::Location loc, mlir::Type result_type, mlir::Value operand, int64_t rank);
@@ -130,22 +126,23 @@ class HloToAfirConverter {
     absl::flat_hash_map<const HloComputation*, mlir::func::FuncOp> function_map_;
 };
 
-absl::StatusOr<HloToAfirConverter::AfirUnaryOpAttrs> HloToAfirConverter::CreateAfirUnaryOpCommonAttrs(
-    mlir::Type result_type) {
-      int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-      auto identity_map = GetIdentityAffineMap(rank);
+std::pair<mlir::ArrayAttr, mlir::ArrayAttr> HloToAfirConverter::CreateBinaryOpCommonAttrs(
+    mlir::Type result_type, int64_t input_num) {
+    int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+    auto identity_map = GetIdentityAffineMap(rank);
 
-      auto output_attr = CreateDefaultOutputAttr(result_type);
-      llvm::SmallVector<mlir::Attribute> output_attrs;
-      output_attrs.push_back(output_attr);
-      auto outputs_array = builder_.getArrayAttr(output_attrs);
+    auto output_attr = CreateDefaultOutputAttr(result_type);
+    llvm::SmallVector<mlir::Attribute> output_attrs;
+    output_attrs.push_back(output_attr);
+    auto outputs_array = builder_.getArrayAttr(output_attrs);
 
-      llvm::SmallVector<mlir::AffineMap> maps;
-      maps.push_back(identity_map);
-      maps.push_back(identity_map);
-      auto indexing_maps_attr = CreateIndexingMaps(maps);
-
-      return AfirUnaryOpAttrs{indexing_maps_attr, outputs_array};
+    llvm::SmallVector<mlir::AffineMap> maps;
+    for(int64_t i = 0; i < input_num; i++) {
+        maps.push_back(identity_map);
+    }
+    maps.push_back(identity_map);
+    auto indexing_maps_attr = CreateIndexingMaps(maps);
+    return {indexing_maps_attr, outputs_array};
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::CreateScalarBroadcastOp(
@@ -490,34 +487,14 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertAddOp(const HloInstructio
 
     // Use afir.add when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-        auto identity_map = GetIdentityAffineMap(rank);
-
-        // Build outputs attribute array
-        auto output_attr = CreateDefaultOutputAttr(result_type);
-        llvm::SmallVector<mlir::Attribute> output_attrs;
-        output_attrs.push_back(output_attr);
-        auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-        // Build indexing_maps array (3 maps: lhs, rhs, result)
-        llvm::SmallVector<mlir::AffineMap> maps;
-        maps.push_back(identity_map);  // lhs
-        maps.push_back(identity_map);  // rhs
-        maps.push_back(identity_map);  // result
-        auto indexing_maps_attr = CreateIndexingMaps(maps);
-
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 2);
         // Create AddOp with all required attributes
         auto add_op = builder_.create<mlir::afir::AddOp>(loc, result_type, lhs, rhs, indexing_maps_attr,
-                                                         nullptr,                         // loop_axis (use default)
-                                                         builder_.getDictionaryAttr({}),  // ir_attr_def (use default)
-                                                         nullptr,                         // tmp_buffers (use default)
-                                                         outputs_array);
+            nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return add_op.getResult();
     }
-
     // Use arith.add as fallback
     auto add_op = builder_.create<mlir::arith::AddIOp>(loc, lhs, rhs);
-
     return add_op.getResult();
 }
 
@@ -534,20 +511,7 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSubtractOp(const HloInstr
 
     // Use afir.sub when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-        auto identity_map = GetIdentityAffineMap(rank);
-
-        auto output_attr = CreateDefaultOutputAttr(result_type);
-        llvm::SmallVector<mlir::Attribute> output_attrs;
-        output_attrs.push_back(output_attr);
-        auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-        llvm::SmallVector<mlir::AffineMap> maps;
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        auto indexing_maps_attr = CreateIndexingMaps(maps);
-
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 2);
         auto sub_op = builder_.create<mlir::afir::SubOp>(loc, result_type, lhs, rhs, indexing_maps_attr, nullptr,
                                                          builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return sub_op.getResult();
@@ -571,20 +535,7 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertMultiplyOp(const HloInstr
 
     // Use afir.mul when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-        auto identity_map = GetIdentityAffineMap(rank);
-
-        auto output_attr = CreateDefaultOutputAttr(result_type);
-        llvm::SmallVector<mlir::Attribute> output_attrs;
-        output_attrs.push_back(output_attr);
-        auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-        llvm::SmallVector<mlir::AffineMap> maps;
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        auto indexing_maps_attr = CreateIndexingMaps(maps);
-
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 2);
         auto mul_op = builder_.create<mlir::afir::MulOp>(loc, result_type, lhs, rhs, indexing_maps_attr, nullptr,
                                                          builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return mul_op.getResult();
@@ -608,22 +559,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertDivideOp(const HloInstruc
 
     // Use afir.div when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-        auto identity_map = GetIdentityAffineMap(rank);
-
-        auto output_attr = CreateDefaultOutputAttr(result_type);
-        llvm::SmallVector<mlir::Attribute> output_attrs;
-        output_attrs.push_back(output_attr);
-        auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-        llvm::SmallVector<mlir::AffineMap> maps;
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        maps.push_back(identity_map);
-        auto indexing_maps_attr = CreateIndexingMaps(maps);
-
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 2);
         auto div_op = builder_.create<mlir::afir::DivOp>(loc, result_type, lhs, rhs, indexing_maps_attr, nullptr,
-                                                         builder_.getDictionaryAttr({}), nullptr, outputs_array);
+            builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return div_op.getResult();
     }
 
@@ -645,24 +583,11 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertMaximumOp(const HloInstru
 
     // Use afir.MaximumOp when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-    int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-    auto identity_map = GetIdentityAffineMap(rank);
-
-    auto output_attr = CreateDefaultOutputAttr(result_type);
-    llvm::SmallVector<mlir::Attribute> output_attrs;
-    output_attrs.push_back(output_attr);
-    auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-    llvm::SmallVector<mlir::AffineMap> maps;
-    maps.push_back(identity_map);
-    maps.push_back(identity_map);
-    maps.push_back(identity_map);
-    auto indexing_maps_attr = CreateIndexingMaps(maps);
-
-    auto max_op = builder_.create<mlir::afir::MaximumOp>(
-        loc, result_type, lhs, rhs,
-        indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
-    return max_op.getResult();
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 2);
+        auto max_op = builder_.create<mlir::afir::MaximumOp>(
+            loc, result_type, lhs, rhs,
+            indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
+        return max_op.getResult();
     }
 
     return absl::UnimplementedError("Maximum operation requires emit_afir_dialect to be enabled");
@@ -680,10 +605,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertTanhOp(const HloInstructi
 
     // Use afir.tanh when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        TF_ASSIGN_OR_RETURN(auto attrs, CreateAfirUnaryOpCommonAttrs(result_type));
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 1);
         auto tanh_op = builder_.create<mlir::afir::TanhOp>(loc, result_type, operand,
-                                                           attrs.indexing_maps, nullptr,
-                                                           builder_.getDictionaryAttr({}), nullptr, attrs.outputs);
+            indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return tanh_op.getResult();
     }
 
@@ -704,10 +628,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertNegateOp(const HloInstruc
 
     // Use afir.NegOp when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        TF_ASSIGN_OR_RETURN(auto attrs, CreateAfirUnaryOpCommonAttrs(result_type));
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 1);
         auto neg_op = builder_.create<mlir::afir::NegOp>(loc, result_type, operand,
-                                                        attrs.indexing_maps, nullptr,
-                                                        builder_.getDictionaryAttr({}), nullptr, attrs.outputs);
+            indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return neg_op.getResult();
     }
 
@@ -728,10 +651,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertExponentialOp(const HloIn
 
     // Use afir.ExpOp when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        TF_ASSIGN_OR_RETURN(auto attrs, CreateAfirUnaryOpCommonAttrs(result_type));
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 1);
         auto exp_op = builder_.create<mlir::afir::ExpOp>(loc, result_type, operand,
-                                                        attrs.indexing_maps, nullptr,
-                                                        builder_.getDictionaryAttr({}), nullptr, attrs.outputs);
+            indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return exp_op.getResult();
     }
 
@@ -752,10 +674,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstru
 
     // Use afir.CastOp when emit_afir_dialect is true
     if (options_.emit_afir_dialect) {
-        TF_ASSIGN_OR_RETURN(auto attrs, CreateAfirUnaryOpCommonAttrs(result_type));
+        auto [indexing_maps_attr, outputs_array] = CreateBinaryOpCommonAttrs(result_type, 1);
         auto cast_op = builder_.create<mlir::afir::CastOp>(loc, result_type, operand,
-                                                           attrs.indexing_maps, nullptr,
-                                                           builder_.getDictionaryAttr({}), nullptr, attrs.outputs);
+            indexing_maps_attr, nullptr, builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return cast_op.getResult();
     }
 
