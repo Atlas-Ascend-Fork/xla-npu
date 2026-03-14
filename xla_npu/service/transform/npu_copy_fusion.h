@@ -36,6 +36,12 @@ class NpuCopyFusion : public HloModulePass {
                                  const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
    private:
+    absl::Status FuseCopyInstructionsIntoComputation(
+        HloInstruction* hlo,
+        HloComputation* fused_computation,
+        const std::vector<HloInstruction*>& copies,
+        const std::vector<HloInstruction*>& other_users);
+
     absl::StatusOr<bool> DoCopyFusion(HloComputation* computation);
 
     const se::DeviceDescription& device_description_;

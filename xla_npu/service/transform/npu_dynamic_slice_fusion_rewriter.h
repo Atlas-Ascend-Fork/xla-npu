@@ -60,6 +60,13 @@ class NpuDynamicSliceFusionRewriter : public HloModulePass {
                                  const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
    private:
+    absl::Status ProcessFusionMatch(
+      HloInstruction* hero,
+      HloModule* module,
+      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_operand_paths,
+      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_user_paths,
+      bool& changed);
+
     std::string platform_name_;
 };
 

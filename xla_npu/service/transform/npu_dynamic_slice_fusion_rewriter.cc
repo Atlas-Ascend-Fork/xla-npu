@@ -318,68 +318,71 @@ absl::StatusOr<bool> NpuDynamicSliceFusionRewriter::RunImpl(
     bool changed = false;
     // Process each match
     for (HloInstruction* hero : matches) {
-        auto& paths = matches_kv[hero];
-        auto& [sliced_operand_paths, sliced_user_paths] = paths;
-        absl::InlinedVector<HloInstruction*, 4> matched_instrs;
+        auto& ops = matches_kv[hero].first;
+        auto& users = matches_kv[hero].second;
+        TF_RETURN_IF_ERROR(ProcessFusionMatch(hero, module, ops, users, changed));
+    }
+    return changed;
+}
 
-        // Flatten the operand paths into matched_instrs
-        for (const auto& operand_path : sliced_operand_paths) {
-            for (HloInstruction* instr : operand_path) {
-                matched_instrs.push_back(instr);
-            }
-        }
+absl::Status NpuDynamicSliceFusionRewriter::ProcessFusionMatch(
+    HloInstruction* hero,
+    HloModule* module,
+    absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_operand_paths,
+    absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_user_paths,
+    bool& changed) {
 
-        // Flatten the user paths into matched_instrs
-        for (const auto& user_path : sliced_user_paths) {
-            for (HloInstruction* instr : user_path) {
-                matched_instrs.push_back(instr);
-            }
-        }
+    absl::InlinedVector<HloInstruction*, 4> matched_instrs;
 
-        auto captures = GetPatternCaptures(matched_instrs);
-
-        TF_ASSIGN_OR_RETURN(HloComputation* fusion_body,
-            CreateFusionBody(module, sliced_operand_paths, sliced_user_paths, captures));
-
-        bool has_dynamic_slices = absl::c_any_of(matched_instrs, [](auto* instr) {
-            return DynCast<HloDynamicIndexInstruction>(instr) != nullptr;
-        });
-        TF_ASSIGN_OR_RETURN(HloInstruction* fusion,
-            CreateFusionInstruction(module, hero, captures, fusion_body, has_dynamic_slices));
-
-        HloComputation* parent = hero->parent();
-        if (fusion->shape().IsTuple()) {
-            TF_RETURN_IF_ERROR(parent->ReplaceInstructionWithDifferentShape(hero, fusion));
-            for (auto& sliced_user_path : sliced_user_paths) {
-                auto* old_gte = DynCast<HloGetTupleElementInstruction>(sliced_user_path.front());
-                if (old_gte != nullptr) {
-                    HloInstruction* gte = parent->AddInstruction(
-                        HloInstruction::CreateGetTupleElement(fusion, old_gte->tuple_index()));
-                    TF_RETURN_IF_ERROR(parent->ReplaceInstruction(sliced_user_path.back(), gte));
-                }
-            }
-        } else {
-            HloInstruction* instr_to_be_replaced = hero;
-            if (!sliced_user_paths.empty()) {
-                instr_to_be_replaced = sliced_user_paths.front().back();
-            } else if (hero->shape().IsTuple()) {
-                if (hero->user_count() != 1 ||
-                    !DynCast<HloGetTupleElementInstruction>(hero->users().front())) {
-                    return absl::InternalError("Expect a single get-tuple-element user of the original "
-                        "tuple-shaped hero op when address computation fusion does "
-                        "not return a tuple");
-                }
-                instr_to_be_replaced = hero->users().front();
-            }
-            TF_RETURN_IF_ERROR(parent->ReplaceInstruction(instr_to_be_replaced, fusion));
-            if (hero->parent()) {
-                TF_RETURN_IF_ERROR(hero->parent()->RemoveInstruction(hero));
-            }
-        }
-        changed = true;
+    for (auto& p : sliced_operand_paths) {
+        matched_instrs.insert(matched_instrs.end(), p.begin(), p.end());
+    }
+    for (auto& p : sliced_user_paths) {
+        matched_instrs.insert(matched_instrs.end(), p.begin(), p.end());
     }
 
-    return changed;
+    auto captures = GetPatternCaptures(matched_instrs);
+    TF_ASSIGN_OR_RETURN(auto* fusion_body,
+        CreateFusionBody(module, sliced_operand_paths, sliced_user_paths, captures));
+
+    bool has_dynamic = absl::c_any_of(matched_instrs, [](auto* i) {
+        return DynCast<HloDynamicIndexInstruction>(i);
+    });
+
+    TF_ASSIGN_OR_RETURN(auto* fusion,
+        CreateFusionInstruction(module, hero, captures, fusion_body, has_dynamic));
+
+    HloComputation* parent = hero->parent();
+    if (fusion->shape().IsTuple()) {
+        TF_RETURN_IF_ERROR(parent->ReplaceInstructionWithDifferentShape(hero, fusion));
+        for (auto& path : sliced_user_paths) {
+            if (auto* gte = DynCast<HloGetTupleElementInstruction>(path.front())) {
+                auto new_gte = parent->AddInstruction(
+                    HloInstruction::CreateGetTupleElement(fusion, gte->tuple_index()));
+                TF_RETURN_IF_ERROR(parent->ReplaceInstruction(path.back(), new_gte));
+            }
+        }
+    } else {
+        HloInstruction* to_replace = hero;
+        if (!sliced_user_paths.empty()) {
+            to_replace = sliced_user_paths.front().back();
+        } else if (hero->shape().IsTuple()) {
+            if (hero->user_count() != 1 ||
+                !DynCast<HloGetTupleElementInstruction>(hero->users().front())) {
+                return absl::InternalError(
+                    "Expect a single get-tuple-element user of the original "
+                    "tuple-shaped hero op when address computation fusion does not return a tuple");
+            }
+            to_replace = hero->users().front();
+        }
+        TF_RETURN_IF_ERROR(parent->ReplaceInstruction(to_replace, fusion));
+        if (hero->parent()) {
+            TF_RETURN_IF_ERROR(hero->parent()->RemoveInstruction(hero));
+        }
+    }
+
+    changed = true;
+    return absl::OkStatus();
 }
 
 }  // namespace xla
