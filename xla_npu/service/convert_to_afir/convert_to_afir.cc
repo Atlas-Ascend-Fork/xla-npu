@@ -91,6 +91,11 @@ class HloToAfirConverter {
     absl::StatusOr<mlir::Value> CreateScalarBroadcastOp(
         mlir::Location loc, mlir::Type result_type, mlir::Value operand, int64_t rank);
 
+    void ProcessHloComputationParameterShapes(const HloComputation& computation,
+                               int64_t& max_rank,
+                               const Shape*& shape_for_axes,
+                               std::unique_ptr<Shape>& merged_shape);
+
     // Type conversion
     mlir::Type ConvertShape(const Shape& shape);
     mlir::Type ConvertPrimitiveType(PrimitiveType prim_type);
@@ -803,9 +808,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstru
         // - [1,128,1] -> [128] or [128] -> [1,128,1]
         // - [1] -> [1,1] or [1,1] -> [1]
         // - [1] -> [1,1,1] or [1,1,1] -> [1]
+        bool is_one_dim_reshape = true;
         int64_t input_idx = 0;
         int64_t output_idx = 0;
-
         while (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
             // Skip dimensions of size 1 in input
             while (input_idx < input_shape.dimensions().size() && input_shape.dimensions(input_idx) == 1) {
@@ -819,14 +824,22 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstru
             // If both indices are still valid, check if dimensions match
             if (input_idx < input_shape.dimensions().size() && output_idx < output_shape.dimensions().size()) {
                 if (input_shape.dimensions(input_idx) != output_shape.dimensions(output_idx)) {
-                    return operand;
+                    is_one_dim_reshape = false;
+                    break;
                 }
                 input_idx++;
                 output_idx++;
             } else if (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
                 // One shape still has non-1 dimensions left
-                return operand;
+                is_one_dim_reshape = false;
+                break;
             }
+        }
+
+        if (is_one_dim_reshape) {
+            // Reshape only adds or removes dimensions of size 1
+            // The underlying data layout is the same, so we can just return the operand
+            return operand;
         }
 
         // For more complex reshapes, we currently don't support them
@@ -1361,6 +1374,55 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
     getModule()->setAttr("afir.asc_graph_attr", asc_graph_attr);
 }
 
+void HloToAfirConverter::ProcessHloComputationParameterShapes(
+    const HloComputation& computation,
+    int64_t& max_rank,
+    const Shape*& shape_for_axes,
+    std::unique_ptr<Shape>& merged_shape) {
+    // 遍历所有参数，寻找最大秩并合并相同秩的维度
+    for (int64_t i = 0; i < computation.num_parameters(); ++i) {
+        const Shape& param_shape = computation.parameter_instruction(i)->shape();
+        int64_t param_rank = param_shape.dimensions_size();
+
+        // 找到更大秩的参数，更新最大秩并重置合并形状
+        if (param_rank > max_rank) {
+            max_rank = param_rank;
+            shape_for_axes = &param_shape;
+            merged_shape = nullptr;
+        }
+        // 秩相同，合并维度（取每个轴的最大值）
+        else if (param_rank == max_rank && shape_for_axes != nullptr) {
+            // 首次初始化合并形状
+            if (!merged_shape) {
+                std::vector<int64_t> dims;
+                for (int64_t dim = 0; dim < max_rank; ++dim) {
+                    dims.push_back(shape_for_axes->dimensions(dim));
+                }
+                merged_shape = std::make_unique<Shape>(
+                    ShapeUtil::MakeShape(shape_for_axes->element_type(), dims));
+            }
+
+            // 逐维度取最大值，生成新的合并维度
+            std::vector<int64_t> merged_dims;
+            for (int64_t dim = 0; dim < max_rank; ++dim) {
+                int64_t existing_size = merged_shape->dimensions(dim);
+                int64_t new_size = param_shape.dimensions(dim);
+                int64_t max_size = std::max(existing_size, new_size);
+                merged_dims.push_back(max_size);
+            }
+
+            // 更新合并形状
+            merged_shape = std::make_unique<Shape>(
+                ShapeUtil::MakeShape(shape_for_axes->element_type(), merged_dims));
+        }
+    }
+
+    // 如果存在合并形状，使用合并后的形状
+    if (merged_shape) {
+        shape_for_axes = merged_shape.get();
+    }
+}
+
 int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation) {
     // For computations without parameters, derive axis information from the root instruction's output shape
     const Shape* shape_for_axes = nullptr;
@@ -1376,45 +1438,7 @@ int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation
     }
     if (computation.num_parameters() > 0) {
         // Find the maximum rank across all parameters
-        for (int64_t i = 0; i < computation.num_parameters(); ++i) {
-            const Shape& param_shape = computation.parameter_instruction(i)->shape();
-            int64_t param_rank = param_shape.dimensions_size();
-            if (param_rank > max_rank) {
-                max_rank = param_rank;
-                shape_for_axes = &param_shape;
-                // Reset merged shape when we find a larger rank
-                merged_shape = nullptr;
-            } else if (param_rank == max_rank && shape_for_axes != nullptr) {
-                // When ranks are equal, compare corresponding axis sizes and take the maximum
-                if (!merged_shape) {
-                    // Initialize merged_shape with a copy of shape_for_axes
-                    std::vector<int64_t> dims;
-                    for (int64_t dim = 0; dim < max_rank; ++dim) {
-                        dims.push_back(shape_for_axes->dimensions(dim));
-                    }
-                    merged_shape = std::make_unique<Shape>(
-                        ShapeUtil::MakeShape(shape_for_axes->element_type(), dims));
-                }
-
-                // Merge dimensions: take the maximum size for each axis
-                std::vector<int64_t> merged_dims;
-                for (int64_t dim = 0; dim < max_rank; ++dim) {
-                    int64_t existing_size = merged_shape->dimensions(dim);
-                    int64_t new_size = param_shape.dimensions(dim);
-                    int64_t max_size = std::max(existing_size, new_size);
-                    merged_dims.push_back(max_size);
-                }
-
-                // Update merged_shape
-                merged_shape = std::make_unique<Shape>(
-                    ShapeUtil::MakeShape(shape_for_axes->element_type(), merged_dims));
-            }
-        }
-
-        // If we created a merged shape, use it
-        if (merged_shape) {
-            shape_for_axes = merged_shape.get();
-        }
+        ProcessHloComputationParameterShapes(computation, max_rank, shape_for_axes, merged_shape);
     }
 
     // Use the derived shape for axis sizes
