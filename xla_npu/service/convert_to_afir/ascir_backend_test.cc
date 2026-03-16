@@ -9,6 +9,7 @@
  */
 
 #include "xla/xla_npu/service/convert_to_afir/ascir_backend.h"
+#include "xla/xla_npu/common/npu_config.h"
 
 #include <fstream>
 #include <iostream>
@@ -234,6 +235,9 @@ absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) 
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
+
+    // Initialize NPU config
+    xla::NpuConfig::GetInstance().Init();
 
     std::cout << "========================================" << std::endl;
     std::cout << "HLO to AscIR Backend Test" << std::endl;

@@ -19,6 +19,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Math/IR/Math.h"
@@ -117,6 +118,59 @@ class HloToAfirConverter {
     };
     ReshapeTypeInfo GetReshapeEffectiveType(const HloInstruction* reshape_instr);
 
+    static std::string ShapeToString(const llvm::SmallVector<int64_t>& shape);
+    llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>> CollectTargetShapes(
+        const HloComputation& computation);
+    const HloInstruction* FindTargetOperation(
+        const HloInstruction* instruction,
+        const llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>>& target_shapes);
+    std::pair<size_t, int64_t> ComputeBroadcastAlignment(
+        const llvm::SmallVector<int64_t>& old_shape,
+        const llvm::SmallVector<int64_t>& target_shape);
+    llvm::SmallVector<int64_t> ComputeNewShapeForBroadcast(
+        const llvm::SmallVector<int64_t>& old_shape,
+        const llvm::SmallVector<int64_t>& target_shape,
+        size_t alignment_start);
+    bool UpdateFunctionSignature(mlir::BlockArgument blockArg, mlir::Type new_type);
+    void UpdateLoadOperation(mlir::Value value, mlir::Type new_type, int64_t max_rank);
+    bool ProcessInstruction(
+        const HloInstruction* instruction,
+        const llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>>& target_shapes,
+        int64_t max_rank);
+
+    bool ValidateAndPrepareInstruction(
+        const HloInstruction* instruction,
+        mlir::Value& value,
+        mlir::Value& value_to_update,
+        mlir::BlockArgument& blockArg,
+        mlir::RankedTensorType& tensor_type);
+    bool IsBroadcastTarget(const HloInstruction* target_op);
+    llvm::SmallVector<int64_t> ComputeNewShape(
+        const llvm::SmallVector<int64_t>& old_shape,
+        const llvm::SmallVector<int64_t>& target_shape,
+        const HloInstruction* target_op,
+        int64_t current_rank);
+    void ApplyShapeUpdate(
+        mlir::BlockArgument blockArg,
+        mlir::Value value,
+        mlir::Value value_to_update,
+        mlir::Type new_type,
+        int64_t max_rank);
+
+    void FixBroadcastIndexingMaps(const HloComputation& computation);
+
+    bool GetValidBroadcastOp(const HloInstruction* instr, mlir::afir::BroadcastOp& bcast_op);
+    mlir::AffineMap BuildResultIndexingMap(int64_t result_rank);
+    llvm::SmallVector<bool> IdentifyBroadcastDimensions(
+        mlir::RankedTensorType operand_type,
+        mlir::RankedTensorType result_type);
+    mlir::AffineMap BuildOperandIndexingMap(
+        mlir::RankedTensorType operand_type,
+        mlir::RankedTensorType result_type,
+        const llvm::SmallVector<bool>& is_broadcast_dim,
+        absl::Span<const int64_t> broadcast_dims);
+    void ProcessSingleBroadcast(const HloInstruction* instr);
+
     // Module state
     mlir::Operation* module_op_ptr_;
     mlir::MLIRContext* context_;
@@ -186,11 +240,11 @@ absl::Status HloToAfirConverter::Convert(const HloModule& hlo_module) {
     for (const HloComputation* computation : hlo_module.computations()) {
         if (computation == entry) continue;
 
-        TF_ASSIGN_OR_RETURN(auto func, ConvertComputation(*computation, /*is_entry=*/false));
+        TF_ASSIGN_OR_RETURN(auto func, ConvertComputation(*computation, false));
     }
 
     // Convert entry computation LAST (after all embedded computations)
-    TF_ASSIGN_OR_RETURN(auto entry_func, ConvertComputation(*entry, /*is_entry=*/true));
+    TF_ASSIGN_OR_RETURN(auto entry_func, ConvertComputation(*entry, true));
 
     return absl::OkStatus();
 }
@@ -253,34 +307,34 @@ absl::StatusOr<mlir::func::FuncOp> HloToAfirConverter::ConvertComputation(const 
         }
 
         // Create load node for AFIR dialect
-        if (options_.emit_afir_dialect) {
-            mlir::Type param_type = ConvertShape(param->shape());
-            int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(param_type).getRank();
-            auto identity_map = GetIdentityAffineMap(rank);
-
-            // Create load output attribute
-            auto output_attr = CreateDefaultOutputAttr(param_type);
-            llvm::SmallVector<mlir::Attribute> output_attrs;
-            output_attrs.push_back(output_attr);
-            auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-            // Create indexing_maps for load (single map for input)
-            llvm::SmallVector<mlir::AffineMap> load_maps;
-            load_maps.push_back(identity_map);
-            auto indexing_maps_attr = CreateIndexingMaps(load_maps);
-
-            // Create load operation
-            auto load_op =
-                builder_.create<mlir::afir::LoadOp>(ConvertLocation(param), param_type, arg, indexing_maps_attr,
-                                                    nullptr,                         // loop_axis
-                                                    builder_.getDictionaryAttr({}),  // ir_attr_def
-                                                    nullptr,                         // tmp_buffers
-                                                    outputs_array);
-
-            value_map_[param] = load_op.getResult();
-        } else {
+        if (!options_.emit_afir_dialect) {
             value_map_[param] = arg;
+            continue;
         }
+        mlir::Type param_type = ConvertShape(param->shape());
+        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(param_type).getRank();
+        auto identity_map = GetIdentityAffineMap(rank);
+
+        // Create load output attribute
+        auto output_attr = CreateDefaultOutputAttr(param_type);
+        llvm::SmallVector<mlir::Attribute> output_attrs;
+        output_attrs.push_back(output_attr);
+        auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+        // Create indexing_maps for load (single map for input)
+        llvm::SmallVector<mlir::AffineMap> load_maps;
+        load_maps.push_back(identity_map);
+        auto indexing_maps_attr = CreateIndexingMaps(load_maps);
+
+        // Create load operation
+        auto load_op =
+            builder_.create<mlir::afir::LoadOp>(ConvertLocation(param), param_type, arg, indexing_maps_attr,
+                                                nullptr,                         // loop_axis
+                                                builder_.getDictionaryAttr({}),  // ir_attr_def
+                                                nullptr,                         // tmp_buffers
+                                                outputs_array);
+
+        value_map_[param] = load_op.getResult();
     }
 
     // Convert instructions in post-order (topological sort)
@@ -296,47 +350,35 @@ absl::StatusOr<mlir::func::FuncOp> HloToAfirConverter::ConvertComputation(const 
     // Set return value with store node when emit_afir_dialect is true
     mlir::Value result = value_map_[computation.root_instruction()];
 
-    if (options_.emit_afir_dialect) {
-        // Determine the actual result type for store operation
-        // If root instruction is a reshape that only adds/removes dimensions of size 1,
-        // use the input type of reshape (since reshape is a no-op in AFIR)
-        const HloInstruction* root = computation.root_instruction();
-        mlir::Type result_type;
-
-        if (root->opcode() == HloOpcode::kReshape) {
-            auto reshape_info = GetReshapeEffectiveType(root);
-            result_type = reshape_info.effective_type;
-        } else {
-            result_type = ConvertShape(root->shape());
-        }
-
-        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-        auto identity_map = GetIdentityAffineMap(rank);
-
-        // Create store output attribute
-        auto output_attr = CreateDefaultOutputAttr(result_type);
-        llvm::SmallVector<mlir::Attribute> output_attrs;
-        output_attrs.push_back(output_attr);
-        auto outputs_array = builder_.getArrayAttr(output_attrs);
-
-        // Create indexing_maps for store (single map for output)
-        llvm::SmallVector<mlir::AffineMap> store_maps;
-        store_maps.push_back(identity_map);
-        auto indexing_maps_attr = CreateIndexingMaps(store_maps);
-
-        // Create store operation
-        auto store_op = builder_.create<mlir::afir::StoreOp>(ConvertLocation(computation.root_instruction()),
-                                                             result_type, result, indexing_maps_attr,
-                                                             nullptr,                         // loop_axis
-                                                             builder_.getDictionaryAttr({}),  // ir_attr_def
-                                                             nullptr,                         // tmp_buffers
-                                                             outputs_array);
-
-        // Return the stored value
-        builder_.create<mlir::func::ReturnOp>(ConvertLocation(computation.root_instruction()), store_op.getResult());
-    } else {
+    if (!options_.emit_afir_dialect) {
         builder_.create<mlir::func::ReturnOp>(ConvertLocation(computation.root_instruction()), result);
+        return func;
     }
+
+    int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+    auto identity_map = GetIdentityAffineMap(rank);
+
+    // Create store output attribute
+    auto output_attr = CreateDefaultOutputAttr(result_type);
+    llvm::SmallVector<mlir::Attribute> output_attrs;
+    output_attrs.push_back(output_attr);
+    auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+    // Create indexing_maps for store (single map for output)
+    llvm::SmallVector<mlir::AffineMap> store_maps;
+    store_maps.push_back(identity_map);
+    auto indexing_maps_attr = CreateIndexingMaps(store_maps);
+
+    // Create store operation
+    auto store_op = builder_.create<mlir::afir::StoreOp>(ConvertLocation(computation.root_instruction()),
+                                                         result_type, result, indexing_maps_attr,
+                                                         nullptr,                         // loop_axis
+                                                         builder_.getDictionaryAttr({}),  // ir_attr_def
+                                                         nullptr,                         // tmp_buffers
+                                                         outputs_array);
+
+    // Return the stored value
+    builder_.create<mlir::func::ReturnOp>(ConvertLocation(computation.root_instruction()), store_op.getResult());
 
     return func;
 }
@@ -705,15 +747,15 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstru
             // Extend floating point
             auto extf_op = builder_.create<mlir::arith::ExtFOp>(loc, result_type, operand);
             return extf_op.getResult();
-        } else if (operand_width > result_width) {
+        }
+        if (operand_width > result_width) {
             // Truncate floating point
             auto truncf_op = builder_.create<mlir::arith::TruncFOp>(loc, result_type, operand);
             return truncf_op.getResult();
-        } else {
-            // Same width, just bitcast
-            auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
-            return bitcast_op.getResult();
         }
+        // Same width, just bitcast
+        auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
+        return bitcast_op.getResult();
     }
 
     // Handle integer to integer conversions
@@ -727,19 +769,18 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstru
             if (operand_signed) {
                 auto exti_op = builder_.create<mlir::arith::ExtSIOp>(loc, result_type, operand);
                 return exti_op.getResult();
-            } else {
-                auto exti_op = builder_.create<mlir::arith::ExtUIOp>(loc, result_type, operand);
-                return exti_op.getResult();
             }
-        } else if (operand_width > result_width) {
+            auto exti_op = builder_.create<mlir::arith::ExtUIOp>(loc, result_type, operand);
+            return exti_op.getResult();
+        }
+        if (operand_width > result_width) {
             // Truncate integer
             auto trunci_op = builder_.create<mlir::arith::TruncIOp>(loc, result_type, operand);
             return trunci_op.getResult();
-        } else {
-            // Same width, just bitcast
-            auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
-            return bitcast_op.getResult();
         }
+        // Same width, just bitcast
+        auto bitcast_op = builder_.create<mlir::arith::BitcastOp>(loc, result_type, operand);
+        return bitcast_op.getResult();
     }
 
     // Handle float to integer conversions
@@ -748,10 +789,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstru
         if (result_signed) {
             auto fptosi_op = builder_.create<mlir::arith::FPToSIOp>(loc, result_type, operand);
             return fptosi_op.getResult();
-        } else {
-            auto fptoui_op = builder_.create<mlir::arith::FPToUIOp>(loc, result_type, operand);
-            return fptoui_op.getResult();
         }
+        auto fptoui_op = builder_.create<mlir::arith::FPToUIOp>(loc, result_type, operand);
+        return fptoui_op.getResult();
     }
 
     // Handle integer to float conversions
@@ -760,10 +800,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(const HloInstru
         if (operand_signed) {
             auto sitofp_op = builder_.create<mlir::arith::SIToFPOp>(loc, result_type, operand);
             return sitofp_op.getResult();
-        } else {
-            auto uitofp_op = builder_.create<mlir::arith::UIToFPOp>(loc, result_type, operand);
-            return uitofp_op.getResult();
         }
+        auto uitofp_op = builder_.create<mlir::arith::UIToFPOp>(loc, result_type, operand);
+        return uitofp_op.getResult();
     }
 
     return absl::UnimplementedError(
@@ -783,75 +822,75 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReshapeOp(const HloInstru
     const Shape& input_shape = instruction->operand(0)->shape();
     const Shape& output_shape = instruction->shape();
 
+    // For non-afir mode, just return the operand (reshape is no-op in MLIR)
+    if (!options_.emit_afir_dialect) {
+        return operand;
+    }
     // For emit_afir_dialect mode, use AFIR operations to implement reshape
-    if (options_.emit_afir_dialect) {
-        // Special case: scalar -> [1] reshape
-        // Implement this as a broadcast operation
-        // Because some ops e.g. concat, do not support input tensor with empty axis.
-        if (input_shape.dimensions().size() == 0 && output_shape.dimensions().size() == 1 &&
-            output_shape.dimensions(0) == 1) {
-            int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
-            return CreateScalarBroadcastOp(loc, result_type, operand, rank);
+
+    // Special case: scalar -> [1] reshape
+    // Implement this as a broadcast operation
+    // Because some ops e.g. concat, do not support input tensor with empty axis.
+    if (input_shape.dimensions().size() == 0 && output_shape.dimensions().size() == 1 &&
+        output_shape.dimensions(0) == 1) {
+        int64_t rank = llvm::dyn_cast<mlir::RankedTensorType>(result_type).getRank();
+        return CreateScalarBroadcastOp(loc, result_type, operand, rank);
+    }
+
+    // Special case: [1] -> scalar reshape
+    if (input_shape.dimensions().size() == 1 && input_shape.dimensions(0) == 1 &&
+        output_shape.dimensions().size() == 0) {
+        // Use broadcast with scalar indexing maps
+        return CreateScalarBroadcastOp(loc, result_type, operand, 0);
+    }
+
+    // Check if reshape only adds or removes dimensions of size 1
+    // This covers cases like:
+    // - [1,128] -> [128] or [128] -> [1,128]
+    // - [32,3,1] -> [32,3] or [32,3] -> [32,3,1]
+    // - [1,128,1] -> [128] or [128] -> [1,128,1]
+    // - [1] -> [1,1] or [1,1] -> [1]
+    // - [1] -> [1,1,1] or [1,1,1] -> [1]
+    bool is_one_dim_reshape = true;
+    int64_t input_idx = 0;
+    int64_t output_idx = 0;
+    while (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
+        // Skip dimensions of size 1 in input
+        while (input_idx < input_shape.dimensions().size() && input_shape.dimensions(input_idx) == 1) {
+            input_idx++;
+        }
+        // Skip dimensions of size 1 in output
+        while (output_idx < output_shape.dimensions().size() && output_shape.dimensions(output_idx) == 1) {
+            output_idx++;
         }
 
-        // Special case: [1] -> scalar reshape
-        if (input_shape.dimensions().size() == 1 && input_shape.dimensions(0) == 1 &&
-            output_shape.dimensions().size() == 0) {
-            // Use broadcast with scalar indexing maps
-            return CreateScalarBroadcastOp(loc, result_type, operand, 0);
-        }
-
-        // Check if reshape only adds or removes dimensions of size 1
-        // This covers cases like:
-        // - [1,128] -> [128] or [128] -> [1,128]
-        // - [32,3,1] -> [32,3] or [32,3] -> [32,3,1]
-        // - [1,128,1] -> [128] or [128] -> [1,128,1]
-        // - [1] -> [1,1] or [1,1] -> [1]
-        // - [1] -> [1,1,1] or [1,1,1] -> [1]
-        bool is_one_dim_reshape = true;
-        int64_t input_idx = 0;
-        int64_t output_idx = 0;
-        while (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
-            // Skip dimensions of size 1 in input
-            while (input_idx < input_shape.dimensions().size() && input_shape.dimensions(input_idx) == 1) {
-                input_idx++;
-            }
-            // Skip dimensions of size 1 in output
-            while (output_idx < output_shape.dimensions().size() && output_shape.dimensions(output_idx) == 1) {
-                output_idx++;
-            }
-
-            // If both indices are still valid, check if dimensions match
-            if (input_idx < input_shape.dimensions().size() && output_idx < output_shape.dimensions().size()) {
-                if (input_shape.dimensions(input_idx) != output_shape.dimensions(output_idx)) {
-                    is_one_dim_reshape = false;
-                    break;
-                }
-                input_idx++;
-                output_idx++;
-            } else if (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
-                // One shape still has non-1 dimensions left
+        // If both indices are still valid, check if dimensions match
+        if (input_idx < input_shape.dimensions().size() && output_idx < output_shape.dimensions().size()) {
+            if (input_shape.dimensions(input_idx) != output_shape.dimensions(output_idx)) {
                 is_one_dim_reshape = false;
                 break;
             }
+            input_idx++;
+            output_idx++;
+        } else if (input_idx < input_shape.dimensions().size() || output_idx < output_shape.dimensions().size()) {
+            // One shape still has non-1 dimensions left
+            is_one_dim_reshape = false;
+            break;
         }
-
-        if (is_one_dim_reshape) {
-            // Reshape only adds or removes dimensions of size 1
-            // The underlying data layout is the same, so we can just return the operand
-            return operand;
-        }
-
-        // For more complex reshapes, we currently don't support them
-        return absl::UnimplementedError(
-            absl::StrCat("Unsupported reshape: ",
-                         ShapeUtil::HumanString(input_shape), " -> ",
-                         ShapeUtil::HumanString(output_shape),
-                         ". Only reshapes that add/remove dimensions of size 1 are currently supported."));
     }
 
-    // For non-afir mode, just return the operand (reshape is no-op in MLIR)
-    return operand;
+    if (is_one_dim_reshape) {
+        // Reshape only adds or removes dimensions of size 1
+        // The underlying data layout is the same, so we can just return the operand
+        return operand;
+    }
+
+    // For more complex reshapes, we currently don't support them
+    return absl::UnimplementedError(
+        absl::StrCat("Unsupported reshape: ",
+                     ShapeUtil::HumanString(input_shape), " -> ",
+                     ShapeUtil::HumanString(output_shape),
+                     ". Only reshapes that add/remove dimensions of size 1 are currently supported."));
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertReduceOp(const HloInstruction* instruction) {
@@ -1465,194 +1504,489 @@ int64_t HloToAfirConverter::SetModuleGraphAttr(const HloComputation& computation
     return max_rank;
 }
 
-void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int64_t max_rank) {
-    std::cerr << "FixTensorShapes called with max_rank = " << max_rank << std::endl;
-    std::cerr << "value_map_ has " << value_map_.size() << " entries" << std::endl;
+std::string HloToAfirConverter::ShapeToString(const llvm::SmallVector<int64_t>& shape) {
+    std::string shape_str;
+    for (size_t i = 0; i < shape.size(); ++i) {
+        if (i > 0) {
+            shape_str += ", ";
+        }
+        shape_str += std::to_string(shape[i]);
+    }
+    return shape_str;
+}
 
-    // First pass: Collect target shapes from:
-    // 1. Reshape operations that feed into concat or broadcast operations
-    // 2. Direct broadcast operation (for parameters that directly feed into it)
+llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>>
+HloToAfirConverter::CollectTargetShapes(const HloComputation& computation) {
     llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>> target_shapes;
+
     for (const HloInstruction* instr : computation.instructions()) {
         if (instr->opcode() == HloOpcode::kReshape) {
             // Check if this reshape is used by a concat or broadcast
             for (const HloInstruction* user : instr->users()) {
                 if (user->opcode() == HloOpcode::kConcatenate ||
                     user->opcode() == HloOpcode::kBroadcast) {
-                    // Use the reshape's output shape as the target shape
                     const Shape& shape = instr->shape();
                     llvm::SmallVector<int64_t> shape_vec(shape.dimensions().begin(),
                                                            shape.dimensions().end());
                     target_shapes[user] = shape_vec;
-                    std::cerr << "Found target shape from reshape " << instr->name()
-                             << " (used by " << user->name() << ")"
-                             << ": [";
-                    for (size_t i = 0; i < shape_vec.size(); ++i) {
-                        if (i > 0) std::cerr << ", ";
-                        std::cerr << shape_vec[i];
-                    }
-                    std::cerr << "]" << std::endl;
+
+                    NPU_LOG_FORMAT_PRINT(DEBUG, "Found target shape from reshape %s (used by %s): [%s]",
+                                         std::string(instr->name()).c_str(),
+                                         std::string(user->name()).c_str(),
+                                         ShapeToString(shape_vec).c_str());
                     break;
                 }
             }
         } else if (instr->opcode() == HloOpcode::kBroadcast) {
             // For direct broadcast operation, use its output shape as target shape
-            // This handles the case where a parameter directly feeds into broadcast
             const Shape& shape = instr->shape();
             llvm::SmallVector<int64_t> shape_vec(shape.dimensions().begin(),
                                                    shape.dimensions().end());
             target_shapes[instr] = shape_vec;
-            std::cerr << "Found target shape from direct " << instr->name()
-                     << ": [";
-            for (size_t i = 0; i < shape_vec.size(); ++i) {
-                if (i > 0) std::cerr << ", ";
-                std::cerr << shape_vec[i];
-            }
-            std::cerr << "]" << std::endl;
+
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Found target shape from broadcast %s: [%s]",
+                                 std::string(instr->name()).c_str(),
+                                 ShapeToString(shape_vec).c_str());
         }
     }
 
-    // Second pass: Fix tensor shapes based on target shapes
-    for (const HloInstruction* instruction : computation.instructions()) {
-        auto it = value_map_.find(instruction);
-        if (it == value_map_.end()) {
-            continue;
+    return target_shapes;
+}
+
+const HloInstruction* HloToAfirConverter::FindTargetOperation(
+    const HloInstruction* instruction,
+    const llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>>& target_shapes) {
+    for (const HloInstruction* user : instruction->users()) {
+        if (target_shapes.count(user)) {
+            return user;
         }
+    }
+    return nullptr;
+}
 
-        mlir::Value value = it->second;
-        std::cerr << "Processing instruction: " << instruction->name() << std::endl;
+std::pair<size_t, int64_t> HloToAfirConverter::ComputeBroadcastAlignment(
+    const llvm::SmallVector<int64_t>& old_shape,
+    const llvm::SmallVector<int64_t>& target_shape) {
 
-        // Check if this value is produced by a load operation
-        // If so, we need to update the load's input (the block argument)
-        mlir::Value value_to_update = value;
-        if (mlir::Operation* op = value.getDefiningOp()) {
-            if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
-                // This is a load operation, get its input (block argument)
-                value_to_update = loadOp.getInput();
-                std::cerr << "  Found load op, will update its input (block argument)" << std::endl;
-            }
-        }
+    size_t old_rank = old_shape.size();
+    size_t target_rank = target_shape.size();
+    size_t best_alignment_start = 0;
+    int64_t best_match_score = -1;
 
-        // Check if the value to update is a block argument
-        auto blockArg = dyn_cast<mlir::BlockArgument>(value_to_update);
-        if (!blockArg) {
-            std::cerr << "  This is NOT a BlockArgument, skipping" << std::endl;
-            continue;
-        }
+    // Try aligning old_shape[0] to target_shape[0], target_shape[1], ..., target_shape[target_rank - old_rank]
+    for (size_t align_start = 0; align_start + old_rank <= target_rank; ++align_start) {
+        int64_t match_score = 0;
 
-        std::cerr << "  This is a BlockArgument, arg_num = " << blockArg.getArgNumber() << std::endl;
-
-        auto tensor_type = dyn_cast<mlir::RankedTensorType>(value.getType());
-        if (!tensor_type) {
-            std::cerr << "  Not a tensor type" << std::endl;
-            continue;
-        }
-
-        std::cerr << "  Current rank: " << tensor_type.getRank() << std::endl;
-
-        int64_t current_rank = tensor_type.getRank();
-
-        // If rank already matches max_rank, no need to fix
-        if (current_rank == max_rank) {
-            std::cerr << "  Rank already matches max_rank, skipping" << std::endl;
-            continue;
-        }
-
-        // Find the target shape for this instruction
-        // Look for a concat/broadcast operation that uses this instruction's output
-        const HloInstruction* target_op = nullptr;
-        for (const HloInstruction* user : instruction->users()) {
-            if (target_shapes.count(user)) {
-                target_op = user;
+        // Check if old_shape matches target_shape at this alignment
+        for (size_t i = 0; i < old_rank; ++i) {
+            size_t target_idx = align_start + i;
+            if (old_shape[i] == target_shape[target_idx]) {
+                match_score += 10;  // Exact match gets high score
+            } else if (target_shape[target_idx] == 1) {
+                match_score += 1;   // Can broadcast from 1 gets low score
+            } else if (old_shape[i] == 1) {
+                match_score += 1;   // Can broadcast to 1 gets low score
+            } else {
+                match_score = -1;   // Mismatch
                 break;
             }
         }
 
-        // If no target shape found, skip
-        if (!target_op) {
-            std::cerr << "  No target concat/broadcast found, skipping" << std::endl;
-            continue;
+        // Prefer alignments that maximize match_score
+        if (match_score > best_match_score) {
+            best_match_score = match_score;
+            best_alignment_start = align_start;
         }
+    }
 
-        const llvm::SmallVector<int64_t>& target_shape = target_shapes[target_op];
-        std::cerr << "  Target shape from " << target_op->name()
-                 << ": [";
-        for (size_t i = 0; i < target_shape.size(); ++i) {
-            if (i > 0) std::cerr << ", ";
-            std::cerr << target_shape[i];
+    return {best_alignment_start, best_match_score};
+}
+
+llvm::SmallVector<int64_t> HloToAfirConverter::ComputeNewShapeForBroadcast(
+    const llvm::SmallVector<int64_t>& old_shape,
+    const llvm::SmallVector<int64_t>& target_shape,
+    size_t alignment_start) {
+
+    size_t old_rank = old_shape.size();
+    size_t target_rank = target_shape.size();
+    llvm::SmallVector<int64_t> new_shape(target_shape.begin(), target_shape.end());
+
+    // Fill new_shape based on best alignment
+    for (size_t i = 0; i < target_rank; ++i) {
+        if (i >= alignment_start && i < alignment_start + old_rank) {
+            // This position has a corresponding old_shape dimension
+            size_t old_idx = i - alignment_start;
+            new_shape[i] = old_shape[old_idx];
+        } else {
+            // This position doesn't have corresponding old_shape dimension, fill with 1
+            new_shape[i] = 1;
         }
-        std::cerr << "]" << std::endl;
+    }
 
-        // If rank is 0 (scalar), create shape [1, 1, ..., 1] with max_rank dimensions
-        if (current_rank == 0) {
-            llvm::SmallVector<int64_t> new_shape(max_rank, 1);
-            auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
-            value_to_update.setType(new_type);
+    return new_shape;
+}
 
-            // Update function signature
-            if (auto func = dyn_cast<mlir::func::FuncOp>(blockArg.getOwner()->getParentOp())) {
-                auto func_type = func.getFunctionType();
-                llvm::SmallVector<mlir::Type> inputs(func_type.getInputs().begin(),
-                                                      func_type.getInputs().end());
-                inputs[blockArg.getArgNumber()] = new_type;
-                auto new_func_type = mlir::FunctionType::get(func.getContext(), inputs, func.getResultTypes());
-                func.setType(new_func_type);
-                blockArg.setType(new_type);
+bool HloToAfirConverter::UpdateFunctionSignature(mlir::BlockArgument blockArg, mlir::Type new_type) {
+    if (auto func = dyn_cast<mlir::func::FuncOp>(blockArg.getOwner()->getParentOp())) {
+        auto func_type = func.getFunctionType();
+        llvm::SmallVector<mlir::Type> inputs(func_type.getInputs().begin(),
+                                              func_type.getInputs().end());
+        inputs[blockArg.getArgNumber()] = new_type;
+
+        auto new_func_type = mlir::FunctionType::get(func.getContext(), inputs, func.getResultTypes());
+
+        auto old_ranked_type = dyn_cast<mlir::RankedTensorType>(func_type.getInputs()[blockArg.getArgNumber()]);
+        auto new_ranked_type = dyn_cast<mlir::RankedTensorType>(new_type);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Updating function %s arg %d from rank %d to rank %d",
+                             func.getName().str().c_str(), blockArg.getArgNumber(),
+                             old_ranked_type ? old_ranked_type.getRank() : -1,
+                             new_ranked_type ? new_ranked_type.getRank() : -1);
+
+        func.setType(new_func_type);
+        blockArg.setType(new_type);
+
+        auto updated_ranked_type = dyn_cast<mlir::RankedTensorType>(func.getFunctionType().getInputs()[blockArg.getArgNumber()]);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "After update: rank %d",
+                             updated_ranked_type ? updated_ranked_type.getRank() : -1);
+        return true;
+    }
+    return false;
+}
+
+void HloToAfirConverter::UpdateLoadOperation(mlir::Value value, mlir::Type new_type, int64_t max_rank) {
+    if (mlir::Operation* op = value.getDefiningOp()) {
+        if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
+            // Cast new_type to mlir::TensorType if it's a RankedTensorType
+            if (auto tensor_type = dyn_cast<mlir::TensorType>(new_type)) {
+                loadOp.getResult().setType(tensor_type);
+            } else {
+                // If new_type is not a TensorType, this is an error
+                // Log and return without updating
+                NPU_LOG_FORMAT_PRINT(DEBUG, "  Warning: new_type is not a TensorType, skipping LoadOp update");
+                return;
             }
-
-            // Update load operation if this value is produced by a load
-            if (mlir::Operation* op = value.getDefiningOp()) {
-                if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
-                    loadOp.getResult().setType(new_type);
-                    loadOp.setIndexingMapsAttr(CreateIndexingMaps({GetIdentityAffineMap(max_rank)}));
-                }
-            }
-
-            continue;
+            loadOp.setIndexingMapsAttr(CreateIndexingMaps({GetIdentityAffineMap(max_rank)}));
         }
+    }
+}
 
-        // Use the target shape directly
-        llvm::SmallVector<int64_t> new_shape(target_shape.begin(), target_shape.end());
+bool HloToAfirConverter::ValidateAndPrepareInstruction(
+    const HloInstruction* instruction,
+    mlir::Value& value,
+    mlir::Value& value_to_update,
+    mlir::BlockArgument& blockArg,
+    mlir::RankedTensorType& tensor_type) {
 
-        auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
-        std::cerr << "  New shape: [";
-        for (size_t i = 0; i < new_shape.size(); ++i) {
-            if (i > 0) std::cerr << ", ";
-            std::cerr << new_shape[i];
+    auto it = value_map_.find(instruction);
+    if (it == value_map_.end()) {
+        return false;
+    }
+
+    value = it->second;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Processing instruction: %s", std::string(instruction->name()).c_str());
+
+    // Check if this value is produced by a load operation
+    value_to_update = value;
+    if (mlir::Operation* op = value.getDefiningOp()) {
+        if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
+            value_to_update = loadOp.getInput();
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Found load op, will update its input (block argument)");
         }
-        std::cerr << "]" << std::endl;
+    }
 
-        // Update the block argument
-        value_to_update.setType(new_type);
+    // Check if the value to update is a block argument
+    blockArg = dyn_cast<mlir::BlockArgument>(value_to_update);
+    if (!blockArg) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "This is NOT a BlockArgument, skipping");
+        return false;
+    }
 
-        // Update function signature
-        if (auto func = dyn_cast<mlir::func::FuncOp>(blockArg.getOwner()->getParentOp())) {
-            auto func_type = func.getFunctionType();
-            llvm::SmallVector<mlir::Type> inputs(func_type.getInputs().begin(),
-                                                  func_type.getInputs().end());
-            inputs[blockArg.getArgNumber()] = new_type;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "This is a BlockArgument, arg_num = %d", blockArg.getArgNumber());
 
-            auto new_func_type = mlir::FunctionType::get(func.getContext(), inputs, func.getResultTypes());
+    tensor_type = dyn_cast<mlir::RankedTensorType>(value.getType());
+    if (!tensor_type) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Not a tensor type");
+        return false;
+    }
 
-            std::cerr << "Updating function " << func.getName().str()
-                     << " arg " << blockArg.getArgNumber()
-                     << " from rank " << cast<mlir::RankedTensorType>(func_type.getInputs()[blockArg.getArgNumber()]).getRank()
-                     << " to rank " << new_type.getRank() << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Current rank: %d", tensor_type.getRank());
+    return true;
+}
 
-            func.setType(new_func_type);
-            blockArg.setType(new_type);
-
-            std::cerr << "After update: rank " << cast<mlir::RankedTensorType>(func.getFunctionType().getInputs()[blockArg.getArgNumber()]).getRank() << std::endl;
-        }
-
-        // Update load operation's output type and indexing maps
-        if (mlir::Operation* op = value.getDefiningOp()) {
-            if (auto loadOp = dyn_cast<mlir::afir::LoadOp>(op)) {
-                loadOp.getResult().setType(new_type);
-                loadOp.setIndexingMapsAttr(CreateIndexingMaps({GetIdentityAffineMap(max_rank)}));
+bool HloToAfirConverter::IsBroadcastTarget(const HloInstruction* target_op) {
+    if (target_op->opcode() == HloOpcode::kBroadcast) {
+        return true;
+    }
+    if (target_op->opcode() == HloOpcode::kConcatenate) {
+        // Check if any of the concat's users is a broadcast
+        for (const HloInstruction* concat_user : target_op->users()) {
+            if (concat_user->opcode() == HloOpcode::kBroadcast) {
+                return true;
             }
         }
     }
+    return false;
+}
+
+llvm::SmallVector<int64_t> HloToAfirConverter::ComputeNewShape(
+    const llvm::SmallVector<int64_t>& old_shape,
+    const llvm::SmallVector<int64_t>& target_shape,
+    const HloInstruction* target_op,
+    int64_t current_rank) {
+
+    // Handle scalar case (rank 0)
+    if (current_rank == 0) {
+        llvm::SmallVector<int64_t> new_shape(target_shape.size(), 1);
+        return new_shape;
+    }
+
+    // Check if the target operation is a broadcast
+    if (IsBroadcastTarget(target_op)) {
+        auto [alignment_start, match_score] = ComputeBroadcastAlignment(old_shape, target_shape);
+
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast best alignment: start_pos=%d, match_score=%d",
+                             alignment_start, match_score);
+
+        auto new_shape = ComputeNewShapeForBroadcast(old_shape, target_shape, alignment_start);
+
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast target: old_shape=[%s], computed new_shape=[%s]",
+                             ShapeToString(old_shape).c_str(),
+                             ShapeToString(new_shape).c_str());
+        return new_shape;
+    }
+    // For reshape: use target_shape directly
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Reshape target: using target_shape directly");
+    return llvm::SmallVector<int64_t>(target_shape.begin(), target_shape.end());
+}
+
+void HloToAfirConverter::ApplyShapeUpdate(
+    mlir::BlockArgument blockArg,
+    mlir::Value value,
+    mlir::Value value_to_update,
+    mlir::Type new_type,
+    int64_t max_rank) {
+
+    // Extract shape for logging
+    if (auto ranked_type = dyn_cast<mlir::RankedTensorType>(new_type)) {
+        llvm::SmallVector<int64_t> shape(ranked_type.getShape().begin(), ranked_type.getShape().end());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "New shape: [%s]", ShapeToString(shape).c_str());
+    }
+
+    // Update the block argument
+    value_to_update.setType(new_type);
+
+    // Update function signature
+    UpdateFunctionSignature(blockArg, new_type);
+
+    // Update load operation's output type and indexing maps
+    UpdateLoadOperation(value, new_type, max_rank);
+}
+
+bool HloToAfirConverter::ProcessInstruction(
+    const HloInstruction* instruction,
+    const llvm::DenseMap<const HloInstruction*, llvm::SmallVector<int64_t>>& target_shapes,
+    int64_t max_rank) {
+
+    mlir::Value value;
+    mlir::Value value_to_update;
+    mlir::BlockArgument blockArg;
+    mlir::RankedTensorType tensor_type;
+
+    // Validate and prepare instruction for processing
+    if (!ValidateAndPrepareInstruction(instruction, value, value_to_update, blockArg, tensor_type)) {
+        return false;
+    }
+
+    int64_t current_rank = tensor_type.getRank();
+
+    // If rank already matches max_rank, no need to fix
+    if (current_rank == max_rank) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Rank already matches max_rank, skipping");
+        return false;
+    }
+
+    // Find the target shape for this instruction
+    const HloInstruction* target_op = FindTargetOperation(instruction, target_shapes);
+    if (!target_op) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "No target concat/broadcast found, skipping");
+        return false;
+    }
+
+    const llvm::SmallVector<int64_t>& target_shape = target_shapes.find(target_op)->second;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Target shape from %s: [%s]", std::string(target_op->name()).c_str(),
+                         ShapeToString(target_shape).c_str());
+
+    // Get the old shape (current tensor shape)
+    llvm::SmallVector<int64_t> old_shape(tensor_type.getShape().begin(), tensor_type.getShape().end());
+
+    // Compute new shape based on target operation type
+    llvm::SmallVector<int64_t> new_shape = ComputeNewShape(old_shape, target_shape, target_op, current_rank);
+
+    // Create new tensor type
+    auto new_type = mlir::RankedTensorType::get(new_shape, tensor_type.getElementType());
+
+    // Apply the shape update
+    ApplyShapeUpdate(blockArg, value, value_to_update, new_type, max_rank);
+
+    return true;
+}
+
+bool HloToAfirConverter::GetValidBroadcastOp(const HloInstruction* instr,
+                                              mlir::afir::BroadcastOp& bcast_op) {
+    if (instr->opcode() != HloOpcode::kBroadcast) {
+        return false;
+    }
+
+    auto it = value_map_.find(instr);
+    if (it == value_map_.end()) {
+        return false;
+    }
+
+    mlir::Value broadcast_result = it->second;
+    mlir::Operation* broadcast_op = broadcast_result.getDefiningOp();
+    if (!broadcast_op) {
+        return false;
+    }
+
+    bcast_op = dyn_cast<mlir::afir::BroadcastOp>(broadcast_op);
+    return static_cast<bool>(bcast_op);
+}
+
+mlir::AffineMap HloToAfirConverter::BuildResultIndexingMap(int64_t result_rank) {
+    // Result map: identity
+    llvm::SmallVector<mlir::AffineExpr> result_exprs;
+    for (int64_t i = 0; i < result_rank; ++i) {
+        result_exprs.push_back(builder_.getAffineDimExpr(i));
+    }
+    return mlir::AffineMap::get(result_rank, 0, result_exprs, context_);
+}
+
+llvm::SmallVector<bool> HloToAfirConverter::IdentifyBroadcastDimensions(
+    mlir::RankedTensorType operand_type,
+    mlir::RankedTensorType result_type) {
+
+    int64_t operand_rank = operand_type.getRank();
+    int64_t result_rank = result_type.getRank();
+
+    auto operand_shape = operand_type.getShape();
+    auto result_shape = result_type.getShape();
+
+    // Identify broadcast vs data dimensions
+    llvm::SmallVector<bool> is_broadcast_dim(operand_rank, false);
+    for (int64_t i = 0; i < operand_rank; ++i) {
+        if (operand_shape[i] == 1) {
+            if (i < result_rank && result_shape[i] == 1) {
+                is_broadcast_dim[i] = false;
+            } else {
+                is_broadcast_dim[i] = true;
+            }
+        }
+    }
+
+    return is_broadcast_dim;
+}
+
+mlir::AffineMap HloToAfirConverter::BuildOperandIndexingMap(
+    mlir::RankedTensorType operand_type,
+    mlir::RankedTensorType result_type,
+    const llvm::SmallVector<bool>& is_broadcast_dim,
+    absl::Span<const int64_t> broadcast_dims) {
+
+    int64_t operand_rank = operand_type.getRank();
+    int64_t result_rank = result_type.getRank();
+
+    auto operand_shape = operand_type.getShape();
+    auto result_shape = result_type.getShape();
+
+    // Build operand map
+    llvm::SmallVector<mlir::AffineExpr> operand_exprs;
+    int64_t data_dim_idx = 0;
+    for (int64_t i = 0; i < operand_rank; ++i) {
+        if (is_broadcast_dim[i]) {
+            operand_exprs.push_back(builder_.getAffineConstantExpr(0));
+        } else {
+            if (data_dim_idx < broadcast_dims.size()) {
+                int64_t result_dim = broadcast_dims[data_dim_idx];
+                operand_exprs.push_back(builder_.getAffineDimExpr(result_dim));
+                data_dim_idx++;
+            } else {
+                // Fallback: find matching dimension
+                bool found = false;
+                for (int64_t j = 0; j < result_rank; ++j) {
+                    if (operand_shape[i] == result_shape[j]) {
+                        operand_exprs.push_back(builder_.getAffineDimExpr(j));
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    operand_exprs.push_back(builder_.getAffineConstantExpr(0));
+                }
+            }
+        }
+    }
+
+    return mlir::AffineMap::get(result_rank, 0, operand_exprs, context_);
+}
+
+void HloToAfirConverter::ProcessSingleBroadcast(const HloInstruction* instr) {
+    mlir::afir::BroadcastOp bcast_op;
+    if (!GetValidBroadcastOp(instr, bcast_op)) {
+        return;
+    }
+
+    // Get the operand
+    mlir::Value operand = bcast_op.getOperand();
+    auto operand_tensor_type = dyn_cast<mlir::RankedTensorType>(operand.getType());
+    auto broadcast_result = bcast_op.getResult();
+    auto result_tensor_type = dyn_cast<mlir::RankedTensorType>(broadcast_result.getType());
+
+    if (!operand_tensor_type || !result_tensor_type) {
+        return;
+    }
+
+    // Get broadcast_dims from HLO instruction
+    const auto& broadcast_dims = instr->dimensions();
+
+    // Build result indexing map
+    auto result_map = BuildResultIndexingMap(result_tensor_type.getRank());
+
+    // Identify broadcast dimensions
+    auto is_broadcast_dim = IdentifyBroadcastDimensions(operand_tensor_type, result_tensor_type);
+
+    // Build operand indexing map
+    auto operand_map = BuildOperandIndexingMap(operand_tensor_type, result_tensor_type,
+                                               is_broadcast_dim, broadcast_dims);
+
+    // Update the broadcast operation's indexing_maps
+    llvm::SmallVector<mlir::AffineMap> new_maps;
+    new_maps.push_back(operand_map);
+    new_maps.push_back(result_map);
+    bcast_op.setIndexingMapsAttr(CreateIndexingMaps(new_maps));
+}
+
+void HloToAfirConverter::FixBroadcastIndexingMaps(const HloComputation& computation) {
+    for (const HloInstruction* instr : computation.instructions()) {
+        if (instr->opcode() == HloOpcode::kBroadcast) {
+            ProcessSingleBroadcast(instr);
+        }
+    }
+}
+
+void HloToAfirConverter::FixTensorShapes(const HloComputation& computation, int64_t max_rank) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, "FixTensorShapes called with max_rank = %d", max_rank);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "value_map_ has %d entries", value_map_.size());
+
+    // First pass: Collect target shapes from reshape and broadcast operations
+    auto target_shapes = CollectTargetShapes(computation);
+
+    // Second pass: Fix tensor shapes based on target shapes
+    for (const HloInstruction* instruction : computation.instructions()) {
+        ProcessInstruction(instruction, target_shapes, max_rank);
+    }
+
+    // Third pass: Fix broadcast operations' indexing_maps
+    FixBroadcastIndexingMaps(computation);
 }
 
 }  // namespace
@@ -1716,17 +2050,14 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(co
     TF_ASSIGN_OR_RETURN(auto func, converter.ConvertComputation(computation, /*is_entry=*/true));
 
     // Set module-level asc_graph_attr and fix tensor shapes if emit_afir_dialect is enabled
-    std::cerr << "emit_afir_dialect = " << options.emit_afir_dialect << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "emit_afir_dialect = %d", options.emit_afir_dialect);
     if (options.emit_afir_dialect) {
         int64_t max_rank = converter.SetModuleGraphAttr(computation);
 
-        // Check if the computation contains any concatenate/brc operations
+        // Check if the computation contains any concatenate/broadcast operations
         for (const HloInstruction* instr : computation.instructions()) {
-            if (instr->opcode() == HloOpcode::kConcatenate) {
-                converter.FixTensorShapes(computation, max_rank);
-                break;
-            }
-            if (instr->opcode() == HloOpcode::kBroadcast) {
+            if (instr->opcode() == HloOpcode::kConcatenate ||
+                instr->opcode() == HloOpcode::kBroadcast) {
                 converter.FixTensorShapes(computation, max_rank);
                 break;
             }

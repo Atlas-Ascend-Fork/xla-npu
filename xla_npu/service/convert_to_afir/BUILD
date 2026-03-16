@@ -20,12 +20,12 @@ cc_library(
     name = "python_gil_guard",
     srcs = ["python_gil_guard.cc"],
     hdrs = ["python_gil_guard.h"],
+    linkstatic = True,
     deps = [
         "//xla/xla_npu/dependency/tool:log",
         "@com_google_absl//absl/strings",
         "@rules_python//python/cc:current_py_cc_headers",
     ],
-    linkstatic = True,
 )
 
 # ============================================================================
@@ -42,6 +42,7 @@ cc_library(
         "//xla/hlo/ir:hlo",
         "//xla/xla_npu/dependency/external/afir:AFIRDialect",
         "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
+        "//xla/xla_npu/dependency/tool:log",
         "@com_google_absl//absl/strings",
         "@llvm-project//mlir:ArithDialect",
         "@llvm-project//mlir:FuncDialect",
@@ -58,26 +59,25 @@ cc_library(
     name = "ascir_backend",
     srcs = ["ascir_backend.cc"],
     hdrs = ["ascir_backend.h"],
+    linkstatic = True,  # 不向外部传递依赖
     deps = [
         ":convert_to_afir",
         ":python_gil_guard",
-        "//xla/xla_npu/common:npu_config",
-        "//xla/xla_npu/common:npu_constant",
-        "//xla/xla_npu/service/kernel:npu_compile_result",
-
         "//xla:util",
         "//xla/hlo/ir:hlo",
+        "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/common:npu_constant",
         "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
+        "//xla/xla_npu/dependency/external/afir:AFIRToASCIRText",
         "//xla/xla_npu/dependency/external/afir:AFIRTransforms",
         "//xla/xla_npu/dependency/tool:log",
-        "//xla/xla_npu/dependency/external/afir:AFIRToASCIRText",
+        "//xla/xla_npu/service/kernel:npu_compile_result",
         "@com_google_absl//absl/strings",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Parser",
         "@llvm-project//mlir:Pass",
         "@rules_python//python/cc:current_py_cc_headers",
     ],
-    linkstatic = True, # 不向外部传递依赖
 )
 
 # Binary test for AscIR backend
@@ -94,6 +94,7 @@ cc_binary(
         "//xla:util",
         "//xla/hlo/ir:hlo",
         "//xla/hlo/parser:hlo_parser",
+        "//xla/xla_npu/common:npu_config",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
