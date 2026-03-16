@@ -122,7 +122,7 @@ void NpuCustomKernelThunk::PrintParamInfoBeforeExecute(int device_ordinal,
     NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s",
                          thunk_info().param_shapes[id].ToString(true).c_str());
     NpuTool::PrintNpuDeviceMemoryValueByShape(
-        "  Value on device:", thunk_info().param_shapes[id], buf.opaque(), 1024);
+        "  Value on device:", thunk_info().param_shapes[id], buf.opaque());
 
     id++;
   }
@@ -140,7 +140,7 @@ void NpuCustomKernelThunk::PrintParamInfoAfterExecute(int device_ordinal,
     NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s",
                          thunk_info().param_shapes[id].ToString(true).c_str());
     NpuTool::PrintNpuDeviceMemoryValueByShape(
-        "  Value on device:", thunk_info().param_shapes[id], buf.opaque(), 1024);
+        "  Value on device:", thunk_info().param_shapes[id], buf.opaque());
 
     id++;
   }

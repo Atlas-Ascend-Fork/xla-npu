@@ -17,6 +17,7 @@
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 #include "xla/xla_data.pb.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 #include "xla/xla_npu/dependency/tool/log.h"
@@ -97,9 +98,14 @@ class NpuTool {
   static void PrintNpuDeviceMemoryValue(const std::string& title,
                                         const int64_t& size,
                                         const void* deviceAddr,
-                                        int64_t max_print_count = 256) {
+                                        int64_t max_print_count = -1) {
     NPU_LOG_FORMAT_PRINT(DEBUG, title);
 
+    // 获取配置的最大打印数量
+    if (max_print_count <= 0) {
+      max_print_count = NpuConfig::GetInstance().GetMaxPrintCount();
+    }
+    
     int64_t print_count = std::min(size, max_print_count);
     std::vector<printDataType> resultData(print_count, 0);
     aclError ret = npu::aclrtMemcpy(
@@ -129,7 +135,7 @@ class NpuTool {
   static void PrintNpuDeviceMemoryValueByShape(const std::string& title,
                                                const Shape& xla_shape,
                                                const void* device_addr,
-                                               int64_t max_print_count = 10);
+                                               int64_t max_print_count = -1);
 
   // 计算xla shape表示的元素个数
   static int64_t GetXlaShapeSize(const Shape& xla_data_shape) {

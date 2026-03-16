@@ -11,6 +11,8 @@
 #ifndef XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
 #define XLA_XLA_NPU_COMMON_NPU_CONFIG_H_
 
+#include <cstdlib>
+#include <string>
 #include "xla/xla_npu/dependency/tool/config_loader.h"
 
 namespace xla {
@@ -18,10 +20,11 @@ namespace xla {
 class NpuConfig {
  public:
   enum class Key {
-    NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR,
-    USE_OLD_CANN_STYLE,
+    NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR, // 融合算子编译产物输出位置
+    USE_OLD_CANN_STYLE, // CANN 8.5.0及以下版本在基于afir后端进行算子融合时需要打开此开关
+    XLA_NPU_MAX_PRINT_COUNT, // 控制融合算子和ACLNN算子的输入输出打印元素数量
     // 由于存在config_loader和log循环依赖的问题,
-    // XLA_NPU_LOG_LEVEL(控制显示日志级别)环境变量直接定义再了log类中
+    // XLA_NPU_LOG_LEVEL(控制显示日志级别)环境变量直接定义在了log类中
   };
 
   NpuConfig(const NpuConfig&) = delete;
@@ -33,6 +36,18 @@ class NpuConfig {
   }
 
   void Init();
+
+  int GetMaxPrintCount() const {
+    const char* env = getenv("XLA_NPU_MAX_PRINT_COUNT");
+    if (env) {
+      try {
+        return std::stoi(env);
+      } catch (...) {
+        return 8;  // 默认值
+      }
+    }
+    return 8;  // 默认值
+  }
 
  private:
   NpuConfig() = default;
