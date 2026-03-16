@@ -78,6 +78,26 @@ def compare_all_results(num_runs=1):
     cpu_runs = int(cpu_data['num_runs'])
     npu_runs = int(npu_data['num_runs'])
     
+    # Load execution times if available
+    cpu_execution_times = []
+    npu_execution_times = []
+    
+    # Check if execution times are available in individual output files
+    for run_idx in range(min(cpu_runs, npu_runs, num_runs)):
+        try:
+            cpu_run_data = np.load(CPU_OUTPUT_FILE)
+            if 'execution_time' in cpu_run_data:
+                cpu_execution_times.append(float(cpu_run_data['execution_time']))
+        except:
+            pass
+        
+        try:
+            npu_run_data = np.load(NPU_OUTPUT_FILE)
+            if 'execution_time' in npu_run_data:
+                npu_execution_times.append(float(npu_run_data['execution_time']))
+        except:
+            pass
+    
     # Load inputs for each run
     cpu_inputs = cpu_data.get('inputs', None)
     npu_inputs = npu_data.get('inputs', None)
@@ -101,7 +121,12 @@ def compare_all_results(num_runs=1):
         npu_output = npu_outputs[run_idx]
 
         print_results(cpu_output, "CPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
+        if cpu_execution_times and run_idx < len(cpu_execution_times):
+            print(f"[CPU] Execution time: {cpu_execution_times[run_idx]:.2f} ms")
+        
         print_results(npu_output, "NPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
+        if npu_execution_times and run_idx < len(npu_execution_times):
+            print(f"[NPU] Execution time: {npu_execution_times[run_idx]:.2f} ms")
         
         # Use corresponding inputs for comparison
         cpu_input = cpu_inputs[run_idx] if cpu_inputs is not None else None

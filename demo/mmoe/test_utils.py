@@ -4,6 +4,7 @@ MMOE Test Utilities - Common functions for CPU and NPU tests
 """
 
 import os
+import time
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -136,6 +137,29 @@ def run_inference(model, params, x):
     return np.array(output)
 
 
+def time_inference(model, params, x):
+    """Run inference and measure execution time.
+    
+    Args:
+        model: MMOE model instance
+        params: Model parameters
+        x: Input tensor
+        
+    Returns:
+        tuple: (output, execution_time_ms)
+    """
+    # Warmup run to compile JIT
+    run_inference(model, params, x)
+    
+    # Measure actual execution time
+    start_time = time.time()
+    output = run_inference(model, params, x)
+    end_time = time.time()
+    
+    execution_time_ms = (end_time - start_time) * 1000
+    return output, execution_time_ms
+
+
 def run_inference_and_save(model, params, x, device_name, output_file):
     """Run inference and save results to file.
     
@@ -147,11 +171,11 @@ def run_inference_and_save(model, params, x, device_name, output_file):
         output_file: Path to save output
         
     Returns:
-        np.ndarray: Output as numpy array
+        tuple: (output, execution_time_ms)
     """
-    output = run_inference(model, params, x)
-    np.savez(output_file, output=output, input=x)
-    return output
+    output, execution_time_ms = time_inference(model, params, x)
+    np.savez(output_file, output=output, input=x, execution_time=execution_time_ms)
+    return output, execution_time_ms
 
 
 # ============================================================================

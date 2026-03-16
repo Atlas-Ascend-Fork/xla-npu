@@ -75,9 +75,9 @@ def run_npu_test(num_runs=1, inputs=None):
             x = generate_input()
         
         print(f"[NPU] Running inference {i+1}/{num_runs}...", flush=True)
-        output = run_inference_and_save(model, params, x, "NPU", NPU_OUTPUT_FILE)
+        output, execution_time = run_inference_and_save(model, params, x, "NPU", NPU_OUTPUT_FILE)
         outputs.append(output.copy())
-        print(f"[NPU] Run {i+1}/{num_runs} completed", flush=True)
+        print(f"[NPU] Run {i+1}/{num_runs} completed in {execution_time:.2f} ms", flush=True)
     
     # Ensure output directory exists and save all outputs for comparison
     from test_utils import ensure_dir
