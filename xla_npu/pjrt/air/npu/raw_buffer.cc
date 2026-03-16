@@ -86,7 +86,6 @@ Future<> NpuTrackedDeviceEvent::GetReadyFuture() {
 
 /*static*/ absl::StatusOr<tsl::RCReference<NpuRawBuffer>>
 NpuRawBuffer::Allocate(PjRtMemorySpace* memory_space, size_t size_bytes) {
-  std::cout << "NpuRawBuffer::Allocate" << std::endl;
   TF_ASSIGN_OR_RETURN(auto memory,
                       NpuDeviceMemory::Allocate(size_bytes));
   return tsl::MakeRef<NpuRawBuffer>(memory_space, std::move(memory));

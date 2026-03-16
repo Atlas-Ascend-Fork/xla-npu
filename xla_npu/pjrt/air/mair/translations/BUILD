@@ -41,5 +41,6 @@ cc_library(
         "@llvm-project//mlir:FuncDialect",
         "//xla/xla_npu/dependency/stub:ge_hdrs",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
     ],
 )

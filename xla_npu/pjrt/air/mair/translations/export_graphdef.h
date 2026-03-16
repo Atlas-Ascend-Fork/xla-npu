@@ -42,6 +42,7 @@
 #include "xla/xla_npu/dependency/header/metadef/graph/operator.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/header/ge/ge_api.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 #include "./status.h"
 
