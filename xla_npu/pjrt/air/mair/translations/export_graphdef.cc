@@ -100,13 +100,12 @@ const std::map<ge::DataType, std::string> DataTypeNames = {
 
 
 Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
-    log("Start to covert module to ge graph.");
+    NPU_LOG_FORMAT_PRINT(INFO, "Start to covert module to ge graph.");
     std::optional<mlir::func::FuncOp> entry_func;
     mlir::StringAttr entry_func_id = mlir::StringAttr::get(module.getContext(), "main");
-    log("Get main func id.");
     for (auto function : module.getOps<mlir::func::FuncOp>()) {
         if (function.isExternal()) {
-            log("External functions not supported");
+            NPU_LOG_FORMAT_PRINT(ERROR, "External functions not supported.");
             return Status::OK();
         }
         if (function.getName() == entry_func_id) {
@@ -115,21 +114,21 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     }
 
     if (!entry_func.has_value()) {
-        log("entry function `main` must be present");
+        NPU_LOG_FORMAT_PRINT(ERROR, "entry function `main` must be present.");
         return Status::OK();
     }
 
     // start to build ge graph
     mlir::func::FuncOp function = entry_func.value();
     mlir::Block& entryBlock = function.getBody().front();
-    log("===================Get mlir function done. Start to get arguments of the function.");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Get mlir function done. Start to get arguments of the function.");
 
     // build input arguments    
     for (int i = 0; i < entryBlock.getNumArguments(); i++) {
         mlir::BlockArgument arg = entryBlock.getArgument(i);
         std::string mlirSymbol = "%arg" + std::to_string(arg.getArgNumber());
         std::string realSymbol = "Data_" + std::to_string(i);
-        log("Add arguments:" + mlirSymbol + " ; parse to :" + realSymbol);
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Add arguments:%s ; parse to :%s", mlirSymbol.c_str(), realSymbol.c_str());
 
         // 获取参数类型和形状
         mlir::TensorType arg_type = mlir::dyn_cast<mlir::TensorType>(arg.getType());
@@ -142,7 +141,7 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
 
         auto format = ge::FORMAT_ND;
         ge::TensorDesc data_desc(shape, format, dtype);
-        log("Gen ArgumentNode Data:[" + realSymbol + "] InputDesc/OutputDesc[" + mlir::debugString(arg_type) +"]");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Gen ArgumentNode Data:[%s], InputDesc/OutputDesc[%s]", realSymbol.c_str(), mlir::debugString(arg_type).c_str());
         auto data = ge::OperatorFactory::CreateOperator(realSymbol.c_str(), "Data");
         data.SetAttr("index", i);
         data.UpdateInputDesc("x", data_desc);
@@ -158,8 +157,7 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
             .tensorDesc = data_desc
         };
 
-        llvm::errs() << "入参: MLIR符号=" << mlirSymbol
-                    << ", 真实符号=" << realSymbol << "\n";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "mlirSymbol:[%s], realSymbol[%s]", mlirSymbol.c_str(), realSymbol.c_str());
     }
 
     std::vector<ge::Operator> inputs;
@@ -168,9 +166,9 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     }
 
 
-    log("--Set graph inputs. The inputs size =[" + std::to_string(inputs.size()) + "]");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "--Set graph inputs. The inputs size =[%d]", inputs.size());
     for (const auto& inputOp : inputs) {
-        log("--Input operator name=[" + std::string(getOpName(inputOp)) + "]");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "--Input operator name=[%s]", std::string(getOpName(inputOp)).c_str());
     }
 
     // ==================================
@@ -181,10 +179,10 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
     std::vector<ge::Operator> outputs;
 
     for (mlir::Operation& op : entryBlock.getOperations()) {
-        log("================================Start to deal with the op:" + op.getName().getStringRef().str());
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Start to deal with the op:[%s]", op.getName().getStringRef().str().c_str());
         if (mlir::isa<mlir::func::ReturnOp>(op)) {
             SymbolInfo symbolInfo = processReturnOp(op);
-            log("Return op is " + std::string(getOpName(symbolInfo.geOp)));
+            NPU_LOG_FORMAT_PRINT(DEBUG, "Return op is:[%s]", std::string(getOpName(symbolInfo.geOp)).c_str());
             outputs.emplace_back(symbolInfo.geOp);
             continue;
         }
@@ -194,19 +192,19 @@ Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
         opCounter++;
     }
 
-    log("--Set graph outputs. The outputs size =[" + std::to_string(outputs.size()) + "]");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "--Set graph outputs. The outputs size =[%d]", outputs.size());
     for (const auto& outputOp : outputs) {
-        log("--Output operator name=[" + std::string(getOpName(outputOp)) + "]");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "--Output operator name=[%s]", std::string(getOpName(outputOp)).c_str());
     }
 
     graphPtr->SetInputs(inputs).SetOutputs(outputs);
-    log("============Finish All Operator");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Finish All Operator");
     std::vector<GNode> nodes = graphPtr->GetAllNodes();
-    log("============Get All GNodes size:" + std::to_string(nodes.size()));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Get All GNodes size =[%d]", nodes.size());
     for (size_t i = 0; i < nodes.size(); i++) {
         ge::AscendString nodeName;
         nodes.at(i).GetName(nodeName);
-        llvm::errs() << "Nodes [" << i << "] name[" << nodeName.GetString()<<"]\n";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Nodes:[%d], name =[%s]", (int)i, nodeName.GetString());
     }
     return Status::OK();
 }
@@ -216,38 +214,34 @@ Exporter::SymbolInfo Exporter::processReturnOp(mlir::Operation& returnOp) {
     mlir::func::ReturnOp returnOpCast = mlir::cast<mlir::func::ReturnOp>(returnOp);
 
     mlir::Value returnValue = returnOpCast.getOperand(0);
-    log("-------returnOp operand:" + mlir::debugString(returnValue));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "returnOp operand:[%s]", mlir::debugString(returnValue).c_str());
     std::string mlirSymbol = getMlirSymbol(returnValue);
 
     // 查找真实输出符号
     auto it = symbolMap.find(mlirSymbol);
     if (it == symbolMap.end()) {
-        llvm::errs() << "Find [" << mlirSymbol << "] failed !!!\n";
+        NPU_LOG_FORMAT_PRINT(ERROR, "Find [%s] failed !!!", mlirSymbol.c_str());
     }
 
     const SymbolInfo& symbolInfo = it->second;
     printSymbolInfo(symbolInfo);
-    llvm::errs() << "图输出: MLIR符号=" << mlirSymbol << "\n";
-
+    NPU_LOG_FORMAT_PRINT(DEBUG, "graph output mlirSymbol:[%s]", mlirSymbol.c_str());
     return symbolInfo;
 }
 
 void Exporter::printSymbolInfo(const SymbolInfo& symbolInfo) {
-   llvm::errs() << "SymbolInfo = mlirSymbol:[" << symbolInfo.orgSymbol << "]  opName:[" << getOpName(symbolInfo.geOp) <<"]" << "\n";
+    NPU_LOG_FORMAT_PRINT(DEBUG, "SymbolInfo = mlirSymbol:[%s] opName:[%s]", symbolInfo.orgSymbol.c_str(), getOpName(symbolInfo.geOp));
 }
 
 bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr &graphPtr) {
     // 1. 获取操作名（去掉"mair."前缀）
     std::string opName = mlirOp.getName().getStringRef().str();
     if (opName.find("mair.") != 0) {
-        llvm::errs() << "警告: 跳过非mair操作: " << opName << "\n";
+        NPU_LOG_FORMAT_PRINT(WARN, "Skip non-mair operations, op is:[%s]", opName.c_str());
         return true;
     }
 
     std::string opType = opName.substr(5);  // 去掉"mair."
-
-    llvm::errs() << "处理操作: " << opName << " -> " << opType
-                << " (序号=" << opCounter << ")\n";
 
     // 2. 创建目标操作
     ge::Operator geOp = ge::OperatorFactory::CreateOperator((opType + std::to_string(opCounter)).c_str(), opType.c_str());
@@ -256,14 +250,14 @@ bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter, ge::Grap
     if (!processOperationInputs(mlirOp, geOp, opType)) {
         return false;
     }
-    llvm::errs() << "Input number of this op is " << geOp.GetInputsSize() << "\n";
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Input number of this op is:[%d]", geOp.GetInputsSize());
 
     // 4. 处理输出
     if (!processOperationOutputs(mlirOp, geOp, opCounter, opType)) {
         return false;
     }
 
-    llvm::errs() << "Output number of this op is " << geOp.GetOutputsSize() << "\n";
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Output number of this op is:[%d]", geOp.GetOutputsSize());
 
     return true;
 }
@@ -273,19 +267,19 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp
     geOp.DynamicInputRegisterByIndex("x", x_value.size(), 0);
     unsigned i = 0;
     for (mlir::Value val : x_value) {
-        log("----------trans the input x of ConcatV2: " + mlir::debugString(val));
+        NPU_LOG_FORMAT_PRINT(DEBUG, "----------trans the input x of ConcatV2: %s", mlir::debugString(val).c_str());
         std::string mlirSymbol = getMlirSymbol(val);
         if (mlirSymbol.empty()) {
-            llvm::errs() << "错误：无法获取操作数符号\n";
+            NPU_LOG_FORMAT_PRINT(ERROR, "Error: Unable to obtain operand symbols");
             return false;
         }
         auto it = symbolMap.find(mlirSymbol);
         if (it == symbolMap.end()) {
-            llvm::errs() << "错误：未找到value符号映射: " << mlirSymbol << "\n";
+            NPU_LOG_FORMAT_PRINT(ERROR, "Error: Value symbol mapping not found: %s", mlirSymbol.c_str());
             return false;
         }
 
-        log("Find input :");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Find input :");
         printSymbolInfo(it->second);
         ge::Operator inputOp = it->second.geOp;
         geOp.SetInput(i++, inputOp, 0U);
@@ -293,20 +287,20 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp
 
     mlir::Value dim_value = concatV2Op.getConcatDim();
     const std::string* inputName= getGeOpInputName(opType, 1);
-    log("----------trans the input dim of ConcatV2: " + mlir::debugString(dim_value));
+    NPU_LOG_FORMAT_PRINT(DEBUG, "----------trans the input dim of ConcatV2: %s", mlir::debugString(dim_value).c_str());
 
     std::string mlirSymbol = getMlirSymbol(dim_value);
     if (mlirSymbol.empty()) {
-        llvm::errs() << "错误：无法获取操作数符号\n";
+        NPU_LOG_FORMAT_PRINT(ERROR, "Error: Unable to obtain operand symbols");
         return false;
     }
 
     auto it = symbolMap.find(mlirSymbol);
     if (it == symbolMap.end()) {
-        llvm::errs() << "错误：未找到dim符号映射: " << mlirSymbol << "\n";
+        NPU_LOG_FORMAT_PRINT(ERROR, "Error: DIM symbol mapping not found: %s", mlirSymbol.c_str());
         return false;
     }
-    log("Find input :");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Find input :");
     printSymbolInfo(it->second);
     ge::Operator inputOp = it->second.geOp;
     geOp.SetInput(inputName->c_str(), inputOp);
@@ -315,7 +309,7 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp
         geOp.SetAttr("N", intAttr.getInt());
         return true;
     }
-    llvm::errs() << "ERROR: N value is illegal.\n";
+    NPU_LOG_FORMAT_PRINT(ERROR, "ERROR: N value is illegal.");
     return false;
 }
 
@@ -327,21 +321,21 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
     unsigned numOperands = mlirOp.getNumOperands();
     for (unsigned i = 0; i < numOperands; i++) {
         mlir::Value operand = mlirOp.getOperand(i);
-        log("----------trans the input: " + mlir::debugString(operand));
+        NPU_LOG_FORMAT_PRINT(DEBUG, "trans the input: %s", mlir::debugString(operand).c_str());
 
         std::string mlirSymbol = getMlirSymbol(operand);
         if (mlirSymbol.empty()) {
-            llvm::errs() << "错误：无法获取操作数符号\n";
+            NPU_LOG_FORMAT_PRINT(ERROR, "Error: Unable to obtain operand symbols");
             return false;
         }
 
         auto it = symbolMap.find(mlirSymbol);
         if (it == symbolMap.end()) {
-            llvm::errs() << "错误：未找到符号映射: " << mlirSymbol << "\n";
+            NPU_LOG_FORMAT_PRINT(ERROR, "Error: Symbol mapping not found: %s", mlirSymbol.c_str());
             return false;
         }
 
-        log("Find input :");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Find input :");
         printSymbolInfo(it->second);
 
         const std::string* inputName= getGeOpInputName(opType, i);
@@ -349,8 +343,8 @@ bool Exporter::processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geO
         ge::Operator inputOp = it->second.geOp;
         geOp.SetInput(inputName->c_str(), inputOp);
 
-        llvm::errs() << "  Set opInput[" << i << "]: origin=" << mlirSymbol
-                    << ", inputName=[" << *inputName << "] opName=[" << getOpName(inputOp) <<"]\n";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Set opInput[%d]: origin=%s, inputName=[%s] opName=[%s]",
+                             i, mlirSymbol.c_str(), inputName->c_str(), getOpName(inputOp));
     }
 
     return true;
@@ -372,16 +366,15 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
         // 获取MLIR符号
         std::string mlirSymbol = getMlirSymbol(result);
         if (mlirSymbol.empty()) {
-            llvm::errs() << "错误：无法获取结果符号\n";
+            NPU_LOG_FORMAT_PRINT(ERROR, "Error: Unable to get result symbols");
             return false;
         }
         if (opType == "Const") {
             mlir::Attribute valueAttr = mlirOp.getAttr("value");
-            llvm::errs() << "Const operatro. mlir::Attribute valueAttr  = " << valueAttr << "\n";
             if (auto denseAttr = mlir::dyn_cast<mlir::ElementsAttr>(valueAttr)) {
                 ge::Tensor valueTensor;
                 if(!ConvertToTensor(denseAttr, &valueTensor).ok()) {
-                    llvm::errs() << "Fail to convert to tensor!!  \n";
+                    NPU_LOG_FORMAT_PRINT(ERROR, "Fail to convert to tensor!!");
                 }
                 ge::TensorDesc desc = valueTensor.GetTensorDesc();
                 ge::DataType dt = desc.GetDataType();
@@ -395,12 +388,12 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
                     oss << dim << ",";
                 }
                 oss << "]";
-                llvm::errs() << oss.str() << "\n";
+                NPU_LOG_FORMAT_PRINT(DEBUG, "%s", oss.str().c_str());
 
                 geOp.SetAttr("value", valueTensor);
                 geOp.UpdateOutputDesc("y", desc);
             } else {
-                llvm::errs() << "Failed Const operatro. Not ElementsAttr \n";
+                NPU_LOG_FORMAT_PRINT(ERROR, "Failed Const operatro. Not ElementsAttr");
             }
         }
 
@@ -410,7 +403,7 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& ge
             .geOp = geOp,
         };
 
-        llvm::errs() << "  输出[" << i << "]: MLIR符号=" << mlirSymbol << "\n";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "output[%d]: MLIR symbol=%s", i, mlirSymbol.c_str());
     }
 
     return true;
@@ -438,8 +431,10 @@ float Exporter::extractFloatValueSimple(mlir::Attribute valueAttr) {
         return static_cast<float>(intAttr.getValue().getSExtValue());
     }
 
-    llvm::errs() << "  Fail to get value from " << valueAttr << "\n";
-    // 默认返回0.0
+    std::string attrStr;
+    llvm::raw_string_ostream oss(attrStr);
+    oss << valueAttr;
+    NPU_LOG_FORMAT_PRINT(WARN, "Fail to get value from %s", attrStr.c_str());
     return 0.0f;
 }
 

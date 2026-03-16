@@ -16,6 +16,7 @@
 #include "xla/xla_data.pb.h"
 
 #include "xla/xla_npu/dependency/header/metadef/graph/tensor.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -62,10 +63,8 @@ public:
         }
 
         ge::Shape ge_data_shape(ge_shape_vector);
-        std::cout << "convert xla shape to ge shape,"
-            << " input xla shape is " << xla_data_shape
-            << ", output ge shape is " << GetShapeString(ge_data_shape)
-            << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "convert xla shape to ge shape, input xla shape is %s, output ge shape is %s",
+                             xla_data_shape.ToString().c_str(), GetShapeString(ge_data_shape).c_str());
 
         return ge_data_shape;
     }
@@ -76,11 +75,9 @@ public:
         const auto& xla_data_type = ConvertGeType2XlaType(ge_data_type);
         const Shape& xla_data_shape = ShapeUtil::MakeShape(xla_data_type, xla_data_dims);
 
-        std::cout << "convert ge shape to xla shape,"
-            << " input ge shape is " << GetShapeString(ge_data_shape)
-            << " which type is " << xla_data_type
-            << ", output xla shape is " << xla_data_shape
-            << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "convert ge shape to xla shape, input ge shape is %s which type is %d, output xla shape is %s",
+                             GetShapeString(ge_data_shape).c_str(), static_cast<int>(xla_data_type),
+                             xla_data_shape.ToString().c_str());
 
         return xla_data_shape;
     }

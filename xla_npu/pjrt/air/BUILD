@@ -26,7 +26,7 @@ cc_library(
     hdrs = ["npu_tool.h"],
     deps = [
         "//xla/xla_npu/pjrt/air/npu/ge:graph_data_hdrs",
-        
+        "//xla/xla_npu/dependency/tool:log",
         "//xla:shape_util",
     ],
 )

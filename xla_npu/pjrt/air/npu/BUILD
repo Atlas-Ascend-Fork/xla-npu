@@ -39,6 +39,7 @@ cc_library(
         ":npu_event",
         "//xla/xla_npu/pjrt/air/npu/service:npu_executable",
         "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
         
         "//xla:future",
         "//xla:literal",
@@ -179,6 +180,7 @@ cc_library(
         "//xla/tsl/platform:env",
         "//xla/tsl/platform:errors",
         "//xla/tsl/platform:statusor",
+        "//xla/xla_npu/dependency/tool:log",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/base:dynamic_annotations",

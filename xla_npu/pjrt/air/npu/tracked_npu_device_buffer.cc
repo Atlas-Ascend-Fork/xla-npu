@@ -5,13 +5,14 @@
  * Please refer to the License for details. You may not use this file except in compliance with the License.
  * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
  * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
- * See LICENSE in the root of the software repository for the full text of the License.
+ * See LICENSE in the root of the software repository.
  */
 
 #include "xla/xla_npu/pjrt/air/npu/tracked_npu_device_buffer.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/pjrt/common_pjrt_client.h"
 #include "raw_buffer.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 // Returns an AsyncValueRef<CpuEvent> that will be ready after all the async
@@ -45,7 +46,7 @@ public:
       : base_(base), size_bytes_(size_bytes) {}
 
   ~AlignedMemory() final {
-    std::cout << "AlignedMemory::~AlignedMemory size_bytes:" << size_bytes_ << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedMemory::~AlignedMemory size_bytes: %zu", size_bytes_);
     npu::aclrtFree(base_);
   }
 
@@ -61,7 +62,7 @@ class AlignedAllocator final : public NpuDeviceMemory::Allocator {
 public:
   absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(
       size_t size_bytes, size_t alignment) const final {
-    std::cout << "AlignedAllocator::Allocate size_bytes:" << size_bytes << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedAllocator::Allocate size_bytes: %zu", size_bytes);
     void *base = nullptr;
     aclError acl_malloc = npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
     if (acl_malloc == ACL_SUCCESS) {
@@ -103,8 +104,7 @@ public:
 
   ~NpuDeviceMemoryForeign() final {
     if (on_delete_callback_) {
-      std::cout << "need call delete function for " << std::showbase << std::hex
-        << (uint64_t)base_ << ", which size is " << size_bytes_ << std::endl;
+      NPU_LOG_FORMAT_PRINT(DEBUG, "need call delete function for %p, which size is %zu", base_, size_bytes_);
       std::move(on_delete_callback_)();
     }
   }
@@ -148,7 +148,7 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(
 // Allocates owning memory wrapped in an available `AsyncValueRef`.
 absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(
     size_t size_bytes) {
-  std::cout << "NpuDeviceMemory::Allocate size_bytes:" << size_bytes << std::endl;
+  NPU_LOG_FORMAT_PRINT(DEBUG, "NpuDeviceMemory::Allocate size_bytes: %zu", size_bytes);
   TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem,
                       DefaultAllocator().Allocate(size_bytes, 0));
   return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));

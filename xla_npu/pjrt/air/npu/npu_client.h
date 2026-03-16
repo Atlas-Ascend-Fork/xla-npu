@@ -35,6 +35,7 @@
 #include "xla/xla_npu/pjrt/plugin/npu_device_description.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/header/ge/ge_api.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 
@@ -218,7 +219,7 @@ private:
     // major-to-minor layout.
     absl::Mutex transpose_mu_;
     TransposePlanCache transpose_cache_ ABSL_GUARDED_BY(transpose_mu_);
-    
+
     // Thread pool for running PjRtClient tasks.
     std::unique_ptr<tsl::thread::ThreadPool> pjrt_client_thread_pool_;
     std::unique_ptr<AsyncWorkRunner> async_work_runner_;
@@ -245,51 +246,51 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
   PjRtNpuClient* client() const override { return client_; }
 
   absl::string_view name() const override {
-    std::cout<< "npu executable name: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable name: ");
     return npu_executable_->shared_module()->name();
   }
 
   int num_replicas() const override {
-    std::cout<< "npu executable num_replicas: "<< std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable num_replicas: ");
     return num_replicas_;
   }
 
   int num_partitions() const override {
-    std::cout<< "npu executable num_partitions: "<< std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable num_partitions: ");
     return num_partitions_;
   }
 
   int64_t SizeOfGeneratedCodeInBytes() const override {
-    std::cout<< "npu executable SizeOfGeneratedCodeInBytes: "<< std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable SizeOfGeneratedCodeInBytes: ");
     return npu_executable_->SizeOfGeneratedCodeInBytes();
   }
 
   const DeviceAssignment& device_assignment() const override {
-    std::cout<< "device_assignment: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "device_assignment: ");
     return *device_assignment_;
   }
 
   absl::Span<const LogicalDeviceIds> addressable_device_logical_ids()
       const override {
-    std::cout<< "npu executable addressable_device_logical_ids: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable addressable_device_logical_ids: ");
     return addressable_device_logical_ids_;
   }
 
   absl::Span<PjRtDevice* const> addressable_devices() const override {
-    std::cout<< "npu executable addressable_devices: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable addressable_devices: ");
     return addressable_devices_;
   }
 
   absl::StatusOr<std::vector<std::shared_ptr<HloModule>>> GetHloModules()
       const override {
-    std::cout<< "npu executable GetHloModules: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable GetHloModules: ");
     return std::vector<std::shared_ptr<HloModule>>{
       npu_executable_->shared_module()};
   }
 
   absl::StatusOr<std::vector<std::vector<absl::string_view>>>
   GetOutputMemoryKinds() const override {
-    std::cout<< "npu executable GetOutputMemoryKinds: " << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "npu executable GetOutputMemoryKinds: ");
     return Unimplemented("GetOutputMemoryKinds is not supported.");
   }
 
@@ -312,7 +313,7 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
       absl::Span<PjRtBuffer* const> argument_handles, PjRtDevice* device,
       const ExecuteOptions& options, std::optional<Future<>>& returned_future,
       bool fill_future) const override;
-  
+
   void Delete() override;
 
   bool IsDeleted() const override;
@@ -399,7 +400,7 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
 
 inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient()
 {
-    std::cout << "NPU PJRT_CLIENT_CREATE" << std::endl;
+    NPU_LOG_FORMAT_PRINT(INFO, "NPU PJRT_CLIENT_CREATE");
     int device_id = 0;
     int process_index = 0;
     std::vector<std::unique_ptr<xla::PjRtNpuDevice>> devices;

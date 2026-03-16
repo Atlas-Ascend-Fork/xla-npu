@@ -261,7 +261,7 @@ absl::StatusOr<std::unique_ptr<PjRtBuffer>> PjRtNpuClient::DefineBuffer(
 {
     absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> definition_events;
     for (auto& ev : definition_device_events) {
-        std::cout << "PjRtNpuClient::DefineBuffer event: " << ev.get() << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "PjRtNpuClient::DefineBuffer event: %p", ev.get());
         definition_events.push_back(
             tsl::down_cast<NpuTrackedDeviceEvent*>(ev.get())->event());
     }
@@ -350,7 +350,7 @@ PjRtNpuClient::CompileInternal(
             build_options.set_device_ordinal(addressable_devices.front()->local_hardware_id().value());
         }
     }
-    
+
     /* set input data */
     for (int i = 0; i < program_shape.parameters_size(); ++i) {
         Shape input_parameter = program_shape.parameters(i);
@@ -360,7 +360,7 @@ PjRtNpuClient::CompileInternal(
         graph_data.input_dtypes.emplace_back(input_data_type);
     }
 
-    /* create buffer assignment(Do not delete!!! alloc output buffer depends on it) */ 
+    /* create buffer assignment(Do not delete!!! alloc output buffer depends on it) */
     auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
 
     TF_ASSIGN_OR_RETURN(
@@ -390,18 +390,18 @@ absl::StatusOr<DeviceAssignment> PjRtNpuClient::GetDefaultDeviceAssignment(
         }
         return assignment;
     }
-    std::cout << "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: " << num_replicas
-        << ", num_partitions: " << num_partitions << std::endl;
+    NPU_LOG_FORMAT_PRINT(ERROR, "Exception PjRtNpuClient::GetDefaultDeviceAssignment num_replicas: %d, num_partitions: %d",
+    num_replicas, num_partitions);
     return computation_placer_->AssignDevices(num_replicas, num_partitions);
 }
 
 absl::StatusOr<std::unique_ptr<PjRtLoadedExecutable>>
-PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) { 
+PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     tsl::profiler::TraceMe traceme("PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options)");
     std::string result;
     llvm::raw_string_ostream os(result);
     module.print(os);
-    std::cout << "stablehlo module: " << os.str() << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "stablehlo module: %s", os.str().c_str());
 
     mlir::ModuleOp mair_module = module.clone();
     xla::mair::Stablehlo2MairConverter(mair_module);
@@ -409,13 +409,13 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
     std::string mair_result;
     llvm::raw_string_ostream mair_os(mair_result);
     mair_module.print(mair_os);
-    std::cout << "mair module: " << mair_os.str() << std::endl;
+    NPU_LOG_FORMAT_PRINT(DEBUG, "mair module: %s", mair_os.str().c_str());
 
     std::map<ge::AscendString, ge::AscendString> ge_options = {
         {"ge.exec.deviceId", "0"},
     };
 
-    if (!ge_initialized_) {    
+    if (!ge_initialized_) {
         if (ge::GEInitialize(ge_options) != ge::SUCCESS) {
             return absl::InternalError("Failed to initialize GE.");
         } else {
@@ -424,7 +424,7 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
             if (global_ge_session_ == nullptr) {
                 return absl::InternalError("Failed to create GE session.");
             }
-            ge_initialized_ = true;    
+            ge_initialized_ = true;
         }
     }
 
@@ -511,7 +511,7 @@ PjRtNpuExecutable::Execute(
     const ExecuteOptions& options,
     std::optional<std::vector<Future<>>>& returned_futures) const {
     RunId run_id(options.launch_id);
-    std::cout << "Executing computation " << name() << std::endl;
+    NPU_LOG_FORMAT_PRINT(INFO, "Executing computation %s", std::string(name()).c_str());
 
     // only one device
     std::vector<std::vector<std::unique_ptr<PjRtBuffer>>> wrapped_results(1);
@@ -580,7 +580,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
 
     absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> tracked_buffers;
     tracked_buffers.reserve(argument_handles.size());
-    
+
     // To avoid clobbering inputs, we must ensure that
     //   `extra_deps` = inputs' definition events + donated inputs' usage events.
     // This also ensures that the returned `execute_event` dominates all inputs'
@@ -612,10 +612,10 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
                 usage_transaction.buffer());
             usage_transaction.ConvertUsageHold(execute_usage_event);
             tracked_buffers.emplace_back(/*can_donate=*/false, tracked_buffer);
-            
+
             return absl::OkStatus();
         };
-        
+
         TF_RETURN_IF_ERROR(get_buffer(i));
 
         // Definition events are never modified after buffer construction. If they
@@ -629,12 +629,12 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     }
 
     for (auto& tracked_buffer: tracked_buffers) {
-        std::cout << "argument handle buffer addr=" << tracked_buffer.second->buffer().get().untyped_data()
-            << ", size="<< tracked_buffer.second->buffer().get().size_bytes() << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "argument handle buffer addr=%p, size=%zu",
+        tracked_buffer.second->buffer().get().untyped_data(), tracked_buffer.second->buffer().get().size_bytes());
     }
 
     if (!input_deps.empty()) {
-        std::cout << "input is not ready" << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "input is not ready");
     }
 
     auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);
@@ -663,8 +663,8 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
         for (int j = 0; j < dimSize; ++j) {
             input.SetShapeDim(j, input_data_shape.GetDim(j));
         }
-        std::cout << "input tensor " << i << " data addr=" << tracked_buffers[i].second->buffer().get().untyped_data()
-            << ", data size=" << tracked_buffers[i].second->buffer().get().size_bytes() << std::endl;
+        NPU_LOG_FORMAT_PRINT(DEBUG, "input tensor %d data addr=%p, data size=%zu", i,
+        tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes());
         inputs.emplace_back(input);
     }
 
