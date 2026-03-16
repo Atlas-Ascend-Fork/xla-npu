@@ -24,7 +24,7 @@ namespace npu {
 static Log::Level GetEnvLogLevel() {
   const char* env_level = std::getenv("XLA_NPU_LOG_LEVEL");
   if (env_level == nullptr) {
-    return Log::Level::DEBUG;  // 默认级别为 DEBUG; TODO 修改为INFO
+    return Log::Level::INFO;  // 默认级别为 INFO
   }
 
   std::string level_str = env_level;
