@@ -113,6 +113,16 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
     freed_addresses_.erase(base);
   }
 
+  // 清零分配的内存
+  DeviceMemoryBase mem(base, size);
+  absl::Status status = SynchronousMemZero(&mem, size);
+  if (!status.ok()) {
+    NPU_LOG_FORMAT_PRINT(ERROR, "Failed to zero memory at %p, size %d: %s",
+                         base, size, status.ToString().c_str());
+    npu::aclrtFree(base);
+    return DeviceMemoryBase(nullptr, size);
+  }
+
   NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory allocated, addr %p, size %d", base,
                        size);
   return DeviceMemoryBase(base, size);
@@ -148,8 +158,21 @@ void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
 
 absl::Status NpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
                                              uint64_t size) {
-  return absl::UnimplementedError(
-      "NpuExecutor::SynchronousMemZero is not supported.");
+  // 保证当前线程执行过set device
+  xla::NpuOperation::SetDevice(device_ordinal_);
+
+  aclError ret = npu::aclrtMemset(location->opaque(), size, 0, size);
+  if (ret != ACL_SUCCESS) {
+    NPU_LOG_FORMAT_PRINT(
+        ERROR, "SynchronousMemZero failed, addr %p, size %d, error code: %d",
+        location->opaque(), size, ret);
+    return absl::InternalError(
+        absl::StrFormat("aclrtMemset failed, error code: %d", ret));
+  }
+
+  NPU_LOG_FORMAT_PRINT(DEBUG, "SynchronousMemZero success, addr %p, size %d",
+                       location->opaque(), size);
+  return absl::OkStatus();
 }
 
 absl::Status NpuExecutor::SynchronousMemcpy(DeviceMemoryBase* gpu_dst,

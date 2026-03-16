@@ -415,10 +415,6 @@ absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
                                                            /*retry_on_failure=*/true,
                                                            /*memory_space=*/allocation.color()));
             buffer_address = buffer.Release();
-            // 清零分配的内存,避免未初始化数据导致的问题
-            if (stream != nullptr && !buffer_address.is_null()) {
-                TF_RETURN_IF_ERROR(stream->MemZero(&buffer_address, buffer_size));
-            }
         }
         return buffer_address;
     }
