@@ -3,6 +3,17 @@
 MMOE Configuration - All constants and configuration parameters
 """
 
+import os
+import sys
+
+from common.config import (
+    COMPARISON_TOLERANCE,
+    PRINT_SEPARATOR,
+    OUTPUT_SAMPLE_SIZE,
+    OUTPUT_DIR,
+)
+from common.utils import create_output_dirs, get_output_files
+
 # ============================================================================
 # Model Architecture Configuration
 # ============================================================================
@@ -34,42 +45,23 @@ CONFIG_MODEL_PARAMS_FILE = "model_params.npz"  # Model parameters file name
 # Test Configuration
 # ============================================================================
 
+# Test description
+DESCRIPTION = "MMOE JAX Implementation"
+
 # Inference settings
 DEFAULT_NUM_RUNS = 1          # Default number of runs per test
-DEFAULT_NUM_TESTS = 1         # Default number of test iterations
-
-# Comparison settings
-COMPARISON_TOLERANCE = 1e-4   # Tolerance for CPU/NPU result comparison
-
-# ============================================================================
-# JAX/NPU Configuration
-# ============================================================================
-
-# Platform settings
-NPU_PLATFORM_NAME = 'npu'
-NPU_LIBRARY_NAME = 'pjrt_c_api_npu_plugin.so'
-
-# Environment variables
-ENV_PJRT_NAMES_AND_LIBRARY_PATHS = 'PJRT_NAMES_AND_LIBRARY_PATHS'
-ENV_JAX_PLATFORMS = 'JAX_PLATFORMS'
 
 # ============================================================================
 # Temporary File Paths
 # ============================================================================
 
-# Output directory
-OUTPUT_DIR = "/tmp/npu_test"
+# Output directories
+MMOE_OUTPUT_DIR, TEST_OUTPUT_DIR = create_output_dirs(OUTPUT_DIR, "mmoe")
 
-# Output file paths
-CPU_OUTPUT_FILE = f"{OUTPUT_DIR}/mmoe_cpu_output.npz"
-NPU_OUTPUT_FILE = f"{OUTPUT_DIR}/mmoe_npu_output.npz"
-CPU_ALL_OUTPUTS_FILE = f"{OUTPUT_DIR}/mmoe_cpu_all_outputs.npz"
-NPU_ALL_OUTPUTS_FILE = f"{OUTPUT_DIR}/mmoe_npu_all_outputs.npz"
-INPUT_DATA_FILE = f"{OUTPUT_DIR}/mmoe_input_data.npz"
-
-# ============================================================================
-# Print Settings
-# ============================================================================
-
-PRINT_SEPARATOR = "=" * 60
-OUTPUT_SAMPLE_SIZE = 5        # Number of samples to print
+# Output file paths (default without run number)
+output_files = get_output_files(MMOE_OUTPUT_DIR, TEST_OUTPUT_DIR)
+CPU_OUTPUT_FILE = output_files['cpu_output_file']
+NPU_OUTPUT_FILE = output_files['npu_output_file']
+CPU_ALL_OUTPUTS_FILE = output_files['cpu_all_outputs_file']
+NPU_ALL_OUTPUTS_FILE = output_files['npu_all_outputs_file']
+INPUT_DATA_FILE = output_files['input_data_file']
