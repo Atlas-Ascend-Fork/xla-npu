@@ -1,0 +1,118 @@
+# -*- coding:utf-8 -*-
+"""
+MMOE NPU Run - Run inference on NPU multiple times
+"""
+
+import os
+import sys
+import numpy as np
+
+# Add parent directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from common.utils import (
+    setup_npu_environment,
+    ensure_dir,
+    save_results,
+    parse_command_line_args,
+    load_inputs_from_file,
+    print_run_summary,
+)
+
+from config import (
+    NPU_OUTPUT_FILE,
+    NPU_ALL_OUTPUTS_FILE,
+)
+
+
+# Global variables for caching
+_model = None
+_params = None
+_initialized = False
+
+
+def initialize_npu():
+    """Initialize NPU environment only once."""
+    global _initialized
+    
+    if _initialized:
+        return
+    
+    setup_npu_environment()
+    
+    import jax
+    # Do NOT reload jax - this would trigger recompilation
+    
+    _initialized = True
+
+
+def get_model_and_params():
+    """Get or create model and parameters (cached)."""
+    global _model, _params
+    
+    if _model is None or _params is None:
+        from utils import setup_model_and_params
+        _model, _params = setup_model_and_params()
+    
+    return _model, _params
+
+
+def run_npu(num_runs=1, inputs=None):
+    """Run NPU inference multiple times.
+    
+    Args:
+        num_runs: Number of runs to execute
+        inputs: List of input data for each run. If None, generates new inputs.
+    """
+    initialize_npu()
+    
+    from utils import generate_mmoe_input, run_inference_and_save
+    
+    # Get cached model and params
+    model, params = get_model_and_params()
+    
+    # Run inference multiple times with different inputs
+    outputs = []
+    
+    for i in range(num_runs):
+        if inputs is not None and i < len(inputs):
+            x = inputs[i]
+        else:
+            x = generate_mmoe_input()
+        
+        print(f"[NPU] Running inference {i+1}/{num_runs}...", flush=True)
+        output, execution_time = run_inference_and_save(model, params, x, "NPU", NPU_OUTPUT_FILE)
+        outputs.append(output.copy())
+        print(f"[NPU] Run {i+1}/{num_runs} completed in {execution_time:.2f} ms", flush=True)
+    
+    # Ensure output directory exists and save all outputs for comparison
+    ensure_dir(NPU_ALL_OUTPUTS_FILE)
+    all_outputs = np.stack(outputs, axis=0)
+    all_inputs = np.stack([np.array(inp) for inp in (inputs if inputs else [generate_mmoe_input()] * num_runs)], axis=0) if inputs else None
+    save_dict = {
+        'outputs': all_outputs,
+        'num_runs': num_runs
+    }
+    if all_inputs is not None:
+        save_dict['inputs'] = all_inputs
+    save_results(NPU_ALL_OUTPUTS_FILE, **save_dict)
+    
+    return outputs, inputs
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    args = parse_command_line_args('NPU MMOE Run')
+    
+    num_runs = args.num_runs
+    input_file = args.input_file
+    
+    # Check if input data is provided
+    inputs = load_inputs_from_file(input_file, num_runs)
+
+    # Run NPU inference
+    outputs, inputs = run_npu(num_runs, inputs)
+    
+    # Print results when called directly
+    print_run_summary('NPU', num_runs, print_summary=False)

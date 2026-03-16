@@ -85,7 +85,7 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
       }
       break;
     default:
-      NPU_LOG_FORMAT_PRINT(WARN, "Op code(%v) does not support check now",
+      NPU_LOG_FORMAT_PRINT(ERROR, "Op code(%v) does not support check now",
                            HloOpcodeString(op_code));
   }
 
@@ -101,7 +101,7 @@ NpuAclnnThunk::NpuAclnnThunk(std::string fingerprint, ThunkInfo thunk_info,
       graph_(std::make_shared<se::dnn::LazyDnnGraph>(nullptr)),
       args_(std::move(args)),
       //   output_args_(std::move(output_args)), //
-      //   output_args_表示args_中哪些内存地址是会被写入的,由于存在内存复用,
+      //   output_args_表示args_中哪些内存地址是会被写入的,用于存在内存复用,
       // 假设add的args_大小为3,则可能后2个arg内存地址相同,都为可写入
       sdpa_dropout_seed_(sdpa_dropout_seed) {}
 
@@ -732,7 +732,7 @@ absl::Status NpuAclnnThunk::PrintOutputTensor(
                        outout_arg_param.ToString(true));
   NPU_LOG_FORMAT_PRINT(DEBUG, "  Device addr: %p", device_addr);
   NpuTool::PrintNpuDeviceMemoryValueByShape(
-      "  Value on device:", outout_arg_param, device_addr, 1024);
+      "  Value on device:", outout_arg_param, device_addr);
 
   return absl::OkStatus();
 }

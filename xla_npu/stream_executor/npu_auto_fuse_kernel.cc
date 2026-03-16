@@ -75,7 +75,7 @@ absl::Status NpuAutoFuseKernel::Launch(
     const std::optional<ClusterDim>& cluster_dims, Stream* stream,
     const KernelArgs& args) {
   // thread_dims, cluster_dims not use
-  NPU_LOG_FORMAT_PRINT(INFO, "NpuAutoFuseKernel::Launch called");
+  NPU_LOG_FORMAT_PRINT(DEBUG, "NpuAutoFuseKernel::Launch called");
 
   CHECK_COND_AND_PRINT_NPU_LOG(
       stream == nullptr,
@@ -85,7 +85,7 @@ absl::Status NpuAutoFuseKernel::Launch(
       stream_handle.stream == nullptr,
       "Acl stream need to be created or init before execute npu thunk.");
   auto acl_stream = stream_handle.stream;
-  NPU_LOG_FORMAT_PRINT(INFO, "  acl_stream=%p", acl_stream);
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  acl_stream=%p", acl_stream);
 
   size_t tiling_size = GetTilingSizeFunc_();
   std::vector<uint8_t> tiling_data_holder(tiling_size);
@@ -97,8 +97,8 @@ absl::Status NpuAutoFuseKernel::Launch(
       TilingFunc_(tiling_data, &workspace_size, &block_dim, nullptr);
   CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0,
                                "Tiling failed, error code: %d.", auto_fuse_ret);
-  NPU_LOG_FORMAT_PRINT(INFO, "  tiling_size=%zu", tiling_size);
-  NPU_LOG_FORMAT_PRINT(INFO, "  TilingFunc_ workspace_size=%u, block_dim=%u",
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  tiling_size=%zu", tiling_size);
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  TilingFunc_ workspace_size=%u, block_dim=%u",
                        workspace_size, block_dim);
 
   void* workspace = nullptr;
@@ -109,16 +109,16 @@ absl::Status NpuAutoFuseKernel::Launch(
     CHECK_COND_AND_PRINT_NPU_LOG(workspace == nullptr,
                                  "Failed to allocate %d bytes for workspace.",
                                  workspace_size);
-    NPU_LOG_FORMAT_PRINT(INFO, "  workspace allocated: %p, size=%u", workspace,
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace allocated: %p, size=%u", workspace,
                          workspace_size);
   } else {
-    NPU_LOG_FORMAT_PRINT(INFO, "  workspace_size=%u, no workspace allocated",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace_size=%u, no workspace allocated",
                          workspace_size);
   }
 
   // TODO 参考cuda_kernel,使用KernelLoaderSpec中传递进来的pack函数进行参数封装
   if (auto* args_ptr = DynCast<KernelArgsDeviceMemoryArray>(&args)) {
-    NPU_LOG_FORMAT_PRINT(INFO, "  args_ptr=%p, number_of_arguments=%zu",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  args_ptr=%p, number_of_arguments=%zu",
                          args_ptr, args_ptr->number_of_arguments());
     int32_t input_param_num = args_ptr->number_of_arguments() - 1;
     int32_t output_param_num = 1;  // 当前写死为1
@@ -129,11 +129,11 @@ absl::Status NpuAutoFuseKernel::Launch(
     }
     void* output_param_addr = const_cast<void*>(args_ptr->device_memory_ptr(
         args_ptr->number_of_arguments() - 1));  // 默认取最后一个
-    NPU_LOG_FORMAT_PRINT(INFO, "  input_param_num=%d, output_param_num=%d",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  input_param_num=%d, output_param_num=%d",
                          input_param_num, output_param_num);
-    NPU_LOG_FORMAT_PRINT(INFO, "  input_param_addrs=%p, output_param_addr=%p",
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  input_param_addrs=%p, output_param_addr=%p",
                          input_param_addrs.data(), output_param_addr);
-    NPU_LOG_FORMAT_PRINT(INFO, "  tiling_data=%p", tiling_data);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  tiling_data=%p", tiling_data);
 
     auto_fuse_ret = LaunchFunc_(block_dim, acl_stream, input_param_addrs.data(),
                                 input_param_num, &output_param_addr,
@@ -154,7 +154,7 @@ absl::Status NpuAutoFuseKernel::Launch(
     NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace memory freed: %p", workspace);
   }
 
-  NPU_LOG_FORMAT_PRINT(INFO,
+  NPU_LOG_FORMAT_PRINT(DEBUG,
                        "  NpuAutoFuseKernel::Launch completed successfully");
   return absl::OkStatus();
 }

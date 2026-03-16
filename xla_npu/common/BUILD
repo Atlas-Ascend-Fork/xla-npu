@@ -69,6 +69,7 @@ cc_library(
     srcs = ["npu_tool.cc"],
     hdrs = ["npu_tool.h"],
     deps = [
+        ":npu_config",
         "//xla/xla_npu/dependency/interface:acl_interface",
         "//xla/xla_npu/dependency/interface:acl_nn_interface",
         "//xla/xla_npu/dependency/tool:log",
