@@ -134,12 +134,6 @@ class BaseRunner:
         test_passed = None
         if not args.skip_cpu and not args.skip_npu:
             test_passed = self.compare_results(num_runs=args.num_runs)
-            print(f"\n{'=' * 60}")
-            if test_passed:
-                print(f"✅ TEST PASSED")
-            else:
-                print(f"❌ TEST FAILED")
-            print("=" * 60)
         else:
             print(f"\n{'=' * 60}")
             print(f"⚠️  Skipped comparison (CPU or NPU was skipped)")

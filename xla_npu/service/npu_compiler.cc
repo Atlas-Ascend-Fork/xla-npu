@@ -307,8 +307,6 @@ absl::StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(std::unique
 
     TF_ASSIGN_OR_RETURN(GpuTargetConfig gpu_target_config, GetTargetConfig(options, debug_opts, stream_exec));
 
-    NPU_LOG_FORMAT_PRINT(INFO, "Npu auto fuse is enabled, run fusion pass.");
-
     MaybeOwningThreadPool thread_pool = CreateMaybeOwningThreadPool(
         /*parallelism=*/module->config().debug_options().xla_gpu_force_compilation_parallelism(),
         /*default_thread_pool=*/options.thread_pool,

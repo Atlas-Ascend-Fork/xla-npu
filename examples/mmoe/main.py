@@ -61,7 +61,7 @@ class MMOERunner(BaseRunner):
             return False
 
         print("\n" + "=" * 60)
-        print("=== CPU and NPU Results Summary ===")
+        print("=== Execution Summary ===")
         print("=" * 60)
 
         # Load all results
@@ -74,22 +74,22 @@ class MMOERunner(BaseRunner):
         npu_runs = int(npu_data['num_runs'])
         
         # Load execution times if available
-        cpu_execution_times = []
-        npu_execution_times = []
+        cpu_total_time = 0.0
+        npu_total_time = 0.0
         
         # Check if execution times are available in individual output files
         for run_idx in range(min(cpu_runs, npu_runs, num_runs)):
             try:
                 cpu_run_data = np.load(CPU_OUTPUT_FILE)
                 if 'execution_time' in cpu_run_data:
-                    cpu_execution_times.append(float(cpu_run_data['execution_time']))
+                    cpu_total_time += float(cpu_run_data['execution_time'])
             except:
                 pass
             
             try:
                 npu_run_data = np.load(NPU_OUTPUT_FILE)
                 if 'execution_time' in npu_run_data:
-                    npu_execution_times.append(float(npu_run_data['execution_time']))
+                    npu_total_time += float(npu_run_data['execution_time'])
             except:
                 pass
         
@@ -100,32 +100,53 @@ class MMOERunner(BaseRunner):
         print(f"\nOutput shape per run: {cpu_outputs[0].shape}")
         print(f"Expected output shape: ({CONFIG_BATCH_SIZE}, {CONFIG_NUM_TASKS})")
         print(f"CPU runs: {cpu_runs}, NPU runs: {npu_runs}")
+        
+        # Print total execution time
+        print()
+        if cpu_total_time > 0:
+            print(f"[CPU] Total execution time: {cpu_total_time:.2f} ms")
+        if npu_total_time > 0:
+            print(f"[NPU] Total execution time: {npu_total_time:.2f} ms")
 
         # Compare each run
         all_match = True
+        match_results = []
         for run_idx in range(min(cpu_runs, npu_runs, num_runs)):
+            cpu_output = cpu_outputs[run_idx]
+            npu_output = npu_outputs[run_idx]
+            
+            # Print output info for this run
             print(f"\n{'=' * 60}")
             print(f"--- Run {run_idx + 1}/{num_runs} ---")
             print(f"{'=' * 60}")
             
-            # Print input info for this run (same for CPU and NPU)
-            if cpu_inputs is not None:
-                print_input_stats(cpu_inputs[run_idx], run_idx=run_idx)
+            # Print CPU output stats
+            print(f"[CPU] Output:")
+            print(f"[CPU]   Shape: {cpu_output.shape}")
+            print(f"[CPU]   Min: {cpu_output.min():.6f}")
+            print(f"[CPU]   Max: {cpu_output.max():.6f}")
+            print(f"[CPU]   Mean: {cpu_output.mean():.6f}")
             
-            cpu_output = cpu_outputs[run_idx]
-            npu_output = npu_outputs[run_idx]
-
-            print_results(cpu_output, "CPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
-            if cpu_execution_times and run_idx < len(cpu_execution_times):
-                print(f"[CPU] Execution time: {cpu_execution_times[run_idx]:.2f} ms")
-            
-            print_results(npu_output, "NPU", CONFIG_BATCH_SIZE, CONFIG_NUM_TASKS)
-            if npu_execution_times and run_idx < len(npu_execution_times):
-                print(f"[NPU] Execution time: {npu_execution_times[run_idx]:.2f} ms")
+            # Print NPU output stats
+            print(f"\n[NPU] Output:")
+            print(f"[NPU]   Shape: {npu_output.shape}")
+            print(f"[NPU]   Min: {npu_output.min():.6f}")
+            print(f"[NPU]   Max: {npu_output.max():.6f}")
+            print(f"[NPU]   Mean: {npu_output.mean():.6f}")
             
             # Use corresponding inputs for comparison
             cpu_input = cpu_inputs[run_idx] if cpu_inputs is not None else None
             npu_input = npu_inputs[run_idx] if npu_inputs is not None else None
+            
+            # Calculate differences
+            diff = np.abs(cpu_output - npu_output)
+            rel_diff = diff / (np.abs(cpu_output) + 1e-8)
+            
+            print(f"\nDifference statistics:")
+            print(f"  Max absolute difference: {diff.max():.6e}")
+            print(f"  Mean absolute difference: {diff.mean():.6e}")
+            print(f"  Max relative difference: {rel_diff.max():.6e}")
+            print(f"  Mean relative difference: {rel_diff.mean():.6e}")
             
             if cpu_input is not None and npu_input is not None:
                 match = compare_results(cpu_output, npu_output, cpu_input, npu_input)
@@ -133,15 +154,19 @@ class MMOERunner(BaseRunner):
                 match = compare_results(cpu_output, npu_output, 
                                        cpu_data.get('input', np.zeros(1)), 
                                        npu_data.get('input', np.zeros(1)))
+            
+            print(f"\nResults match: {match}")
+            match_results.append((run_idx + 1, match))
             all_match = all_match and match
         
-        # Print data file locations
-        print("\n" + "=" * 60)
-        print("Data files saved at:")
-        print("=" * 60)
-        print(f"  Input data: {INPUT_DATA_FILE}")
-        print(f"  CPU outputs: {CPU_ALL_OUTPUTS_FILE}")
-        print(f"  NPU outputs: {NPU_ALL_OUTPUTS_FILE}")
+        # Print comparison results summary
+        if match_results:
+            print("\n" + "=" * 60)
+            print("=== Comparison Results Summary ===")
+            print("=" * 60)
+            for run_num, match in match_results:
+                status = "✅" if match else "❌"
+                print(f"{status} Run {run_num}/{len(match_results)}: {'Results match' if match else 'Results do not match'}")
         
         return all_match
     

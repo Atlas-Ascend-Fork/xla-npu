@@ -116,26 +116,7 @@ def compare_results(output_cpu, output_npu, x_cpu, x_npu):
     Returns:
         bool: True if results match within tolerance
     """
-    if not np.allclose(x_cpu, x_npu):
-        print("Warning: CPU and NPU inputs are different!")
-    
-    print(f"\n{PRINT_SEPARATOR}")
-    print("--- Result Comparison (CPU vs NPU) ---")
-    print(PRINT_SEPARATOR)
-    
-    diff = np.abs(output_cpu - output_npu)
-    rel_diff = diff / (np.abs(output_cpu) + 1e-8)
-    
-    print(f"Absolute difference (first {OUTPUT_SAMPLE_SIZE} samples):")
-    print(diff[:OUTPUT_SAMPLE_SIZE])
-    print(f"\nDifference statistics:")
-    print(f"  Max absolute difference: {diff.max():.6e}")
-    print(f"  Mean absolute difference: {diff.mean():.6e}")
-    print(f"  Max relative difference: {rel_diff.max():.6e}")
-    print(f"  Mean relative difference: {rel_diff.mean():.6e}")
-    
     is_match = np.allclose(output_cpu, output_npu, rtol=COMPARISON_TOLERANCE, atol=COMPARISON_TOLERANCE)
-    print(f"\nResults match (tolerance={COMPARISON_TOLERANCE}): {is_match}")
     return is_match
 
 
@@ -172,6 +153,38 @@ def print_results(output, device_name, batch_size=None, num_tasks=None):
     print(f"[{device_name}]   Max: {output.max():.6f}")
     print(f"[{device_name}]   Mean: {output.mean():.6f}")
     print(f"[{device_name}]   Std: {output.std():.6f}")
+
+
+def print_run_summary(device_name, num_runs, results=None, print_summary=True):
+    """Print run summary.
+    
+    Args:
+        device_name: Device name ('CPU' or 'NPU')
+        num_runs: Number of runs
+        results: Dictionary of results (optional, for ops module)
+        print_summary: Whether to print the summary
+    
+    Returns:
+        float: Total execution time (ms) if results are provided
+    """
+    total_time = None
+    print(f"\n[{device_name}] All operations completed and saved")
+    
+    if results:
+        total_time = 0.0
+        for op_name, result in results.items():
+            avg_time = np.mean(result['execution_times'])
+            total_time += avg_time
+        if print_summary:
+            print(f"\n[{device_name}] Results summary:")
+            print(f"  Total execution time: {total_time:.2f} ms")
+            print()
+    elif print_summary:
+        print(f"\n[{device_name}] Results summary:")
+        print(f"  Total runs: {num_runs}")
+        print()
+    
+    return total_time
 
 
 # ============================================================================

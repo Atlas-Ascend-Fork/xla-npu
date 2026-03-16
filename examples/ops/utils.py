@@ -34,7 +34,7 @@ def run_operation(op_config, num_runs=1, device='CPU', inputs_list=None, run_num
     Returns:
         tuple: (outputs, inputs, execution_times)
     """
-    print(f"\n{'=' * 60}")
+    print(f"{'=' * 60}")
     print(f"Running {op_config['name']} on {device}")
     print(f"{'=' * 60}")
     
@@ -58,6 +58,7 @@ def run_operation(op_config, num_runs=1, device='CPU', inputs_list=None, run_num
             print("Input shapes:")
             for name, value in inputs.items():
                 print(f"  {name}: {value.shape}")
+            print()
         
         # Create jitted function
         func = jax.jit(op_config['func'])

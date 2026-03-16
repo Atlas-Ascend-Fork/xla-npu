@@ -43,7 +43,7 @@ class OperationsRunner(BaseRunner):
             bool: True if all results match
         """
         print("\n" + "=" * 60)
-        print("=== CPU and NPU Results Summary ===")
+        print("=== Execution Summary ===")
         print("=" * 60)
 
         if not os.path.exists(CPU_ALL_OUTPUTS_FILE):
@@ -55,38 +55,72 @@ class OperationsRunner(BaseRunner):
             return False
 
         # Load all results
-        cpu_data = np.load(CPU_ALL_OUTPUTS_FILE)
-        npu_data = np.load(NPU_ALL_OUTPUTS_FILE)
+        cpu_data = np.load(CPU_ALL_OUTPUTS_FILE, allow_pickle=True)
+        npu_data = np.load(NPU_ALL_OUTPUTS_FILE, allow_pickle=True)
 
+        # Calculate total execution time
+        cpu_total_time = 0.0
+        npu_total_time = 0.0
+        
+        for op_config in ops_configs:
+            op_name = op_config['name'].replace(' ', '_').lower()
+            
+            if op_name in cpu_data:
+                cpu_dict = cpu_data[op_name].item()
+                cpu_avg_time = np.mean(cpu_dict['execution_times'])
+                cpu_total_time += cpu_avg_time
+            
+            if op_name in npu_data:
+                npu_dict = npu_data[op_name].item()
+                npu_avg_time = np.mean(npu_dict['execution_times'])
+                npu_total_time += npu_avg_time
+        
+        # Print total execution time
+        print()
+        print(f"[CPU] Total execution time: {cpu_total_time:.2f} ms")
+        print(f"[NPU] Total execution time: {npu_total_time:.2f} ms")
+        
         all_match = True
+        match_results = []
         
         # Compare each operation
         for op_config in ops_configs:
             op_name = op_config['name'].replace(' ', '_').lower()
             
-            print(f"\n{'=' * 60}")
-            print(f"Comparing {op_config['name']} results")
-            print(f"{'=' * 60}")
-            
             if op_name not in cpu_data or op_name not in npu_data:
-                print(f"WARNING: Results not found for {op_config['name']}")
+                match_results.append((op_config['name'], False))
                 all_match = False
                 continue
             
-            cpu_outputs = cpu_data[op_name]['outputs']
-            npu_outputs = npu_data[op_name]['outputs']
+            # Get the actual dictionary from the numpy array
+            cpu_dict = cpu_data[op_name].item()
+            npu_dict = npu_data[op_name].item()
+            
+            cpu_outputs = cpu_dict['outputs']
+            npu_outputs = npu_dict['outputs']
             
             # Compare each run
+            op_match = True
             for run_idx in range(min(len(cpu_outputs), len(npu_outputs), num_runs)):
-                print(f"\n--- Run {run_idx + 1}/{num_runs} ---")
-                
                 cpu_output = np.array(cpu_outputs[run_idx])
                 npu_output = np.array(npu_outputs[run_idx])
                 
                 # Use dummy input for comparison (same for both)
                 dummy_input = np.zeros(1)
                 match = compare_results(cpu_output, npu_output, dummy_input, dummy_input)
-                all_match = all_match and match
+                op_match = op_match and match
+            
+            match_results.append((op_config['name'], op_match))
+            all_match = all_match and op_match
+        
+        # Print summary of comparison results
+        print("\n" + "=" * 60)
+        print("=== Comparison Results ===")
+        print("=" * 60)
+        
+        for op_name, match in match_results:
+            status = "✅" if match else "❌"
+            print(f"{status} {op_name}: {'Results match' if match else 'Results do not match'}")
         
         return all_match
     

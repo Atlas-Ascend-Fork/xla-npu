@@ -17,6 +17,7 @@ from common.utils import (
     save_results,
     parse_command_line_args,
     load_inputs_from_file,
+    print_run_summary,
 )
 
 from config import (
@@ -97,7 +98,6 @@ def run_npu(num_runs=1, inputs=None):
         save_dict['inputs'] = all_inputs
     save_results(NPU_ALL_OUTPUTS_FILE, **save_dict)
     
-    print(f"[NPU] All {num_runs} runs completed and saved", flush=True)
     return outputs, inputs
 
 
@@ -110,5 +110,9 @@ if __name__ == "__main__":
     
     # Check if input data is provided
     inputs = load_inputs_from_file(input_file, num_runs)
-    
+
+    # Run NPU inference
     outputs, inputs = run_npu(num_runs, inputs)
+    
+    # Print results when called directly
+    print_run_summary('NPU', num_runs, print_summary=False)

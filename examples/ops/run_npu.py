@@ -16,6 +16,7 @@ from common.utils import (
     save_results,
     parse_command_line_args,
     load_inputs_from_file,
+    print_run_summary,
 )
 
 from config import (
@@ -39,10 +40,6 @@ def run_npu(num_runs=1, inputs_dict=None, run_number=1):
     all_results = {}
     
     for op_config in ops_configs:
-        print(f"\n{'=' * 60}")
-        print(f"Running {op_config['name']} on NPU")
-        print(f"{'=' * 60}")
-        
         # Get inputs for this operation
         op_inputs_list = None
         if inputs_dict:
@@ -64,7 +61,6 @@ def run_npu(num_runs=1, inputs_dict=None, run_number=1):
     ensure_dir(NPU_ALL_OUTPUTS_FILE)
     save_results(NPU_ALL_OUTPUTS_FILE, **all_results)
     
-    print(f"\n[NPU] All operations completed and saved")
     return all_results
 
 
@@ -78,5 +74,9 @@ if __name__ == "__main__":
     
     # Check if input data is provided
     inputs_dict = load_inputs_from_file(input_file, num_runs, ops_configs)
+
+    # Run NPU operations
+    all_results = run_npu(num_runs, inputs_dict, run_number)
     
-    run_npu(num_runs, inputs_dict, run_number)
+    # Print results when called directly
+    print_run_summary('NPU', num_runs, all_results, print_summary=False)
