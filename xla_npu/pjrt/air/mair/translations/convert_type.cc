@@ -11,6 +11,7 @@
 #include "./convert_type.h"
 
 #include "./utils.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 #include "llvm/Support/Casting.h"
 #include "mlir/IR/Types.h"                   // from @llvm-project
@@ -53,7 +54,7 @@ Status ConvertScalarTypeToDataType(Type type, DataType *dtype) {
         *dtype = itype.isUnsigned() ? DT_UINT64 : DT_INT64;
         return Status::OK();
       default:
-        log("Converting " + debugString(type) + " to DataType. [IntegerType_NotFound]");
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [IntegerType_NotFound]", debugString(type).c_str());
         return Status::OK();
     }
   } else if (auto complex_type = mlir::dyn_cast<mlir::ComplexType>(type)) {
@@ -65,10 +66,10 @@ Status ConvertScalarTypeToDataType(Type type, DataType *dtype) {
       *dtype = DT_COMPLEX128;
       return Status::OK();
     }
-    log("Converting " + debugString(type) + " to DataType. [ComplextType_NotFound]");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [ComplextType_NotFound]", debugString(type).c_str());
     return Status::OK();
   }
-  log("Converting " + debugString(type) + " to DataType. [NotFound]");
+  NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [NotFound]", debugString(type).c_str());
   return Status::OK();
 }
 
@@ -91,12 +92,12 @@ Status ConvertToShape(mlir::ShapedType type, Shape *shape) {
       oss << dim << ",";
     }
     oss << "]";
-    log("ConvertToShape: dims " +  oss.str());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "ConvertToShape: dims %s", oss.str().c_str());
     *shape = ge::Shape(dims);
   } else {
     *shape = ge::Shape();
   }
-  
+
   return Status::OK();
 }
 
