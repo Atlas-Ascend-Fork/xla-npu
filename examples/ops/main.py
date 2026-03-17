@@ -82,13 +82,14 @@ class OperationsRunner(BaseRunner):
         
         all_match = True
         match_results = []
+        diff_details_list = []  # Store diff details for mismatches
         
         # Compare each operation
         for op_config in ops_configs:
             op_name = op_config['name'].replace(' ', '_').lower()
             
             if op_name not in cpu_data or op_name not in npu_data:
-                match_results.append((op_config['name'], False))
+                match_results.append((op_config['name'], False, [], []))
                 all_match = False
                 continue
             
@@ -101,16 +102,21 @@ class OperationsRunner(BaseRunner):
             
             # Compare each run
             op_match = True
+            run_matches = []
+            run_diff_details = []
             for run_idx in range(min(len(cpu_outputs), len(npu_outputs), num_runs)):
                 cpu_output = np.array(cpu_outputs[run_idx])
                 npu_output = np.array(npu_outputs[run_idx])
                 
                 # Use dummy input for comparison (same for both)
                 dummy_input = np.zeros(1)
-                match = compare_results(cpu_output, npu_output, dummy_input, dummy_input)
+                match, diff_details = compare_results(cpu_output, npu_output, dummy_input, dummy_input)
                 op_match = op_match and match
+                run_matches.append(match)
+                run_diff_details.append(diff_details)
             
-            match_results.append((op_config['name'], op_match))
+            match_results.append((op_config['name'], op_match, run_matches))
+            diff_details_list.append((op_config['name'], run_diff_details))
             all_match = all_match and op_match
         
         # Print summary of comparison results
@@ -118,9 +124,39 @@ class OperationsRunner(BaseRunner):
         print("=== Comparison Results ===")
         print("=" * 60)
         
-        for op_name, match in match_results:
+        for op_name, match, run_matches in match_results:
             status = "✅" if match else "❌"
-            print(f"{status} {op_name}: {'Results match' if match else 'Results do not match'}")
+            if num_runs > 1 and run_matches:
+                run_status = ", ".join([f"Run {i+1}: {'✅' if m else '❌'}" for i, m in enumerate(run_matches)])
+                print(f"{status} {op_name}: {run_status}")
+            else:
+                print(f"{status} {op_name}: {'Results match' if match else 'Results do not match'}")
+        
+        # Print detailed diff information for mismatches
+        if not all_match:
+            print("\n" + "=" * 60)
+            print("=== Difference Details ===")
+            print("=" * 60)
+            
+            for op_name, run_diff_details in diff_details_list:
+                has_mismatch = any(d is not None for d in run_diff_details)
+                if has_mismatch:
+                    print(f"\n[{op_name}]")
+                    for run_idx, diff_details in enumerate(run_diff_details):
+                        if diff_details is not None:
+                            print(f"  ❌ Run {run_idx + 1} (MISMATCH):")
+                            print(f"    Max absolute difference: {diff_details['max_absolute_diff']:.6e}")
+                            print(f"    Max relative difference: {diff_details['max_relative_diff']:.6e}")
+                            print(f"    Mean absolute difference: {diff_details['mean_absolute_diff']:.6e}")
+                            print(f"    Max diff location: {diff_details['max_diff_location']}")
+                            print(f"    CPU value at max diff: {diff_details['max_diff_cpu_value']:.6e}")
+                            print(f"    NPU value at max diff: {diff_details['max_diff_npu_value']:.6e}")
+
+                            # Print actual values if available (small arrays)
+                            if 'cpu_values' in diff_details:
+                                print(f"    CPU values: {diff_details['cpu_values']}")
+                                print(f"    NPU values: {diff_details['npu_values']}")
+                                print(f"    Diff values: {diff_details['diff_values']}")
         
         return all_match
     

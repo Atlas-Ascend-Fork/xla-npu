@@ -149,12 +149,12 @@ class MMOERunner(BaseRunner):
             print(f"  Mean relative difference: {rel_diff.mean():.6e}")
             
             if cpu_input is not None and npu_input is not None:
-                match = compare_results(cpu_output, npu_output, cpu_input, npu_input)
+                match, diff_details = compare_results(cpu_output, npu_output, cpu_input, npu_input)
             else:
-                match = compare_results(cpu_output, npu_output, 
-                                       cpu_data.get('input', np.zeros(1)), 
+                match, diff_details = compare_results(cpu_output, npu_output,
+                                       cpu_data.get('input', np.zeros(1)),
                                        npu_data.get('input', np.zeros(1)))
-            
+
             print(f"\nResults match: {match}")
             match_results.append((run_idx + 1, match))
             all_match = all_match and match

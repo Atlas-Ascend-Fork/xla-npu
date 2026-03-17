@@ -8,6 +8,7 @@ ENV_JAX_PLATFORMS = 'JAX_PLATFORMS'
 
 # Comparison settings
 COMPARISON_TOLERANCE = 1e-4   # Tolerance for CPU/NPU result comparison
+MAX_VALUES_TO_PRINT = 36      # Maximum number of values to print when comparison fails
 
 # Print settings
 PRINT_SEPARATOR = "=" * 60

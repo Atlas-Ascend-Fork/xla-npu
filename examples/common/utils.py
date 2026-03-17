@@ -11,6 +11,7 @@ from common.config import (
     ENV_PJRT_NAMES_AND_LIBRARY_PATHS,
     ENV_JAX_PLATFORMS,
     COMPARISON_TOLERANCE,
+    MAX_VALUES_TO_PRINT,
     PRINT_SEPARATOR,
     OUTPUT_SAMPLE_SIZE,
     OUTPUT_DIR,
@@ -114,10 +115,40 @@ def compare_results(output_cpu, output_npu, x_cpu, x_npu):
         x_npu: NPU input
         
     Returns:
-        bool: True if results match within tolerance
+        tuple: (is_match, diff_details) where diff_details is a dict with difference info or None
     """
+    output_cpu = np.array(output_cpu)
+    output_npu = np.array(output_npu)
+    
     is_match = np.allclose(output_cpu, output_npu, rtol=COMPARISON_TOLERANCE, atol=COMPARISON_TOLERANCE)
-    return is_match
+    
+    diff_details = None
+    if not is_match:
+        diff = np.abs(output_cpu - output_npu)
+        rel_diff = diff / (np.abs(output_cpu) + 1e-10)
+        
+        max_diff_idx = np.unravel_index(np.argmax(diff), diff.shape)
+        max_rel_diff_idx = np.unravel_index(np.argmax(rel_diff), rel_diff.shape)
+        
+        diff_details = {
+            'max_absolute_diff': float(np.max(diff)),
+            'max_relative_diff': float(np.max(rel_diff)),
+            'mean_absolute_diff': float(np.mean(diff)),
+            'max_diff_location': max_diff_idx,
+            'max_diff_cpu_value': float(output_cpu[max_diff_idx]),
+            'max_diff_npu_value': float(output_npu[max_diff_idx]),
+            'cpu_output_shape': output_cpu.shape,
+            'npu_output_shape': output_npu.shape,
+        }
+        
+        # Print actual values if total elements <= MAX_VALUES_TO_PRINT
+        total_elements = output_cpu.size
+        if total_elements <= MAX_VALUES_TO_PRINT:
+            diff_details['cpu_values'] = output_cpu.flatten().tolist()
+            diff_details['npu_values'] = output_npu.flatten().tolist()
+            diff_details['diff_values'] = diff.flatten().tolist()
+    
+    return is_match, diff_details
 
 
 def print_input_stats(x, run_idx=None, device_name=None):

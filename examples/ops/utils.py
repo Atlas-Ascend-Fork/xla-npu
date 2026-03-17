@@ -67,13 +67,16 @@ def run_operation(op_config, num_runs=1, device='CPU', inputs_list=None, run_num
         output, exec_time = time_function(func, **inputs)
         outputs.append(output)
         execution_times.append(exec_time)
-        
-        print(f"[{device}] Run {i+1}/{num_runs}: {exec_time:.2f} ms")
     
     # Calculate statistics
     avg_time = np.mean(execution_times)
     
-    print(f"\n[{device}] Average execution time: {avg_time:.2f} ms")
+    # Print timing summary
+    if num_runs == 1:
+        print(f"[{device}] Execution time: {execution_times[0]:.2f} ms")
+    else:
+        print(f"[{device}] Execution times per run: {', '.join([f'{t:.2f}' for t in execution_times])} ms")
+        print(f"[{device}] Average execution time: {avg_time:.2f} ms")
     print()
     
     return outputs, actual_inputs_list, execution_times
