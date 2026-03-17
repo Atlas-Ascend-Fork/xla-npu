@@ -376,7 +376,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kDot: {
-      int8_t cubeMathType = 1;  // ALLOW_FP32_DOWN_PRECISION
+      int8_t cubeMathType = 0;
       ret = npu::aclnnMatmulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize,

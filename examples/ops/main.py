@@ -124,13 +124,16 @@ class OperationsRunner(BaseRunner):
         print("=== Comparison Results ===")
         print("=" * 60)
         
-        for op_name, match, run_matches in match_results:
+        for i, (op_name, match, run_matches) in enumerate(match_results):
             status = "✅" if match else "❌"
             if num_runs > 1 and run_matches:
                 run_status = ", ".join([f"Run {i+1}: {'✅' if m else '❌'}" for i, m in enumerate(run_matches)])
                 print(f"{status} {op_name}: {run_status}")
             else:
                 print(f"{status} {op_name}: {'Results match' if match else 'Results do not match'}")
+            # Add blank line between operations (except after the last one)
+            if i < len(match_results) - 1:
+                print()
         
         # Print detailed diff information for mismatches
         if not all_match:
