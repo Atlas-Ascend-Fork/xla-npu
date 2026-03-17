@@ -511,7 +511,7 @@ PjRtNpuExecutable::Execute(
     const ExecuteOptions& options,
     std::optional<std::vector<Future<>>>& returned_futures) const {
     RunId run_id(options.launch_id);
-    NPU_LOG_FORMAT_PRINT(INFO, "Executing computation %s", std::string(name()).c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Executing computation %s", std::string(name()).c_str());
 
     // only one device
     std::vector<std::vector<std::unique_ptr<PjRtBuffer>>> wrapped_results(1);

@@ -100,7 +100,7 @@ const std::map<ge::DataType, std::string> DataTypeNames = {
 
 
 Status Exporter::Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr) {
-    NPU_LOG_FORMAT_PRINT(INFO, "Start to covert module to ge graph.");
+    NPU_LOG_FORMAT_PRINT(DEBUG, "Start to covert module to ge graph.");
     std::optional<mlir::func::FuncOp> entry_func;
     mlir::StringAttr entry_func_id = mlir::StringAttr::get(module.getContext(), "main");
     for (auto function : module.getOps<mlir::func::FuncOp>()) {
