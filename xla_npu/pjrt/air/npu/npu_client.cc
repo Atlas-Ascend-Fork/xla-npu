@@ -425,6 +425,7 @@ PjRtNpuClient::CompileAndLoad(mlir::ModuleOp module, CompileOptions options) {
                 return absl::InternalError("Failed to create GE session.");
             }
             ge_initialized_ = true;
+            is_initialized = 1;
         }
     }
 

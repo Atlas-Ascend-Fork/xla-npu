@@ -11,6 +11,8 @@
 #ifndef NPU_CLIENT_H_
 #define NPU_CLIENT_H_
 
+#include <csignal>
+
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -38,6 +40,8 @@
 #include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
+static std::mutex finalize_mutex;
+static volatile sig_atomic_t is_initialized = 0;
 
 inline const char* DataLayout() {
     static constexpr char kDataLayout[] =
@@ -241,7 +245,25 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
       std::vector<PjRtDevice*> addressable_devices, PjRtNpuClient* client,
       std::unique_ptr<HloModule> unoptimized_hlo_module);
 
-  ~PjRtNpuExecutable() override = default;
+  ~PjRtNpuExecutable() override {
+    std::lock_guard<std::mutex> lock(finalize_mutex);
+    if (is_initialized <= 0) {
+        return;
+    }
+    aclError ge_ret = ge::GEFinalize();
+    if (ge_ret != ACL_SUCCESS) {
+        NPU_LOG_FORMAT_PRINT(ERROR, "GE finalize failed, ret: %d", ge_ret);
+    } else {
+        NPU_LOG_FORMAT_PRINT(DEBUG, "GE finalize success");
+    }
+    aclError acl_ret = npu::aclFinalize();
+    if (acl_ret != ACL_SUCCESS) {
+      NPU_LOG_FORMAT_PRINT(ERROR, "ACL finalize failed, ret: %d", acl_ret);
+    } else {
+      NPU_LOG_FORMAT_PRINT(DEBUG, "ACL finalize success");
+    }
+    is_initialized = 0;
+  };
 
   PjRtNpuClient* client() const override { return client_; }
 
