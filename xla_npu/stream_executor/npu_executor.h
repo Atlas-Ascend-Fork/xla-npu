@@ -57,10 +57,7 @@ class NpuExecutor : public StreamExecutorCommon {
 
   absl::StatusOr<std::unique_ptr<MemoryAllocation>> HostMemoryAllocate(
       uint64_t size) override {
-    void* ptr = new char[size];
-    return std::make_unique<GenericMemoryAllocation>(
-        ptr, size,
-        [](void* ptr, uint64_t size) { delete[] static_cast<char*>(ptr); });
+    return nullptr;
   }
 
   bool SynchronizeAllActivity() override { return true; }
