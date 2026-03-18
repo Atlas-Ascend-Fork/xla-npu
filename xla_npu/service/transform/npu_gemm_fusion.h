@@ -59,15 +59,12 @@ struct NpuGemmFusionConfig {
 };
 
 // 将 GEMM 操作重写为 NPU 优化的融合计算
-//
 // 该 PASS 检测适合 NPU ACLNN 的 GEMM 模式，并将它们转换为 custom fusion。
 // 支持的模式包括:
 // - 基础 GEMM (MatMul)
 // - GEMM + Bias
 // - GEMM + Bias + Activation (ReLU, GELU 等)
-//
-// 转换示例:
-// Before: dot(lhs, rhs) -> add(bias) -> gelu
+// 转换示例: Before: dot(lhs, rhs) -> add(bias) -> gelu
 //  After: fusion(lhs, rhs, bias) with backend_config.kind="__npu_aclnn_gemm"
 class NpuGemmFusion : public HloModulePass {
  public:

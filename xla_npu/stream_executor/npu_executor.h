@@ -39,7 +39,6 @@ namespace stream_executor {
 // Declares the NpuExecutor class, which is a NPU-only implementation of
 // the StreamExecutor interface. For now, this is used for testing and to
 // examine the performance of host-based StreamExecutor code.
-//
 // This is useful for evaluating the performance of host-based or fallback
 // routines executed under the context of a GPU executor.
 class NpuExecutor : public StreamExecutorCommon {

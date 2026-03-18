@@ -25,18 +25,13 @@
 namespace xla {
 
 // 将现有的 loop/input 融合转换为 NPU 块级融合
-//
 // 该 PASS 将 NPU 后端的 loop/input 融合转换为块级融合，使用 "__npu_block" kind。
 // 块级融合可以更好地利用 NPU 的统一缓冲区 (UB) 内存层级和块级并行计算。
-//
-// 转换示例:
-// Before: fusion with kind="kLoop" that operates elementwise
-//  After: fusion with kind="__npu_block" with block-level tiling config
-//
-// 块级配置包括:
-// - 输出平铺大小 (output_tile_sizes)
-// - 块数量 (num_blocks)
-// - 阶段数量 (num_stages) - 用于流水线优化
+// 转换示例: Before: fusion with kind="kLoop" that operates elementwise
+//          After: fusion with kind="__npu_block" with block-level tiling config
+// 块级配置包括: - 输出平铺大小 (output_tile_sizes)
+//             - 块数量 (num_blocks)
+//             - 阶段数量 (num_stages) - 用于流水线优化
 class NpuFusionBlockLevelRewriter : public HloModulePass {
  public:
     explicit NpuFusionBlockLevelRewriter(

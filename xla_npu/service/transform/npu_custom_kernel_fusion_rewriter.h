@@ -39,17 +39,14 @@ struct NpuCustomKernelPattern {
 };
 
 // 模式匹配 HLO 指令到 CANN 自定义内核融合
-//
 // 该 PASS 检测支持 CANN API 自定义调用的模式，并将它们转换为 custom fusion。
-// 支持的模式包括:
+// 支持的模式包括
 // - acl_gemm_fusion: GEMM with fusion patterns
 // - acl_softmax: Softmax operation
 // - acl_layer_norm: Layer normalization
 // - acl_matmul: MatMul operation
-//
-// 转换示例:
-// Before: softmax(logits) -> output
-//  After: fusion(logits) with backend_config.kind="__npu_custom" and custom_call_target="acl_softmax"
+// 转换示例: Before: softmax(logits) -> output
+//          After: fusion(logits) with backend_config.kind="__npu_custom" and custom_call_target="acl_softmax"
 class NpuCustomKernelFusionRewriter : public HloModulePass {
  public:
     NpuCustomKernelFusionRewriter() = default;

@@ -29,36 +29,25 @@ struct HloToAfirOptions {
 };
 
 // Convert an HloModule to MLIR Module with AFIR dialect
-//
-// This function converts an XLA HloModule to MLIR's AFIR (Ascend Frontend IR)
-// dialect. It handles:
-// - Converting HLO computations to MLIR functions
-// - Translating HLO instructions to AFIR operations
-// - Preserving module metadata and attributes
-//
-// Args:
-//   module: The HloModule to convert
-//   context: The MLIRContext to use (will load required dialects)
-//   options: Conversion options
-//
-// Returns:
-//   An MLIR ModuleOp containing the converted AFIR code
+// This function converts an XLA HloModule to MLIR's AFIR (Ascend Frontend IR) dialect.
+//       - Converting HLO computations to MLIR functions
+//       - Translating HLO instructions to AFIR operations
+//       - Preserving module metadata and attributes
+// Args: module: The HloModule to convert
+//       context: The MLIRContext to use (will load required dialects)
+//       options: Conversion options
+// Returns: An MLIR ModuleOp containing the converted AFIR code
 absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(
     const HloModule& module, mlir::MLIRContext* context,
     const HloToAfirOptions& options = {});
 
 // Convert a single HloComputation to MLIR Module with AFIR dialect
-//
 // This function converts a single HLO computation to MLIR's AFIR dialect.
 // It also includes the fused/called computations computations that this computation depends on.
-//
-// Args:
-//   computation: The HloComputation to convert
-//   context: The MLIRContext to use (will load required dialects)
-//   options: Conversion options
-//
-// Returns:
-//   An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies used/called computations.
+// Args: computation: The HloComputation to convert
+//       context: The MLIRContext to use (will load required dialects)
+//       options: Conversion options
+// Returns: An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies used/called computations.
 absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(
     const HloComputation& computation, mlir::MLIRContext* context,
     const HloToAfirOptions& options = {});

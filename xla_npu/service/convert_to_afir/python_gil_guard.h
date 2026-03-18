@@ -27,12 +27,6 @@ namespace xla {
 // ============================================================================
 // RAII wrapper to ensure Python GIL is always released
 // ============================================================================
-
-// RAII wrapper to ensure GIL is always released, even on exception
-// Usage:
-//   PyGILStateGuard gil_guard;  // Acquires GIL
-//   // ... Python API calls ...
-//   // GIL is automatically released when gil_guard goes out of scope
 class PyGILStateGuard {
  public:
   PyGILStateGuard();
@@ -74,19 +68,13 @@ class TimeoutGuard {
 // Safe wrapper for PyObject_CallObject with timeout protection
 // This function prevents the process from hanging indefinitely if Python code
 // gets stuck or enters an infinite loop.
-//
-// Args:
-//   callable: Python callable object (function/method)
-//   args: Arguments tuple to pass to the callable
-//   name: Name of the function being called (for logging)
-//   timed_out_flag: Pointer to atomic bool flag to set on timeout
-//   timeout_seconds: Maximum time to wait before timeout (default: 600 seconds)
-//
-// Returns:
-//   PyObject result from the callable, or nullptr on timeout/error
-//
-// Note: The caller is responsible for Py_DECREF on the returned object
-//       if it is not nullptr.
+// Args: callable: Python callable object (function/method)
+//       args: Arguments tuple to pass to the callable
+//       name: Name of the function being called (for logging)
+//       timed_out_flag: Pointer to atomic bool flag to set on timeout
+//       timeout_seconds: Maximum time to wait before timeout (default: 600 seconds)
+// Returns: PyObject result from the callable, or nullptr on timeout/error
+// Note: The caller is responsible for Py_DECREF on the returned object if it is not nullptr.
 PyObject* SafePythonCall(PyObject* callable, PyObject* args, const char* name,
                          std::atomic<bool>* timed_out_flag,
                          int timeout_seconds = 600);

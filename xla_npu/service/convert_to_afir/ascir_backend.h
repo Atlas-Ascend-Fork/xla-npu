@@ -63,9 +63,8 @@ struct SingleComputationResult {
 };
 
 // AscIR Backend Interface
-//
 // This class provides an interface to compile HLO modules to AscIR kernels
-// through the following pipeline:
+// through the following pipeline
 // 1. HLO -> AFIR (using ConvertHloToAfir)
 // 2. AFIR -> AscIR (using cpp interface)
 // 3. AscIR -> Kernel (using Ascend runtime)
@@ -75,16 +74,12 @@ class AscirBackend {
   ~AscirBackend();
 
   // Compile an HLO module to AscIR kernel
-  //
-  // Args:
-  //   computations: Map of computation name to HloComputation pointer.
+  // Args: computations: Map of computation name to HloComputation pointer.
   //                 Key "main" represents the entry computation.
   //                 Other keys (e.g., "region_0.1") represent sub-computations
   //                 used by instructions like reduce (to_apply).
-  //   options: Compilation options
-  //
-  // Returns:
-  //   NpuCompileResult containing paths to generated files
+  //       options: Compilation options
+  // Returns: NpuCompileResult containing paths to generated files
   absl::StatusOr<NpuCompileResult> Compile(
       const std::unordered_map<std::string, const HloComputation*>&
           computations,

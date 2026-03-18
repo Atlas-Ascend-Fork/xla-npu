@@ -46,7 +46,6 @@ class NpuSequentialThunk : public NpuThunk {
 
   // Converts a NpuThunk into a NpuSequentialThunk. If the input is already a
   // NpuSequentialThunk, the returned value is the downcasted input.
-  //
   // The new thunk, if created, will use a default-initialized ThunkInfo.
   static std::unique_ptr<NpuSequentialThunk> FromThunk(
       std::unique_ptr<NpuThunk> thunk);

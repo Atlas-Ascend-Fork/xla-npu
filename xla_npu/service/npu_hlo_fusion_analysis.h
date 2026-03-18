@@ -25,8 +25,7 @@
 
 namespace xla {
 
-// Returns true if the instruction's fusion backend config kind matches the
-// given one.
+// Returns true if the instruction's fusion backend config kind matches the given one.
 bool IsNpuFusionKind(const HloInstruction& hlo, absl::string_view kind);
 
 class NpuHloFusionAnalysis {
@@ -49,8 +48,7 @@ class NpuHloFusionAnalysis {
         kNpuAclnnConv2d,       // NPU ACLNN convolution
     };
 
-    // Precomputed information about inputs (arguments) and outputs (roots) of the
-    // fusion.
+    // Precomputed information about inputs (arguments) and outputs (roots) of the fusion.
     struct InputOutputInfo {
         int smallest_input_dtype_bits;
         int smallest_output_dtype_bits;
@@ -60,12 +58,10 @@ class NpuHloFusionAnalysis {
         // FusionBackendConfig backend_config,
         std::unique_ptr<HloFusionAdaptor> fusion, const se::DeviceDescription* device_info);
 
-    // Creates a NpuHloFusionAnalysis that analyzes just instruction as a standalone
-    // fusion.
+    // Creates a NpuHloFusionAnalysis that analyzes just instruction as a standalone fusion.
     static NpuHloFusionAnalysis Create(const HloInstruction& instruction, const se::DeviceDescription& device_info);
 
-    // Creates a NpuHloFusionAnalysis that analyzes a hypothetical fusion of producer
-    // into consumer.
+    // Creates a NpuHloFusionAnalysis that analyzes a hypothetical fusion of producer into consumer.
     static NpuHloFusionAnalysis Create(const HloInstruction& producer, const HloInstruction& consumer,
                                        const se::DeviceDescription& device_info);
 
@@ -86,8 +82,7 @@ class NpuHloFusionAnalysis {
 
     const se::DeviceDescription& device_info() const { return *device_info_; }
 
-    // Returns the tiled transpose description. Requires that emitter_fusion_kind_
-    // is kTranspose.
+    // Returns the tiled transpose description. Requires that emitter_fusion_kind_ is kTranspose.
     const TransposeDescription& tiled_transpose() const {
         CHECK(tiled_transpose_.has_value());
         return *tiled_transpose_;

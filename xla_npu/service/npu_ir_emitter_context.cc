@@ -66,7 +66,6 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
     // the LLVM IR so we can't give then a linkage that merely preserves their
     // names (like available_externally), we also need to ensure that they stick
     // around even if they're "unused".
-    //
     // We may have to be more clever here in the future if we notice that we're
     // keeping around too many globals because of their linkage.
     llvm::GlobalVariable* global_for_const = new llvm::GlobalVariable(

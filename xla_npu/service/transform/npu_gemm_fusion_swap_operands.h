@@ -34,17 +34,13 @@ enum class NpuLayoutFormat {
 };
 
 // 交换GEMM操作数以获得更好的NPU布局/分块性能
-//
 // 该PASS分析GEMM操作并可能交换操作数顺序以优化NPU内存布局。
 // NPU对FRACTAL_NZ布局有特定的访问模式，交换操作数可以：
 // 1. 更好地利用NPU的分块计算能力
 // 2. 减少内存访问延迟
 // 3. 提高缓存利用率
-//
-// 转换示例:
-// Before: dot(A, B) where A.shape = [M, K], B.shape = [K, N]
+// 转换示例: Before: dot(A, B) where A.shape = [M, K], B.shape = [K, N]
 // After:  dot(transpose(B), transpose(A)) with adjusted dimension mapping
-//
 // 注意: 交换操作数需要在dot_dimension_numbers中相应地调整维度映射。
 class NpuGemmFusionSwapOperands : public HloModulePass {
  public:

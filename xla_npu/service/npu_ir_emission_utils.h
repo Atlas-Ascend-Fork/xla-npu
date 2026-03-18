@@ -85,8 +85,6 @@ std::optional<TransposeDescription> NpuGetDescriptionForTiledTransposeEmitter(co
 // <D'_0 x ... x D'_n' x T1 x D'_{n'+1} x ... x D'_m x A x T2 x B>.
 // Note that the `D` dimensions are batch dimensions. They can also be
 // permuted, but they are tiled by 1.
-//
-// Examples:
 // 1. <8x32> -> <32x8> will be canonicalized to <8x1x32x1> -> <32x1x8x1>.
 // 2. <8x2x32> -> <32x2x8> will be canonicalized to <8x2x32x1> -> <32x2x8x1>.
 // 3. <8x2x32x7x6> -> <6x32x2x7x8> becomes <8x2x32x7x6x1> -> <6x32x2x7x8x1>.
