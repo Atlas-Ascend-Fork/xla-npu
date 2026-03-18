@@ -2,13 +2,17 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
-[![JAX](https://img.shields.io/badge/JAX-0.8+-orange.svg)](https://github.com/google/jax)
+[![JAX](https://img.shields.io/badge/JAX-0.8.1-orange.svg)](https://github.com/google/jax)
 
 ## 简介
 
 **XLA-NPU** 是一个面向华为昇腾NPU（Neural Processing Unit）硬件的 **XLA（Accelerated Linear Algebra）后端实现**。本项目将 OpenXLA/JAX 与华为 CANN（Compute Architecture for Neural Networks）工具链集成，使机器学习工作负载能够在华为昇腾 NPU 硬件上高效运行。
 
 ## 安装与卸载
+
+- 安装依赖
+
+在编译安装xla_npu前，请安装最新昇腾软件栈 CANN 8.5.0。
 
 详细的安装和卸载指南请参考：**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**
 
@@ -68,7 +72,6 @@ rm -rf build/
 
 - `0`: 不支持融合, 仅使用aclnn执行
 - `1`: 使用afir后端
-- `2`: 使用npuir后端  
 - `3`: 使用ge后端
 
 设置python链接库路径:
@@ -117,14 +120,13 @@ print(f"Result: {result}")
 ---
 
 ## 特性介绍
-
-### 1. 完整的 XLA 后端实现
-
-
-### 2. PJRT C API 插件
-
+xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对接JAX框架。详细特性介绍请访问[docs](docs/zh/README.md).
 
 ---
+
+## 支持的型号
+- Atlas A2/A3 训练系列产品
+- Atlas A3 推理系列产品
 
 ## 许可证
 
@@ -153,5 +155,4 @@ print(f"Result: {result}")
 
 - [OpenXLA](https://github.com/openxla/xla) - XLA 编译器框架
 - [JAX](https://github.com/google/jax) - 高性能数值计算库
-- [Ascend-MLIR](https://github.com/Ascend/Ascend-MLIR) - 昇腾 MLIR 实现
 - [StableHLO](https://github.com/openxla/stablehlo) - StableHLO 方言
