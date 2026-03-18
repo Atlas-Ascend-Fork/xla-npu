@@ -83,6 +83,7 @@ build --define PYTHON_LIB_DIR=
 
 - `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径(比如/mnt/workspace/code/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python)
 - `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
+- `export USE_OLD_CANN_STYLE=true`: 在使用NPU_AUTO_FUSE_BACKEND=1,即afir融合后端时,如果是在CANN 8.5.0及其之前的版本运行xla-npu用例,则需要设置此环境变量,否则会报错
 
 ---
 

@@ -43,12 +43,8 @@ examples/
 
 ### 环境准备
 
-1. 确保已完成 XLA-NPU 的安装,参考项目根目录 [INSTALL_GUIDE.md](../INSTALL_GUIDE.md)
-2. 设置环境变量:
-
-```bash
-source /path/to/xla-npu/build/xla_npu_env
-```
+1. 确保已完成 XLA-NPU 的安装, 参考项目根目录 [INSTALL_GUIDE.md](../INSTALL_GUIDE.md)
+2. 设置运行所需环境变量, 参考项目根目录 [README.md](../README.md)
 
 ### 运行算子测试样例
 
@@ -68,7 +64,7 @@ python main.py
 ```bash
 cd mmoe
 
-# 首次运行需要初始化模型参数
+# 首次运行时, 如果examples/mmoe/目录下没有model_params.npz文件, 则需要初始化模型参数
 python main.py --init
 
 # 后续运行
@@ -92,5 +88,4 @@ python main.py
 ## 注意事项
 
 1. 运行 NPU 样例前请确保 NPU 设备可用
-2. MMOE 样例首次运行需要使用 `--init` 参数生成模型参数文件
-3. 输出文件默认保存在 `output/` 目录下
+2. 模型执行的输入和输出数据默认保存在 `examples/output/` 目录下, 可通过--cleanup清理
