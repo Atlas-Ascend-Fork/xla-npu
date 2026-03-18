@@ -12,7 +12,7 @@
 
 - 安装依赖
 
-在编译安装xla_npu前，请安装最新昇腾软件栈 CANN 8.5.0。
+在编译安装xla\_npu前，请安装最新昇腾软件栈CANN 8.5.0或在研版本。
 
 详细的安装和卸载指南请参考：**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**
 
