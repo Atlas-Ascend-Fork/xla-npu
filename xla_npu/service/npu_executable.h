@@ -116,7 +116,6 @@ class NpuExecutable : public Executable {
     void set_ir_module_string(const std::string& ir_module_string) { ir_module_string_ = ir_module_string; }
 
     // Returns the compiled code for the computation.
-    //
     // The compiled code is PTX in Cuda and unused empty string in ROCm.
     // This may be left empty for saving memory if we have a non-empty binary.
     // If both text() and binary() are empty, that means the HLO required no
@@ -124,7 +123,6 @@ class NpuExecutable : public Executable {
     const std::string& text() const { return text_; }
 
     // Returns the binary stored in this NpuExecutable.
-    //
     // The binary is cubin in Cuda, and HSA code object in ROCm. It may be empty,
     // in which case compilation is left up to the GPU driver. If both text() and
     // binary() are empty, that means the HLO required no custom kernels to be
@@ -161,10 +159,8 @@ class NpuExecutable : public Executable {
     // Loads the PTX or CUBIN for this executable and initializes all
     // constants that haven't already been initialized by the CUDA driver. Loaded
     // modules are owned by this executable.
-    //
     // Returns a map from buffer allocation indices to device memory pointers
     // (only for allocations that contain constants).
-    //
     // The returned map is cached. If the above process has already been run for
     // the given stream, it is skipped and the cached map is immediately returned
     // instead.
@@ -205,16 +201,13 @@ class NpuExecutable : public Executable {
     ProgramShape program_shape_;
 
     // Provides information for allocating memory for every output/temp buffer.
-    //
     // Non-owning pointers - allocation objects reside either in allocations_
     // or buffer_assignment_.
-    //
     // A NpuExecutable can get its allocations in three ways:
     // 1 - From a regular compilation that uses allocations from MLIR.
     // 2 - From a regular compilation that uses the original allocations from
     //     the buffer assignment.
     // 3 - From loading the executable from an object file.
-    //
     // In cases 1 and 3, the allocations are stored in allocations_ and in
     // case 2, they are part of the buffer_assignment.
     const std::vector<const BufferAllocation*> allocation_ptrs_;
@@ -227,7 +220,6 @@ class NpuExecutable : public Executable {
     // The buffer_assignment_ object contains allocations that **may** be used to
     // provide information for allocating memory for every output/temp buffer.
     // See the comment on allocation_ptrs_.
-    //
     // This object is also used for dumping debug info.
     std::shared_ptr<const xla::BufferAssignment> buffer_assignment_;
 

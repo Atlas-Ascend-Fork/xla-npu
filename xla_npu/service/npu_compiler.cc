@@ -269,7 +269,6 @@ void CheckNotScheduled(HloModule* hlo_module) {
 void LogDebugOptions(HloModule* hlo_module) {
     // LOG_LINES is used instead of LOG since the message can exceed the
     // maximum line length, which results in the message being truncated.
-    //
     // We are also printing all the fields, instead of the DebugString() because
     // DebugString() does not print the default values of the fields. For example
     // for all boolean fields, the default value is false, it will not be printed

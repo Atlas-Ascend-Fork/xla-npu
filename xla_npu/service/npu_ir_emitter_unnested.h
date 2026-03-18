@@ -38,25 +38,19 @@
 namespace xla {
 
 // Emits LLVM IR for an "unnested computation".
-//
 // An unnested computation is an HloComputation which you run by executing one
 // or more kernels for each HloInstruction it contains.  Examples of unnested
 // computations:
-//
 //  - An HloModule's root computation,
 //  - The body of an HLO while loop,
 //  - The true/false computation of an HLO conditional.
-//
 // Note the opportunity for confusion -- the while loop's computation is nested
 // within the root computation, but it's emitted using NpuIrEmitterUnnested!  Don't
 // think about it too hard.
-//
 // Examples of things that are not unnested computations:
-//
 //  - The body of a fusion node.  NpuIrEmitterUnnested emits the relevant code
 //    within a kernel function using FusedIrEmitter.  (FusedIrEmitter is not
 //    really an NpuIrEmitter, but is more an "IR generator generator".)
-//
 class NpuIrEmitterUnnested : public NpuIrEmitter {
    public:
     absl::string_view platform_name() const { return ir_emitter_context_->platform_name(); }
@@ -77,7 +71,6 @@ class NpuIrEmitterUnnested : public NpuIrEmitter {
     }
 
     // Emits code for the given HLO computation.
-    //
     // Also populates related information to 'ir_emitter_context_' for
     // large-constant initializations. Large constants don't get initializers in
     // the generated code and so must be initialized by XLA. The value of these

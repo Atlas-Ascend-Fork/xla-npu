@@ -39,10 +39,8 @@
 namespace xla {
 
 namespace {
-
 // Returns a description of a transpose hero, that is compatible with all roots.
-//
-// A root is compatible with the transpose hero if:
+// A root is compatible with the transpose hero if
 //   * Either the root has a traspose hero with the same normalized dimensions
 //   * Or the root output shape is equal to the the transpose input shape
 std::optional<TransposeDescription> FindConsistentTransposeHero(
@@ -68,8 +66,7 @@ std::optional<TransposeDescription> FindConsistentTransposeHero(
     if (!tiled_transpose_hero) return std::nullopt;
 
     for (auto* root : non_transpose_roots) {
-        // Roots that don't have a transpose hero, should have a shape compatible
-        // with the transpose input.
+        // Roots that don't have a transpose hero, should have a shape compatible with the transpose input.
         if (!ShapeUtil::IsReshapeOrTransposeBitcast(root->shape(), tiled_transpose_hero->input_shape(),
                                                     /*ignore_element_type=*/true)) {
             return std::nullopt;
@@ -83,13 +80,12 @@ bool UseConcatenateFusion(absl::Span<const HloInstructionAdaptor> roots,
                           absl::Span<const HloInstructionAdaptor> heroes) {
     if (heroes.size() != 1) return false;
     if (heroes.front().opcode() != HloOpcode::kConcatenate) return false;
-    // The concat emitter does not support multiple outputs yet. TODO(csigg): fix.
+    // The concat emitter does not support multiple outputs yet.
     if (roots.front().shape().IsTuple()) return false;
     // Limit the number of operands because the concat emitter produces code for
     // each operand, hurting occupancy.
     if (heroes.front().instruction().operand_count() > 4) return false;
     // The loop emitter is faster when warp divergence and occupancy are both low.
-    // TODO(csigg): exclude this case.
     return true;
 }
 
@@ -135,7 +131,7 @@ int SmallestBitWidth(const Container& args) {
 }  // namespace
 
 bool IsNpuFusionKind(const HloInstruction& hlo, absl::string_view kind) {
-    return false;  // TODO 实现NPU的fusion instruction类型判断
+    return false;
 }
 
 NpuHloFusionAnalysis::NpuHloFusionAnalysis(
@@ -148,7 +144,6 @@ NpuHloFusionAnalysis::NpuHloFusionAnalysis(
       tiled_transpose_(tiled_transpose),
       input_output_info_(std::move(input_output_info)) {}
 
-// static
 NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(
     std::unique_ptr<HloFusionAdaptor> fusion, const se::DeviceDescription* device_info) {
     absl::InlinedVector<HloInstructionAdaptor, 2> roots = fusion->GetRoots();

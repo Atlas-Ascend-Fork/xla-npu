@@ -54,28 +54,22 @@ class NpuKernelConfig;
 // using for launching device work (kernels, library calls, etc.). By default
 // all thunks use stream #0, which is the default compute stream of an XLA
 // executable.
-//
 // Stream synchronizations are explicit and represented as WaitForStreams thunk
 // in a NpuThunkSequence. When NpuThunkSequence converted to CommandBuffer,
 // execution streams mapped to concurrent execution scopes and barriers between
 // them.
-//
 // IMPORTANT: Async execution semantics and execution stream id
-//
 // For async thunks (i.e. thunks corresponding to `all-reduce-start` and
 // `all-reduce-done`) execution stream id means NOT a stream where the async
 // operation must execute, but a stream that async operation must be
 // synchronized with:
-//
 //   - Start operation must wait for the completion of all launched work on the
 //     execution stream id (usually by adding a stream wait) and after that
 //     launch async work on implementation defined extra stream (can be borrowed
 //     from a pool)
-//
 //   - Corresponding Done operation must synchronize execution stream id with
 //     an implementation defined stream that is running async work, again
 //     usually by adding a stream wait.
-//
 TSL_LIB_GTL_DEFINE_INT_TYPE(NpuExecutionStreamId, uint64_t);
 
 // Unique identifier for async events. The same identifier is expected to be
@@ -86,26 +80,20 @@ TSL_LIB_GTL_DEFINE_INT_TYPE(NpuAsyncEventsUniqueId, uint64_t);
 // NpuThunk acts as the bridge between IrEmitter and GpuExecutable. It stores
 // the metadata IrEmitter generates for GpuExecutable to invoke an
 // HloInstruction.
-//
 // NpuThunk provides the Initialize and ExecuteOnStream interface for
 // GpuExecutable to initialize and execute the invocation respectively. Its
 // subclasses are supposed to override these interfaces to launch a generated
 // kernel or call an external library function (such as operations in cuBLAS).
-//
 // Thunks have three execution stages:
-//
 // (1) Prepare: at this stage NpuThunk can request shared resources required at
 // run
 //     time, i.e. collective thunks request collective cliques. Executable(s)
 //     will coordinate resource acquisition.
-//
 // (2) Initialize: at this stage NpuThunk must initialize all internal state
 //     required for execution, maybe using resources requested at prepare stage.
-//
 // (3) Execute: at this stage NpuThunk must launch "work" on underlying device
 //     using given stream, and it's expected that all expensive initialization
 //     is completed at earlier stages.
-//
 // This is thread-compatible. NpuThunk implementation should expect that it will
 // be called concurrently from multiple threads, for different run ids and for
 // different devices (stream executors). For partitioned XLA programs the
@@ -363,7 +351,6 @@ class NpuThunk {
   const ThunkInfo& thunk_info() const { return thunk_info_; }
 
   // Prepares thunk for execution.
-  //
   // This may be called multiple times. Its main purpose is to pass resource
   // requests up to the parent executable so it can acquire them before
   // initialization and execution.
@@ -373,11 +360,9 @@ class NpuThunk {
   }
 
   // Initializes thunk for execution.
-  //
   // This may be called multiple times. Its main purpose is to give us a chance
   // to do initialization outside of ExecuteOnStream() so that the
   // time spent initializing doesn't count towards our execution profile.
-  //
   // Precondition: Prepare(initialize_params) has been called.
   virtual absl::Status Initialize(const InitializeParams& params) {
     return absl::OkStatus();
@@ -405,16 +390,13 @@ class NpuThunk {
 
   // Executes thunk on the given stream. This method must be called after
   // Initialize and can be called multiple times over NpuThunk's lifetime.
-  //
   // Precondition: Initialize(initialize_params) has been called.
   virtual absl::Status ExecuteOnStream(const ExecuteParams& params) = 0;
 
   using BufferUses = absl::InlinedVector<BufferUse, 4>;
 
   // Returns all device buffers used by the thunk.
-  //
   // Does not propagate buffers from nested thunks.
-  //
   // The order of the buffers in returned vector is consistent across calls.
   virtual BufferUses buffer_uses() const { return {}; }
 
@@ -445,8 +427,7 @@ class NpuThunk {
   // Invokes `fn` with this thunk and all nested thunks.
   virtual void ForAllThunksMutable(absl::FunctionRef<void(NpuThunk*)> fn);
 
-  // Recursively replaces all nested thunks with the result of applying `fn` to
-  // them.
+  // Recursively replaces all nested thunks with the result of applying `fn` to them.
   // An error will leave the transformation in invalid state.
   // InternalError should be used for status.
   virtual absl::Status TransformAllNestedThunks(

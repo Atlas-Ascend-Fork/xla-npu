@@ -45,15 +45,12 @@ class Status {
   /// \brief If `ok()`, stores `new_status` into `*this`.  If `!ok()`,
   /// preserves the current status, but may augment with additional
   /// information about `new_status`.
-  ///
   /// Convenient way of keeping track of the first error encountered.
-  /// Instead of:
-  ///   `if (overall_status.ok()) overall_status = new_status`
-  /// Use:
-  ///   `overall_status.Update(new_status);`
+  /// Instead of: `if (overall_status.ok()) overall_status = new_status`
+  /// Use: `overall_status.Update(new_status);`
   void Update(const Status& new_status);
 
-  /// \brief Return a string representation of this status suitable for
+  /// brief Return a string representation of this status suitable for
   /// printing. Returns the string `"OK"` for success.
   std::string ToString() const;
 

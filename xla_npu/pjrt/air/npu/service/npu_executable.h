@@ -42,7 +42,6 @@
 namespace xla {
 
 // CPU-targeting implementation of the XLA Executable interface.
-//
 // Wraps a JIT-ed object that can be executed "on device". We JIT for the host
 // architecture, so JIT-ed code and host code share the same ABI.
 class NpuExecutable : public Executable {
@@ -93,19 +92,15 @@ class NpuExecutable : public Executable {
  private:
   // Creates an array suitable for passing as the "buffer_table" argument to the
   // JIT compiled function pointer.
-  //
-  // Returns (unowning_buffers, owning_buffers) where:
-  //
+  // Returns unowning_buffers, owning_buffers
   //  - unowning_buffers.data() can be passed as the buffer_table argument as-is
   //    and includes pointers to the scratch storage required by the
   //    computation, the live-out buffer into which the result will be written
   //    and entry computation parameters.
-  //
   //  - owning_buffers contains owning pointers to the buffers that were
   //    allocated by this routine.  This routine allocates buffers for temporary
   //    storage and the live-out buffer into which the computation writes it
   //    result.
-  //
   //  - buffers_to_free: buffers whose ownership was donated by the caller that
   //    are to be freed by the caller.
   absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> CreateBufferTable(
@@ -135,12 +130,10 @@ class NpuExecutable : public Executable {
   std::string module_name_;
 
   // We have two execution modes:
-  //
   //   (1) HLO module compiled to a single function using LLVM JIT and we get
   //       a function pointer to it.
   //   (2) HLO module compiled to a thunk sequence that gets interpreted at run
   //       time.
-  //
   // We are currently transitioning from (1) to (2) with a long term plan to
   // unify thunk-based runtime with all XLA backends.
 

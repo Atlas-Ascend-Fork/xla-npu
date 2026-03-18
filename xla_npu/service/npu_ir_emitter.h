@@ -31,18 +31,15 @@
 namespace xla {
 
 // Abstract base class for translating HLO graphs to LLVM IR for a GPU.
-//
 // There are two concrete subclasses of NpuIrEmitter: IrEmitterNested and
 // IrEmitterUnnested.  In the unnested variety, each HLO gets its own kernel
 // function, whereas in the nested version the whole computation is emitted as
 // one *non-kernel* function.
-//
 // In XLA, kernel functions never call other kernel functions.  This means that
 // if we have a kernel -- e.g. implementing a kReduce HLO -- that wants to use
 // an HLO computation as a "subroutine" -- e.g. the HLO computation that
 // specifies how to reduce two elements -- then the subroutine computation must
 // be emitted using IrEmitterNested.
-//
 // Fusion nodes are a special case.  A fusion node is emitted using
 // IrEmitterUnnested, but the code is generated using FusedIrEmitter, which is
 // not a subclass of gpu::NpuIrEmitter, and in fact is better understood as an IR
@@ -85,7 +82,6 @@ class NpuIrEmitter : public DfsHloVisitorWithDefault, public IrBuilderMixin<NpuI
     explicit NpuIrEmitter(NpuIrEmitterContext* ir_emitter_context, bool is_nested);
 
     // Helper for calling NpuHloToIrBindings::GetIrArray.
-    //
     // Gets the IrArray which contains inst.  This array has metadata that makes
     // it valid only within the IR that implements consumer.  If you are
     // implementing an HLO and want to get its own output buffer, call

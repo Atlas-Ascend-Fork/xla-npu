@@ -39,7 +39,6 @@ class NpuExecutionStreamAssignment {
     // The `HloModule` must be flat. In other words, there must be a one-to-one
     // mapping between callsites and computations. One way to guarantee this is to
     // pass the module through the `FlattenCallGraph` pass.
-    //
     // The NpuExecutionStreamAssignment does not take ownership of the `HloModule`.
     explicit NpuExecutionStreamAssignment(const HloModule* module, NpuExecutionStreamAssignmentOptions options = {});
 

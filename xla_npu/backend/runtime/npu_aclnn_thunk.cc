@@ -100,8 +100,7 @@ NpuAclnnThunk::NpuAclnnThunk(std::string fingerprint, ThunkInfo thunk_info,
       fingerprint_(std::move(fingerprint)),
       graph_(std::make_shared<se::dnn::LazyDnnGraph>(nullptr)),
       args_(std::move(args)),
-      //   output_args_(std::move(output_args)), //
-      //   output_args_表示args_中哪些内存地址是会被写入的,用于存在内存复用,
+      // output_args_(std::move(output_args)) 表示args_中哪些内存地址是会被写入的,用于存在内存复用,
       // 假设add的args_大小为3,则可能后2个arg内存地址相同,都为可写入
       sdpa_dropout_seed_(sdpa_dropout_seed) {}
 

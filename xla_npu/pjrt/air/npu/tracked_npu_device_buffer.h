@@ -87,7 +87,6 @@ class NpuDeviceMemory {
 
   // A raw memory allocator that allocates memory buffers for constructing
   // npuDeviceMemory.
-  //
   // This is a virtual interface to allow for different memory allocation
   // strategies, e.g. aligned_alloc, pre-mapped DMA buffers, etc. For example,
   // when XLA:npu is running as a part of host-offloading computation, we want

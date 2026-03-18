@@ -30,7 +30,7 @@ static void RegisterNpuPlatform() {
   // 实际执行逻辑会通过LocalClient中的LocalService(Backend)这两层中间类执行调用
   // 以典型的执行调用链为例
   //   'PjRtStreamExecutorClient'->RunAsync
-  //     'LocalExecutable'->RunAsync //
+  //     'LocalExecutable'->RunAsync
   //     这里的LocalExecutable是PjRtStreamExecutorClient的compile后生成的,里面实际封装了NpuExecutable
   //       'NpuExecutable'->ExecuteAsyncOnStreamWrapper
   //         'NpuExecutable'->'ExecuteAsyncOnStream'

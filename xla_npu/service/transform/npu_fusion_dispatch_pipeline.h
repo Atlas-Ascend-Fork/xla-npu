@@ -27,13 +27,11 @@
 namespace xla {
 
 // NPU融合分发管道
-//
 // 该PASS负责协调NPU融合优化的执行顺序。它执行以下操作：
 // 1. 先运行GEMM特定的融合优化
 // 2. 然后运行自定义kernel融合重写
 // 3. 接着将适合的融合转换为块级融合
 // 4. 最后执行嵌套GEMM融合转换
-//
 // 与GPU的FusionDispatchPipeline不同，NPU版本：
 // - 不包含Triton特定的优化
 // - 专注于CANN/ACLNN后端的融合模式

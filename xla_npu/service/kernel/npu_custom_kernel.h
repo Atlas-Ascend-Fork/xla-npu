@@ -31,12 +31,10 @@ namespace se = ::stream_executor;  // NOLINT
 // Custom kernel is a mechanism for plugging pre-compiled device kernels into
 // XLA GPU runtime. Custom kernel defines how to load the kernel on an executor
 // and what are the grid size requirements for running it.
-//
 // We use this API to hide kernel implementation details from XLA (e.g. we can
 // export CUTLASS gemm kernels as custom kernels to XLA), so that XLA can only
 // implement generic interfaces, e.g. command buffer implementation for CUDA
 // can automatically add a kernel node to a graph for arbitrary custom kernel.
-//
 // TODO(ezhulenev): Add custom kernel signature to track number and types of
 // buffer arguments, and a way to mark one of an arguments as a workspace and
 // define if it has to be zeroed first.

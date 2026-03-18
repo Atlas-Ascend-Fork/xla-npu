@@ -23,10 +23,7 @@ namespace xla {
 
 // DynamicSliceFusionRewriter-like pass for NPU, completely independent of GPU implementation.
 // Pattern matches (slice(s) + custom call) to custom address computation fusions
-// and rewrites them into fusion instructions and fusion computations.
-//
-// Example:
-//
+// and rewrites them into fusion instructions and fusion computations. Example
 //  ENTRY %main {
 //    %p0 = bf16[2,8,8]{2,1,0} parameter(0)
 //    %p1 = bf16[2,8,8]{2,1,0} parameter(1)
@@ -37,9 +34,7 @@ namespace xla {
 //    ROOT %dot = bf16[8,8]{1,0} custom-call(%bitcast_lhs, %bitcast_rhs),
 //      custom_call_target="__npu_aclnn_matmul"
 //  }
-//
-// After the pass:
-//
+// After the pass
 //  %fusion = bf16[8,8]{1,0} fusion(%p0, %p1),
 //      kind=kCustom, calls=%fusion_computation,
 //      backend_config={"fusion_backend_config": {"kind":"__custom_fusion"}}
@@ -48,7 +43,6 @@ namespace xla {
 //    %p1 = bf16[2,8,8]{2,1,0} parameter(1)
 //    ROOT %fusion %p0, %p1
 //  }
-//
 class NpuDynamicSliceFusionRewriter : public HloModulePass {
    public:
     absl::string_view name() const override { return "npu-dynamic-slice-fusion-rewriter"; }

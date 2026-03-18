@@ -20,7 +20,6 @@
 namespace xla {
 
 // An HLO pass that gives fusions and fused computations descriptive names.
-//
 // The name is based on hero instructions and the fusion kind, i.e.
 // Fusions get name "<fusion kind>_<hero instructions>_fusion",
 // and fused computations get name "fused_<hero instructions>".
