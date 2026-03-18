@@ -28,10 +28,12 @@ static const int32_t kGeSizeUint16 = sizeof(uint16_t);
 static const int32_t kGeSizeUint32 = sizeof(uint32_t);
 
 static std::map<ge::DataType, int32_t> CONST_OPDATA_TYPE_SIZE_MAP = {
-    {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat}, {ge::DT_INT8, kGeSizeInt8},
-    {ge::DT_INT16, kGeSizeInt16},   {ge::DT_INT32, kGeSizeInt32},       {ge::DT_INT64, kGeSizeInt64},
-    {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},     {ge::DT_UINT32, kGeSizeUint32},
-    {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},     {ge::DT_BOOL, kGeSizeBool}};
+    {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat},
+    {ge::DT_INT8, kGeSizeInt8},     {ge::DT_INT16, kGeSizeInt16},
+    {ge::DT_INT32, kGeSizeInt32},   {ge::DT_INT64, kGeSizeInt64},
+    {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},
+    {ge::DT_UINT32, kGeSizeUint32}, {ge::DT_UINT64, kGeSizeUint64},
+    {ge::DT_DOUBLE, kGeSizeDouble}, {ge::DT_BOOL, kGeSizeBool}};
 
 }  // namespace ge
 
@@ -51,12 +53,12 @@ std::string ConvertToString(std::vector<T> x) {
 }
 
 template <typename T>
-void GetTensorData(Tensor *tensor, std::vector<T> *data) {
+void GetTensorData(Tensor* tensor, std::vector<T>* data) {
   DataType dtype = tensor->GetTensorDesc().GetDataType();
   if (sizeof(T) != CONST_OPDATA_TYPE_SIZE_MAP[dtype]) {
   }
   auto dsize = tensor->GetTensorDesc().GetShape().GetShapeSize();
-  const T *p = const_cast<T *>(reinterpret_cast<const T *>(tensor->GetData()));
+  const T* p = const_cast<T*>(reinterpret_cast<const T*>(tensor->GetData()));
   for (int64_t i = 0; i < dsize; i++) {
     data->push_back(p[i]);
   }
@@ -64,7 +66,7 @@ void GetTensorData(Tensor *tensor, std::vector<T> *data) {
 
 // Converts an MLIR elements attribute and adds it to specified repeated field.
 template <typename T>
-void ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor *output) {
+void ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor* output) {
   if (attr.isSplat()) {
     auto raw_data = attr.getRawData().data();
     auto ele_size = attr.getRawData().size();
@@ -73,19 +75,21 @@ void ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor *output) {
     for (auto i = 0; i < dsize; ++i) {
       memcpy(padding_data + i * ele_size, raw_data, ele_size);
     }
-    auto status = output->SetData(reinterpret_cast<const uint8_t *>(padding_data), dsize * ele_size);
+    auto status = output->SetData(
+        reinterpret_cast<const uint8_t*>(padding_data), dsize * ele_size);
     delete[] padding_data;
     if (status != ge::GRAPH_SUCCESS) {
     }
   } else {
     auto raw_data = attr.getRawData();
-    auto status = output->SetData(reinterpret_cast<const uint8_t *>(&raw_data.data()[0]), raw_data.size());
+    auto status = output->SetData(
+        reinterpret_cast<const uint8_t*>(&raw_data.data()[0]), raw_data.size());
     if (status != ge::GRAPH_SUCCESS) {
     }
   }
 }
 
-void ConvertToTensorShape(ArrayRef<int64_t> shape, Shape *output_shape) {
+void ConvertToTensorShape(ArrayRef<int64_t> shape, Shape* output_shape) {
   std::vector<int64_t> dims;
   for (auto d : shape) {
     dims.push_back(d);
@@ -93,7 +97,7 @@ void ConvertToTensorShape(ArrayRef<int64_t> shape, Shape *output_shape) {
   *output_shape = ge::Shape(dims);
 }
 
-Status ConvertToTensor(const mlir::ElementsAttr attr, Tensor *output) {
+Status ConvertToTensor(const mlir::ElementsAttr attr, Tensor* output) {
   auto type = attr.getType();
   auto shape = mlir::dyn_cast<mlir::ShapedType>(type).getShape();
   DataType output_dtype;
@@ -156,4 +160,4 @@ Status ConvertToTensor(const mlir::ElementsAttr attr, Tensor *output) {
   return Status::OK();
 }
 
-}  // namespace air
+}  // namespace mlir::air

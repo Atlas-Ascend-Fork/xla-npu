@@ -7,7 +7,7 @@
  * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
  * See LICENSE in the root of the software repository for the full text of the License.
  */
- 
+
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
@@ -16,17 +16,16 @@
 
 namespace xla {
 namespace mair {
-    int Stablehlo2MairConverter(mlir::ModuleOp &module) {
-        mlir::PassManager pm(module.getContext());
+int Stablehlo2MairConverter(mlir::ModuleOp& module) {
+  mlir::PassManager pm(module.getContext());
 
-        // 添加Stablehlo到Mair方言的转换Pass
-        pm.addPass(mlir::createInlinerPass());
-        pm.addPass(mlir::air::createLegalizeStablehloToGePass());
+  // 添加Stablehlo到Mair方言的转换Pass
+  pm.addPass(mlir::createInlinerPass());
+  pm.addPass(mlir::air::createLegalizeStablehloToGePass());
 
-        if (failed(pm.run(module)))
-            return 4;
+  if (failed(pm.run(module))) return 4;
 
-        return 0;
-    }
+  return 0;
 }
-}
+}  // namespace mair
+}  // namespace xla

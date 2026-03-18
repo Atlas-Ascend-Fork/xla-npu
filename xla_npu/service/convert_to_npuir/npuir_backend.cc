@@ -14,8 +14,8 @@ using namespace mlir;
 using namespace mlir::hfusion;
 
 void GraphGenTester::test() {
-    static mlir::MLIRContext context;
-    context.getOrLoadDialect<mlir::func::FuncDialect>();
+  static mlir::MLIRContext context;
+  context.getOrLoadDialect<mlir::func::FuncDialect>();
 
-    auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
+  auto module = mlir::ModuleOp::create(mlir::UnknownLoc::get(&context));
 }

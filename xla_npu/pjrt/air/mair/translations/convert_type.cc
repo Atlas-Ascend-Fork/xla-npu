@@ -23,7 +23,7 @@ using mlir::Builder;
 using mlir::ShapedType;
 using mlir::Type;
 
-Status ConvertScalarTypeToDataType(Type type, DataType *dtype) {
+Status ConvertScalarTypeToDataType(Type type, DataType* dtype) {
   if (type.isF16()) {
     *dtype = DT_FLOAT16;
     return Status::OK();
@@ -54,7 +54,9 @@ Status ConvertScalarTypeToDataType(Type type, DataType *dtype) {
         *dtype = itype.isUnsigned() ? DT_UINT64 : DT_INT64;
         return Status::OK();
       default:
-        NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [IntegerType_NotFound]", debugString(type).c_str());
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG, "Converting %s to DataType. [IntegerType_NotFound]",
+            debugString(type).c_str());
         return Status::OK();
     }
   } else if (auto complex_type = mlir::dyn_cast<mlir::ComplexType>(type)) {
@@ -66,14 +68,17 @@ Status ConvertScalarTypeToDataType(Type type, DataType *dtype) {
       *dtype = DT_COMPLEX128;
       return Status::OK();
     }
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [ComplextType_NotFound]", debugString(type).c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG,
+                         "Converting %s to DataType. [ComplextType_NotFound]",
+                         debugString(type).c_str());
     return Status::OK();
   }
-  NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [NotFound]", debugString(type).c_str());
+  NPU_LOG_FORMAT_PRINT(DEBUG, "Converting %s to DataType. [NotFound]",
+                       debugString(type).c_str());
   return Status::OK();
 }
 
-Status ConvertToDataType(Type type, DataType *dtype) {
+Status ConvertToDataType(Type type, DataType* dtype) {
   if (auto stype = mlir::dyn_cast<ShapedType>(type)) {
     ConvertScalarTypeToDataType(stype.getElementType(), dtype);
   } else {
@@ -82,7 +87,7 @@ Status ConvertToDataType(Type type, DataType *dtype) {
   return Status::OK();
 }
 
-Status ConvertToShape(mlir::ShapedType type, Shape *shape) {
+Status ConvertToShape(mlir::ShapedType type, Shape* shape) {
   std::vector<int64_t> dims;
   if (type.hasRank()) {
     std::ostringstream oss;
@@ -101,4 +106,4 @@ Status ConvertToShape(mlir::ShapedType type, Shape *shape) {
   return Status::OK();
 }
 
-}  // namespace air
+}  // namespace mlir::air

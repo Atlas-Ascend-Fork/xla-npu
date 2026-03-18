@@ -23,9 +23,9 @@ namespace xla {
 
 // Configuration options for HLO to AFIR conversion
 struct HloToAfirOptions {
-    bool preserve_names = true;
-    bool verify_module = true;
-    bool emit_afir_dialect = false;  // If true, emit actual AFIR ops
+  bool preserve_names = true;
+  bool verify_module = true;
+  bool emit_afir_dialect = false;  // If true, emit actual AFIR ops
 };
 
 // Convert an HloModule to MLIR Module with AFIR dialect
@@ -43,8 +43,9 @@ struct HloToAfirOptions {
 //
 // Returns:
 //   An MLIR ModuleOp containing the converted AFIR code
-absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModule& module, mlir::MLIRContext* context,
-                                                                   const HloToAfirOptions& options = {});
+absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(
+    const HloModule& module, mlir::MLIRContext* context,
+    const HloToAfirOptions& options = {});
 
 // Convert a single HloComputation to MLIR Module with AFIR dialect
 //
@@ -58,13 +59,13 @@ absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModu
 //
 // Returns:
 //   An MLIR ModuleOp containing the converted AFIR code for this computation and its dependencies used/called computations.
-absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(const HloComputation& computation,
-                                                                              mlir::MLIRContext* context,
-                                                                              const HloToAfirOptions& options = {});
+absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloComputationToAfir(
+    const HloComputation& computation, mlir::MLIRContext* context,
+    const HloToAfirOptions& options = {});
 
 // Convenience overload that creates its own MLIRContext
-absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(const HloModule& module,
-                                                                   const HloToAfirOptions& options = {});
+absl::StatusOr<mlir::OwningOpRef<mlir::ModuleOp>> ConvertHloToAfir(
+    const HloModule& module, const HloToAfirOptions& options = {});
 
 }  // namespace xla
 

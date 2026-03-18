@@ -31,18 +31,21 @@
 namespace mlir::air {
 
 class GraphGenTester {
-public:
-    
-    static Status Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr);
+ public:
+  static Status Convert(mlir::ModuleOp& module, ge::GraphPtr& graphPtr);
 
-    static void buildGeluModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
-    static void buildAddModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
-    static void buildAddMulModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
-    static void buildAEmptyModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
-    static void buildConstModule(mlir::ModuleOp& module, mlir::MLIRContext& context);
-
+  static void buildGeluModule(mlir::ModuleOp& module,
+                              mlir::MLIRContext& context);
+  static void buildAddModule(mlir::ModuleOp& module,
+                             mlir::MLIRContext& context);
+  static void buildAddMulModule(mlir::ModuleOp& module,
+                                mlir::MLIRContext& context);
+  static void buildAEmptyModule(mlir::ModuleOp& module,
+                                mlir::MLIRContext& context);
+  static void buildConstModule(mlir::ModuleOp& module,
+                               mlir::MLIRContext& context);
 };
 
-}
+}  // namespace mlir::air
 
 #endif  //TEST_MAIR_GEN_H_

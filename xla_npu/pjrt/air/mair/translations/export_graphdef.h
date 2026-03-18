@@ -24,9 +24,9 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Attributes.h"               // from @llvm-project
-#include "mlir/IR/Builders.h"                 // from @llvm-project
-#include "mlir/IR/BuiltinOps.h"               // from @llvm-project
+#include "mlir/IR/Attributes.h"              // from @llvm-project
+#include "mlir/IR/Builders.h"                // from @llvm-project
+#include "mlir/IR/BuiltinOps.h"              // from @llvm-project
 #include "mlir/IR/Location.h"                // from @llvm-project
 #include "mlir/IR/Operation.h"               // from @llvm-project
 #include "mlir/IR/Types.h"                   // from @llvm-project
@@ -48,43 +48,44 @@
 
 namespace mlir::air {
 class Exporter {
-public:
-    
-    Status Convert(mlir::ModuleOp& module, ge::GraphPtr &graphPtr);
-    explicit Exporter() {}
+ public:
+  Status Convert(mlir::ModuleOp& module, ge::GraphPtr& graphPtr);
+  explicit Exporter() {}
 
+ private:
+  struct SymbolInfo {
+    std::string orgSymbol;  // 原始符号，如"%arg0"
+    ge::Operator geOp;      // 对应的算子
+    ge::TensorDesc tensorDesc;
+  };
 
-private:
-    struct SymbolInfo {
-        std::string orgSymbol;  // 原始符号，如"%arg0"
-        ge::Operator geOp; // 对应的算子
-        ge::TensorDesc tensorDesc;
-    };
+  static const std::unordered_map<std::string, std::vector<std::string>>
+      inputNameMap;
 
-    static const std::unordered_map<std::string, std::vector<std::string>> inputNameMap;
+  SymbolInfo processReturnOp(mlir::Operation& returnOp);
+  bool processOperation(mlir::Operation& mlirOp, int opCounter,
+                        ge::GraphPtr& graphPtr);
+  bool processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp,
+                              std::string opType);
+  bool processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp,
+                             std::string opType);
+  bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp,
+                               int opCounter, std::string opType);
 
-    SymbolInfo processReturnOp(mlir::Operation& returnOp);
-    bool processOperation(mlir::Operation& mlirOp, int opCounter, ge::GraphPtr &graphPtr);
-    bool processOperationInputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
-    bool processConcatV2Inputs(mlir::Operation& mlirOp, ge::Operator& geOp, std::string opType);
-    bool processOperationOutputs(mlir::Operation& mlirOp, ge::Operator& geOp, int opCounter, std::string opType);
+  std::string getMlirSymbol(mlir::Value value);
+  int getOperationNumber(mlir::Operation* op);
+  std::string generateOutputSymbol(int opIndex, int outputIndex);
 
-    std::string getMlirSymbol(mlir::Value value);
-    int getOperationNumber(mlir::Operation* op);
-    std::string generateOutputSymbol(int opIndex, int outputIndex);
+  const std::string* getGeOpInputName(const std::string& opName, int index);
 
-    const std::string* getGeOpInputName(const std::string& opName, int index);
+  float extractFloatValueSimple(mlir::Attribute valueAttr);
+  void printSymbolInfo(const SymbolInfo& symbolInfo);
+  const char* getOpName(const ge::Operator& geOp);
 
-    float extractFloatValueSimple(mlir::Attribute valueAttr);
-    void printSymbolInfo(const SymbolInfo& symbolInfo);
-    const char * getOpName(const ge::Operator& geOp);
-
-    std::unordered_map<std::string, SymbolInfo> symbolMap;
-    std::vector<SymbolInfo> inputInfos;
+  std::unordered_map<std::string, SymbolInfo> symbolMap;
+  std::vector<SymbolInfo> inputInfos;
 };
 
+}  // namespace mlir::air
 
-} // namespace mlir::air
-
-
-#endif // AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_
+#endif  // AIR_TRANSLATIONS_EXPORT_GRAPHDEF_H_

@@ -25,8 +25,8 @@ using namespace ge;
 namespace mlir::air {
 
 // Converts an MLIR elements attribute to a ascend tensor.
-Status ConvertToTensor(mlir::ElementsAttr attr, Tensor *output_tensor);
+Status ConvertToTensor(mlir::ElementsAttr attr, Tensor* output_tensor);
 
-}  // namespace air
+}  // namespace mlir::air
 
 #endif  // AIR_UTILS_CONVERT_TENSOR_H_

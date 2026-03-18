@@ -24,8 +24,8 @@
 namespace mlir::hfusion {
 
 class GraphGenTester {
-   public:
-    static void test();
+ public:
+  static void test();
 };
 
 }  // namespace mlir::hfusion

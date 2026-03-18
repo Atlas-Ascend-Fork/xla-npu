@@ -34,15 +34,15 @@ namespace xla {
 //   // ... Python API calls ...
 //   // GIL is automatically released when gil_guard goes out of scope
 class PyGILStateGuard {
-   public:
-    PyGILStateGuard();
-    ~PyGILStateGuard();
+ public:
+  PyGILStateGuard();
+  ~PyGILStateGuard();
 
-    PyGILStateGuard(const PyGILStateGuard&) = delete;
-    PyGILStateGuard& operator=(const PyGILStateGuard&) = delete;
+  PyGILStateGuard(const PyGILStateGuard&) = delete;
+  PyGILStateGuard& operator=(const PyGILStateGuard&) = delete;
 
-   private:
-    PyGILState_STATE gstate_;
+ private:
+  PyGILState_STATE gstate_;
 };
 
 // ============================================================================
@@ -51,20 +51,20 @@ class PyGILStateGuard {
 
 // Guard object that sets up a timer and SIGALRM handler for timeout
 class TimeoutGuard {
-   public:
-    explicit TimeoutGuard(int timeout_seconds);
-    ~TimeoutGuard();
+ public:
+  explicit TimeoutGuard(int timeout_seconds);
+  ~TimeoutGuard();
 
-    // Returns true if timeout occurred during the guarded section
-    bool TimedOut() const;
+  // Returns true if timeout occurred during the guarded section
+  bool TimedOut() const;
 
-    TimeoutGuard(const TimeoutGuard&) = delete;
-    TimeoutGuard& operator=(const TimeoutGuard&) = delete;
+  TimeoutGuard(const TimeoutGuard&) = delete;
+  TimeoutGuard& operator=(const TimeoutGuard&) = delete;
 
-   private:
-    int timeout_seconds_;
-    struct sigaction old_sa_;
-    struct itimerval old_timer_;
+ private:
+  int timeout_seconds_;
+  struct sigaction old_sa_;
+  struct itimerval old_timer_;
 };
 
 // ============================================================================
@@ -87,7 +87,8 @@ class TimeoutGuard {
 //
 // Note: The caller is responsible for Py_DECREF on the returned object
 //       if it is not nullptr.
-PyObject* SafePythonCall(PyObject* callable, PyObject* args, const char* name, std::atomic<bool>* timed_out_flag,
+PyObject* SafePythonCall(PyObject* callable, PyObject* args, const char* name,
+                         std::atomic<bool>* timed_out_flag,
                          int timeout_seconds = 600);
 
 }  // namespace xla

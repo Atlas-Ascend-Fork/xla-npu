@@ -105,17 +105,17 @@ class NpuTool {
     if (max_print_count <= 0) {
       max_print_count = NpuConfig::GetInstance().GetMaxPrintCount();
     }
-    
+
     int64_t print_count = std::min(size, max_print_count);
     std::vector<printDataType> resultData(print_count, 0);
-    aclError ret = npu::aclrtMemcpy(
+    aclError acl_ret = npu::aclrtMemcpy(
         resultData.data(), resultData.size() * sizeof(printDataType),
         deviceAddr, print_count * sizeof(printDataType),
         ACL_MEMCPY_DEVICE_TO_HOST);
 
-    if (ret != ACL_SUCCESS) {
+    if (acl_ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(
-          DEBUG, "    Copy result from device to host failed. ERROR: %d", ret);
+          DEBUG, "    Copy result from device to host failed. ERROR: %d", acl_ret);
       return;
     }
 

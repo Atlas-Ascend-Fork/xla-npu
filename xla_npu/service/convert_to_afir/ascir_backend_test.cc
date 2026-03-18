@@ -59,12 +59,13 @@ ENTRY %main {
 }
 )";
 
-absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(absl::string_view hlo_text,
-                                                               const std::string& module_name = "test_module") {
-    xla::HloModuleConfig config;
-    xla::HloParserOptions options;
+absl::StatusOr<std::unique_ptr<xla::HloModule>> ParseHloString(
+    absl::string_view hlo_text,
+    const std::string& module_name = "test_module") {
+  xla::HloModuleConfig config;
+  xla::HloParserOptions options;
 
-    return xla::ParseAndReturnUnverifiedModule(hlo_text, config, options);
+  return xla::ParseAndReturnUnverifiedModule(hlo_text, config, options);
 }
 
 /*
@@ -98,194 +99,206 @@ Returns: pair<module, entry_computation*>
 Note: The module must maintain its lifecycle until compile is completed.
  */
 absl::StatusOr<std::pair<std::unique_ptr<xla::HloModule>, xla::HloComputation*>>
-ParseHloComputationString(absl::string_view computation_text,
-                          const std::string& computation_name = "parsed_computation") {
-    xla::HloModuleConfig config;
-    xla::HloParserOptions options;
+ParseHloComputationString(
+    absl::string_view computation_text,
+    const std::string& computation_name = "parsed_computation") {
+  xla::HloModuleConfig config;
+  xla::HloParserOptions options;
 
-    // Process the computation text to add ENTRY prefix to fusion computation
-    std::string processed_text = std::string(computation_text);
+  // Process the computation text to add ENTRY prefix to fusion computation
+  std::string processed_text = std::string(computation_text);
 
-    // Find lines starting with "%fused" and add "ENTRY" prefix
-    // This handles fusion computations like %fused_reduce, %fused_computation, etc.
-    size_t pos = 0;
-    while ((pos = processed_text.find("%fused", pos)) != std::string::npos) {
-        // Check if this is at the start of a line (or after whitespace)
-        if (pos == 0 || processed_text[pos - 1] == '\n') {
-            // Insert "ENTRY " before "%fused"
-            processed_text.insert(pos, "ENTRY ");
-            pos += 7;  // Skip "ENTRY %fused"
-        } else {
-            pos += 1;  // Move forward
-        }
+  // Find lines starting with "%fused" and add "ENTRY" prefix
+  // This handles fusion computations like %fused_reduce, %fused_computation, etc.
+  size_t pos = 0;
+  while ((pos = processed_text.find("%fused", pos)) != std::string::npos) {
+    // Check if this is at the start of a line (or after whitespace)
+    if (pos == 0 || processed_text[pos - 1] == '\n') {
+      // Insert "ENTRY " before "%fused"
+      processed_text.insert(pos, "ENTRY ");
+      pos += 7;  // Skip "ENTRY %fused"
+    } else {
+      pos += 1;  // Move forward
     }
+  }
 
-    // Wrap as HloModule
-    std::string wrapped_hlo = absl::StrCat(
-        "HloModule temp_module\n\n",
-        processed_text
-    );
+  // Wrap as HloModule
+  std::string wrapped_hlo =
+      absl::StrCat("HloModule temp_module\n\n", processed_text);
 
-    TF_ASSIGN_OR_RETURN(auto module, xla::ParseAndReturnUnverifiedModule(wrapped_hlo, config, options));
+  TF_ASSIGN_OR_RETURN(auto module, xla::ParseAndReturnUnverifiedModule(
+                                       wrapped_hlo, config, options));
 
-    // Find the fusion computation (starting with "fused") to use as entry
-    // If no fusion computation found, use the default entry computation
-    xla::HloComputation* entry_computation = nullptr;
+  // Find the fusion computation (starting with "fused") to use as entry
+  // If no fusion computation found, use the default entry computation
+  xla::HloComputation* entry_computation = nullptr;
 
-    for (const auto* computation : module->computations()) {
-        std::string comp_name = std::string(computation->name());
-        if (comp_name.find("fused") == 0) {
-            entry_computation = const_cast<xla::HloComputation*>(computation);
-            std::cout << "  Found fusion computation as entry: " << comp_name << std::endl;
-            break;
-        }
+  for (const auto* computation : module->computations()) {
+    std::string comp_name = std::string(computation->name());
+    if (comp_name.find("fused") == 0) {
+      entry_computation = const_cast<xla::HloComputation*>(computation);
+      std::cout << "  Found fusion computation as entry: " << comp_name
+                << std::endl;
+      break;
     }
+  }
 
-    // Fallback to default entry if no fusion computation found
-    if (entry_computation == nullptr) {
-        entry_computation = module->entry_computation();
-        std::cout << "  Using default entry computation: " << entry_computation->name() << std::endl;
-    }
+  // Fallback to default entry if no fusion computation found
+  if (entry_computation == nullptr) {
+    entry_computation = module->entry_computation();
+    std::cout << "  Using default entry computation: "
+              << entry_computation->name() << std::endl;
+  }
 
-    return std::make_pair(std::move(module), entry_computation);
+  return std::make_pair(std::move(module), entry_computation);
 }
 
-absl::Status RunTest(absl::string_view hlo_text, const std::string& output_dir) {
-    std::cout << "=== HLO to AscIR Backend Test ===" << std::endl;
-    std::cout << "\n[Step 1] Parsing HLO text..." << std::endl;
+absl::Status RunTest(absl::string_view hlo_text,
+                     const std::string& output_dir) {
+  std::cout << "=== HLO to AscIR Backend Test ===" << std::endl;
+  std::cout << "\n[Step 1] Parsing HLO text..." << std::endl;
 
-    // Parse HLO text to HloModule and HloComputation
-    // Note: The module must maintain its lifecycle until compile is completed, otherwise, a coredump will occur.
-    TF_ASSIGN_OR_RETURN(auto parsed, ParseHloComputationString(hlo_text));
-    auto& hlo_module = parsed.first;
-    xla::HloComputation* entry_computation = parsed.second;
+  // Parse HLO text to HloModule and HloComputation
+  // Note: The module must maintain its lifecycle until compile is completed, otherwise, a coredump will occur.
+  TF_ASSIGN_OR_RETURN(auto parsed, ParseHloComputationString(hlo_text));
+  auto& hlo_module = parsed.first;
+  xla::HloComputation* entry_computation = parsed.second;
 
-    std::cout << " HLO module parsed: " << entry_computation->name() << std::endl;
-    std::cout << "     Entry computation instructions: " << entry_computation->instruction_count()
+  std::cout << " HLO module parsed: " << entry_computation->name() << std::endl;
+  std::cout << "     Entry computation instructions: "
+            << entry_computation->instruction_count() << std::endl;
+
+  // Collect all computations from the module (entry + sub-computations)
+  std::unordered_map<std::string, const xla::HloComputation*> computations;
+
+  int computation_count = 0;
+  for (const auto* computation : hlo_module->computations()) {
+    std::string key = computation->IsEntryComputation()
+                          ? "main"
+                          : std::string(computation->name());
+    computations[key] = computation;
+    computation_count++;
+  }
+
+  std::cout << "**** Parse hlo successfully! ****" << std::endl;
+  std::cout << "     Total computations in module: " << computation_count
+            << std::endl;
+  for (const auto& [key, comp] : computations) {
+    std::cout << "       - " << key << " (" << comp->instruction_count()
+              << " instructions)" << std::endl;
+  }
+
+  std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
+
+  xla::AscirBackendOptions options;
+  options.output_dir = output_dir;
+  options.preserve_intermediates = true;
+  options.soc_version = "Ascend910B1";
+
+  std::cout << "  Output directory: " << options.output_dir << std::endl;
+  std::cout << "  SOC version: " << options.soc_version << std::endl;
+
+  std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
+
+  xla::AscirBackend backend;
+  TF_ASSIGN_OR_RETURN(auto result, backend.Compile(computations, options));
+
+  std::cout << "**** Compilation successfully! ****" << std::endl;
+
+  std::cout << "\n[Step 4] Generated Artifacts:" << std::endl;
+  std::cout << "  Total artifacts compiled: " << result.artifact_infos.size()
+            << std::endl;
+
+  int idx = 0;
+  for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
+    std::cout << "\n  Artifact " << (++idx) << ": " << artifact_name
               << std::endl;
+    std::cout << "    Name:      " << artifact_info.name << std::endl;
+    std::cout << "    Directory: " << artifact_info.dir << std::endl;
+  }
 
-    // Collect all computations from the module (entry + sub-computations)
-    std::unordered_map<std::string, const xla::HloComputation*> computations;
+  // Verify directories exist
+  std::cout << "\n[Step 5] Verifying generated directories..." << std::endl;
 
-    int computation_count = 0;
-    for (const auto* computation : hlo_module->computations()) {
-        std::string key = computation->IsEntryComputation() ? "main" : std::string(computation->name());
-        computations[key] = computation;
-        computation_count++;
+  int total_dirs = 0;
+  int existing_dirs = 0;
+
+  for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
+    total_dirs++;
+    std::string check_cmd = "test -d " + artifact_info.dir;
+    int dir_exists = (system(check_cmd.c_str()) == 0);
+
+    if (dir_exists) {
+      std::cout << "  Directory exists for " << artifact_name << " ("
+                << artifact_info.dir << ")" << std::endl;
+      existing_dirs++;
+    } else {
+      std::cout << "  Directory missing for " << artifact_name << " ("
+                << artifact_info.dir << ")" << std::endl;
     }
+  }
 
-    std::cout << "**** Parse hlo successfully! ****" << std::endl;
-    std::cout << "     Total computations in module: " << computation_count << std::endl;
-    for (const auto& [key, comp] : computations) {
-        std::cout << "       - " << key << " (" << comp->instruction_count() << " instructions)" << std::endl;
-    }
+  std::cout << "\n  Directories verified: " << existing_dirs << "/"
+            << total_dirs << std::endl;
+  std::cout << "\n=== Test Completed Successfully ===" << std::endl;
 
-    std::cout << "\n[Step 2] Configuring AscIR Backend..." << std::endl;
-
-    xla::AscirBackendOptions options;
-    options.output_dir = output_dir;
-    options.preserve_intermediates = true;
-    options.soc_version = "Ascend910B1";
-
-    std::cout << "  Output directory: " << options.output_dir << std::endl;
-    std::cout << "  SOC version: " << options.soc_version << std::endl;
-
-    std::cout << "\n[Step 3] Compiling HLO to AscIR Kernel..." << std::endl;
-
-    xla::AscirBackend backend;
-    TF_ASSIGN_OR_RETURN(auto result, backend.Compile(computations, options));
-
-    std::cout << "**** Compilation successfully! ****" << std::endl;
-
-    std::cout << "\n[Step 4] Generated Artifacts:" << std::endl;
-    std::cout << "  Total artifacts compiled: " << result.artifact_infos.size() << std::endl;
-
-    int idx = 0;
-    for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
-        std::cout << "\n  Artifact " << (++idx) << ": " << artifact_name << std::endl;
-        std::cout << "    Name:      " << artifact_info.name << std::endl;
-        std::cout << "    Directory: " << artifact_info.dir << std::endl;
-    }
-
-    // Verify directories exist
-    std::cout << "\n[Step 5] Verifying generated directories..." << std::endl;
-
-    int total_dirs = 0;
-    int existing_dirs = 0;
-
-    for (const auto& [artifact_name, artifact_info] : result.artifact_infos) {
-        total_dirs++;
-        std::string check_cmd = "test -d " + artifact_info.dir;
-        int dir_exists = (system(check_cmd.c_str()) == 0);
-
-        if (dir_exists) {
-            std::cout << "  Directory exists for " << artifact_name << " (" << artifact_info.dir << ")" << std::endl;
-            existing_dirs++;
-        } else {
-            std::cout << "  Directory missing for " << artifact_name << " (" << artifact_info.dir << ")"
-                      << std::endl;
-        }
-    }
-
-    std::cout << "\n  Directories verified: " << existing_dirs << "/" << total_dirs << std::endl;
-    std::cout << "\n=== Test Completed Successfully ===" << std::endl;
-
-    return absl::OkStatus();
+  return absl::OkStatus();
 }
 
 int main(int argc, char** argv) {
-    absl::ParseCommandLine(argc, argv);
+  absl::ParseCommandLine(argc, argv);
 
-    // Initialize NPU config
-    xla::NpuConfig::GetInstance().Init();
+  // Initialize NPU config
+  xla::NpuConfig::GetInstance().Init();
 
-    std::cout << "========================================" << std::endl;
-    std::cout << "HLO to AscIR Backend Test" << std::endl;
-    std::cout << "========================================" << std::endl;
+  std::cout << "========================================" << std::endl;
+  std::cout << "HLO to AscIR Backend Test" << std::endl;
+  std::cout << "========================================" << std::endl;
 
-    std::string hlo_text;
-    std::string source_desc;
+  std::string hlo_text;
+  std::string source_desc;
 
-    // Determine HLO source
-    if (!absl::GetFlag(FLAGS_hlo_file).empty()) {
-        // Read from file
-        std::string hlo_file = absl::GetFlag(FLAGS_hlo_file);
-        std::cout << "Reading HLO from file: " << hlo_file << std::endl;
+  // Determine HLO source
+  if (!absl::GetFlag(FLAGS_hlo_file).empty()) {
+    // Read from file
+    std::string hlo_file = absl::GetFlag(FLAGS_hlo_file);
+    std::cout << "Reading HLO from file: " << hlo_file << std::endl;
 
-        std::ifstream file(hlo_file);
-        if (!file.is_open()) {
-            std::cerr << "Error: Cannot open file: " << hlo_file << std::endl;
-            return EXIT_FAILURE;
-        }
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        hlo_text = buffer.str();
-        source_desc = absl::StrCat("file: ", hlo_file);
-    } else if (!absl::GetFlag(FLAGS_hlo_text).empty()) {
-        // Use provided HLO text
-        hlo_text = absl::GetFlag(FLAGS_hlo_text);
-        source_desc = "command line text";
-    } else {
-        // Use default test HLO
-        std::cout << "Using default test HLO" << std::endl;
-        hlo_text = kComplexHLO;
-        source_desc = "built-in test";
+    std::ifstream file(hlo_file);
+    if (!file.is_open()) {
+      std::cerr << "Error: Cannot open file: " << hlo_file << std::endl;
+      return EXIT_FAILURE;
     }
 
-    std::cout << "HLO source: " << source_desc << std::endl;
-    std::cout << "HLO text length: " << hlo_text.length() << " bytes" << std::endl;
-    std::cout << std::endl;
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    hlo_text = buffer.str();
+    source_desc = absl::StrCat("file: ", hlo_file);
+  } else if (!absl::GetFlag(FLAGS_hlo_text).empty()) {
+    // Use provided HLO text
+    hlo_text = absl::GetFlag(FLAGS_hlo_text);
+    source_desc = "command line text";
+  } else {
+    // Use default test HLO
+    std::cout << "Using default test HLO" << std::endl;
+    hlo_text = kComplexHLO;
+    source_desc = "built-in test";
+  }
 
-    // Run test
-    std::string output_dir = absl::GetFlag(FLAGS_output_dir);
+  std::cout << "HLO source: " << source_desc << std::endl;
+  std::cout << "HLO text length: " << hlo_text.length() << " bytes"
+            << std::endl;
+  std::cout << std::endl;
 
-    auto status = RunTest(hlo_text, output_dir);
+  // Run test
+  std::string output_dir = absl::GetFlag(FLAGS_output_dir);
 
-    if (!status.ok()) {
-        std::cerr << "\n❌ Test Failed: " << status.message() << std::endl;
-        return EXIT_FAILURE;
-    }
+  auto status = RunTest(hlo_text, output_dir);
 
-    return EXIT_SUCCESS;
+  if (!status.ok()) {
+    std::cerr << "\n❌ Test Failed: " << status.message() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
 }

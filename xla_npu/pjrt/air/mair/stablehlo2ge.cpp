@@ -50,7 +50,7 @@ enum Action {
   None,
   DumpMair,
 };
-} // namespace
+}  // namespace
 
 static cl::opt<enum Action> emitAction(
     "emit", cl::desc("Select the kind of output desired"),
@@ -58,9 +58,8 @@ static cl::opt<enum Action> emitAction(
                           "output the MLIR dump after mair lowering")));
 
 // 读取.mlir文件或字符串并转换为mlir::ModuleOp对象
-static int loadMLIR(mlir::MLIRContext &context,
-                    mlir::OwningOpRef<mlir::ModuleOp> &module) {
-
+static int loadMLIR(mlir::MLIRContext& context,
+                    mlir::OwningOpRef<mlir::ModuleOp>& module) {
   // Otherwise, the input is '.mlir'.
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
@@ -80,15 +79,13 @@ static int loadMLIR(mlir::MLIRContext &context,
   return 0;
 }
 
-static int loadAndProcessMLIR(mlir::MLIRContext &context,
-                              mlir::OwningOpRef<mlir::ModuleOp> &module) {
-  if (int error = loadMLIR(context, module))
-    return error;
+static int loadAndProcessMLIR(mlir::MLIRContext& context,
+                              mlir::OwningOpRef<mlir::ModuleOp>& module) {
+  if (int error = loadMLIR(context, module)) return error;
 
   mlir::PassManager pm(module.get()->getName());
   // Apply any generic pass manager command line options and run the pipeline.
-  if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
-    return 4;
+  if (mlir::failed(mlir::applyPassManagerCLOptions(pm))) return 4;
 
   // Check to see what granularity of MLIR we are compiling to.
   bool isLoweringToMair = emitAction >= Action::DumpMair;
@@ -98,12 +95,11 @@ static int loadAndProcessMLIR(mlir::MLIRContext &context,
     pm.addPass(createLegalizeStablehloToGePass());
   }
 
-  if (failed(pm.run(*module)))
-    return 4;
+  if (failed(pm.run(*module))) return 4;
   return 0;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Register any command line options.
   mlir::registerAsmPrinterCLOptions();
   mlir::registerMLIRContextCLOptions();
