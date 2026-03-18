@@ -10,10 +10,6 @@
 
 ## 安装与卸载
 
-- 安装依赖
-
-在编译安装xla\_npu前，请安装最新昇腾软件栈CANN 8.5.0或在研版本。
-
 详细的安装和卸载指南请参考：**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**
 
 ---
@@ -78,6 +74,10 @@ rm -rf build/
 build --define PYTHON_LIB_DIR=
 
 ### 运行环境变量
+
+运行环境依赖：
+
+在运行xla\_npu前，请安装最新昇腾软件栈CANN 8.5.0或在研版本。
 
 运行测试前需要以下变量:
 

@@ -40,3 +40,5 @@ xla\_npu实现OpenXLA PJRT运行时接口，通过调用CANN软件栈中Runtime�
 
 
 ## Demo
+
+模型及单个算子用例样例参考[demo](examples/README.md)。
