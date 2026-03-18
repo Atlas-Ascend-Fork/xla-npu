@@ -14,7 +14,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -70,6 +72,15 @@ void Log::Print(const char* file_path, int line, const char* func,
       break;
   }
 
+  // 获取当前时间
+  auto now = std::chrono::system_clock::now();
+  auto time_t_now = std::chrono::system_clock::to_time_t(now);
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) %
+            1000;
+  struct tm local_time;
+  localtime_r(&time_t_now, &local_time);
+
   // 获取进程/线程ID
   pid_t pid = getpid();
   pid_t tid = syscall(SYS_gettid);
@@ -89,8 +100,10 @@ void Log::Print(const char* file_path, int line, const char* func,
     pure_filename = file_path_str;
   }
 
-  // 日志打印格式：[PID:TID][XLA_NPU.LEVEL]: 日志内容
-  std::cout << "[" << pid_str << ":" << tid_str << "]"
+  // 日志打印格式：[YYYY-MM-DD HH:MM:SS.mmm][PID:TID][XLA_NPU.LEVEL]: 日志内容
+  std::cout << "[" << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S") << "."
+            << std::setfill('0') << std::setw(3) << ms.count() << "]"
+            << "[" << pid_str << ":" << tid_str << "]"
             << "[XLA_NPU." << logLevelString << "]: " << log_str;
 
   std::cout << std::endl;

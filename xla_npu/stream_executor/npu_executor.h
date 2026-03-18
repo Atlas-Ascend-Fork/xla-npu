@@ -57,7 +57,7 @@ class NpuExecutor : public StreamExecutorCommon {
 
   absl::StatusOr<std::unique_ptr<MemoryAllocation>> HostMemoryAllocate(
       uint64_t size) override {
-    return nullptr;
+    return absl::UnimplementedError("HostMemoryAllocate not supported for NPU");
   }
 
   bool SynchronizeAllActivity() override { return true; }
