@@ -299,6 +299,10 @@ init_environment() {
     fi
 
     log_info "Python 版本满足要求 ($py_major.$py_minor >= 3.11)"
+    
+    # 导出 Python 版本供 Bazel 使用
+    export PYTHON_VERSION="${py_major}.${py_minor}"
+    
     log_info "环境初始化完成"
 }
 
@@ -509,10 +513,24 @@ build_xla() {
         log_info "XLA 配置完成"
     fi
 
+    # 获取 Python 库路径（自动从当前 Python 环境获取）
+    # PYTHON_LIBDIR: Python 解释器库文件目录 (包含 libpython3.11.so)
+    local PYTHON_LIBDIR=$($PYTHON_CMD -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))" 2>/dev/null)
+    local PYTHON_LDLIBRARY=$($PYTHON_CMD -c "import sysconfig; print(sysconfig.get_config_var('LDLIBRARY'))" 2>/dev/null)
+    # 从 LDLIBRARY 提取库名称（去掉 lib 前缀和 .so 后缀）
+    local PYTHON_LIB_NAME=$(echo "$PYTHON_LDLIBRARY" | sed 's/^lib//' | sed 's/\.so$//')
+    # 获取 Python 版本号（用于 BUILD 文件中的 -lpython$(PYTHON_VERSION)）
+    local PYTHON_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+    
     # 编译
     log_info "开始编译 XLA-NPU..."
     log_info "首次编译需要下载依赖包，耗时会较长。如果网络不稳定出现下载失败，可以重复执行。"
-    log_info "编译任务数: $PARALLEL_JOBS"
+    log_info "编译任务数：$PARALLEL_JOBS"
+    log_info "JAX 版本：$JAX_VERSION"
+    log_info "Python 版本：$PYTHON_VERSION"
+    log_info "Python 链接库路径：$PYTHON_LIBDIR"
+    log_info "Python 链接库文件：$PYTHON_LDLIBRARY"
+    log_info "Python 链接库名称：$PYTHON_LIB_NAME"
 
     bazel build \
         --incompatible_disallow_empty_glob=false \
@@ -521,6 +539,8 @@ build_xla() {
         --verbose_failures \
         --copt=-w \
         --jobs=$PARALLEL_JOBS \
+        --define=PYTHON_VERSION="$PYTHON_VERSION" \
+        --define=PYTHON_LIBDIR="$PYTHON_LIBDIR" \
         //xla/xla_npu/pjrt/c:pjrt_c_api_npu_plugin.so || \
         error_exit "XLA-NPU 编译失败" \
             "1. 检查网络连接 (需要下载依赖)\n2. 查看编译错误日志\n3. 尝试减少并行任务数\n4. 使用代理加速下载"

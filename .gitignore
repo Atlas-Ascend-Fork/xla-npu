@@ -1,4 +1,8 @@
 .idea
 .vscode
+.cache
 __pycache__
 examples/output
+build/*
+!build/build.sh
+compile_commands.json

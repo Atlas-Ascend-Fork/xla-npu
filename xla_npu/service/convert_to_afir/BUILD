@@ -85,9 +85,9 @@ cc_binary(
     name = "ascir_backend_test",
     srcs = ["ascir_backend_test.cc"],
     linkopts = [
-        "-L$(PYTHON_LIB_DIR)",
+        "-L$(PYTHON_LIBDIR)",
         "-lpython$(PYTHON_VERSION)",
-        "-Wl,-rpath,$(PYTHON_LIB_DIR)",
+        "-Wl,-rpath,$(PYTHON_LIBDIR)",
     ],
     deps = [
         ":ascir_backend",
