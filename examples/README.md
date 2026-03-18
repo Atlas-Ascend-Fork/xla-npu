@@ -45,6 +45,7 @@ examples/
 
 1. 确保已完成 XLA-NPU 的安装, 参考项目根目录 [INSTALL_GUIDE.md](../INSTALL_GUIDE.md)
 2. 设置运行所需环境变量, 参考项目根目录 [README.md](../README.md)
+3. 修改 `common/config.py` 中的 NPU_LIBRARY_NAME 为xla-npu编译产物的实际路径, 如果是通过 `build/build.sh` 构建的, 则产物路径为 `xla-npu代码仓/build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so`
 
 ### 运行算子测试样例
 
@@ -88,4 +89,4 @@ python main.py
 ## 注意事项
 
 1. 运行 NPU 样例前请确保 NPU 设备可用
-2. 模型执行的输入和输出数据默认保存在 `examples/output/` 目录下, 可通过--cleanup清理
+2. 模型执行的输入和输出数据默认保存在 `examples/output/` 目录下(执行测试用例后自动生成), 可通过--cleanup清理
