@@ -380,7 +380,6 @@ absl::StatusOr<NpuCompiler::BackendCompileResult> NpuCompiler::CompileSingleModu
 
     const bool should_dump =
         DumpingEnabledForHloModule(debug_module ? debug_module->name() : "", module_config.debug_options());
-
     if (should_dump) {
         if (debug_module) {
             llvm_ir::DumpIrIfEnabled(*debug_module, *llvm_module,

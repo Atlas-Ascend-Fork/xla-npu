@@ -331,7 +331,6 @@ absl::Status NpuDynamicSliceFusionRewriter::ProcessFusionMatch(
     absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_operand_paths,
     absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_user_paths,
     bool& changed) {
-
     absl::InlinedVector<HloInstruction*, 4> matched_instrs;
 
     for (auto& p : sliced_operand_paths) {

@@ -225,7 +225,6 @@ std::string FixNodeAxisInfo(const std::string& ascir_text) {
     while ((pos = result.find("sched {\n", pos)) != std::string::npos) {
       total_count++;
       size_t sched_end = result.find("}", pos);
-
       if (sched_end == std::string::npos || sched_end > pos + 200) {
         pos += 8;
         continue;
@@ -233,7 +232,6 @@ std::string FixNodeAxisInfo(const std::string& ascir_text) {
 
       std::string sched_content = result.substr(pos + 8, sched_end - (pos + 8));
       size_t num_sched_axis = countSchedAxes(sched_content);
-
       if (num_sched_axis < num_axes) {
         size_t num_missing = num_axes - num_sched_axis;
 

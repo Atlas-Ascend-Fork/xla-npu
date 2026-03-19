@@ -827,7 +827,6 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(
         llvm::cast<mlir::FloatType>(operand_elem_type).getWidth();
     auto result_width =
         llvm::cast<mlir::FloatType>(result_elem_type).getWidth();
-
     if (operand_width < result_width) {
       // Extend floating point
       auto extf_op =
@@ -853,7 +852,6 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(
         llvm::cast<mlir::IntegerType>(operand_elem_type).getWidth();
     auto result_width =
         llvm::cast<mlir::IntegerType>(result_elem_type).getWidth();
-
     if (operand_width < result_width) {
       // Extend integer (signed or unsigned)
       auto operand_signed =
@@ -1583,7 +1581,6 @@ void HloToAfirConverter::ProcessHloComputationParameterShapes(
   for (int64_t i = 0; i < computation.num_parameters(); ++i) {
     const Shape& param_shape = computation.parameter_instruction(i)->shape();
     int64_t param_rank = param_shape.dimensions_size();
-
     // 找到更大秩的参数，更新最大秩并重置合并形状
     if (param_rank > max_rank) {
       max_rank = param_rank;

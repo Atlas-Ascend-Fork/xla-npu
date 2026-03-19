@@ -119,7 +119,6 @@ absl::Status Run(const HloToAfirOptions& options) {
     // Convert HloComputation to AFIR
     TF_ASSIGN_OR_RETURN(mlir_module, ConvertHloComputationToAfir(
                                          *computation, &context, options));
-
   } else {  // convert entire hlo module
     // Get input file
     std::string input_file = absl::GetFlag(FLAGS_input);
@@ -172,7 +171,6 @@ int main(int argc, char** argv) {
 
   // Run conversion
   absl::Status status = xla::Run(options);
-
   if (!status.ok()) {
     std::cerr << "Error: " << status.message() << std::endl;
     return EXIT_FAILURE;

@@ -45,7 +45,6 @@ PJRT_Error* PJRT_Client_Create(PJRT_Client_Create_Args* args) {
     args->client = CreateWrapperClient(std::move(client));
     return nullptr;
 #endif
-
 }
 
 PJRT_Error* PJRT_ExecuteContext_Create(PJRT_ExecuteContext_Create_Args* args) {

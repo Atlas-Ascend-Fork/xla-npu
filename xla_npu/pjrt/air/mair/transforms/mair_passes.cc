@@ -432,7 +432,6 @@ class ConvertReduceOp : public OpConversionPattern<stablehlo::ReduceOp> {
     }
     auto computeIt = it;
     auto afterComputeIt = std::next(computeIt);
-
     if (computeIt != body.begin() || afterComputeIt != termIt) {
       return rewriter.notifyMatchFailure(
           op, "Body must contain exactly one computation op.");
