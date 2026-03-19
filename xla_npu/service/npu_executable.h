@@ -59,14 +59,10 @@ class NpuExecutable : public Executable {
     };
 
     struct OutputInfo {
-        // Corresponding allocation index.
         int allocation_index;
 
-        // Output is passed-through from a parameter.
         bool passthrough = false;
 
-        // Whether this output is hinted to alias a parameter (BufferAllocation*
-        // would indicate the aliased parameter), and what kind of alias it is.
         std::optional<HloInputOutputAliasConfig::Alias> alias_config;
 
         friend bool operator==(const OutputInfo& lhs, const OutputInfo& rhs) {
@@ -156,14 +152,6 @@ class NpuExecutable : public Executable {
 
     using BufferAllocToDeviceMemoryMap = absl::flat_hash_map<BufferAllocation::Index, se::DeviceMemoryBase>;
 
-    // Loads the PTX or CUBIN for this executable and initializes all
-    // constants that haven't already been initialized by the CUDA driver. Loaded
-    // modules are owned by this executable.
-    // Returns a map from buffer allocation indices to device memory pointers
-    // (only for allocations that contain constants).
-    // The returned map is cached. If the above process has already been run for
-    // the given stream, it is skipped and the cached map is immediately returned
-    // instead.
     absl::StatusOr<const BufferAllocToDeviceMemoryMap*> ResolveConstantGlobals(stream_executor::Stream* stream);
 
    private:

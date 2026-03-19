@@ -392,8 +392,7 @@ absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
             return FailedPrecondition(
                 "Cannot run NPU XLA computation because pointer to (sub-)buffer at "
                 "index %s of parameter %d was null.  All pointers to "
-                "(sub-)buffers must not be null, unless the (sub-)buffer has "
-                "zero elements.",
+                "(sub-)buffers must not be null, unless the (sub-)buffer has zero elements.",
                 allocation.param_shape_index().ToString(), param_no);
         }
         return registered_buffer;

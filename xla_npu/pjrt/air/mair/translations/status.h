@@ -92,13 +92,16 @@ class StatusGroup {
 
   void Update(const Status& status);
 
-  bool HasLogMessages() const { return !recent_logs_.empty(); }
+  bool HasLogMessages() const { 
+    return !recent_logs_.empty();
+  }
 
  private:
   bool ok_ = true;
-  size_t num_ok_ = 0;
   std::vector<Status> children_;
   std::vector<std::string> recent_logs_;  // recent warning and error logs
+  size_t num_ok_ = 0;
+
 };
 
 inline Status::Status(const Status& s)

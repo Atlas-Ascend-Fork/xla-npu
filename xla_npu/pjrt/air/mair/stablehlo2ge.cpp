@@ -71,7 +71,7 @@ static int loadMLIR(mlir::MLIRContext& context,
   sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
   module = mlir::parseSourceFile<mlir::ModuleOp>(sourceMgr, &context);
   if (!module) {
-    llvm::errs() << "Error can't load file " << inputFilename << "\n";
+    llvm::errs() << "Error can not load file " << inputFilename << "\n";
     return 3;
   }
   return 0;

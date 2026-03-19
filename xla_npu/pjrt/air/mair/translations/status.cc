@@ -82,8 +82,8 @@ void StatusGroup::Update(const Status& s) {
   if (s.ok()) {
     ++num_ok_;
   } else {
-    ok_ = false;
     children_.push_back(s);
+    ok_ = false;
   }
 }
 

@@ -27,31 +27,31 @@ Status ConvertScalarTypeToDataType(Type type, DataType* dtype) {
   if (type.isF16()) {
     *dtype = DT_FLOAT16;
     return Status::OK();
+  } else if (type.isBF16()) {
+    *dtype = DT_BF16;
+    return Status::OK();
   } else if (type.isF32()) {
     *dtype = DT_FLOAT;
     return Status::OK();
   } else if (type.isF64()) {
     *dtype = DT_DOUBLE;
     return Status::OK();
-  } else if (type.isBF16()) {
-    *dtype = DT_BF16;
-    return Status::OK();
-  } else if (auto itype = mlir::dyn_cast<mlir::IntegerType>(type)) {
-    switch (itype.getWidth()) {
+  } else if (auto i_type = mlir::dyn_cast<mlir::IntegerType>(type)) {
+    switch (i_type.getWidth()) {
       case 1:
         *dtype = DT_BOOL;
         return Status::OK();
       case 8:
-        *dtype = itype.isUnsigned() ? DT_UINT8 : DT_INT8;
+        *dtype = i_type.isUnsigned() ? DT_UINT8 : DT_INT8;
         return Status::OK();
       case 16:
-        *dtype = itype.isUnsigned() ? DT_UINT16 : DT_INT16;
+        *dtype = i_type.isUnsigned() ? DT_UINT16 : DT_INT16;
         return Status::OK();
       case 32:
-        *dtype = itype.isUnsigned() ? DT_UINT32 : DT_INT32;
+        *dtype = i_type.isUnsigned() ? DT_UINT32 : DT_INT32;
         return Status::OK();
       case 64:
-        *dtype = itype.isUnsigned() ? DT_UINT64 : DT_INT64;
+        *dtype = i_type.isUnsigned() ? DT_UINT64 : DT_INT64;
         return Status::OK();
       default:
         NPU_LOG_FORMAT_PRINT(
@@ -60,11 +60,11 @@ Status ConvertScalarTypeToDataType(Type type, DataType* dtype) {
         return Status::OK();
     }
   } else if (auto complex_type = mlir::dyn_cast<mlir::ComplexType>(type)) {
-    auto etype = complex_type.getElementType();
-    if (etype.isF32()) {
+    auto e_type = complex_type.getElementType();
+    if (e_type.isF32()) {
       *dtype = DT_COMPLEX64;
       return Status::OK();
-    } else if (etype.isF64()) {
+    } else if (e_type.isF64()) {
       *dtype = DT_COMPLEX128;
       return Status::OK();
     }

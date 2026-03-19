@@ -49,11 +49,6 @@ class NpuHloToIrBindings {
         return it->second.element(shape_index);
     }
 
-    // Returns the IrArray which contains the output of hlo.
-    // consumer is the HLO in which this IrArray is used -- we use this to (try
-    // to) add metadata indicating that the array is invariant within consumer.
-    // To get the buffer into which hlo should write its own output, call
-    // GetIrArray(hlo, hlo).
     llvm_ir::IrArray GetIrArray(const HloInstruction& hlo, const HloInstruction& consumer,
                                 const ShapeIndex& shape_index = {});
 
