@@ -153,13 +153,10 @@ class NpuCompiler : public LLVMCompiler {
 
     se::Platform::Id platform_id_;
 
-    // The triple that represents our target.
     const char* target_triple_;
 
-    // The data layout of the emitted module.
     const char* data_layout_;
 
-    // The size in bytes of a pointer. Used by ShapeSizeBytesFunction.
     const int64_t pointer_size_;
 
     NpuCompiler(const NpuCompiler&) = delete;

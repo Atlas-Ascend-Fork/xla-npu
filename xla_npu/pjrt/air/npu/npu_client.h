@@ -204,16 +204,6 @@ private:
     std::vector<PjRtMemorySpace*> memory_spaces_;
     NpuTopologyDescription topology_;
 
-    // Launching collectives are prone to deadlock when we use fixed-sized
-    // threadpools since ExecuteHelper will block until all replicas reach the
-    // barrier. We ensure that
-    // 1. Threadpool size is at least as large as device_count so one collective
-    //    launch over all devices can succeed.
-    // 2. Gang-schedule each collective by conservatively ensuring a total order
-    //    of collectives and launching only one collective at a time to avoid
-    //    having no active threads to make progress
-    // TODO(zhangqiaorjc): Explore alternatives that allow multiple concurrent
-    // collectives.
     mutable absl::Mutex mu_;
     tsl::AsyncValueRef<NpuEvent> last_collective_launch_event_
         ABSL_GUARDED_BY(mu_);
@@ -386,32 +376,16 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
   // Caching `result_buffer_indices_` to avoid lookup
   // HLO dataflow analysis data structures in program execution critical path.
 
-  // Buffer allocation indices corresponding to each result buffer leaf buffer.
   absl::InlinedVector<BufferAllocation::Index, 4> result_buffer_indices_;
 
-  // Size on device of each leaf buffer of the compiled program, cached here
-  // for performance reasons.
   std::vector<int64_t> input_buffer_sizes_in_bytes_;
 
-  // A sorted vector of parameters that have any aliased buffers and thus must
-  // be donated when executing the computation.
   std::vector<int> parameters_that_must_be_donated_;
 
-  // The replica and partition indices of device_assignment_ to be run by this
-  // client. On single-host platforms without partitioning, this is all
-  // replicas (i.e. addressable_device_logical_ids_[i] = (i, 0)), but this may
-  // not be the case on multi-host platforms. If there are 4 replicas and 2
-  // partitions on a single host platform, size of
-  // addressable_device_logical_ids_ is 4*2 = 8.
   std::vector<LogicalDeviceIds> addressable_device_logical_ids_;
 
-  // addressable_devices_[i] is the Device to which
-  // addressable_device_logical_ids_[i] is assigned. shared_ptrs instead of
-  // unique_ptrs to play well with the Python bindings (see xla.cc).
   std::vector<PjRtDevice*> addressable_devices_;
 
-  // Cached result of comparing HloCostAnalysis FLOP estimate for execute
-  // critical path.
   bool cheap_computation_;
 
   std::string fingerprint_;

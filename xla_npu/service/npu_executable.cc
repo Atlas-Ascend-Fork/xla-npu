@@ -384,14 +384,13 @@ absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
             if (auto unowned_shapedbuffers = std::get_if<absl::Span<const ShapedBuffer* const>>(&arguments)) {
                 return (*unowned_shapedbuffers)[param_no]->buffers().element(allocation.param_shape_index());
             } else {
-                return std::get<absl::Span<ExecutionInput>>(arguments)[param_no]
-                    .Buffer(allocation.param_shape_index())
+                return std::get<absl::Span<ExecutionInput>>(arguments)[param_no].Buffer(allocation.param_shape_index())
                     .AsDeviceMemoryBase();
             }
         }();
         if (registered_buffer.is_null() && registered_buffer.size() > 0) {
             return FailedPrecondition(
-                "Cannot run XLA computation because pointer to (sub-)buffer at "
+                "Cannot run NPU XLA computation because pointer to (sub-)buffer at "
                 "index %s of parameter %d was null.  All pointers to "
                 "(sub-)buffers must not be null, unless the (sub-)buffer has "
                 "zero elements.",
@@ -402,10 +401,10 @@ absl::StatusOr<se::DeviceMemoryBase> NpuExecutable::BufferForAllocation(
         auto it = globals->find(arg_idx);
         if (it == globals->end()) {
             return se::DeviceMemoryBase();
+        } else {
+            return it->second;
         }
-        return it->second;
     } else {
-        // Allocate each allocation that might escape, or is the temp buffer.
         CHECK(allocation.maybe_live_out() || allocation.IsPreallocatedTempBuffer());
         const int64_t buffer_size = allocation.size();
         se::DeviceMemoryBase buffer_address;
@@ -494,13 +493,12 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
     VLOG(3) << buffer_allocations.ToString();
     absl::Span<const BufferAllocation* const> allocations = GetAllocations();
 
-    std::set<se::DeviceMemoryBase> buffers_in_result;
-
     const bool is_entire_tuple_contents_aliased = [&] {
         for (auto& p : result.MutableResult()->buffers().leaves()) {
             if (!output_info_.contains(p.first)) {
                 continue;
             }
+            // handle alias
             const OutputInfo& output_info = output_info_.at(p.first);
             if (!output_info.alias_config.has_value()) {
                 return false;
@@ -508,6 +506,8 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(const Se
         }
         return true;
     }();
+
+    std::set<se::DeviceMemoryBase> buffers_in_result;
 
     for (auto& p : result.MutableResult()->buffers()) {
         const ShapeIndex& index = p.first;
@@ -619,9 +619,6 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
     TF_RETURN_IF_ERROR(ShapeUtil::ForEachSubshapeWithStatus(
         root->shape(), [&](const Shape& /*sub_shape*/, const ShapeIndex& index) -> absl::Status {
             const auto& sources = root_value_set.element(index);
-            // The points-to set is unambiguous so the set should be a
-            // singleton. That is, we know exactly which instruction
-            // produced the array at this element.
             CHECK_EQ(1, sources.values().size());
             HloInstruction* src_hlo = sources.values()[0]->instruction();
 

@@ -61,13 +61,6 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
 
     // Explicitly set global addrspace for SPIR backend.
     int addrspace = llvm::Triple(llvm_module_constants()->getTargetTriple()).isSPIR() ? 1 : 0;
-    // These globals will be looked up by name by NpuExecutable so we need to
-    // give them an external linkage.  Not all of their uses are visible in
-    // the LLVM IR so we can't give then a linkage that merely preserves their
-    // names (like available_externally), we also need to ensure that they stick
-    // around even if they're "unused".
-    // We may have to be more clever here in the future if we notice that we're
-    // keeping around too many globals because of their linkage.
     llvm::GlobalVariable* global_for_const = new llvm::GlobalVariable(
         global_type, /*isConstant=*/should_emit_initializer, llvm::GlobalValue::ExternalLinkage,
         /*Initializer=*/initializer, symbol_name,

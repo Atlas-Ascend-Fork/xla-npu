@@ -55,10 +55,10 @@ absl::Status NpuIrEmitter::DefaultAction(HloInstruction* hlo) {
 absl::Status NpuIrEmitter::HandleConstant(HloInstruction* constant) { return absl::OkStatus(); }
 
 absl::Status NpuIrEmitter::HandleAddDependency(HloInstruction* add_dependency) {
-    VLOG(2) << "HandleAddDependency: " << add_dependency->ToString();
+    VLOG(2) << "NpuIrEmitter::HandleAddDependency: " << add_dependency->ToString();
     const HloInstruction* operand = add_dependency->operand(0);
     // Add_Dependency is a no-op, but we still want to bind it to an llvm::Value
-    // sometimes, e.g., when it's operand is a constant or a bitcast of a
+    // sometimes, when it's operand is a constant or a bitcast of a
     // constant.
     if (bindings_.BoundToIrValue(*operand)) {
         bindings_.BindHloToIrValue(*add_dependency, GetBasePointer(*operand));
@@ -72,8 +72,6 @@ absl::Status NpuIrEmitter::HandleGetTupleElement(HloInstruction* get_tuple_eleme
     bindings_.BindHloToIrValue(
         *get_tuple_element,
         llvm_ir::EmitGetTupleElement(get_tuple_element->shape(), get_tuple_element->tuple_index(),
-                                     // TODO(b/26344050): tighten the alignment here
-                                     // based on the real element type.
                                      /*alignment=*/1, GetBasePointer(*operand),
                                      llvm_ir::ShapeToIrType(operand->shape(), module_->getContext()), &b_));
     return absl::OkStatus();
@@ -166,9 +164,9 @@ absl::Status NpuIrEmitter::HandleBatchNormGrad(HloInstruction*) {
 std::vector<llvm_ir::IrArray> NpuIrEmitter::ConstructIrArrayForOutputs(const HloInstruction& hlo) {
     std::vector<llvm_ir::IrArray> output_arrays;
     if (hlo.shape().IsTuple()) {
-        int64_t num_outputs = ShapeUtil::TupleElementCount(hlo.shape());
-        output_arrays.reserve(num_outputs);
-        for (int64_t i = 0; i < num_outputs; ++i) {
+        int64_t number_outputs = ShapeUtil::TupleElementCount(hlo.shape());
+        output_arrays.reserve(number_outputs);
+        for (int64_t i = 0; i < number_outputs; ++i) {
             output_arrays.push_back(GetIrArray(hlo, hlo, {i}));
         }
     } else {

@@ -72,9 +72,6 @@ class NpuBufferAllocations {
     size_t size() const { return buffers_.size(); }
 
    private:
-    // An array of device pointers that stores the address of each buffer
-    // indexed by Index. Each element can point to a temporary buffer, an
-    // input buffer, or nullptr if no buffer is needed for that Index.
     std::vector<se::DeviceMemoryBase> buffers_;
     int device_ordinal_;
     se::DeviceMemoryAllocator* memory_allocator_;

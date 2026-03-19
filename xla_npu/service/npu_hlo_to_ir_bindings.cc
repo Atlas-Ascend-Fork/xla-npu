@@ -45,13 +45,11 @@ void NpuHloToIrBindings::EmitBasePointersForHlos(absl::Span<const HloInstruction
     llvm::Function* function = b_->GetInsertBlock()->getParent();
     CHECK_EQ(io_hlos.size() + 1, function->arg_size());
 
-    // An HLO can have duplicated operands. This data structure remembers which
-    // operand HLOs are already bound to avoid rebinding the same HLO.
     absl::flat_hash_set<const HloInstruction*> already_bound_for_this_function;
     auto arg_iter = function->arg_begin();
     for (const HloInstruction* io_hlo : io_hlos) {
         CHECK(io_hlo == io_hlo->parent()->root_instruction() || !absl::c_count(non_io_hlos, io_hlo))
-            << "IO HLOs and non-IO HLOs should be disjoint";
+            << "IO/non-IO HLOs should be disjoint";
         if (!already_bound_for_this_function.contains(io_hlo)) {
             BindHloToIrValue(*io_hlo, &*arg_iter);
             already_bound_for_this_function.insert(io_hlo);
@@ -59,7 +57,6 @@ void NpuHloToIrBindings::EmitBasePointersForHlos(absl::Span<const HloInstruction
         ++arg_iter;
     }
 
-    // Name and skip the output parameter.
     arg_iter->setName("output_arg");
     ++arg_iter;
 
@@ -69,7 +66,7 @@ void NpuHloToIrBindings::EmitBasePointersForHlos(absl::Span<const HloInstruction
         }
         already_bound_for_this_function.insert(non_io_hlo);
 
-        if (non_io_hlo->opcode() == HloOpcode::kGetTupleElement) {
+        if (HloOpcode::kGetTupleElement == non_io_hlo->opcode()) {
             continue;
         }
 

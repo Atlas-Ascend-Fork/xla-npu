@@ -90,27 +90,10 @@ class NpuExecutable : public Executable {
   void Finalize();
 
  private:
-  // Creates an array suitable for passing as the "buffer_table" argument to the
-  // JIT compiled function pointer.
-  // Returns unowning_buffers, owning_buffers
-  //  - unowning_buffers.data() can be passed as the buffer_table argument as-is
-  //    and includes pointers to the scratch storage required by the
-  //    computation, the live-out buffer into which the result will be written
-  //    and entry computation parameters.
-  //  - owning_buffers contains owning pointers to the buffers that were
-  //    allocated by this routine.  This routine allocates buffers for temporary
-  //    storage and the live-out buffer into which the computation writes it
-  //    result.
-  //  - buffers_to_free: buffers whose ownership was donated by the caller that
-  //    are to be freed by the caller.
   absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> CreateBufferTable(
       se::DeviceMemoryAllocator* memory_allocator, int device_ordinal,
       absl::Span<ExecutionInput const> arguments);
 
-  // Creates an Execution output holding ScopedShapedBuffer for holding the
-  // result of the computation, moving buffers out of allocated_buffers and into
-  // the result as appropriate.  The addresses are set according to buffer
-  // assignment.
   absl::StatusOr<ExecutionOutput> CreateResultShapedBuffer(
       const ServiceExecutableRunOptions* run_options,
       absl::Span<MaybeOwningDeviceMemory> buffers,
@@ -120,24 +103,11 @@ class NpuExecutable : public Executable {
   std::shared_ptr<NpuBufferAssignment> assignment_;
   std::vector<const BufferAllocation*> alloc_ptrs_;
 
-  // The LLVM IR, in string format, of the unoptimized module generated for this
-  // NpuExecutable. We save a string instead of an llvm::Module* because leaving
-  // llvm::Module* in a singleton can cause the heap checker to emit false
-  // positives.
   std::string ir_module_string_;
 
   // Unique identifier.
   std::string module_name_;
 
-  // We have two execution modes:
-  //   (1) HLO module compiled to a single function using LLVM JIT and we get
-  //       a function pointer to it.
-  //   (2) HLO module compiled to a thunk sequence that gets interpreted at run
-  //       time.
-  // We are currently transitioning from (1) to (2) with a long term plan to
-  // unify thunk-based runtime with all XLA backends.
-
-  // Whether the thunk executor contains any XNN fusion thunks.
   bool has_xnn_fusions_ = false;
 
   // Whether the thunk executor contains any YNN fusion thunks.

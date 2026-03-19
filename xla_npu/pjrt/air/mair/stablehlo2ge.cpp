@@ -60,15 +60,13 @@ static cl::opt<enum Action> emitAction(
 // 读取.mlir文件或字符串并转换为mlir::ModuleOp对象
 static int loadMLIR(mlir::MLIRContext& context,
                     mlir::OwningOpRef<mlir::ModuleOp>& module) {
-  // Otherwise, the input is '.mlir'.
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
   if (std::error_code ec = fileOrErr.getError()) {
-    llvm::errs() << "Could not open input file: " << ec.message() << "\n";
+    llvm::errs() << "Error could not open input file: " << ec.message() << "\n";
     return -1;
   }
 
-  // Parse the input mlir.
   llvm::SourceMgr sourceMgr;
   sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
   module = mlir::parseSourceFile<mlir::ModuleOp>(sourceMgr, &context);
@@ -100,12 +98,11 @@ static int loadAndProcessMLIR(mlir::MLIRContext& context,
 }
 
 int main(int argc, char** argv) {
-  // Register any command line options.
   mlir::registerAsmPrinterCLOptions();
   mlir::registerMLIRContextCLOptions();
   mlir::registerPassManagerCLOptions();
 
-  cl::ParseCommandLineOptions(argc, argv, "toy compiler\n");
+  cl::ParseCommandLineOptions(argc, argv, "ge compiler\n");
 
   mlir::DialectRegistry registry;
   // mlir::func::registerAllExtensions(registry);
