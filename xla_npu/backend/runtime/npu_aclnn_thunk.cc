@@ -291,7 +291,6 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             expanded_shape.data(), expanded_shape.size(), data_type,
             expanded_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
             expanded_shape.data(), expanded_shape.size(), device_addr);
-
         if (input_tensor == nullptr) {
           const std::string err_msg = "Failed to create expanded view tensor";
           NPU_LOG_FORMAT_PRINT(ERROR, err_msg);

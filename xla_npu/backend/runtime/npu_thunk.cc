@@ -296,7 +296,6 @@ absl::Status NpuThunk::InitializeSpecialValues(
     auto addr = allocations->GetDeviceAddress(slice);
     void* device_addr = addr.opaque();
     size_t size = addr.size();
-
     // 只处理小 buffer (可能是标量)
     if (size > sizeof(float) * 4) {
       continue;
@@ -312,7 +311,6 @@ absl::Status NpuThunk::InitializeSpecialValues(
       float value_host = 0.0f;
       aclError ret = npu::aclrtMemcpy(&value_host, sizeof(float), device_addr,
                                       sizeof(float), ACL_MEMCPY_DEVICE_TO_HOST);
-
       if (ret != ACL_SUCCESS) {
         continue;  // 跳过读取失败的
       }

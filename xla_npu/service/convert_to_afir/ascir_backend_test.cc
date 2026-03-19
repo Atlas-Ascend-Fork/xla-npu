@@ -294,7 +294,6 @@ int main(int argc, char** argv) {
   std::string output_dir = absl::GetFlag(FLAGS_output_dir);
 
   auto status = RunTest(hlo_text, output_dir);
-
   if (!status.ok()) {
     std::cerr << "\n❌ Test Failed: " << status.message() << std::endl;
     return EXIT_FAILURE;

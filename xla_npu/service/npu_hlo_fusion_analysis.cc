@@ -161,7 +161,6 @@ NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(
 
     EmitterFusionKind emitter_fusion_kind = GetEmitterFusionKind(
         roots, heroes, tiled_transpose_hero, *device_info);
-
     // The loop emitter always uses the roots as heroes. Even if we found some
     // non-trivial heroes in the fusion, some logic in GetEmitterFusionKind might
     // still decide to use the loop emitter and in that case we need to reset the

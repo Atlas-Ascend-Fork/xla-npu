@@ -525,7 +525,6 @@ PjRtNpuExecutable::Execute(
     auto statusor = ExecuteHelper(
         argument_handles[0], num_replicas_, num_partitions_, run_id, options,
         /*last_collective_launch_event=*/{}, returned_futures.has_value());
-
     if (!statusor.ok()) {
       return std::move(statusor).status();
     }

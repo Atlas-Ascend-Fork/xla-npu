@@ -610,7 +610,6 @@ absl::StatusOr<absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>> NpuGe
     const HloInstruction* root = hlo_module.entry_computation()->root_instruction();
 
     InstructionValueSet root_value_set = assignment.dataflow_analysis().GetInstructionValueSet(root);
-
     if (root_value_set.IsAmbiguous()) {
         return Unimplemented("Points-to set of root instruction is ambiguous");
     }

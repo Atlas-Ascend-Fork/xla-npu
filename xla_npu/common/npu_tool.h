@@ -112,7 +112,6 @@ class NpuTool {
         resultData.data(), resultData.size() * sizeof(printDataType),
         deviceAddr, print_count * sizeof(printDataType),
         ACL_MEMCPY_DEVICE_TO_HOST);
-
     if (acl_ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(
           DEBUG, "    Copy result from device to host failed. ERROR: %d", acl_ret);
