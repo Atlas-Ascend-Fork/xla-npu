@@ -71,7 +71,9 @@ rm -rf build/
 - `3`: 使用ge后端
 
 设置python链接库路径:
-build --define PYTHON_LIB_DIR=
+`build --define PYTHON_LIBDIR=`
+设置python链接库对应的版本:
+`build --define PYTHON_VERSION=`
 
 ### 运行环境变量
 
