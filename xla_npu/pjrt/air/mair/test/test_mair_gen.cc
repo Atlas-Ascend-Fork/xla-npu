@@ -9,7 +9,6 @@
  */
 
 #include "./test_mair_gen.h"
-#include "./test_mair_gen.h"
 
 using namespace mlir;
 using namespace mlir::air;
@@ -164,10 +163,10 @@ void GraphGenTester::buildAddModule(mlir::ModuleOp& module,
   std::cout << "Start build add mlir" << std::endl;
   // 创建函数： 接受tensor输入， 返回tensor
   auto f32Type = mlir::Float32Type::get(&context);
-  auto inputOutputTensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
+  auto tensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
   auto funcType = mlir::FunctionType::get(
-      &context, {inputOutputTensorType, inputOutputTensorType},
-      {inputOutputTensorType});
+      &context, {tensorType, tensorType},
+      {tensorType});
   auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context),
                                          "main", funcType);
 
@@ -181,7 +180,7 @@ void GraphGenTester::buildAddModule(mlir::ModuleOp& module,
   auto x2 = block->getArgument(1);
 
   // add
-  auto result = AddOp::create(builder, loc, inputOutputTensorType, x1, x2);
+  auto result = AddOp::create(builder, loc, tensorType, x1, x2);
 
   // 返回结果
   mlir::func::ReturnOp::create(builder, loc, result.getResult());

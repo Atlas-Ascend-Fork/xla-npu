@@ -552,10 +552,9 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(
             builder_.getDictionaryAttr({}), nullptr, outputs_array);
         return scalar_op.getResult();
       } else {
-        // Use DenseElementsAttr to create a tensor constant (non-AFIR mode)
-        auto attr = mlir::DenseElementsAttr::get(tensor_type, value);
+        auto ele_attr = mlir::DenseElementsAttr::get(tensor_type, value);
         auto op =
-            builder_.create<mlir::arith::ConstantOp>(loc, result_type, attr);
+            builder_.create<mlir::arith::ConstantOp>(loc, result_type, ele_attr);
         return op.getResult();
       }
     }
@@ -1566,12 +1565,12 @@ void HloToAfirConverter::SetModuleGraphAttr(const HloModule& hlo_module) {
     axes.push_back(axis_attr);
   }
   // Create asc_graph_attr
-  auto asc_graph_attr = mlir::afir::AscGraphAttrGroupsAttr::get(
+  auto graph_attr = mlir::afir::AscGraphAttrGroupsAttr::get(
       context_, -1, axes, mlir::afir::AscGraphType::Compute,
       llvm::ArrayRef<mlir::StringAttr>());
 
   // Set module attribute
-  getModule()->setAttr("afir.asc_graph_attr", asc_graph_attr);
+  getModule()->setAttr("afir.asc_graph_attr", graph_attr);
 }
 
 void HloToAfirConverter::ProcessHloComputationParameterShapes(
