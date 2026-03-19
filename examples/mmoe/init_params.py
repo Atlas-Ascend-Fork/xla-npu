@@ -23,6 +23,7 @@ import numpy as np
 
 # Import configuration and utilities
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import (
     CONFIG_INPUT_DIM,
     CONFIG_BATCH_SIZE,

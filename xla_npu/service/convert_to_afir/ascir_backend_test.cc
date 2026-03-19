@@ -227,7 +227,6 @@ absl::Status RunTest(absl::string_view hlo_text,
     total_dirs++;
     std::string check_cmd = "test -d " + artifact_info.dir;
     int dir_exists = (system(check_cmd.c_str()) == 0);
-
     if (dir_exists) {
       std::cout << "  Directory exists for " << artifact_name << " ("
                 << artifact_info.dir << ")" << std::endl;

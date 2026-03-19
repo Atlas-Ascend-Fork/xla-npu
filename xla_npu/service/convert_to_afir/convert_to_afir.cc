@@ -818,7 +818,6 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConvertOp(
 
   auto operand_elem_type = operand_type.getElementType();
   auto result_elem_type = result_tensor_type.getElementType();
-
   // Handle float to float conversions
   if (llvm::isa<mlir::FloatType>(operand_elem_type) &&
       llvm::isa<mlir::FloatType>(result_elem_type)) {
@@ -1977,7 +1976,6 @@ bool HloToAfirConverter::ProcessInstruction(
   }
 
   int64_t current_rank = tensor_type.getRank();
-
   // If rank already matches max_rank, no need to fix
   if (current_rank == max_rank) {
     NPU_LOG_FORMAT_PRINT(DEBUG, "Rank already matches max_rank, skipping");
@@ -2124,7 +2122,6 @@ void HloToAfirConverter::ProcessSingleBroadcast(const HloInstruction* instr) {
   auto broadcast_result = bcast_op.getResult();
   auto result_tensor_type =
       dyn_cast<mlir::RankedTensorType>(broadcast_result.getType());
-
   if (!operand_tensor_type || !result_tensor_type) {
     return;
   }

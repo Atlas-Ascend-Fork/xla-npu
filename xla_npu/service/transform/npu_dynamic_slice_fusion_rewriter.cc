@@ -301,7 +301,6 @@ absl::StatusOr<bool> NpuDynamicSliceFusionRewriter::RunImpl(
                 SlicedUserPaths sliced_user_paths = GetSlicedUserPaths(*instr, *call_graph);
                 bool has_sliced_user_paths = absl::c_any_of(
                     sliced_user_paths, [](auto& sliced_user_path) { return !sliced_user_path.empty(); });
-
                 if (has_sliced_operand_paths || has_sliced_user_paths) {
                     matches_kv[instr] = std::make_pair(std::move(sliced_operand_paths),
                                                        std::move(sliced_user_paths));

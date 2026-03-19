@@ -289,7 +289,6 @@ void LogDebugOptions(HloModule* hlo_module) {
 // CompilationOptions, or if both of those are absent, from the attached GPU.
 absl::StatusOr<Compiler::GpuTargetConfig> NpuCompiler::GetTargetConfig(
     const Compiler::CompileOptions& options, const DebugOptions& debug_opts, se::StreamExecutor* executor) {
-
     if (executor) {
         Compiler::GpuTargetConfig target_config = Compiler::GpuTargetConfig{executor};
         return target_config;

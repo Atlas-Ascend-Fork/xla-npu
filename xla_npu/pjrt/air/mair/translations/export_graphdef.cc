@@ -264,7 +264,6 @@ bool Exporter::processOperation(mlir::Operation& mlirOp, int opCounter,
   // 2. 创建目标操作
   ge::Operator geOp = ge::OperatorFactory::CreateOperator(
       (opType + std::to_string(opCounter)).c_str(), opType.c_str());
-
   // 3. 处理输入
   if (!processOperationInputs(mlirOp, geOp, opType)) {
     return false;
