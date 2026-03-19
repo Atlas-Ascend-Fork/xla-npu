@@ -135,7 +135,6 @@ absl::Status NpuIrEmitterUnnested::EmitNpuAclnnThunk(const HloInstruction* instr
     // check if sdpa dropout is enabled
     std::optional<int64_t> dropout_seed = std::nullopt;
 
-    // TODO 运行mmoe目前需要打桩此代码
     AddThunkToThunkSequence(std::make_unique<NpuAclnnThunk>(
         fingerprint, NpuThunk::ThunkInfo::WithProfileAnnotation(instr, ir_emitter_context_->GetNextThunkId()),
         kernel_arguments.GetArgumentBufferSlices(), kernel_arguments.GetArgumentOutputFlags(), dropout_seed));
@@ -151,7 +150,6 @@ absl::StatusOr<BufferAllocation::Slice> NpuIrEmitterUnnested::GetAllocationSlice
 absl::Status NpuIrEmitterUnnested::EmitFusion(const HloFusionInstruction* instr) {
     NPU_LOG_FORMAT_PRINT(DEBUG, "Emit fusion thunk");
 
-    // TODO 运行mmoe目前需要打桩此代码
     std::unique_ptr<NpuFusionInterface> emitter = std::make_unique<NpuCustomFusion>();
     TF_ASSIGN_OR_RETURN(auto result, emitter->Emit(*ir_emitter_context_, *instr));
 
@@ -381,7 +379,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         case HloOpcode::kXor:
         case HloOpcode::kDot:  // 自动融合暂不支持matmul,以aclnn处理
         case HloOpcode::kConcatenate:
-        case HloOpcode::kReduce: // TODO reduce需要特殊处理
+        case HloOpcode::kReduce: // reduce需要特殊处理
         case HloOpcode::kDynamicSlice:
             return EmitNpuAclnnThunk(instr);
 
@@ -390,7 +388,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(const HloInstruction* inst
         case HloOpcode::kConstant:
             return EmitConstant(Cast<HloConstantInstruction>(instr));
         case HloOpcode::kCustomCall:
-            // TODO 实现此功能
+            // 实现此功能
             return absl::OkStatus();
         case HloOpcode::kFusion:
             return EmitFusion(Cast<HloFusionInstruction>(instr));

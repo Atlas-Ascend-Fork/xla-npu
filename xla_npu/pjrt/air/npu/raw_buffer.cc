@@ -171,8 +171,6 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
     // If the input array does not have a major-to-minor layout, transpose it
     // into major-to-minor layout. Currently we choose to always do this
     // synchronously.
-    // TODO(phawkins): consider performing the transpose asynchronously.
-    // TODO(phawkins): parallelize the transpose.
     std::shared_ptr<TransposePlan> transpose;
     {
       absl::InlinedVector<int64_t, 4> permutation(dims.size());
@@ -197,8 +195,6 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
     } else {
       // First transpose the unpacked data into a new temporary buffer, then
       // pack the data.
-      // TODO(reedwm): Fuse the transpose and packing by having TransposePlan
-      // support packing.
       auto data_transposed = std::make_unique<char[]>(byte_size);
       transpose->Execute(data, data_transposed.get());
       auto data_packed = std::make_unique<char[]>(dst_byte_size);
@@ -250,7 +246,6 @@ void NpuRawBuffer::CopyToLiteralAsync(
   size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(literal->shape()));
   void* dst_host_ptr = literal->untyped_data();
   
-  // TODO: obtain device id from real device
   aclError acl_ret = npu::aclrtSetDevice(0);
   if (acl_ret != ACL_SUCCESS) {
       auto error = absl::InternalError(

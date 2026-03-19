@@ -117,7 +117,7 @@ inline bool Status::operator==(const Status& x) const {
 
 inline bool Status::operator!=(const Status& x) const { return !(*this == x); }
 
-typedef std::function<void(const Status&)> StatusCallback;
+using StatusCallback = std::function<void(const Status&)>;
 
 /// @ingroup core
 std::ostream& operator<<(std::ostream& os, const Status& x);

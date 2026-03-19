@@ -74,11 +74,17 @@ HloInstruction::FusionKind ChooseFusionKind(const HloInstruction* producer,
 
 // Check if instruction is a valid candidate for sibling fusion
 bool IsSiblingFusionCandidate(const HloInstruction* instr) {
-    if (instr->users().empty()) return false;
+    if (instr->users().empty()) {
+        return false;
+    }
     // Only fusion instructions can be candidates
-    if (HloPredicateIsNotOp<HloOpcode::kFusion>(instr)) return false;
+    if (HloPredicateIsNotOp<HloOpcode::kFusion>(instr)) {
+        return false;
+    }
     // Skip custom fusions
-    if (instr->IsCustomFusion()) return false;
+    if (instr->IsCustomFusion()) {
+        return false;
+    }
     // Multi-output fusions should have GTE users
     if (instr->IsMultiOutputFusion()) {
         return absl::c_all_of(instr->users(), HloPredicateIsOp<HloOpcode::kGetTupleElement>);

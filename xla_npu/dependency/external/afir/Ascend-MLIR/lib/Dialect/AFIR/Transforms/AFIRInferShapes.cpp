@@ -121,7 +121,6 @@ void propagateShapesInRegion(Region &region, TypeModificationState &state) {
           ShapedTypeComponents predictedShape = std::get<1>(it);
 
           // Determine the knowledge based on the output type.
-          // TODO: should also query WIP type probably
           Type resultTy = result.getType();
           auto currentKnowledge = ValueKnowledge::getKnowledgeFromType(resultTy);
 

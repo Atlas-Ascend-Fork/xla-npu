@@ -23,7 +23,9 @@ int Stablehlo2MairConverter(mlir::ModuleOp& module) {
   pm.addPass(mlir::createInlinerPass());
   pm.addPass(mlir::air::createLegalizeStablehloToGePass());
 
-  if (failed(pm.run(module))) return 4;
+  if (failed(pm.run(module))) {
+    return 4;
+  }
 
   return 0;
 }

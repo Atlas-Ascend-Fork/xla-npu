@@ -35,9 +35,6 @@ namespace se = ::stream_executor;  // NOLINT
 // export CUTLASS gemm kernels as custom kernels to XLA), so that XLA can only
 // implement generic interfaces, e.g. command buffer implementation for CUDA
 // can automatically add a kernel node to a graph for arbitrary custom kernel.
-// TODO(ezhulenev): Add custom kernel signature to track number and types of
-// buffer arguments, and a way to mark one of an arguments as a workspace and
-// define if it has to be zeroed first.
 class NpuCustomKernel {
    public:
     NpuCustomKernel(std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr, std::string name, se::BlockDim block_dims,

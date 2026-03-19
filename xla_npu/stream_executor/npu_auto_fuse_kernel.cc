@@ -116,7 +116,7 @@ absl::Status NpuAutoFuseKernel::Launch(
                          workspace_size);
   }
 
-  // TODO 参考cuda_kernel,使用KernelLoaderSpec中传递进来的pack函数进行参数封装
+  // 参考cuda_kernel,使用KernelLoaderSpec中传递进来的pack函数进行参数封装
   if (auto* args_ptr = DynCast<KernelArgsDeviceMemoryArray>(&args)) {
     NPU_LOG_FORMAT_PRINT(DEBUG, "  args_ptr=%p, number_of_arguments=%zu",
                          args_ptr, args_ptr->number_of_arguments());
@@ -147,7 +147,7 @@ absl::Status NpuAutoFuseKernel::Launch(
   }
 
   TF_RETURN_IF_ERROR(
-      stream->BlockHostUntilDone());  // TODO 所有算子下发完了再同步
+      stream->BlockHostUntilDone());  // 所有算子下发完了再同步
 
   if (workspace != nullptr) {
     executor_->Deallocate(&workspace_memory);

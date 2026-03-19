@@ -37,7 +37,6 @@ void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_
     bool should_emit_initializer = false;
 
     // Ptxas has issues if the constant allocation is smaller than 64 bytes.
-    // TODO(b/253259975): Remove when fixed ptxas version is submitted.
     constexpr int64_t kMinConstAllocationInBytes = 64;
     bool needs_padding = num_elements * bytes_per_element < kMinConstAllocationInBytes;
 

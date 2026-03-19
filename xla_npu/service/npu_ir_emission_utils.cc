@@ -122,9 +122,6 @@ std::optional<TransposeDescription> NpuGetDescriptionForTiledTransposeEmitter(co
                (operand_most_minor_dim >= kNpuMinDimensionToTransposeTiled2 &&
                 dimensions.back() >= kNpuMinDimensionToTransposeTiled2 &&
                 operand_most_minor_dim * dimensions.back() >= kNpuMinTotalDimensionsToTransposeTiled)) {
-        // TODO(b/415741994): TransposeEmitter is regressing for S4 when the last
-        // dimension is being transposed. The issue seems to be related to bank
-        // conflicts but a proper investigation is needed.
         if (bit_width == 4) {
             return std::nullopt;
         }

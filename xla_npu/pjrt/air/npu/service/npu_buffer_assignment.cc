@@ -28,8 +28,6 @@ BufferAllocation* NpuBufferAssignment::NewEmptyAllocation(
     return allocation;
 }
 
-void NpuBufferAssignment::Finalize() {
-    // TODO
-}
+void NpuBufferAssignment::Finalize() {}
 
 }  // namespace xla

@@ -107,7 +107,6 @@ absl::Status NpuIrEmitter::HandleConvolution(HloInstruction* convolution) {
         // Emit no code for an empty output.
         return absl::OkStatus();
     }
-    // TODO(b/31409998): Support convolution with dilation.
     return Unimplemented("Hit a case for convolution that is not implemented on GPU.");
 }
 
@@ -132,12 +131,10 @@ absl::Status NpuIrEmitter::HandleCall(HloInstruction* call) {
 absl::Status NpuIrEmitter::HandleCustomCall(HloInstruction*) { return Unimplemented("custom-call"); }
 
 absl::Status NpuIrEmitter::HandleInfeed(HloInstruction*) {
-    // TODO(b/30467474): Implement infeed on GPU.
     return Unimplemented("Infeed is not supported on GPU.");
 }
 
 absl::Status NpuIrEmitter::HandleOutfeed(HloInstruction*) {
-    // TODO(b/34359662): Implement outfeed on GPU.
     return Unimplemented("Outfeed is not supported on GPU.");
 }
 

@@ -75,7 +75,6 @@ class NpuIrEmitterContext {
 
     mlir::MLIRContext* mlir_context() { return mlir_context_; }
 
-    // TODO: b/451959933 - Add nullability annotation to be explicit about this
     // pointer: go/totw/230. Alternatively, return by reference instead of pointer
     // (and require reference in ctor) to signal that it is always present.
     SymbolicExprContext* expr_context() { return &expr_context_; }

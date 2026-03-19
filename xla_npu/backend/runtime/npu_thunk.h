@@ -186,10 +186,6 @@ class NpuThunk {
     // go/keep-sorted end
   };
 
-  // TODO(ezhulenev): This should become a part of StreamExecutor library, but
-  // for now we keep it here as a NpuThunk implementation detail. It's not yet
-  // clear what else should become a part of "executable source", we likely
-  // need to keep some information about available symbols and signatures.
   struct ExecutableSource {
     absl::string_view text;            // PTX for NVIDIA backend
     absl::Span<const uint8_t> binary;  // CUBIN for NVIDIA backends

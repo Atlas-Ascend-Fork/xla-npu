@@ -192,7 +192,6 @@ NpuHloFusionAnalysis NpuHloFusionAnalysis::Create(const HloInstruction& producer
 }
 
 const HloInstruction* NpuHloFusionAnalysis::FindHeroReduction() const {
-    // TODO implement
     return nullptr;
 }
 

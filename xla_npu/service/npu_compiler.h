@@ -136,8 +136,6 @@ class NpuCompiler : public LLVMCompiler {
         const HloModule* debug_module, llvm::Module* llvm_module, bool relocatable, const CompileOptions& options,
         std::optional<int> shard_number);
 
-    // TODO(timshen): Replace `debug_module` with some portable debug information
-    // that accommodates both HLO and MLIR.
     virtual absl::StatusOr<BackendCompileResult> CompileTargetBinary(
         const HloModuleConfig& module_config, llvm::Module* llvm_module,
         const stream_executor::DeviceDescription& device_description, bool relocatable, const HloModule* debug_module,

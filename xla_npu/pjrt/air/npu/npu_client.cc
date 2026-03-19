@@ -157,7 +157,7 @@ PjRtNpuClient::PjRtNpuClient(int process_index, std::vector<std::unique_ptr<PjRt
       transpose_cache_(1024),
       topology_(platform_id(), platform_name(), platform_version(), GetDevices(devices), {}),
       pjrt_client_thread_pool_(new tsl::thread::ThreadPool(
-        tsl::Env::Default(), GetThreadOptions(), "XLAPjRtNpuClient", 1)), //TODO 线程池大小
+        tsl::Env::Default(), GetThreadOptions(), "XLAPjRtNpuClient", 1)),
       async_work_runner_(MakeThreadPoolAsyncWorkRunner(pjrt_client_thread_pool_.get()))
 {
     for (const std::unique_ptr<PjRtNpuDevice>& device : owned_devices_) {
