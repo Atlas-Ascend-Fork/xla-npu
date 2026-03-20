@@ -1010,7 +1010,7 @@ XLA-NPU 安装脚本
     INSTALL_JAX          - 是否安装 JAX (默认: 1, 设为 0 跳过)
     FORCE_REINSTALL      - 强制重新安装所有步骤 (默认: 0, 设为 1 启用)
     FORCE_UNINSTALL      - 强制卸载，无需确认 (默认: 0, 设为 1 启用)
-    CUSTOM_ENV_DIR       - JAVA和bazel的安装目录（默认：当前脚本所在目录下的env目录）
+    CUSTOM_ENV_DIR       - Java和bazel的安装目录（默认：当前脚本所在目录下的env目录）
     CUSTOM_DOWNLOADS_DIR - Java和bazel安装包下载临时目录（默认：当前脚本所在目录下的downloads目录）
 
 示例:
