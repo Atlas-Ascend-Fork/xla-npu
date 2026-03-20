@@ -60,7 +60,7 @@ cd /path/to/xla-npu
 
 ### 1. 进入安装脚本目录
 ```bash
-cd /path/to/xla-npu/install
+cd /path/to/xla-npu/build
 ```
 
 ### 2. 给脚本添加执行权限
@@ -147,6 +147,7 @@ python --version
 
 ### 4. 验证 XLA-NPU 编译产物
 ```bash
+cd /path/to/xla-npu
 ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 ```
 
@@ -250,7 +251,7 @@ sudo ./build.sh install
 
 ### 自动卸载
 ```bash
-cd /path/to/xla-npu/install
+cd /path/to/xla-npu/build
 ./build.sh uninstall
 ```
 
