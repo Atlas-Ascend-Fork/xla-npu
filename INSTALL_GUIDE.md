@@ -147,6 +147,7 @@ python --version
 
 ### 4. 验证 XLA-NPU 编译产物
 ```bash
+cd /path/to/xla-npu
 ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 ```
 
