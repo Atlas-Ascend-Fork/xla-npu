@@ -239,6 +239,29 @@ confirm_action() {
     fi
 }
 
+setup_linked_dir() {
+    local default_dir="$1"
+    local custom_dir="$2"
+    # ==============================================
+    # 场景 1：变量 为空字符串 或 未配置（你要的重点！）
+    # ==============================================
+    if [[ -z "$custom_dir" ]]; then
+        log_info "自定义目录未配置或为空，使用默认目录: $default_dir"
+        ensure_dir "${default_dir}"
+    elif [[ -d "${custom_dir}" ]]; then
+        # 如果自定义目录存在，删除默认目录，挂上软连接
+        log_info "自定义目录已配置，使用自定义目录: $custom_dir"
+        rm -rf "$default_dir"
+        ln -s "$custom_dir" "$default_dir"
+    else
+        log_info "自定义目录不存在: ${custom_dir}"
+        ensure_dir "$custom_dir"
+        rm -rf "$default_dir"
+        ln -s "$custom_dir" "$default_dir"
+    fi
+}
+
+
 #################### 初始化环境 ####################
 init_environment() {
     # 首先创建日志目录（在调用任何 log 函数之前）
@@ -249,7 +272,10 @@ init_environment() {
 
     # 创建必要的目录
     ensure_dir "$WORKSPACE"
-    ensure_dir "$ENV_DIR"
+
+    setup_linked_dir "$ENV_DIR" "$CUSTOM_ENV_DIR"
+    setup_linked_dir "$DOWNLOADS_DIR" "$CUSTOM_DOWNLOADS_DIR"
+
     ensure_dir "$CODE_DIR"
     ensure_dir "$LOG_DIR"
     ensure_dir "$JAVA_INSTALL_DIR"
@@ -1017,7 +1043,6 @@ main_install() {
 
     # 创建临时目录用于下载
     local temp_download_dir="$DOWNLOADS_DIR"
-    ensure_dir "$temp_download_dir"
     cd "$temp_download_dir" || error_exit "无法进入下载目录"
 
     # 检查哪些文件需要下载（检查 downloads 目录）
