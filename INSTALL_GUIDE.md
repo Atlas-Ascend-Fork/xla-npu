@@ -60,7 +60,7 @@ cd /path/to/xla-npu
 
 ### 1. 进入安装脚本目录
 ```bash
-cd /path/to/xla-npu/install
+cd /path/to/xla-npu/build
 ```
 
 ### 2. 给脚本添加执行权限
@@ -251,7 +251,7 @@ sudo ./build.sh install
 
 ### 自动卸载
 ```bash
-cd /path/to/xla-npu/install
+cd /path/to/xla-npu/build
 ./build.sh uninstall
 ```
 
