@@ -101,7 +101,7 @@ import numpy as np
 
 # 设置 PJRT 插件路径
 PLATFORM_NAME = 'npu'
-LIBRARY_PATH = '/path/to/pjrt_c_api_npu_plugin.so'
+LIBRARY_PATH = '/path/to/xla-npu/build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so'
 os.environ['PJRT_NAMES_AND_LIBRARY_PATHS'] = f"{PLATFORM_NAME}:{LIBRARY_PATH}"
 os.environ['JAX_PLATFORMS'] = PLATFORM_NAME
 
