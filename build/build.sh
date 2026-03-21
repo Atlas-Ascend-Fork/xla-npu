@@ -43,6 +43,7 @@ BAZEL_INSTALL_DIR="$ENV_DIR/bazel"
 XLA_CODE_DIR="$CODE_DIR/xla"
 # xla-npu 代码目录为脚本所在目录的父目录（用户已克隆）
 XLA_NPU_CODE_DIR="$XLA_NPU_ROOT_DIR"
+NPU_AUTO_FUSE_BACKEND="1"
 
 # 版本配置
 JAVA_VERSION="21"
@@ -574,9 +575,10 @@ build_xla() {
         --verbose_failures \
         --copt=-w \
         --jobs=$PARALLEL_JOBS \
-        --define=PYTHON_VERSION="$PYTHON_VERSION" \
-        --define=PYTHON_LIBDIR="$PYTHON_LIBDIR" \
-        //xla/xla_npu/pjrt/c:pjrt_c_api_npu_plugin.so || \
+        --define PYTHON_VERSION="$PYTHON_VERSION" \
+        --define PYTHON_LIBDIR="$PYTHON_LIBDIR" \
+        //xla/xla_npu/pjrt/c:pjrt_c_api_npu_plugin.so  \
+        --define NPU_AUTO_FUSE_BACKEND="$NPU_AUTO_FUSE_BACKEND"|| \
         error_exit "XLA-NPU 编译失败" \
             "1. 检查网络连接 (需要下载依赖)\n2. 查看编译错误日志\n3. 尝试减少并行任务数\n4. 使用代理加速下载"
 
@@ -1002,16 +1004,23 @@ XLA-NPU 安装脚本
     install    - 执行完整安装 (默认)
     uninstall  - 卸载 XLA-NPU
     help       - 显示帮助信息
+选项:
+    --npu-auto-fuse-backend
+    0: 不支持融合, 仅使用aclnn执行
+    1: 使用afir后端
+    3: 使用ge后端
 
 系统要求:
     Python >= 3.11 (必须预先安装)
 
 环境变量:
-    WORKSPACE          - 工作目录 (默认: 脚本所在目录/workspace)
-    PARALLEL_JOBS      - 并行任务数 (默认: nproc)
-    INSTALL_JAX        - 是否安装 JAX (默认: 1, 设为 0 跳过)
-    FORCE_REINSTALL    - 强制重新安装所有步骤 (默认: 0, 设为 1 启用)
-    FORCE_UNINSTALL    - 强制卸载，无需确认 (默认: 0, 设为 1 启用)
+    WORKSPACE            - 工作目录 (默认: 脚本所在目录/workspace)
+    PARALLEL_JOBS        - 并行任务数 (默认: nproc)
+    INSTALL_JAX          - 是否安装 JAX (默认: 1, 设为 0 跳过)
+    FORCE_REINSTALL      - 强制重新安装所有步骤 (默认: 0, 设为 1 启用)
+    FORCE_UNINSTALL      - 强制卸载，无需确认 (默认: 0, 设为 1 启用)
+    CUSTOM_ENV_DIR       - Java和bazel的安装目录（默认：当前脚本所在目录下的env目录）
+    CUSTOM_DOWNLOADS_DIR - Java和bazel安装包下载临时目录（默认：当前脚本所在目录下的downloads目录）
 
 示例:
     # 完整安装 (包含 JAX)
@@ -1193,6 +1202,39 @@ main_install() {
 main() {
     local action="${1:-install}"
 
+    # 解析命令行参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --npu-auto-fuse-backend=*)
+                NPU_AUTO_FUSE_BACKEND="${1#*=}"
+                shift 1
+                ;;
+            install|uninstall|help|--help|-h)
+                action="$1"
+                shift
+                ;;
+            *)
+                echo "未知参数: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    # 读取 action（install/uninstall/help）
+    if [[ ${#positional[@]} -gt 0 ]]; then
+        action="${positional[0]}"
+    fi
+
+    # 校验参数值
+    if [[ -n "$NPU_AUTO_FUSE_BACKEND" ]]; then
+        if [[ ! "$NPU_AUTO_FUSE_BACKEND" =~ ^[0123]$ ]]; then
+            error_exit "--npu-auto-fuse-backend 只能是 0、1、2、3"
+        fi
+        log_info "NPU自动融合模式: $NPU_AUTO_FUSE_BACKEND"
+        export NPU_AUTO_FUSE_BACKEND
+    fi
+
     case "$action" in
         install|"")
             main_install
@@ -1211,6 +1253,7 @@ main() {
             ;;
     esac
 }
+
 
 # 捕获错误和中断信号
 trap 'log_error "脚本执行失败 (行号: $LINENO)"; cleanup_bg_processes; exit 1' ERR
