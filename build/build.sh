@@ -1,10 +1,10 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------------------------------------
 # Copyright (c) 2026 Huawei Technologies Co., Ltd.
-# This program is free software, you can redistribute it and/or modify it under the terms and conditions of 
+# This program is free software, you can redistribute it and/or modify it under the terms and conditions of
 # CANN Open Software License Agreement Version 2.0 (the "License").
 # Please refer to the License for details. You may not use this file except in compliance with the License.
-# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, 
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
 # INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
 # See LICENSE in the root of the software repository for the full text of the License.
 # -----------------------------------------------------------------------------------------------------------
@@ -43,6 +43,7 @@ BAZEL_INSTALL_DIR="$ENV_DIR/bazel"
 XLA_CODE_DIR="$CODE_DIR/xla"
 # xla-npu 代码目录为脚本所在目录的父目录（用户已克隆）
 XLA_NPU_CODE_DIR="$XLA_NPU_ROOT_DIR"
+NPU_AUTO_FUSE_BACKEND="1"
 
 # 版本配置
 JAVA_VERSION="21"
@@ -86,15 +87,16 @@ INSTALL_JAX=${INSTALL_JAX:-1}
 FORCE_REINSTALL=${FORCE_REINSTALL:-0}
 
 # 状态文件路径（放在 build 目录）
-STATE_FILE="$SCRIPT_DIR/.install_state"
+STATE_FILE="$WORKSPACE/build/.install_state"
 
 # 日志文件
 LOG_DIR="$WORKSPACE/build/logs"
+mkdir -p $LOG_DIR
 LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 INSTALL_DOC="$LOG_DIR/BUILD_DOCUMENTATION.md"
 
 # 环境变量文件（放在 build 目录）
-ENV_FILE="$SCRIPT_DIR/xla_npu_env"
+ENV_FILE="$WORKSPACE/build/xla_npu_env"
 
 #################### 工具函数 ####################
 log_info() {
@@ -248,29 +250,6 @@ confirm_action() {
     fi
 }
 
-setup_linked_dir() {
-    local default_dir="$1"
-    local custom_dir="$2"
-    # ==============================================
-    # 场景 1：变量 为空字符串 或 未配置（你要的重点！）
-    # ==============================================
-    if [[ -z "$custom_dir" ]]; then
-        log_info "自定义目录未配置或为空，使用默认目录: $default_dir"
-        ensure_dir "${default_dir}"
-    elif [[ -d "${custom_dir}" ]]; then
-        # 如果自定义目录存在，删除默认目录，挂上软连接
-        log_info "自定义目录已配置，使用自定义目录: $custom_dir"
-        rm -rf "$default_dir"
-        ln -s "$custom_dir" "$default_dir"
-    else
-        log_info "自定义目录不存在: ${custom_dir}"
-        ensure_dir "$custom_dir"
-        rm -rf "$default_dir"
-        ln -s "$custom_dir" "$default_dir"
-    fi
-}
-
-
 #################### 初始化环境 ####################
 init_environment() {
     # 首先创建日志目录（在调用任何 log 函数之前）
@@ -281,10 +260,7 @@ init_environment() {
 
     # 创建必要的目录
     ensure_dir "$WORKSPACE"
-
-    setup_linked_dir "$ENV_DIR" "$CUSTOM_ENV_DIR"
-    setup_linked_dir "$DOWNLOADS_DIR" "$CUSTOM_DOWNLOADS_DIR"
-
+    ensure_dir "$ENV_DIR"
     ensure_dir "$CODE_DIR"
     ensure_dir "$LOG_DIR"
     ensure_dir "$JAVA_INSTALL_DIR"
@@ -334,10 +310,10 @@ init_environment() {
     fi
 
     log_info "Python 版本满足要求 ($py_major.$py_minor >= 3.11)"
-    
+
     # 导出 Python 版本供 Bazel 使用
     export PYTHON_VERSION="${py_major}.${py_minor}"
-    
+
     log_info "环境初始化完成"
 }
 
@@ -556,7 +532,7 @@ build_xla() {
     local PYTHON_LIB_NAME=$(echo "$PYTHON_LDLIBRARY" | sed 's/^lib//' | sed 's/\.so$//')
     # 获取 Python 版本号（用于 BUILD 文件中的 -lpython$(PYTHON_VERSION)）
     local PYTHON_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
-    
+
     # 编译
     log_info "开始编译 XLA-NPU..."
     log_info "首次编译需要下载依赖包，耗时会较长。如果网络不稳定出现下载失败，可以重复执行。"
@@ -574,9 +550,10 @@ build_xla() {
         --verbose_failures \
         --copt=-w \
         --jobs=$PARALLEL_JOBS \
-        --define=PYTHON_VERSION="$PYTHON_VERSION" \
-        --define=PYTHON_LIBDIR="$PYTHON_LIBDIR" \
-        //xla/xla_npu/pjrt/c:pjrt_c_api_npu_plugin.so || \
+        --define PYTHON_VERSION="$PYTHON_VERSION" \
+        --define PYTHON_LIBDIR="$PYTHON_LIBDIR" \
+        //xla/xla_npu/pjrt/c:pjrt_c_api_npu_plugin.so  \
+        --define NPU_AUTO_FUSE_BACKEND="$NPU_AUTO_FUSE_BACKEND"|| \
         error_exit "XLA-NPU 编译失败" \
             "1. 检查网络连接 (需要下载依赖)\n2. 查看编译错误日志\n3. 尝试减少并行任务数\n4. 使用代理加速下载"
 
@@ -1002,6 +979,11 @@ XLA-NPU 安装脚本
     install    - 执行完整安装 (默认)
     uninstall  - 卸载 XLA-NPU
     help       - 显示帮助信息
+选项:
+    --npu-auto-fuse-backend
+    0: 不支持融合, 仅使用aclnn执行
+    1: 使用afir后端
+    3: 使用ge后端
 
 系统要求:
     Python >= 3.11 (必须预先安装)
@@ -1052,6 +1034,7 @@ main_install() {
 
     # 创建临时目录用于下载
     local temp_download_dir="$DOWNLOADS_DIR"
+    ensure_dir "$temp_download_dir"
     cd "$temp_download_dir" || error_exit "无法进入下载目录"
 
     # 检查哪些文件需要下载（检查 downloads 目录）
@@ -1192,6 +1175,39 @@ main_install() {
 
 main() {
     local action="${1:-install}"
+
+    # 解析命令行参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --npu-auto-fuse-backend=*)
+                NPU_AUTO_FUSE_BACKEND="${1#*=}"
+                shift 1
+                ;;
+            install|uninstall|help|--help|-h)
+                action="$1"
+                shift
+                ;;
+            *)
+                echo "未知参数: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    # 读取 action（install/uninstall/help）
+    if [[ ${#positional[@]} -gt 0 ]]; then
+        action="${positional[0]}"
+    fi
+
+    # 校验参数值
+    if [[ -n "$NPU_AUTO_FUSE_BACKEND" ]]; then
+        if [[ ! "$NPU_AUTO_FUSE_BACKEND" =~ ^[0123]$ ]]; then
+            error_exit "--npu-auto-fuse-backend 只能是 0、1、2、3"
+        fi
+        log_info "NPU自动融合模式: $NPU_AUTO_FUSE_BACKEND"
+        export NPU_AUTO_FUSE_BACKEND
+    fi
 
     case "$action" in
         install|"")

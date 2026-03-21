@@ -6,7 +6,9 @@
 
 ## 简介
 
-**XLA-NPU** 是一个面向华为昇腾NPU（Neural Processing Unit）硬件的 **XLA（Accelerated Linear Algebra）后端实现**。本项目将 OpenXLA/JAX 与华为 CANN（Compute Architecture for Neural Networks）工具链集成，使机器学习工作负载能够在华为昇腾 NPU 硬件上高效运行。
+**XLA-NPU** 是一个面向华为昇腾NPU（Neural Processing Unit）硬件的 **XLA（Accelerated Linear Algebra）后端实现**。本项目通过接入OpenXLA/XLA开源项目，将XLA开源生态与华为 CANN（Compute Architecture for Neural Networks）软件栈集成，对接JAX框架。JAX框架运行时可以直接加载XLA-NPU，使得基于JAX框架开发的模型可以运行在昇腾NPU上，提供推理场景图编译加速能力。
+
+昇腾为基于华为昇腾处理器和软件的行业应用及服务提供全栈AI计算基础设施。您可以通过访问昇腾社区，了解关于昇腾的更多信息。
 
 ## 安装与卸载
 
@@ -97,7 +99,7 @@ print(f"Result: {result}")
 ---
 
 ## 特性介绍
-xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对接JAX框架。详细特性介绍请访问[docs](docs/zh/README.md).
+xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对接JAX框架。详细特性介绍请访问[docs](docs/zh/README.md)。
 
 ---
 
@@ -122,7 +124,6 @@ xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对
 如有问题或建议，请通过以下方式联系：
 
 - 提交 [Issue](https://gitcode.com/cann/xla-npu/issues)
-- 查看 [项目文档](https://gitcode.com/cann/xla-npu)
 
 ---
 
