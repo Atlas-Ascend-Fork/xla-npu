@@ -9,7 +9,7 @@
 | [ops](./ops) | JAX 基础算子测试样例,支持 CPU 与 NPU 执行结果对比,包含 Add、Tanh、Multiply、Dot、Divide 等多种算子 |
 | [mmoe](./mmoe) | MMOE (Multi-gate Mixture-of-Experts) 模型推理样例,展示多任务学习模型在 NPU 上的推理性能 |
 | [common](./common) | 公共工具模块,包含基础运行器、配置管理和结果对比工具 |
-| [output](./output) | 样例运行输出目录,存放 CPU 和 NPU 的执行结果文件 |
+| output | 样例运行输出目录,存放 CPU 和 NPU 的执行结果文件 |
 
 ## 目录结构说明
 
