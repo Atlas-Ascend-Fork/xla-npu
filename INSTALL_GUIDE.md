@@ -70,14 +70,25 @@ chmod +x build.sh
 
 ### 3. 运行安装脚本
 ```bash
-./build.sh install
+./build.sh ${action} --npu-auto-fuse-backend=${backend}
 ```
 
 或者，如果你使用 conda 环境：
 ```bash
-conda activate xla-npu
-./build.sh install
+conda activate ${xla-npu}
+./build.sh ${action} --npu-auto-fuse-backend=${backend}
 ```
+- ${action}：表示脚本命令，取值如下
+  - install：安装。
+  - uninstall：卸载。
+  - help：显示帮助。
+
+- --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
+  - 0：不支持融合, 仅使用aclnn执行
+  - 1（默认值）：使用afir后端
+  - 3：使用ge后端
+
+- ${xla-npu}：conda环境名称
 
 ### 4. 设置环境变量
 安装完成后，运行以下命令使环境变量生效：
@@ -100,21 +111,6 @@ source ~/.bashrc
 - `JAVA_HOME`: Java开发工具包路径
 - `PATH`: 需包含Java bin目录和Bazel可执行文件目录
 - `XDG_CACHE_HOME`: (可选) 缓存目录,用于存储Bazel编译过程中的缓存文件
-
-### 条件编译选项
-
-> 可以在xla代码仓目录下的xla_configure.bazelrc文件(由执行configure.py生成)中设置
-
-通过设置 `NPU_AUTO_FUSE_BACKEND` 环境变量控制算子编译所使用的后端:
-
-- `0`: 不支持融合, 仅使用aclnn执行
-- `1`: 使用afir后端
-- `3`: 使用ge后端
-
-设置python链接库路径:
-`build --define PYTHON_LIBDIR=`
-设置python链接库对应的版本:
-`build --define PYTHON_VERSION=`
 
 ### 运行环境变量
 
@@ -381,14 +377,6 @@ bash -x ./build.sh install
 3. 网络连接：`ping mirrors.huaweicloud.com`
 
 ## 附录：命令参考
-
-### 脚本命令
-
-| 命令 | 说明 |
-|------|------|
-| `./build.sh install` | 执行完整安装 |
-| `./build.sh uninstall` | 卸载 XLA-NPU |
-| `./build.sh help` | 显示帮助信息 |
 
 ### 关键文件路径
 
