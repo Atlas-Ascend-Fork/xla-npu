@@ -32,7 +32,11 @@ struct AscirBackendOptions {
   bool preserve_intermediates = true;
 
   // SOC version (e.g., "Ascend910B1")
-  std::string soc_version = "Ascend910B1";
+  // Can be overridden by SOC_VERSION environment variable
+  std::string soc_version = []() {
+    const char* env_soc_version = std::getenv("SOC_VERSION");
+    return env_soc_version ? std::string(env_soc_version) : std::string("Ascend910B1");
+  }();
 };
 
 // Result of compiling a single HLO computation

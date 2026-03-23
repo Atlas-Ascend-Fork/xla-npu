@@ -656,7 +656,7 @@ def save_source_files(graph_text: str,
                       output_dir: Path,
                       graph_name: str = "kernel",
                       ascend_root: Optional[Path] = None,
-                      soc_version: str = ASCEND_A2) -> Tuple[Path, Path, str, str]:
+                      soc_version: Optional[str] = None) -> Tuple[Path, Path, str, str]:
     """
     从 AscendC graph 生成源代码文件（便捷函数）
 
@@ -677,6 +677,9 @@ def save_source_files(graph_text: str,
         ...     graph_name="my_kernel"
         ... )
     """
+    # Use soc_version from parameter, or fall back to environment variable, or use ASCEND_A2 as default
+    if soc_version is None:
+        soc_version = os.getenv("SOC_VERSION", ASCEND_A2)
     compiler = AscGen(ascend_root, soc_version)
     return compiler.compile_graph(graph_text, output_dir, graph_name)
 
@@ -685,7 +688,7 @@ def calc_tiling_data(
         tiling_def: str,
         host_tiling: str,
         ascend_root: Optional[Path] = None,
-        soc_version: str = ASCEND_A2,
+        soc_version: Optional[str] = None,
         build_dir: Optional[Path] = None,
 ) -> bytes:
     """
@@ -714,5 +717,8 @@ def calc_tiling_data(
         ...     build_dir="./debug_build"
         ... )
     """
+    # Use soc_version from parameter, or fall back to environment variable, or use ASCEND_A2 as default
+    if soc_version is None:
+        soc_version = os.getenv("SOC_VERSION", ASCEND_A2)
     compiler = AscGen(ascend_root, soc_version)
     return compiler.calc_tiling_data(tiling_def, host_tiling, build_dir)
