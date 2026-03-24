@@ -8,13 +8,8 @@
 
 ### 必须满足
 - **Python >= 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
-- **基本工具**：`wget`， `curl`， `git`， `tar`， `xz`
+- **基本工具**：`wget`， `curl`， `git`， `tar`
 - **磁盘空间**：至少 10GB 可用空间
-
-### 自动安装
-以下工具由脚本自动安装：
-- OpenJDK 21
-- Bazel 7.7.0
 
 ### 推荐配置
 - 内存：至少 8GB
@@ -47,7 +42,7 @@ python --version
 ### 2. 安装基本工具
 ```bash
 sudo apt-get update
-sudo apt-get install wget curl git tar xz build-essential
+sudo apt-get install wget curl git tar build-essential
 ```
 
 ### 3. 克隆 xla-npu 仓库
@@ -89,92 +84,8 @@ conda activate ${xla-npu}
   - 3：使用ge后端
 
 - ${xla-npu}：conda环境名称
-
-### 4. 设置环境变量
-安装完成后，运行以下命令使环境变量生效：
-```bash
-source ../build/xla_npu_env
-```
-
-或者添加到 `~/.bashrc` 自动加载：
-```bash
-echo "source $(pwd)/../build/xla_npu_env" >> ~/.bashrc
-source ~/.bashrc
-```
-
-## 环境变量说明
-
-### 编译环境变量
-
-编译前需要设置以下环境变量:
-
-- `JAVA_HOME`: Java开发工具包路径
-- `PATH`: 需包含Java bin目录和Bazel可执行文件目录
-- `XDG_CACHE_HOME`: (可选) 缓存目录,用于存储Bazel编译过程中的缓存文件
-
-### 运行环境变量
-
-在运行xla_npu前，请安装最新昇腾软件栈CANN 8.5.0或在研版本。
-
-运行测试前需要以下变量:
-
-- `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径(比如`/mnt/workspace/code/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python`) - 已配置在`xla_npu_env`中
-- `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录 - 已配置在`xla_npu_env`中, 默认路径为`xla-npu代码仓/auto_fuse_compile_artifacts`
-- `export USE_OLD_CANN_STYLE=true`: 在使用NPU_AUTO_FUSE_BACKEND=1,即afir融合后端时,如果是在CANN 8.5.0及其之前的版本运行xla-npu用例,则需要设置此环境变量,否则会报错
-
-## 安装选项
-
-### 环境变量配置
-
-| 环境变量 | 说明 | 默认值 |
-|---------|------|--------|
-| `WORKSPACE` | 工作目录 | xla-npu 根目录 |
-| `PARALLEL_JOBS` | 并行编译任务数 | `nproc` (CPU 核心数) |
-| `INSTALL_JAX` | 是否安装 JAX | `1` (安装) |
-| `FORCE_REINSTALL` | 强制重新安装 | `0` (启用断点续传) |
-| `FORCE_UNINSTALL` | 强制卸载无需确认 | `0` (需要确认) |
-
-### 使用示例
-
-#### 仅安装 XLA-NPU，不安装 JAX
-```bash
-INSTALL_JAX=0 ./build.sh install
-```
-
-#### 强制重新安装所有步骤
-```bash
-FORCE_REINSTALL=1 ./build.sh install
-```
-
-#### 自定义工作目录
-```bash
-WORKSPACE=/opt/xla-npu ./build.sh install
-```
-
-#### 指定并行编译任务数
-```bash
-PARALLEL_JOBS=8 ./build.sh install
-```
-
-## 验证安装
-
-### 1. 验证 Java
-```bash
-java --version
-# 应输出: openjdk 21.x.x
-```
-
-### 2. 验证 Bazel
-```bash
-bazel --version
-# 应输出: bazel 7.7.0
-```
-
-### 3. 验证 Python
-```bash
-python --version
-# 应输出: Python 3.11.x 或更高版本
-```
+- 其它安装选项说明：
+  -PARALLEL_JOBS：并行编译任务数，默然cpu核数。可选，如：export PARALLEL_JOBS=4。
 
 ### 4. 验证 XLA-NPU 编译产物
 ```bash
@@ -182,30 +93,10 @@ cd /path/to/xla-npu
 ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 ```
 
-### 5. 验证 JAX 安装
-```bash
-python -c "import jax; print(jax.__version__)"
-# 应输出: 0.8.1
-```
-
-## 目录结构
-
-安装完成后的目录结构：
-```
-xla-npu/                          # 项目根目录
-├── build/                        # 构建目录
-│   ├── build.sh             # 安装脚本
-│   ├── xla_npu_env          # 环境变量文件
-│   ├── .install_state       # 安装状态文件
-│   ├── env/                     # 已安装的工具
-│   │   ├── java/                # OpenJDK 21
-│   │   └── bazel/               # Bazel 7.7.0
-│   ├── code/                    # 下载的代码
-│   │   └── xla/                 # XLA 代码仓库
-│   ├── logs/                    # 安装日志
-│   └── downloads/               # 下载的安装包（缓存）
-└── xla_npu/                      # NPU 实现代码（软链接目标）
-```
+### 5. 设置环境变量
+- `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径(比如/mnt/workspace/code/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python)
+- `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
+- `export USE_OLD_CANN_STYLE=true`: 在使用NPU_AUTO_FUSE_BACKEND=1,即afir融合后端时,如果是在CANN 8.5.0及其之前的版本运行xla-npu用例,则需要设置此环境变量,否则会报错
 
 ## 常见问题
 
@@ -225,17 +116,7 @@ conda install python=3.11
 sudo apt-get install python3.11
 ```
 
-### 2. 下载速度慢或失败
-
-**解决方案**：
-- 脚本默认使用华为镜像源
-- 如仍有问题，可配置代理：
-  ```bash
-  export http_proxy=http://proxy.example.com:8080
-  export https_proxy=http://proxy.example.com:8080
-  ```
-
-### 3. 编译时内存不足
+### 2. 编译时内存不足
 
 **错误信息**：
 ```
@@ -248,21 +129,7 @@ java.lang.OutOfMemoryError: Java heap space
 PARALLEL_JOBS=4 ./build.sh install
 ```
 
-### 4. JAX 安装失败
-
-**错误信息**：
-```
-安装 jaxlib 失败
-```
-
-**解决方案**：
-```bash
-# 手动安装
-python -m pip install --upgrade pip
-python -m pip install -i https://mirrors.huaweicloud.com/repository/pypi/simple --trusted-host mirrors.huaweicloud.com jaxlib==0.8.1 jax==0.8.1
-```
-
-### 5. 权限问题
+### 3. 权限问题
 
 **错误信息**：
 ```
@@ -280,122 +147,10 @@ sudo ./build.sh install
 
 ## 卸载
 
-### 自动卸载
 ```bash
 cd /path/to/xla-npu/build
 ./build.sh uninstall
 ```
-
-### 强制卸载（无需确认）
-```bash
-FORCE_UNINSTALL=1 ./build.sh uninstall
-```
-
-### 手动卸载
-
-#### 1. 卸载 JAX
-```bash
-python -m pip uninstall -y jax jaxlib
-```
-
-#### 2. 删除环境变量配置
-```bash
-rm build/xla_npu_env
-
-# 如果已添加到 ~/.bashrc
-sed -i '/xla_npu_env/d' ~/.bashrc
-```
-
-#### 3. 删除编译产物和代码
-```bash
-rm -rf build/code/xla
-rm -rf build/env
-```
-
-#### 4. 清理缓存
-```bash
-# 清理 Bazel 缓存
-rm -rf ~/.cache/bazel
-
-# 清理 pip 缓存
-python -m pip cache purge
-```
-
-## 高级用法
-
-### 1. 使用特定的 Python 环境
-```bash
-# 激活 conda 环境
-conda activate my-env
-
-# 或使用 virtualenv
-source /path/to/venv/bin/activate
-
-# 运行安装
-./build.sh install
-```
-
-### 2. 断点续传
-脚本支持断点续传，如果安装过程中断，重新运行脚本会从上次中断的地方继续：
-```bash
-./build.sh install
-```
-
-如需从头开始：
-```bash
-FORCE_REINSTALL=1 ./build.sh install
-```
-
-### 3. 仅安装特定组件
-```bash
-# 仅安装 XLA-NPU，不安装 JAX
-INSTALL_JAX=0 ./build.sh install
-```
-
-## 日志和调试
-
-### 查看安装日志
-```bash
-# 日志目录
-ls -lh build/logs/
-
-# 查看最新日志
-cat build/logs/build_*.log | tail -100
-```
-
-### 启用详细输出
-```bash
-# 使用 bash -x 运行脚本查看详细执行过程
-bash -x ./build.sh install
-```
-
-## 技术支持
-
-如遇问题，请检查：
-1. 安装日志：`build/logs/build_*.log`
-2. Python 版本：`python --version`
-3. 网络连接：`ping mirrors.huaweicloud.com`
-
-## 附录：命令参考
-
-### 关键文件路径
-
-| 文件 | 路径 |
-|------|------|
-| 安装脚本 | `build/build.sh` |
-| 环境变量文件 | `build/xla_npu_env` |
-| 状态文件 | `build/.install_state` |
-| 安装日志 | `build/logs/build_*.log` |
-| XLA 代码 | `build/code/xla/` |
-| XLA 产物 | `build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so` |
-
-## 版本信息
-
-- **脚本版本**: build.sh
-- **JAX 版本**: 0.8.1
-- **XLA Commit**: a7e58876b73dfa9bb6bc785f6981a332c133bb55
-- **Bazel 版本**: 7.7.0
-- **OpenJDK 版本**: 21
 
 ---
 

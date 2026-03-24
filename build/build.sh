@@ -623,176 +623,6 @@ install_jax() {
     mark_step_done "install_jax"
 }
 
-#################### 生成安装文档 ####################
-generate_documentation() {
-    log_step "=== 生成安装文档 ==="
-
-    cat > "$INSTALL_DOC" << 'EOF'
-# XLA-NPU 安装文档
-
-## 系统要求
-
-- **Python >= 3.11**: 必须预先安装（系统自带或 conda 环境）
-- **基本工具**: wget, curl, git, tar, xz
-- **编译工具**: 由脚本自动安装 (OpenJDK 21, Bazel 7.7.0)
-
-## 环境配置
-
-### 安装目录
-- 工作空间: `WORKSPACE`
-- 环境目录: `ENV_DIR`
-- 代码目录: `CODE_DIR`
-
-### 环境变量
-
-安装脚本已自动生成环境变量配置文件: `build/xla_npu_env`
-
-要使环境变量生效，请执行:
-
-```bash
-source build/xla_npu_env
-```
-
-或者添加到 ~/.bashrc 以自动加载:
-
-```bash
-echo 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 验证安装
-
-验证 Java:
-```bash
-java --version
-```
-
-验证 Bazel:
-```bash
-bazel --version
-```
-
-验证 Python:
-```bash
-python --version
-```
-
-验证 JAX:
-```bash
-python -c "import jax; print(jax.__version__)"
-```
-
-## 编译产物
-
-### XLA-NPU 产物
-- 位置: `bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so`
-- 可用于 JAX 插件加载
-
-### JAX 安装
-- 通过 pip 安装到当前 Python 环境
-- 版本: 0.8.1
-- 使用华为镜像源
-
-## 常见问题
-
-### 1. Python 版本不满足要求
-**问题**: Python 版本 < 3.11
-
-**解决方案**:
-- 使用 conda: `conda install python=3.11`
-- 或使用系统包管理: `sudo apt-get install python3.11`
-
-### 2. 网络问题
-**问题**: 下载失败或速度慢
-
-**解决方案**:
-- 使用代理
-- 配置 Git 代理: `git config --global http.proxy <proxy_url>`
-- 使用国内镜像源（脚本默认使用华为镜像）
-
-### 3. 编译错误
-**问题**: 编译过程中出现错误
-
-**解决方案**:
-- 减少并行任务数: `export PARALLEL_JOBS=8`
-- 检查磁盘空间
-- 查看详细日志
-
-### 4. 权限问题
-**问题**: 安装时权限不足
-
-**解决方案**:
-- 使用 sudo 运行脚本
-- 或确保安装目录有写权限
-
-### 5. JAX 安装失败
-**问题**: pip install jax 失败
-
-**解决方案**:
-- 检查网络连接
-- 手动指定 pip 源
-- 使用虚拟环境隔离安装
-
-## 卸载
-
-### 自动卸载
-```bash
-cd /home/code/xla/install
-./build.sh uninstall
-```
-
-### 手动卸载
-
-#### 删除环境变量
-```bash
-# 删除环境变量配置文件
-rm build/xla_npu_env
-
-# 如果已添加到 ~/.bashrc，编辑删除相关行
-# 或执行：
-sed -i '/xla_npu_env/d' ~/.bashrc
-```
-
-#### 删除代码和编译产物
-```bash
-rm -rf $CODE_DIR/xla
-rm -rf $CODE_DIR/xla-npu
-```
-
-#### 卸载 JAX
-```bash
-python -m pip uninstall -y jax jaxlib
-```
-
-#### 清理缓存
-```bash
-# 清理 Bazel 缓存
-rm -rf ~/.cache/bazel
-
-# 清理 pip 缓存
-pip cache purge
-```
-
-## 日志文件
-
-安装日志: `LOG_FILE`
-
-## 支持
-
-如有问题，请查看:
-- 安装指南: `INSTALL_GUIDE_NEW.md`
-- 日志文件: `LOG_FILE`
-EOF
-
-    # 替换变量
-    sed -i "s|\$WORKSPACE|$WORKSPACE|g" "$INSTALL_DOC"
-    sed -i "s|\$ENV_DIR|$ENV_DIR|g" "$INSTALL_DOC"
-    sed -i "s|\$CODE_DIR|$CODE_DIR|g" "$INSTALL_DOC"
-    sed -i "s|\$LOG_FILE|$LOG_FILE|g" "$INSTALL_DOC"
-
-    log_info "安装文档已生成: $INSTALL_DOC"
-}
-
 #################### 卸载功能 ####################
 uninstall_jax() {
     log_step "=== 卸载 JAX ==="
@@ -994,24 +824,16 @@ XLA-NPU 安装脚本
     Python >= 3.11 (必须预先安装)
 
 环境变量:
-    WORKSPACE          - 工作目录 (默认: 脚本所在目录/workspace)
     PARALLEL_JOBS      - 并行任务数 (默认: nproc)
-    INSTALL_JAX        - 是否安装 JAX (默认: 1, 设为 0 跳过)
     FORCE_REINSTALL    - 强制重新安装所有步骤 (默认: 0, 设为 1 启用)
     FORCE_UNINSTALL    - 强制卸载，无需确认 (默认: 0, 设为 1 启用)
 
 示例:
-    # 完整安装 (包含 JAX)
+    # 完整安装
     ./$0 install
-
-    # 完整安装 (不包含 JAX)
-    INSTALL_JAX=0 ./$0 install
 
     # 强制重新安装所有步骤 (跳过断点续传)
     FORCE_REINSTALL=1 ./$0 install
-
-    # 自定义工作目录
-    WORKSPACE=/opt/xla ./$0 install
 
     # 自定义并行数
     PARALLEL_JOBS=16 ./$0 install
@@ -1159,9 +981,6 @@ main_install() {
         log_info "跳过 JAX 安装 (INSTALL_JAX=0)"
     fi
 
-    # 生成文档
-    generate_documentation
-
     echo ""
     echo -e "\033[32m========================================\033[0m"
     echo -e "\033[32m  安装完成!\033[0m"
@@ -1172,9 +991,6 @@ main_install() {
     echo ""
     echo "或者添加到 ~/.bashrc 以自动加载:"
     echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc\033[0m"
-    echo ""
-    echo "安装文档: $INSTALL_DOC"
-    echo "安装日志: $LOG_FILE"
     echo ""
 }
 
