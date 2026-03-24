@@ -13,8 +13,14 @@
 ## 安装与卸载
 
 详细的安装和卸载指南请参考：**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**
-
+- **XLA-NPU在运行期依赖CANN 8.5.0及以上版本，请参考[安装指南](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta1/softwareinst/instg/instg_0000.html?Mode=PmIns&InstallType=netconda&OS=Ubuntu)完成软件栈的安装。**
 ---
+### 系统要求
+
+- **操作系统**: Linux (推荐 Ubuntu 20.04+)
+- **Python**: >= 3.11
+- **磁盘空间**: 至少 10GB
+- **网络**: 需要访问 github.com 和 storage.googleapis.com
 
 ### 快速安装
 
@@ -29,16 +35,7 @@ chmod +x build/build.sh
 # 运行自动安装脚本
 ./build/build.sh
 
-# 设置环境变量
-source build/xla_npu_env
 ```
-
-### 系统要求
-
-- **操作系统**: Linux (推荐 Ubuntu 20.04+)
-- **Python**: >= 3.11
-- **磁盘空间**: 至少 10GB
-- **网络**: 需要访问 github.com 和 storage.googleapis.com
 
 ### 卸载
 
@@ -52,22 +49,13 @@ rm -rf build/
 
 ---
 
-## 环境变量说明
-
-详细的编译和运行环境变量配置请参考：[INSTALL_GUIDE.md](INSTALL_GUIDE.md)
-
-### 快速设置
-
-使用 `build/build.sh` 脚本安装后，可通过以下命令自动设置环境变量：
-```bash
-source build/xla_npu_env
-```
-
----
-
 ## 快速上手
+### 1. 配置运行期环境变量
+- `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径(比如/mnt/workspace/code/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python)
+- `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录, 每次编译时会在其下创建以时间戳命名的子目录
+- `export USE_OLD_CANN_STYLE=true`: 在使用NPU_AUTO_FUSE_BACKEND=1,即afir融合后端时,如果是在CANN 8.5.0及其之前的版本运行xla-npu用例,则需要设置此环境变量,否则会报错
 
-### 1. 在 JAX 中使用 NPU 后端
+### 2. 在 JAX 中使用 NPU 后端
 
 ```python
 import os
