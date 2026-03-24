@@ -79,9 +79,9 @@ conda activate ${xla-npu}
 ./build.sh ${action} --npu-auto-fuse-backend=${backend}
 ```
 - ${action}：表示脚本命令，取值如下
-  - install：安装。
-  - uninstall：卸载。
-  - help：显示帮助。
+  - install：安装，默认不支持重复安装，如果需要重复安装，需要设置环境变量FORCE_REINSTALL为1，如：export FORCE_REINSTALL=1。
+  - uninstall：卸载，默认卸载需要二次确认，如果不希望二次确认，需要设置环境变量FORCE_UNINSTALL为1，如：export FORCE_UNINSTALL=1。
+  - help：帮助，查看build.sh脚本支持命令的帮助信息。
 
 - --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
   - 0：不支持融合, 仅使用aclnn执行
