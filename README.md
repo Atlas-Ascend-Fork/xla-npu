@@ -13,7 +13,7 @@
 ## 安装与卸载
 
 详细的安装和卸载指南请参考：**[INSTALL_GUIDE.md](INSTALL_GUIDE.md)**
-- **XLA-NPU在运行期依赖CANN 8.5.0及以上版本，请参考[安装指南](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta1/softwareinst/instg/instg_0000.html?Mode=PmIns&InstallType=netconda&OS=Ubuntu)完成软件栈的安装。**
+- **XLA-NPU在运行时依赖CANN 8.5.0及以上版本，请参考[安装指南](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta1/softwareinst/instg/instg_0000.html?Mode=PmIns&InstallType=netconda&OS=Ubuntu)完成软件栈的安装。**
 ---
 ### 系统要求
 
@@ -22,32 +22,6 @@
 - **磁盘空间**: 至少 10GB
 - **网络**: 需要访问 github.com 和 storage.googleapis.com
 
-### 快速安装
-
-```bash
-# 克隆代码仓库
-git clone https://gitcode.com/cann/xla-npu.git
-cd xla-npu
-
-# 添加可执行权限
-chmod +x build/build.sh
-
-# 运行自动安装脚本
-./build/build.sh
-
-```
-
-### 卸载
-
-```bash
-# 使用脚本卸载
-./build/build.sh uninstall
-
-# 或手动删除
-rm -rf build/
-```
-
----
 
 ## 快速上手
 ### 1. 配置运行期环境变量

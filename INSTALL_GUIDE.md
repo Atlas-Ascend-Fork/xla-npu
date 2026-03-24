@@ -19,17 +19,7 @@
 
 ### 1. 安装 Python
 
-#### 方法一：使用系统包管理器
-```bash
-# Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install python3.11 python3-pip
-
-# 验证安装
-python3.11 --version
-```
-
-#### 方法二：使用 conda（推荐）
+#### 方法一：使用 conda（推荐）
 ```bash
 # 创建新环境
 conda create -n xla-npu python=3.11
@@ -37,6 +27,15 @@ conda activate xla-npu
 
 # 验证安装
 python --version
+```
+#### 方法二：使用系统包管理器
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install python3.11 python3-pip
+
+# 验证安装
+python3.11 --version
 ```
 
 ### 2. 安装基本工具
@@ -48,7 +47,6 @@ sudo apt-get install wget curl git tar build-essential
 ### 3. 克隆 xla-npu 仓库
 ```bash
 git clone https://gitcode.com/cann/xla-npu.git /path/to/xla-npu
-cd /path/to/xla-npu
 ```
 
 ## 安装步骤
@@ -84,8 +82,8 @@ conda activate ${xla-npu}
   - 3：使用ge后端
 
 - ${xla-npu}：conda环境名称
-- 其它安装选项说明：
-  - PARALLEL_JOBS：并行编译任务数，默然cpu核数。可选，如：export PARALLEL_JOBS=4。
+- 其它安装环境变量说明：
+  - PARALLEL_JOBS：并行编译任务数，默认为cpu核数。可选，如：export PARALLEL_JOBS=4。
 
 ### 4. 验证 XLA-NPU 编译产物
 ```bash
