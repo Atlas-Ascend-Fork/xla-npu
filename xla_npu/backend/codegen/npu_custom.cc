@@ -177,7 +177,6 @@ absl::StatusOr<NpuFusionEmissionResult> NpuCustomFusion::Emit(
     AscirBackend ascir_backend;
     AscirBackendOptions ascir_backend_compile_option;
     ascir_backend_compile_option.output_dir = ir_emitter_context.GetOutputDir();
-    ascir_backend_compile_option.soc_version = "Ascend910B1";
     TF_ASSIGN_OR_RETURN(
         npu_compile_result,
         ascir_backend.Compile(computation_map, ascir_backend_compile_option));
