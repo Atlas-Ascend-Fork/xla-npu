@@ -433,10 +433,15 @@ setup_env() {
 # 生成时间: $(date)
 # 使用方法: source build/xla_npu_env
 
+## XLA-NPU 编译环境变量
 export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
 export PATH=\$JAVA_HOME/bin:\$PATH
 
 export PATH=$BAZEL_INSTALL_DIR:\$PATH
+
+## XLA-NPU 运行环境变量
+export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/Ascend-MLIR/python/
+export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=$XLA_NPU_ROOT_DIR/auto_fuse_compile_artifacts/
 EOF
 
     log_info "环境变量已设置"
