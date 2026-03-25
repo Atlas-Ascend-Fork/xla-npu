@@ -8,7 +8,7 @@
 
 **XLA-NPU** 是一个面向华为昇腾NPU（Neural Processing Unit）硬件的 **XLA（Accelerated Linear Algebra）后端实现**。本项目通过接入OpenXLA/XLA开源项目，将XLA开源生态与华为 CANN（Compute Architecture for Neural Networks）软件栈集成，对接JAX框架。JAX框架运行时可以直接加载XLA-NPU，使得基于JAX框架开发的模型可以运行在昇腾NPU上，提供推理场景图编译加速能力。
 
-昇腾为基于华为昇腾处理器和软件的行业应用及服务提供全栈AI计算基础设施。您可以通过访问昇腾社区，了解关于昇腾的更多信息。
+昇腾为基于华为昇腾处理器和软件的行业应用及服务提供全栈AI计算基础设施。您可以通过访问[昇腾社区](https://www.hiascend.com/zh/)，了解关于昇腾的更多信息。
 
 ## 安装与卸载
 
@@ -68,8 +68,8 @@ xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对
 ---
 
 ## 支持的型号
-- Atlas A2/A3 训练系列产品
-- Atlas A3 推理系列产品
+- Atlas A3 训练系列产品/Atlas A3 推理系列产品
+- Atlas A2 训练系列产品/Atlas A2 推理系列产品
 
 ## 许可证
 
