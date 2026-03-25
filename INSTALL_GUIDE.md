@@ -7,7 +7,7 @@
 ## 系统要求
 
 ### 必须满足
-- **Python >= 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
+- **Python = 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
 - **基本工具**：`wget`， `curl`， `git`， `tar`
 - **磁盘空间**：至少 10GB 可用空间
 
@@ -97,7 +97,7 @@ ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 
 **错误信息**：
 ```
-Python 版本不满足要求 (需要 >= 3.11， 当前 3.9.x)
+Python 版本不满足要求 (需要 = 3.11， 当前 3.9.x)
 ```
 
 **解决方案**：

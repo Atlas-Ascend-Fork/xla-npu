@@ -1,7 +1,7 @@
 # XLA-NPU
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.11-green.svg)](https://www.python.org/)
 [![JAX](https://img.shields.io/badge/JAX-0.8.1-orange.svg)](https://github.com/google/jax)
 
 ## 简介
