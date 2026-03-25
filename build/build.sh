@@ -440,7 +440,7 @@ export PATH=\$JAVA_HOME/bin:\$PATH
 export PATH=$BAZEL_INSTALL_DIR:\$PATH
 
 ## XLA-NPU 运行环境变量
-export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/Ascend-MLIR/python/
+export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/afir/Ascend-MLIR/python/
 export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=$XLA_NPU_ROOT_DIR/auto_fuse_compile_artifacts/
 EOF
 
@@ -505,11 +505,6 @@ download_code() {
 
 #################### 编译 XLA ####################
 build_xla() {
-    # 检查是否已完成
-    if skip_if_done "build_xla" "编译 XLA-NPU"; then
-        return 0
-    fi
-
     log_step "=== 编译 XLA-NPU ==="
 
     cd "$XLA_CODE_DIR" || error_exit "无法进入目录: $XLA_CODE_DIR"

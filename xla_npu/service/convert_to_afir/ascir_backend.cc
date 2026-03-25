@@ -675,7 +675,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   if (runtime_path.empty()) {
     return absl::InternalError(
         "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
-        "Please set it to {xla-npu code repository path}/xla_npu/dependency/external/Ascend-MLIR/python");
+        "Please set it to {xla-npu code repository path}/xla_npu/dependency/external/afir/Ascend-MLIR/python");
   }
   NPU_LOG_FORMAT_PRINT(DEBUG, "Adding runtime path: %s", runtime_path.c_str());
   std::string import_cmd =
