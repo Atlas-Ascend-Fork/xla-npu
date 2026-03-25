@@ -33,11 +33,11 @@ XLA_NPU_ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 #################### 配置区域 ####################
 # 安装目录配置
-# 优先使用环境变量 WORKSPACE，否则使用 xla-npu 根目录
-WORKSPACE=${WORKSPACE:-"$XLA_NPU_ROOT_DIR"}
-ENV_DIR="$WORKSPACE/build/env"
-CODE_DIR="$WORKSPACE/build/code"
-DOWNLOADS_DIR="$WORKSPACE/build/downloads"
+# 优先使用环境变量 INSTALL_DIR，否则使用 xla-npu 根目录
+INSTALL_DIR=${INSTALL_DIR:-"$XLA_NPU_ROOT_DIR"}
+ENV_DIR="$INSTALL_DIR/build/env"
+CODE_DIR="$INSTALL_DIR/build/code"
+DOWNLOADS_DIR="$INSTALL_DIR/build/downloads"
 JAVA_INSTALL_DIR="$ENV_DIR/java"
 BAZEL_INSTALL_DIR="$ENV_DIR/bazel"
 XLA_CODE_DIR="$CODE_DIR/xla"
@@ -87,16 +87,16 @@ INSTALL_JAX=${INSTALL_JAX:-1}
 FORCE_REINSTALL=${FORCE_REINSTALL:-0}
 
 # 状态文件路径（放在 build 目录）
-STATE_FILE="$WORKSPACE/build/.install_state"
+STATE_FILE="$INSTALL_DIR/build/.install_state"
 
 # 日志文件
-LOG_DIR="$WORKSPACE/build/logs"
+LOG_DIR="$INSTALL_DIR/build/logs"
 mkdir -p $LOG_DIR
 LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 INSTALL_DOC="$LOG_DIR/BUILD_DOCUMENTATION.md"
 
 # 环境变量文件（放在 build 目录）
-ENV_FILE="$WORKSPACE/build/xla_npu_env"
+ENV_FILE="$INSTALL_DIR/build/xla_npu_env"
 
 #################### 工具函数 ####################
 log_info() {
@@ -254,19 +254,19 @@ confirm_action() {
 init_environment() {
     # 首先创建日志目录（在调用任何 log 函数之前）
     mkdir -p "$LOG_DIR" 2>/dev/null || true
-    mkdir -p "$WORKSPACE" 2>/dev/null || true
+    mkdir -p "$INSTALL_DIR" 2>/dev/null || true
 
     log_step "=== 初始化安装环境 ==="
 
     # 创建必要的目录
-    ensure_dir "$WORKSPACE"
+    ensure_dir "$INSTALL_DIR"
     ensure_dir "$ENV_DIR"
     ensure_dir "$CODE_DIR"
     ensure_dir "$LOG_DIR"
     ensure_dir "$JAVA_INSTALL_DIR"
     ensure_dir "$BAZEL_INSTALL_DIR"
 
-    log_info "工作目录: $WORKSPACE"
+    log_info "安装目录: $INSTALL_DIR"
     log_info "环境目录: $ENV_DIR"
     log_info "代码目录: $CODE_DIR"
     log_info "日志目录: $LOG_DIR"
