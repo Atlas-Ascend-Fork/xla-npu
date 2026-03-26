@@ -19,8 +19,8 @@ namespace npu {
 
 class ConfigLoader {
  public:
-  enum class ValueType { STRING, BOOL };
-  using DefaultValueType = std::variant<std::string, bool>;
+  enum class ValueType { STRING, BOOL, INT };
+  using DefaultValueType = std::variant<std::string, bool, int>;
   struct Desc {
     std::string str_desc;
     DefaultValueType default_value;
@@ -73,5 +73,8 @@ T ConfigLoader::GetTypedValue(int key) const {
 
 #define NPU_CONFIG_GET_BOOL(key) \
   npu::ConfigLoader::GetInstance().GetTypedValue<bool>(static_cast<int>(key))
+
+#define NPU_CONFIG_GET_INT(key) \
+  npu::ConfigLoader::GetInstance().GetTypedValue<int>(static_cast<int>(key))
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_TOOL_CONFIG_LOADER_H_

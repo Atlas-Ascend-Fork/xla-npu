@@ -41,8 +41,10 @@
 #include "xla/tsl/platform/statusor.h"
 #include "xla/util.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk_id.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/config_loader.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_kernel_config.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
@@ -422,6 +424,37 @@ absl::Status NpuThunk::InitializeSpecialValues(
   }
   NPU_LOG_FORMAT_PRINT(DEBUG, "==== End of Computation: %s ====",
                        name.c_str());
+}
+
+//===----------------------------------------------------------------------===//
+// Unified Stream Sync and Print Control
+//===----------------------------------------------------------------------===//
+
+/*static*/ absl::Status NpuThunk::SyncStreamIfEnabled(se::Stream* stream) {
+  if (NPU_CONFIG_GET_BOOL(NpuConfig::Key::ENABLE_SYNC_AFTER_EXECUTE)) {
+    TF_RETURN_IF_ERROR(stream->BlockHostUntilDone());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Sync after execute enabled");
+  }
+  return absl::OkStatus();
+}
+
+/*static*/ bool NpuThunk::IsPrintIOValuesEnabled() {
+  return NPU_CONFIG_GET_BOOL(NpuConfig::Key::ENABLE_PRINT_IO_VALUES);
+}
+
+/*static*/ void NpuThunk::PrintParamInfo(int param_id,
+                                          const std::string& param_type,
+                                          int device_ordinal,
+                                          const BufferAllocation::Slice& slice,
+                                          const Shape& shape, void* device_addr) {
+  NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d (%s) info: ----", param_id,
+                       param_type.c_str());
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  Device id: %d, Arg: alloc #%d, offset: %d: %p",
+                       device_ordinal, slice.index(), slice.offset(),
+                       device_addr);
+  NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s", shape.ToString(true).c_str());
+  NpuTool::PrintNpuDeviceMemoryValueByShape("  Value on device:", shape,
+                                             device_addr);
 }
 
 }  // namespace xla

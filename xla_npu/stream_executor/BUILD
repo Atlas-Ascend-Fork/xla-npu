@@ -86,6 +86,10 @@ cc_library(
     hdrs = ["npu_auto_fuse_kernel.h"],
     deps = [
         # "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/backend/runtime:npu_workspace_memory_pool",
+        "//xla/xla_npu/common:npu_config",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:config_loader",
         "//xla/xla_npu/dependency/tool:function_loader",
         "//xla/xla_npu/dependency/tool:log",
 

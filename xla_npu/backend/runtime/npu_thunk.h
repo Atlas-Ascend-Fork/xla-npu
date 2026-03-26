@@ -384,6 +384,21 @@ class NpuThunk {
                                    const std::string& name,
                                    bool is_entry);
 
+  // 统一的流同步和打印控制函数
+  // 根据环境变量 ENABLE_SYNC_AFTER_EXECUTE 控制是否在算子执行后同步流
+  // 返回同步是否执行
+  static absl::Status SyncStreamIfEnabled(se::Stream* stream);
+
+  // 统一的参数打印函数
+  // 打印单个参数信息(执行前或执行后)
+  static void PrintParamInfo(int param_id, const std::string& param_type,
+                              int device_ordinal,
+                              const BufferAllocation::Slice& slice,
+                              const Shape& shape, void* device_addr);
+
+  // 检查是否启用 IO 值打印
+  static bool IsPrintIOValuesEnabled();
+
   // Executes thunk on the given stream. This method must be called after
   // Initialize and can be called multiple times over NpuThunk's lifetime.
   // Precondition: Initialize(initialize_params) has been called.

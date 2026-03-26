@@ -30,10 +30,13 @@
 #include "xla/tsl/platform/errors.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
+#include "xla/xla_npu/backend/runtime/npu_workspace_memory_pool.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_tool.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_interface.h"
 #include "xla/xla_npu/dependency/interface/acl_nn_op_interface.h"
+#include "xla/xla_npu/dependency/tool/config_loader.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 
 namespace xla {
@@ -144,6 +147,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
   if (!CheckInputOuputParamsSize(thunk_info().op_code, param_shapes)) {
     return absl::InternalError("");
+  }
+
+  // 执行前打印输入参数
+  if (IsPrintIOValuesEnabled()) {
+    int device_ordinal = params.stream->parent()->device_ordinal();
+    for (int i = 0; i < args_.size() - 1; ++i) {
+      auto addr = allocations->GetDeviceAddress(args_[i]);
+      PrintParamInfo(i, "input", device_ordinal, args_[i], param_shapes[i],
+                     addr.opaque());
+    }
   }
 
   TF_ASSIGN_OR_RETURN(auto acl_tensor_ptr_vector,
@@ -643,7 +656,17 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
   }
 
-  PrintOutputTensor(allocations, param_shapes);
+  // 使用统一的流同步函数
+  TF_RETURN_IF_ERROR(SyncStreamIfEnabled(params.stream));
+
+  // 根据环境变量控制是否打印输入输出值(包含d2h操作,影响性能)
+  // 打印输出值需要先同步流,确保数据已从设备复制到主机
+  if (NPU_CONFIG_GET_BOOL(NpuConfig::Key::ENABLE_PRINT_IO_VALUES)) {
+    // 先同步流,确保算子执行完成
+    TF_RETURN_IF_ERROR(params.stream->BlockHostUntilDone());
+    int device_ordinal = params.stream->parent()->device_ordinal();
+    PrintOutputTensor(allocations, param_shapes, device_ordinal);
+  }
 
   return exec_ret;
 }
@@ -661,18 +684,6 @@ NpuAclnnThunk::ExtractAclInputOutTensorPtr(
         param_shapes[i], param_shapes[i].element_type(), device_addr);
     acl_tensor_ptr_vector.push_back(tensor_ptr);
 
-    if (i < args_.size() - 1) {
-      // 只能执行前打印,因为算子执行会复用内存,执行结果会覆盖到入参地址上
-      NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param(input) %d info: ----", i);
-      NPU_LOG_FORMAT_PRINT(DEBUG, "  Buffer allocation: %v",
-                           args_[i].ToString());
-      NPU_LOG_FORMAT_PRINT(DEBUG, "  Tensor Shape: %v",
-                           param_shapes[i].ToString(true));
-      NPU_LOG_FORMAT_PRINT(DEBUG, "  Device addr: %p", device_addr);
-      NpuTool::PrintNpuDeviceMemoryValue<float>(
-          "  Value on device:", NpuTool::GetXlaShapeSize(param_shapes[i]),
-          device_addr);
-    }
     // 最后一个追加的tensor_ptr为出参tensor
   }
 
@@ -685,24 +696,34 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream,
                                          AclnnExecFunc aclnnExecFunc) {
   aclnnStatus ret = 0;
 
-  // 根据第一段接口计算出的 workspaceSize 申请 device 内存
+  // 从 Workspace 内存池获取内存,替代动态申请
   void* workspaceAddr = nullptr;
   if (workspaceSize > 0) {
     NPU_LOG_FORMAT_PRINT(DEBUG,
-                         "Additional aclnn WorkspaceSize is %d, need to apply",
+                         "Additional aclnn WorkspaceSize is %d, get from pool",
                          workspaceSize);
-    ret = npu::aclrtMalloc(&workspaceAddr, workspaceSize,
-                           ACL_MEM_MALLOC_HUGE_FIRST);
-    if (ret != ACL_SUCCESS) {
-      const std::string err_msg =
-          absl::StrFormat("Allocate workspace failed. Error code: %d", ret);
+
+    auto* pool = NpuWorkspaceMemoryPool::GetInstance();
+    if (pool == nullptr) {
+      const std::string err_msg = "Workspace memory pool not available";
       NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
       return absl::InternalError(err_msg);
     }
+
+    auto alloc_result = pool->AllocateForStream(stream, workspaceSize);
+    if (!alloc_result.ok()) {
+      const std::string err_msg =
+          absl::StrFormat("Failed to allocate workspace from pool: %s",
+                          alloc_result.status().ToString().c_str());
+      NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+      return absl::InternalError(err_msg);
+    }
+    workspaceAddr = alloc_result.value();
   } else {
     NPU_LOG_FORMAT_PRINT(
         DEBUG, "Additional aclnn WorkspaceSize is 0, no need to apply");
   }
+
   // 调用 aclnnExecFunc 第二段接口
   ret = aclnnExecFunc(workspaceAddr, workspaceSize, executor, stream);
   if (ret != ACL_SUCCESS) {
@@ -717,20 +738,17 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream,
 
 absl::Status NpuAclnnThunk::PrintOutputTensor(
     const NpuBufferAllocations* allocations,
-    const std::vector<Shape>& param_shapes) {
+    const std::vector<Shape>& param_shapes, int device_ordinal) {
   // 对于当前aclnn处理的简单算子来说,只有最后一个参数为输出参数
   const auto& output_arg = args_.back();
-  const auto& outout_arg_param = param_shapes.back();
+  const auto& output_shape = param_shapes.back();
 
   auto addr = allocations->GetDeviceAddress(output_arg);
   void* device_addr = addr.opaque();
-  NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param(output) 0 info: ----");
-  NPU_LOG_FORMAT_PRINT(DEBUG, "  Buffer allocation: %v", output_arg.ToString());
-  NPU_LOG_FORMAT_PRINT(DEBUG, "  Tensor Shape: %v",
-                       outout_arg_param.ToString(true));
-  NPU_LOG_FORMAT_PRINT(DEBUG, "  Device addr: %p", device_addr);
-  NpuTool::PrintNpuDeviceMemoryValueByShape(
-      "  Value on device:", outout_arg_param, device_addr);
+
+  // 使用统一的打印函数
+  PrintParamInfo(0, "output", device_ordinal, output_arg, output_shape,
+                 device_addr);
 
   return absl::OkStatus();
 }

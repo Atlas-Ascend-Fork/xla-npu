@@ -103,7 +103,7 @@ class NpuTool {
 
     // 获取配置的最大打印数量
     if (max_print_count <= 0) {
-      max_print_count = NpuConfig::GetInstance().GetMaxPrintCount();
+      max_print_count = NPU_CONFIG_GET_INT(xla::NpuConfig::Key::XLA_NPU_MAX_PRINT_COUNT);
     }
 
     int64_t print_count = std::min(size, max_print_count);

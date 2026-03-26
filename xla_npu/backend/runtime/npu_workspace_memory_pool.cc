@@ -1,0 +1,201 @@
+/**
+ * Copyright (c) 2026 Huawei Technologies Co., Ltd.
+ * This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+ * CANN Open Software License Agreement Version 2.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
+ */
+
+#include "xla/xla_npu/backend/runtime/npu_workspace_memory_pool.h"
+
+#include <algorithm>
+#include <cstring>
+
+#include "absl/strings/str_format.h"
+#include "xla/tsl/platform/statusor.h"
+#include "xla/xla_npu/dependency/tool/log.h"
+
+namespace xla {
+
+namespace {
+NpuWorkspaceMemoryPool* g_instance = nullptr;
+std::mutex g_instance_mutex;
+}  // namespace
+
+NpuWorkspaceMemoryPool* NpuWorkspaceMemoryPool::GetInstance() {
+  std::lock_guard<std::mutex> lock(g_instance_mutex);
+  if (g_instance == nullptr) {
+    g_instance = new NpuWorkspaceMemoryPool();
+    absl::Status status = g_instance->Initialize();
+    if (!status.ok()) {
+      NPU_LOG_FORMAT_PRINT(ERROR,
+                           "Failed to initialize NpuWorkspaceMemoryPool: %s",
+                           status.ToString().c_str());
+      delete g_instance;
+      g_instance = nullptr;
+    }
+  }
+  return g_instance;
+}
+
+void NpuWorkspaceMemoryPool::DestroyInstance() {
+  std::lock_guard<std::mutex> lock(g_instance_mutex);
+  if (g_instance != nullptr) {
+    delete g_instance;
+    g_instance = nullptr;
+  }
+}
+
+NpuWorkspaceMemoryPool::~NpuWorkspaceMemoryPool() {
+  if (device_memory_base_ != nullptr) {
+    aclError ret = npu::aclrtFree(device_memory_base_);
+    if (ret != ACL_SUCCESS) {
+      NPU_LOG_FORMAT_PRINT(ERROR, "Failed to free workspace memory pool: %d",
+                           ret);
+    } else {
+      NPU_LOG_FORMAT_PRINT(INFO, "Workspace memory pool freed successfully");
+    }
+    device_memory_base_ = nullptr;
+  }
+  initialized_ = false;
+}
+
+absl::Status NpuWorkspaceMemoryPool::Initialize() {
+  if (initialized_) {
+    return absl::OkStatus();
+  }
+
+  for (size_t i = 0; i < kMaxStreamCount; ++i) {
+    stream_mappings_[i].stream_id = 0;
+    stream_mappings_[i].block_index = i;
+    stream_mappings_[i].active = false;
+  }
+  stream_mapping_count_ = 0;
+
+  aclError ret =
+      npu::aclrtMalloc(&device_memory_base_, kWorkspaceMemoryPoolTotalSize,
+                       ACL_MEM_MALLOC_HUGE_FIRST);
+  if (ret != ACL_SUCCESS) {
+    return absl::InternalError(absl::StrFormat(
+        "Failed to allocate workspace memory pool of size %zu bytes: %d",
+        kWorkspaceMemoryPoolTotalSize, ret));
+  }
+
+  initialized_ = true;
+  NPU_LOG_FORMAT_PRINT(
+      INFO,
+      "Workspace memory pool initialized: total=%zu MB, per_stream=%zu MB, "
+      "max_streams=%zu",
+      kWorkspaceMemoryPoolTotalSize / (1024 * 1024),
+      kWorkspaceMemoryPerStream / (1024 * 1024), kMaxStreamCount);
+
+  return absl::OkStatus();
+}
+
+uint64_t NpuWorkspaceMemoryPool::GetStreamId(aclrtStream stream) const {
+  return reinterpret_cast<uint64_t>(stream);
+}
+
+absl::StatusOr<size_t> NpuWorkspaceMemoryPool::GetOrAssignStreamIndex(
+    aclrtStream stream) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  uint64_t stream_id = GetStreamId(stream);
+
+  for (size_t i = 0; i < stream_mapping_count_; ++i) {
+    if (stream_mappings_[i].stream_id == stream_id &&
+        stream_mappings_[i].active) {
+      return stream_mappings_[i].block_index;
+    }
+  }
+
+  if (stream_mapping_count_ >= kMaxStreamCount) {
+    return absl::ResourceExhaustedError(absl::StrFormat(
+        "Maximum number of streams (%zu) exceeded", kMaxStreamCount));
+  }
+
+  size_t block_index = stream_mapping_count_;
+  stream_mappings_[stream_mapping_count_].stream_id = stream_id;
+  stream_mappings_[stream_mapping_count_].block_index = block_index;
+  stream_mappings_[stream_mapping_count_].active = true;
+  ++stream_mapping_count_;
+
+  NPU_LOG_FORMAT_PRINT(DEBUG, "Assigned memory block %zu to stream %p",
+                       block_index, stream);
+
+  return block_index;
+}
+
+absl::StatusOr<void*> NpuWorkspaceMemoryPool::AllocateForStream(
+    aclrtStream stream, size_t size) {
+  if (!initialized_) {
+    return absl::FailedPreconditionError(
+        "Workspace memory pool not initialized");
+  }
+
+  if (size == 0) {
+    return nullptr;
+  }
+
+  size_t aligned_size =
+      (size + kWorkspaceMemoryAlignment - 1) & ~(kWorkspaceMemoryAlignment - 1);
+
+  if (aligned_size > kWorkspaceMemoryPerStream) {
+    return absl::ResourceExhaustedError(absl::StrFormat(
+        "Requested workspace size %zu exceeds per-stream limit %zu",
+        aligned_size, kWorkspaceMemoryPerStream));
+  }
+
+  TF_ASSIGN_OR_RETURN(auto block_index, GetOrAssignStreamIndex(stream));
+
+  void* stream_memory = static_cast<char*>(device_memory_base_) +
+                        block_index * kWorkspaceMemoryPerStream;
+
+  NPU_LOG_FORMAT_PRINT(
+      DEBUG,
+      "Allocated workspace for stream %p: block=%zu, size=%zu, "
+      "aligned_size=%zu, addr=%p",
+      stream, block_index, size, aligned_size, stream_memory);
+
+  return stream_memory;
+}
+
+absl::StatusOr<void*> NpuWorkspaceMemoryPool::GetStreamMemoryBase(
+    aclrtStream stream) {
+  if (!initialized_) {
+    return absl::FailedPreconditionError(
+        "Workspace memory pool not initialized");
+  }
+
+  TF_ASSIGN_OR_RETURN(auto block_index, GetOrAssignStreamIndex(stream));
+
+  void* stream_memory = static_cast<char*>(device_memory_base_) +
+                        block_index * kWorkspaceMemoryPerStream;
+
+  return stream_memory;
+}
+
+size_t NpuWorkspaceMemoryPool::GetStreamMemorySize(aclrtStream stream) const {
+  (void)stream;
+  return kWorkspaceMemoryPerStream;
+}
+
+void NpuWorkspaceMemoryPool::ReleaseForStream(aclrtStream stream) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  uint64_t stream_id = GetStreamId(stream);
+
+  for (size_t i = 0; i < stream_mapping_count_; ++i) {
+    if (stream_mappings_[i].stream_id == stream_id &&
+        stream_mappings_[i].active) {
+      stream_mappings_[i].active = false;
+      NPU_LOG_FORMAT_PRINT(DEBUG, "Released memory block %zu for stream %p",
+                           stream_mappings_[i].block_index, stream);
+      return;
+    }
+  }
+}
+
+}  // namespace xla

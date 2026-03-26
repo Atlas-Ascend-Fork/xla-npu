@@ -19,6 +19,10 @@
 #include "xla/stream_executor/device_memory.h"
 #include "xla/stream_executor/kernel_args.h"
 #include "xla/stream_executor/stream_executor.h"
+#include "xla/xla_npu/backend/runtime/npu_workspace_memory_pool.h"
+#include "xla/xla_npu/common/npu_config.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/config_loader.h"
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 
@@ -102,15 +106,18 @@ absl::Status NpuAutoFuseKernel::Launch(
                        workspace_size, block_dim);
 
   void* workspace = nullptr;
-  DeviceMemoryBase workspace_memory;
   if (workspace_size > 0) {
-    workspace_memory = executor_->Allocate(workspace_size, /*memory_space=*/0);
-    workspace = workspace_memory.opaque();
-    CHECK_COND_AND_PRINT_NPU_LOG(workspace == nullptr,
-                                 "Failed to allocate %d bytes for workspace.",
-                                 workspace_size);
-    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace allocated: %p, size=%u", workspace,
-                         workspace_size);
+    auto* pool = xla::NpuWorkspaceMemoryPool::GetInstance();
+    CHECK_COND_AND_PRINT_NPU_LOG(pool == nullptr,
+                                 "Workspace memory pool not available.");
+
+    auto alloc_result = pool->AllocateForStream(acl_stream, workspace_size);
+    CHECK_COND_AND_PRINT_NPU_LOG(!alloc_result.ok(),
+                                 "Failed to allocate workspace from pool: %s",
+                                 alloc_result.status().ToString().c_str());
+    workspace = alloc_result.value();
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace allocated from pool: %p, size=%u",
+                         workspace, workspace_size);
   } else {
     NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace_size=%u, no workspace allocated",
                          workspace_size);
@@ -146,13 +153,13 @@ absl::Status NpuAutoFuseKernel::Launch(
     return absl::InternalError("Get args failed.");
   }
 
-  TF_RETURN_IF_ERROR(
-      stream->BlockHostUntilDone());  // 所有算子下发完了再同步
-
-  if (workspace != nullptr) {
-    executor_->Deallocate(&workspace_memory);
-    NPU_LOG_FORMAT_PRINT(DEBUG, "  workspace memory freed: %p", workspace);
+  // 根据环境变量控制是否在算子执行后同步
+  if (NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::ENABLE_SYNC_AFTER_EXECUTE)) {
+    TF_RETURN_IF_ERROR(stream->BlockHostUntilDone());
+    NPU_LOG_FORMAT_PRINT(DEBUG, "  Sync after execute enabled");
   }
+
+  // workspace 内存由内存池统一管理，不需要在这里释放
 
   NPU_LOG_FORMAT_PRINT(DEBUG,
                        "  NpuAutoFuseKernel::Launch completed successfully");
