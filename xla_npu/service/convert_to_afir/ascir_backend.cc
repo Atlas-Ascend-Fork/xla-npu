@@ -886,12 +886,13 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   std::string output_file =
       absl::StrCat(options.output_dir, "/", graph_name, ".so");
 
-  // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True"]
+  // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True", "--soc_version", "--compile_options"]
   // Based on test_ascir.py test_mode_0: jit_compile(tiling_def, host_impl, device_impl, [graph_name, output_file,
   // output_path, "--force_unknown=True"])
-
+  bool use_old_cann_style = NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
   // Prepare arguments list (4th parameter is a list)
-  PyObject* args_list = PyList_New(5);
+  int args_list_size = use_old_cann_style ? 5 : 6; // When use_old_cann_style is true, create 5, otherwise 6 elements.
+  PyObject* args_list = PyList_New(args_list_size);
   if (!args_list) {
     Py_DECREF(jit_compile_func);
     return absl::InternalError("Failed to create args_list");
@@ -910,6 +911,12 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   PyList_SetItem(args_list, 2, PyUnicode_FromString(output_path_arg.c_str()));
   PyList_SetItem(args_list, 3, PyUnicode_FromString(force_unknown_arg));
   PyList_SetItem(args_list, 4, PyUnicode_FromString(soc_version_arg.c_str()));
+
+  // Only set compile_options_arg when use_old_cann_style is false
+  if (!use_old_cann_style) {
+    const char* compile_options_arg = "--compile_options=-Wno-unused-parameter";
+    PyList_SetItem(args_list, 5, PyUnicode_FromString(compile_options_arg));
+  }
 
   // Prepare positional arguments: tiling_def, host_impl, device_impl, args_list
   PyObject* kernel_args = PyTuple_New(4);
