@@ -95,6 +95,9 @@ mkdir -p $LOG_DIR
 LOG_FILE="$LOG_DIR/build_$(date +%Y%m%d_%H%M%S).log"
 INSTALL_DOC="$LOG_DIR/BUILD_DOCUMENTATION.md"
 
+# 环境变量文件（放在 build 目录）
+ENV_FILE="$INSTALL_DIR/build/xla_npu_env"
+
 #################### 工具函数 ####################
 log_info() {
     echo -e "\033[32m[INFO]\033[0m $*" | tee -a "$LOG_FILE"
@@ -421,8 +424,28 @@ setup_env() {
     # 直接执行 export
     export JAVA_HOME="$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION"
     export PATH="$JAVA_HOME/bin:$PATH"
+
     export PATH="$BAZEL_INSTALL_DIR:$PATH"
+
+    # 生成环境变量配置文件
+    cat > "$ENV_FILE" << EOF
+# XLA-NPU 环境变量配置
+# 生成时间: $(date)
+# 使用方法: source build/xla_npu_env
+
+## XLA-NPU 编译环境变量
+export JAVA_HOME=$JAVA_INSTALL_DIR/jdk-$JAVA_VERSION
+export PATH=\$JAVA_HOME/bin:\$PATH
+
+export PATH=$BAZEL_INSTALL_DIR:\$PATH
+
+## XLA-NPU 运行环境变量
+export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/afir/Ascend-MLIR/python/
+export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=$XLA_NPU_ROOT_DIR/auto_fuse_compile_artifacts/
+EOF
+
     log_info "环境变量已设置"
+    log_info "环境变量配置文件: $ENV_FILE"
 }
 
 #################### 下载代码 ####################
@@ -651,6 +674,27 @@ uninstall_xla_npu() {
     log_info "保留 xla-npu 代码目录 ($XLA_NPU_CODE_DIR)"
 }
 
+uninstall_env() {
+    log_step "=== 卸载环境配置 ==="
+
+    # 删除环境变量配置文件
+    if [ -f "$ENV_FILE" ]; then
+        if confirm_action "是否删除环境变量配置文件 ($ENV_FILE)?"; then
+            log_info "删除环境变量配置文件..."
+            rm -f "$ENV_FILE" || log_warn "删除环境变量文件失败"
+        else
+            log_info "保留环境变量配置文件"
+        fi
+    fi
+
+    # 提示用户手动清除 ~/.bashrc 中的配置（如果添加了）
+    if grep -q "xla_npu_env" "$HOME/.bashrc" 2>/dev/null; then
+        log_info "检测到 ~/.bashrc 中包含 xla_npu_env 配置"
+        log_info "请手动编辑 ~/.bashrc 删除相关行，或执行："
+        log_info "  sed -i '/xla_npu_env/d' ~/.bashrc"
+    fi
+}
+
 uninstall_tools() {
     log_step "=== 卸载工具 (可选) ==="
 
@@ -730,6 +774,7 @@ uninstall_all() {
     # 按顺序卸载
     uninstall_jax
     uninstall_xla_npu
+    uninstall_env
 
     # 可选卸载
     echo ""
@@ -745,6 +790,8 @@ uninstall_all() {
     echo -e "\033[32m  卸载完成!\033[0m"
     echo -e "\033[32m========================================\033[0m"
     echo ""
+    echo "请执行以下命令重新加载环境变量:"
+    echo -e "\033[36msource ~/.bashrc\033[0m"
     echo ""
     echo "卸载日志: $uninstall_log"
     echo ""
@@ -933,6 +980,12 @@ main_install() {
     echo -e "\033[32m========================================\033[0m"
     echo -e "\033[32m  安装完成!\033[0m"
     echo -e "\033[32m========================================\033[0m"
+    echo ""
+    echo "请执行以下命令使环境变量生效:"
+    echo -e "\033[36msource build/xla_npu_env\033[0m"
+    echo ""
+    echo "或者添加到 ~/.bashrc 以自动加载:"
+    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc\033[0m"
     echo ""
 }
 
