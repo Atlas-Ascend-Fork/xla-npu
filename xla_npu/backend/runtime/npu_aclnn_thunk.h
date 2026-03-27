@@ -60,7 +60,8 @@ class NpuAclnnThunk : public NpuThunk {
                             AclnnExecFunc aclnnExecFunc);
 
   absl::Status PrintOutputTensor(const NpuBufferAllocations* allocations,
-                                 const std::vector<Shape>& output_param_shapes);
+                                 const std::vector<Shape>& output_param_shapes,
+                                 int device_ordinal);
 
  private:
   absl::once_flag once_flag_;

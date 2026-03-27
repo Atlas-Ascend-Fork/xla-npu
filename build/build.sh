@@ -440,6 +440,7 @@ export PATH=\$JAVA_HOME/bin:\$PATH
 export PATH=$BAZEL_INSTALL_DIR:\$PATH
 
 ## XLA-NPU 运行环境变量
+export XLA_NPU_ROOT_DIR=$XLA_NPU_ROOT_DIR
 export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/afir/Ascend-MLIR/python/
 export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=$XLA_NPU_ROOT_DIR/auto_fuse_compile_artifacts/
 EOF

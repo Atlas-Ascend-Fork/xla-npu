@@ -24,6 +24,9 @@ source ${ASCEND_HOME_PATH}/set_env.sh
 ```
 - ${ASCEND_HOME_PATH}：CANN的安装路径。
 ### 2. 配置运行期环境变量
+
+> 建议在运行任意xla-npu测试用例前，执行`source ./build/xla_npu_env`，确保所有必要运行环境变量已被配置。
+
 #### 必须配置
 - `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径(比如`/path/to/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python`) - 已在执行`./build/build.sh`后生成的`./build/xla_npu_env`中自动设置
 - `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`: 算子编译产生输出的目录， 每次编译时会在其下创建以时间戳命名的子目录 - 已在执行`./build/build.sh`后生成的`./build/xla_npu_env`中自动设置

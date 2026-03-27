@@ -21,6 +21,18 @@ void NpuConfig::Init() {
       {static_cast<int>(Key::USE_OLD_CANN_STYLE),
        {"USE_OLD_CANN_STYLE", npu::ConfigLoader::DefaultValueType(false),
         npu::ConfigLoader::ValueType::BOOL}},
+      {static_cast<int>(Key::XLA_NPU_MAX_PRINT_COUNT),
+       {"XLA_NPU_MAX_PRINT_COUNT", npu::ConfigLoader::DefaultValueType(8),
+        npu::ConfigLoader::ValueType::INT}},
+      {static_cast<int>(Key::XLA_NPU_DEVICE_ID),
+       {"XLA_NPU_DEVICE_ID", npu::ConfigLoader::DefaultValueType(0),
+        npu::ConfigLoader::ValueType::INT}},
+      {static_cast<int>(Key::ENABLE_SYNC_AFTER_EXECUTE),
+       {"ENABLE_SYNC_AFTER_EXECUTE", npu::ConfigLoader::DefaultValueType(false),
+        npu::ConfigLoader::ValueType::BOOL}},
+      {static_cast<int>(Key::ENABLE_PRINT_IO_VALUES),
+       {"ENABLE_PRINT_IO_VALUES", npu::ConfigLoader::DefaultValueType(false),
+        npu::ConfigLoader::ValueType::BOOL}},
   };
   npu::ConfigLoader::GetInstance().Register(desc_map);
 }

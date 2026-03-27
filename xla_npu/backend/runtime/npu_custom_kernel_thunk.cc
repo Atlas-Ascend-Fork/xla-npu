@@ -31,7 +31,9 @@
 #include "xla/stream_executor/stream_executor.h"
 #include "xla/tsl/platform/statusor.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
+#include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_tool.h"
+#include "xla/xla_npu/dependency/tool/config_loader.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/kernel/npu_custom_kernel.h"
 
@@ -93,7 +95,7 @@ void NpuCustomKernelThunk::PrintKernelSpec() const {
   NpuThunk::PrintKernelConfig(kernel_config);
   if (kernel_config != nullptr) {
     NpuThunk::PrintComputationGraphs(kernel_config->computation_hlo_map,
-                                      kernel_config->npu_artifact_info.name);
+                                     kernel_config->npu_artifact_info.name);
   }
 }
 
@@ -108,45 +110,36 @@ void NpuCustomKernelThunk::PrintParamShapes() const {
   }
 }
 
-void NpuCustomKernelThunk::PrintParamInfoBeforeExecute(int device_ordinal,
-    const NpuBufferAllocations* buffer_allocations,
+void NpuCustomKernelThunk::PrintParamInfoBeforeExecute(
+    int device_ordinal, const NpuBufferAllocations* buffer_allocations,
     absl::InlinedVector<se::DeviceMemoryBase, 4>& buffer_args) {
   int id = 0;
   for (const BufferAllocation::Slice& arg : args_) {
     se::DeviceMemoryBase buf = buffer_allocations->GetDeviceAddress(arg);
     buffer_args.push_back(buf);
-    const std::string& param_type = written_[id] ? "output" : "input";
-    NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d (%s) info before execute: ----", id, param_type.c_str());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)",
-        device_ordinal, arg.index(), arg.offset(), buf.opaque(), buf.size());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s",
-                         thunk_info().param_shapes[id].ToString(true).c_str());
-    NpuTool::PrintNpuDeviceMemoryValueByShape(
-        "  Value on device:", thunk_info().param_shapes[id], buf.opaque());
-
+    if (IsPrintIOValuesEnabled()) {
+      const std::string& param_type = written_[id] ? "output" : "input";
+      PrintParamInfo(id, param_type, device_ordinal, arg,
+                     thunk_info().param_shapes[id], buf.opaque());
+    }
     id++;
   }
 }
 
-void NpuCustomKernelThunk::PrintParamInfoAfterExecute(int device_ordinal,
-    const NpuBufferAllocations* buffer_allocations) {
+void NpuCustomKernelThunk::PrintParamInfoAfterExecute(
+    int device_ordinal, const NpuBufferAllocations* buffer_allocations) {
   int id = 0;
   for (const BufferAllocation::Slice& arg : args_) {
     se::DeviceMemoryBase buf = buffer_allocations->GetDeviceAddress(arg);
     const std::string& param_type = written_[id] ? "output" : "input";
-    NPU_LOG_FORMAT_PRINT(DEBUG, "---- Param %d (%s) info after execute: ----", id, param_type.c_str());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "Device id: %d, Arg: alloc #%d, offset: %d: %p (%dB)",
-        device_ordinal, arg.index(), arg.offset(), buf.opaque(), buf.size());
-    NPU_LOG_FORMAT_PRINT(DEBUG, "  Shape: %s",
-                         thunk_info().param_shapes[id].ToString(true).c_str());
-    NpuTool::PrintNpuDeviceMemoryValueByShape(
-        "  Value on device:", thunk_info().param_shapes[id], buf.opaque());
-
+    PrintParamInfo(id, param_type, device_ordinal, arg,
+                   thunk_info().param_shapes[id], buf.opaque());
     id++;
   }
 }
 
-absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) {
+absl::Status NpuCustomKernelThunk::ExecuteOnStream(
+    const ExecuteParams& params) {
   if (params.stream == nullptr) {
     const std::string& errMsg = absl::StrFormat(
         "Xla stream need to be created or init before execute npu thunk.");
@@ -164,11 +157,25 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(const ExecuteParams& params) 
   PrintKernelSpec();
   PrintParamShapes();
   absl::InlinedVector<se::DeviceMemoryBase, 4> buffer_args;
-  PrintParamInfoBeforeExecute(device_ordinal, params.buffer_allocations, buffer_args);
-  se::KernelArgsDeviceMemoryArray args(buffer_args, custom_kernel_.shared_memory_bytes());
-  auto ret = kernel->Launch(custom_kernel_.thread_dims(), custom_kernel_.block_dims(),
+  PrintParamInfoBeforeExecute(device_ordinal, params.buffer_allocations,
+                              buffer_args);
+  se::KernelArgsDeviceMemoryArray args(buffer_args,
+                                       custom_kernel_.shared_memory_bytes());
+  auto ret =
+      kernel->Launch(custom_kernel_.thread_dims(), custom_kernel_.block_dims(),
                      custom_kernel_.cluster_dims(), params.stream, args);
-  PrintParamInfoAfterExecute(device_ordinal, params.buffer_allocations);
+
+  // 使用统一的流同步函数
+  TF_RETURN_IF_ERROR(SyncStreamIfEnabled(params.stream));
+
+  // 根据环境变量控制是否打印输入输出值(包含d2h操作,影响性能)
+  // 打印输出值需要先同步流,确保数据已从设备复制到主机
+  if (NPU_CONFIG_GET_BOOL(NpuConfig::Key::ENABLE_PRINT_IO_VALUES)) {
+    // 先同步流,确保算子执行完成
+    TF_RETURN_IF_ERROR(params.stream->BlockHostUntilDone());
+    PrintParamInfoAfterExecute(device_ordinal, params.buffer_allocations);
+  }
+
   return ret;
 }
 

@@ -67,11 +67,27 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_workspace_memory_pool",
+    srcs = ["npu_workspace_memory_pool.cc"],
+    hdrs = ["npu_workspace_memory_pool.h"],
+    deps = [
+        "//xla/tsl/platform:statusor",
+        "//xla/xla_npu/dependency/interface:acl_interface",
+        "//xla/xla_npu/dependency/tool:log",
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "npu_aclnn_thunk",
     srcs = ["npu_aclnn_thunk.cc"],
     hdrs = ["npu_aclnn_thunk.h"],
     deps = [
         ":npu_thunk",
+        ":npu_workspace_memory_pool",
         "//xla/xla_npu/common:npu_tool",
         "//xla/xla_npu/service:npu_buffer_allocations",
         "//xla/xla_npu/dependency/interface:acl_interface",

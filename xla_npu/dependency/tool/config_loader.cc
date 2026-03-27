@@ -46,6 +46,18 @@ void ConfigLoader::Register(const ConfigDescMap& desc_map) {
         }
         break;
       }
+      case ValueType::INT: {
+        int64_t int_val;
+        status = tsl::ReadInt64FromEnvVar(
+            desc.str_desc, std::get<int>(desc.default_value), &int_val);
+        if (status.ok()) {
+          value_map_[key] = static_cast<int>(int_val);
+          NPU_LOG_FORMAT_PRINT(
+              INFO, "Set config key - '%s', value - '%d', type - '%d' success.",
+              desc.str_desc, int_val, static_cast<int>(desc.type));
+        }
+        break;
+      }
       default:
         NPU_LOG_FORMAT_PRINT(
             ERROR,
@@ -82,5 +94,6 @@ ConfigLoader::DefaultValueType ConfigLoader::GetConfigValue(int key) const {
 
 template std::string ConfigLoader::GetTypedValue<std::string>(int key) const;
 template bool ConfigLoader::GetTypedValue<bool>(int key) const;
+template int ConfigLoader::GetTypedValue<int>(int key) const;
 
 }  // namespace npu
