@@ -91,6 +91,11 @@ cd /path/to/xla-npu
 ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 ```
 
+### 5. 设置环境变量
+```bash
+source build/xla_npu_env
+```
+
 ## 常见问题
 
 ### 1. Python 版本不满足要求
