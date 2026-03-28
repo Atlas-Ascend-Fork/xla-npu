@@ -428,7 +428,7 @@ setup_env() {
     export PATH="$JAVA_HOME/bin:$PATH"
 
     export PATH="$BAZEL_INSTALL_DIR:$PATH"
-
+    export HERMETIC_PYTHON_VERSION=3.11
     # 检查环境变量配置文件是否已存在
     if [ -f "$ENV_FILE" ]; then
         log_info "环境变量配置文件已存在，跳过生成: $ENV_FILE"
