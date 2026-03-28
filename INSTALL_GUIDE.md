@@ -41,7 +41,7 @@ python3.11 --version
 ### 2. 安装基本工具
 ```bash
 sudo apt-get update
-sudo apt-get install wget curl git tar build-essential
+sudo apt-get install wget curl git tar
 ```
 
 ### 3. 克隆 xla-npu 仓库
@@ -93,7 +93,7 @@ ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 
 ### 5. 设置环境变量
 ```bash
-source build/xla_npu_env
+source xla_npu_env
 ```
 
 ## 常见问题
