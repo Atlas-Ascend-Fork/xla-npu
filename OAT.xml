@@ -25,7 +25,7 @@
                 <filteritem type="filename" name="BUILD" desc="skip build files"/>
 		        <filteritem type="filename" name="*.npz" desc="skip npz files"/>
 		        <filteritem type="filename" name=".gitmodules" desc="skip gitmodules files"/>
-                <filteritem type="filename" name=".png" desc="skip png files"/>
+                <filteritem type="filename" name="*.png" desc="skip png files"/>
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
