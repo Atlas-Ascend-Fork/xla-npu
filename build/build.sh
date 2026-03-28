@@ -429,8 +429,12 @@ setup_env() {
 
     export PATH="$BAZEL_INSTALL_DIR:$PATH"
 
-    # 生成环境变量配置文件
-    cat > "$ENV_FILE" << EOF
+    # 检查环境变量配置文件是否已存在
+    if [ -f "$ENV_FILE" ]; then
+        log_info "环境变量配置文件已存在，跳过生成: $ENV_FILE"
+    else
+        # 生成环境变量配置文件
+        cat > "$ENV_FILE" << EOF
 # XLA-NPU 环境变量配置
 # 生成时间: $(date)
 # 使用方法: source build/xla_npu_env
@@ -446,9 +450,10 @@ export XLA_NPU_ROOT_DIR=$XLA_NPU_ROOT_DIR
 export ASCEND_MLIR_PYTHON_PATH=$XLA_NPU_ROOT_DIR/xla_npu/dependency/external/afir/Ascend-MLIR/python/
 export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=$XLA_NPU_ROOT_DIR/auto_fuse_compile_artifacts/
 EOF
+        log_info "环境变量配置文件已生成: $ENV_FILE"
+    fi
 
     log_info "环境变量已设置"
-    log_info "环境变量配置文件: $ENV_FILE"
 }
 
 #################### 下载代码 ####################
