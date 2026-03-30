@@ -122,6 +122,7 @@ java.lang.OutOfMemoryError: Java heap space
 ```
 
 **解决方案**：
+
 减少并行编译任务数：
 ```bash
 PARALLEL_JOBS=4 ./build.sh install
@@ -141,6 +142,22 @@ sudo chown -R $USER:$USER /path/to/xla-npu
 
 # 或使用 sudo 运行脚本（不推荐）
 sudo ./build.sh install
+```
+
+### 4. ge后端场景运行时缺少依赖
+
+**错误信息**：
+```
+INTRENAL: Failed to initialize GE.
+```
+
+**解决方案**：
+
+安装依赖包：
+```bash
+pip install decorator==5.2.1
+pip install sympy==1.14.0
+pip install attrs==25.4.0
 ```
 
 ## 卸载
