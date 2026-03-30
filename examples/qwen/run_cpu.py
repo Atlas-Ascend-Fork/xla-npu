@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ----------------------------------------------------------------------------
+# Copyright (c) 2026 Huawei Technologies Co., Ltd.
+# This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+# CANN Open Software License Agreement Version 2.0 (the "License").
+# Please refer to the License for details. You may not use this file except in compliance with the License.
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+# See LICENSE in the root of the software repository for the full text of the License.
+# ----------------------------------------------------------------------------
+
+"""
+Qwen2 CPU Run - Run inference on CPU multiple times
+"""
+
+import os
+import sys
+import numpy as np
+
+# Add parent directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from common.utils import (
+    ensure_dir,
+    save_results,
+    parse_command_line_args,
+    load_inputs_from_file,
+    print_run_summary,
+)
+
+from config import (
+    CPU_OUTPUT_FILE,
+    CPU_ALL_OUTPUTS_FILE,
+)
+
+
+# Global variables for caching
+_model = None
+_params = None
+_initialized = False
+
+
+def get_model_and_params():
+    """Get or create model and parameters (cached)."""
+    global _model, _params
+    
+    if _model is None or _params is None:
+        from init_params import setup_model_and_params
+        _model, _params = setup_model_and_params()
+    
+    return _model, _params
+
+
+def run_cpu(num_runs=1, inputs=None):
+    """Run CPU inference multiple times.
+    
+    Args:
+        num_runs: Number of runs to execute
+        inputs: List of input data for each run. If None, generates new inputs.
+    """
+    from utils import generate_qwen_input, run_inference_and_save
+    from model import create_causal_mask
+    from config import CONFIG_SEQ_LEN
+    
+    # Get cached model and params
+    model, params = get_model_and_params()
+    
+    # Create attention mask (same for all runs)
+    attention_mask = create_causal_mask(CONFIG_SEQ_LEN)
+    
+    # Run inference multiple times with different inputs
+    outputs = []
+    
+    for i in range(num_runs):
+        if inputs is not None and i < len(inputs):
+            input_ids = inputs[i]
+        else:
+            input_ids = generate_qwen_input()
+        
+        print(f"[CPU] Running inference {i+1}/{num_runs}...", flush=True)
+        output, execution_time = run_inference_and_save(
+            model, params, input_ids, attention_mask, "CPU", CPU_OUTPUT_FILE
+        )
+        outputs.append(output.copy())
+        print(f"[CPU] Run {i+1}/{num_runs} completed in {execution_time:.2f} ms", flush=True)
+    
+    # Ensure output directory exists and save all outputs for comparison
+    ensure_dir(CPU_ALL_OUTPUTS_FILE)
+    all_outputs = np.stack(outputs, axis=0)
+    all_inputs = np.stack(
+        [np.array(inp) for inp in (inputs if inputs else [generate_qwen_input()] * num_runs)],
+        axis=0
+    ) if inputs else None
+    
+    save_dict = {
+        'outputs': all_outputs,
+        'num_runs': num_runs
+    }
+    if all_inputs is not None:
+        save_dict['inputs'] = all_inputs
+    save_results(CPU_ALL_OUTPUTS_FILE, **save_dict)
+    
+    return outputs, inputs
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    args = parse_command_line_args('CPU Qwen2 Run')
+    
+    num_runs = args.num_runs
+    input_file = args.input_file
+    
+    # Check if input data is provided
+    inputs = load_inputs_from_file(input_file, num_runs)
+
+    # Run CPU inference
+    outputs, inputs = run_cpu(num_runs, inputs)
+    
+    # Print results when called directly
+    print_run_summary('CPU', num_runs, print_summary=False)
