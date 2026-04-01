@@ -886,12 +886,21 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   }
 
   // Prepare output_file parameter
+  // Use absolute paths to avoid issues when ascendc_compile.main calls os.chdir()
+  char abs_output_dir_buf[PATH_MAX];
+  std::string abs_output_dir = options.output_dir;
+  if (realpath(options.output_dir.c_str(), abs_output_dir_buf) != nullptr) {
+    abs_output_dir = abs_output_dir_buf;
+  }
+  // output_file: final .so location (in abs_output_dir root)
+  // output_path: temp build working dir for jit_compile (computation subdir),
+  //   must differ from the directory containing output_file to avoid SameFileError
   std::string output_file =
-      absl::StrCat(options.output_dir, "/", graph_name, ".so");
+      absl::StrCat(abs_output_dir, "/", graph_name, ".so");
+  std::string jit_output_path =
+      absl::StrCat(abs_output_dir, "/", computation_name);
 
   // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True", "--soc_version", "--compile_options"]
-  // Based on test_ascir.py test_mode_0: jit_compile(tiling_def, host_impl, device_impl, [graph_name, output_file,
-  // output_path, "--force_unknown=True"])
   bool use_old_cann_style = NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
   // Prepare arguments list (4th parameter is a list)
   int args_list_size = use_old_cann_style ? 5 : 6; // When use_old_cann_style is true, create 5, otherwise 6 elements.
@@ -905,7 +914,7 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   std::string graph_name_arg = absl::StrCat("--graph_name=", graph_name);
   std::string output_file_arg = absl::StrCat("--output_file=", output_file);
   std::string output_path_arg =
-      absl::StrCat("--output_path=", options.output_dir);
+      absl::StrCat("--output_path=", jit_output_path);
   const char* force_unknown_arg = "--force_unknown=True";
   std::string soc_version_arg = absl::StrCat("--soc_version=", options.soc_version);
 
