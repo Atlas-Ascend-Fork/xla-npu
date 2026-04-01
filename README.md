@@ -20,9 +20,11 @@
 ## 快速上手
 ### 1. 配置CANN环境变量
 ```bash
-source ${ASCEND_INSTALL_PATH}/ascend-toolkit/set_env.sh
+# 默认路径安装
+source /usr/local/Ascend/cann/set_env.sh
+# 指定路径安装
+source ${ASCEND_INSTALL_PATH}/cann/set_env.sh
 ```
-- ${ASCEND_INSTALL_PATH}：CANN的安装路径。
 ### 2. 配置运行期环境变量
 
 > 建议在运行任意xla-npu测试用例前，执行`source ./build/xla_npu_env` （此文件在执行`./build/build.sh`后生成，且重复执行`./build/build.sh`后，不会再覆盖./build/xla_npu_env中的内容），确保所有必要运行环境变量已被配置。下面列举的环境变量中，标注为`已默认配置在xla_npu_env中`的，执行`source ./build/xla_npu_env`后，可不用再次手动配置。
