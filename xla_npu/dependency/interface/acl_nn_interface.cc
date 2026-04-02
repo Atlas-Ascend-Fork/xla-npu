@@ -17,7 +17,8 @@ limitations under the License.
 
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 REGISTER_LIBRARY(libnnopbase)
 REGISTER_FUNCTION(libnnopbase, aclCreateTensor)
@@ -27,4 +28,5 @@ REGISTER_FUNCTION(libnnopbase, aclCreateTensorList)
 REGISTER_FUNCTION(libnnopbase, aclDestroyTensorList)
 REGISTER_FUNCTION(libnnopbase, aclDestroyIntArray)
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla

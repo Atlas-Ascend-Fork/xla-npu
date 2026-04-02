@@ -23,7 +23,8 @@ limitations under the License.
 #include <string>
 #include <unordered_map>
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 /**
   FunctionLoader is used to store function address in the process.
@@ -105,13 +106,13 @@ class FunctionRegisterBuilder {
 };  // class FunctionRegisterBuilder
 
 #define REGISTER_LIBRARY(soName, ...)                            \
-  auto library_##soName = std::unique_ptr<npu::FunctionLoader>(  \
-      new npu::FunctionLoader(#soName, ##__VA_ARGS__));          \
-  static npu::FunctionRegisterBuilder register_library_##soName( \
+  auto library_##soName = std::unique_ptr<::xla::dep::FunctionLoader>(  \
+      new ::xla::dep::FunctionLoader(#soName, ##__VA_ARGS__));          \
+  static ::xla::dep::FunctionRegisterBuilder register_library_##soName( \
       #soName, library_##soName);
 
 #define REGISTER_FUNCTION(soName, funcName)                                 \
-  static npu::FunctionRegisterBuilder register_function_##funcName(#soName, \
+  static ::xla::dep::FunctionRegisterBuilder register_function_##funcName(#soName, \
                                                                    #funcName);
 
 // 错误值获取模板：默认返回-1，可特化适配不同类型
@@ -148,15 +149,16 @@ inline void GetDefaultError<void>() {
     static FuncPtr cached_func = nullptr;                             \
     if (!cached_func) {                                               \
       cached_func = reinterpret_cast<FuncPtr>(                        \
-          npu::FunctionRegister::GetInstance()->Get(#soName, #name)); \
+          ::xla::dep::FunctionRegister::GetInstance()->Get(#soName, #name)); \
     }                                                                 \
     if (cached_func) {                                                \
       return cached_func(STRIP_PARENS(args_name));                    \
     } else {                                                          \
-      return npu::GetDefaultError<ret>();                             \
+      return ::xla::dep::GetDefaultError<ret>();                             \
     }                                                                 \
   }
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_TOOL_FUNCTION_LOADER_H_

@@ -316,7 +316,7 @@ absl::Status NpuThunk::InitializeSpecialValues(
     // 尝试作为 float 处理
     if (size == sizeof(float)) {
       float value_host = 0.0f;
-      aclError ret = npu::aclrtMemcpy(&value_host, sizeof(float), device_addr,
+      aclError ret = dep::aclrtMemcpy(&value_host, sizeof(float), device_addr,
                                       sizeof(float), ACL_MEMCPY_DEVICE_TO_HOST);
       if (ret != ACL_SUCCESS) {
         continue;  // 跳过读取失败的
@@ -350,7 +350,7 @@ absl::Status NpuThunk::InitializeSpecialValues(
       }
 
       if (need_replace) {
-        ret = npu::aclrtMemcpy(device_addr, sizeof(float), &replacement_value,
+        ret = dep::aclrtMemcpy(device_addr, sizeof(float), &replacement_value,
                                sizeof(float), ACL_MEMCPY_HOST_TO_DEVICE);
         if (ret == ACL_SUCCESS) {
           NPU_LOG_FORMAT_PRINT(

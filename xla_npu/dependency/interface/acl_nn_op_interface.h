@@ -30,7 +30,8 @@ limitations under the License.
        const aclrtStream stream),                                        \
       (workspace, workspaceSize, executor, stream))
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 DECLARE_ACL_FUNC_IN_OPAPI(aclnnExpandGetWorkspaceSize,
                           (const aclTensor* self, const aclIntArray* size,
@@ -162,6 +163,7 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnAmaxGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnAmax)
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_OP_INTERFACE_H_

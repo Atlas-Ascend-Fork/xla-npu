@@ -22,7 +22,8 @@ limitations under the License.
 #define DECLARE_ACL_FUNC_IN_NNOPBASE(ret, func_name, args_type, args_name) \
   DECLARE_ACL_FUNC(libnnopbase, ret, func_name, args_type, args_name)
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclTensor*, aclCreateTensor,
                              (const int64_t* viewDims, uint64_t viewDimsNum,
@@ -51,6 +52,7 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyTensorList,
 DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyIntArray,
                              (const aclIntArray* array), (array))
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_

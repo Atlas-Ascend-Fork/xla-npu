@@ -113,7 +113,7 @@ class NpuTool {
 
     int64_t print_count = std::min(size, max_print_count);
     std::vector<printDataType> resultData(print_count, 0);
-    aclError acl_ret = npu::aclrtMemcpy(
+    aclError acl_ret = dep::aclrtMemcpy(
         resultData.data(), resultData.size() * sizeof(printDataType),
         deviceAddr, print_count * sizeof(printDataType),
         ACL_MEMCPY_DEVICE_TO_HOST);
@@ -256,7 +256,7 @@ class NpuTool {
 
     // 调用 aclCreateTensor 接口创建 aclTensor
     auto tensor =
-        npu::aclCreateTensor(data_shape.data(), data_shape.size(), data_type,
+        dep::aclCreateTensor(data_shape.data(), data_shape.size(), data_type,
                              strides.data(), 0, aclFormat::ACL_FORMAT_ND,
                              data_shape.data(), data_shape.size(), device_addr);
 

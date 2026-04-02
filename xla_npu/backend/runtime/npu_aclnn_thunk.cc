@@ -186,7 +186,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ShapeUtil::ByteSizeOfPrimitiveType(param_shapes[0].element_type());
 
       // Perform device-to-device memory copy
-      ret = npu::aclrtMemcpy(output_device_addr, input_size, input_device_addr,
+      ret = dep::aclrtMemcpy(output_device_addr, input_size, input_device_addr,
                              input_size, ACL_MEMCPY_DEVICE_TO_DEVICE);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
@@ -305,7 +305,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         auto input_addr = allocations->GetDeviceAddress(args_[0]);
         void* device_addr = input_addr.opaque();
 
-        input_tensor = npu::aclCreateTensor(
+        input_tensor = dep::aclCreateTensor(
             expanded_shape.data(), expanded_shape.size(), data_type,
             expanded_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
             expanded_shape.data(), expanded_shape.size(), device_addr);
@@ -316,11 +316,11 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         }
       }
 
-      aclIntArray* output_param_size = npu::aclCreateIntArray(
+      aclIntArray* output_param_size = dep::aclCreateIntArray(
           output_param_size_data.data(), output_param_size_data.size());
 
       // 调用 aclnnExpand 第一段接口
-      ret = npu::aclnnExpandGetWorkspaceSize(input_tensor, output_param_size,
+      ret = dep::aclnnExpandGetWorkspaceSize(input_tensor, output_param_size,
                                              acl_tensor_ptr_vector.back(),
                                              &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -331,20 +331,20 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExpand);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnExpand);
 
       // Clean up the output_param_size array
-      npu::aclDestroyIntArray(output_param_size);
+      dep::aclDestroyIntArray(output_param_size);
       break;
     }
 
     case HloOpcode::kAdd: {
       float alphaValue = 1.0;
       aclScalar* alpha =
-          npu::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+          dep::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
 
       // 调用aclnnAdd第一段接口
-      ret = npu::aclnnAddGetWorkspaceSize(
+      ret = dep::aclnnAddGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -355,12 +355,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAdd);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnAdd);
       break;
     }
 
     case HloOpcode::kTanh: {
-      ret = npu::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                            acl_tensor_ptr_vector.back(),
                                            &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -371,12 +371,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnTanh);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnTanh);
       break;
     }
 
     case HloOpcode::kMultiply: {
-      ret = npu::aclnnMulGetWorkspaceSize(
+      ret = dep::aclnnMulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -387,13 +387,13 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMul);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMul);
       break;
     }
 
     case HloOpcode::kDot: {
       int8_t cubeMathType = 0;
-      ret = npu::aclnnMatmulGetWorkspaceSize(
+      ret = dep::aclnnMatmulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize,
           &executor);
@@ -405,12 +405,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMatmul);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMatmul);
       break;
     }
 
     case HloOpcode::kDivide: {
-      ret = npu::aclnnDivGetWorkspaceSize(
+      ret = dep::aclnnDivGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -421,16 +421,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnDiv);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnDiv);
       break;
     }
 
     case HloOpcode::kSubtract: {
       float alphaValue = 1.0;
       aclScalar* alpha =
-          npu::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+          dep::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
 
-      ret = npu::aclnnSubGetWorkspaceSize(
+      ret = dep::aclnnSubGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -441,12 +441,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnSub);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSub);
       break;
     }
 
     case HloOpcode::kNegate: {
-      ret = npu::aclnnNegGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnNegGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -457,12 +457,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnNeg);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnNeg);
       break;
     }
 
     case HloOpcode::kExp: {
-      ret = npu::aclnnExpGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnExpGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -473,12 +473,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExp);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnExp);
       break;
     }
 
     case HloOpcode::kMaximum: {
-      ret = npu::aclnnMaximumGetWorkspaceSize(
+      ret = dep::aclnnMaximumGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -489,7 +489,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMaximum);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMaximum);
       break;
     }
 
@@ -508,7 +508,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         input_tensors.push_back(acl_tensor_ptr_vector[i]);
       }
       aclTensorList* tensor_list =
-          npu::aclCreateTensorList(input_tensors.data(), input_tensors.size());
+          dep::aclCreateTensorList(input_tensors.data(), input_tensors.size());
       if (tensor_list == nullptr) {
         const std::string err_msg =
             "Failed to create aclTensorList for concatenate";
@@ -517,7 +517,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       // 调用 aclnnCatGetWorkspaceSize
-      ret = npu::aclnnCatGetWorkspaceSize(tensor_list, dim,
+      ret = dep::aclnnCatGetWorkspaceSize(tensor_list, dim,
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -528,7 +528,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnCat);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnCat);
 
       // 清理 tensor_list
       break;
@@ -543,7 +543,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       // 创建维度数组
-      aclIntArray* dims = npu::aclCreateIntArray(
+      aclIntArray* dims = dep::aclCreateIntArray(
           thunk_info().dimensions.data(), thunk_info().dimensions.size());
       if (dims == nullptr) {
         const std::string err_msg =
@@ -567,7 +567,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "got %d",
             acl_tensor_ptr_vector.size());
         NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-        npu::aclDestroyIntArray(dims);
+        dep::aclDestroyIntArray(dims);
         return absl::InternalError(err_msg);
       }
 
@@ -607,23 +607,23 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
         // 调用 aclnnAmax 第一段接口
         // aclnnAmax 接口参数: input, dim, keepDim, out, workspaceSize, executor
-        ret = npu::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims,
+        ret = dep::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims,
                                              false, acl_tensor_ptr_vector[2],
                                              &workspaceSize, &executor);
         if (ret != ACL_SUCCESS) {
           const std::string err_msg = absl::StrFormat(
               "Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
           NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
 
         exec_ret =
-            ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAmax);
+            ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnAmax);
         if (!exec_ret.ok()) {
           NPU_LOG_FORMAT_PRINT(ERROR, "ExecuteAclnn for aclnnAmax failed: %s",
                                exec_ret.ToString().c_str());
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return exec_ret;
         }
       } else {
@@ -631,7 +631,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         // 调用 aclnnReduceSum 第一段接口
         // aclnnReduceSum 接口参数: input, dims, keepDims, dtype, output,
         // workspaceSize, executor
-        ret = npu::aclnnReduceSumGetWorkspaceSize(
+        ret = dep::aclnnReduceSumGetWorkspaceSize(
             acl_tensor_ptr_vector[0], dims, false, out_dtype,
             acl_tensor_ptr_vector[2], &workspaceSize, &executor);
         if (ret != ACL_SUCCESS) {
@@ -639,16 +639,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
               "Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d",
               ret);
           NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
 
         exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
-                                npu::aclnnReduceSum);
+                                dep::aclnnReduceSum);
       }
 
       // 清理维度数组
-      npu::aclDestroyIntArray(dims);
+      dep::aclDestroyIntArray(dims);
       break;
     }
 

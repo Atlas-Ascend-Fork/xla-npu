@@ -17,7 +17,8 @@ limitations under the License.
 
 #include "xla/xla_npu/dependency/tool/log.h"
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 FunctionLoader::FunctionLoader(const std::string& file_name,
                                const std::string& file_name_suffix, int flags) {
@@ -115,4 +116,5 @@ FunctionRegisterBuilder::FunctionRegisterBuilder(
   FunctionRegister::GetInstance()->Register(soName, funcName);
 }
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla

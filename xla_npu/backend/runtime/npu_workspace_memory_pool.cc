@@ -55,7 +55,7 @@ void NpuWorkspaceMemoryPool::DestroyInstance() {
 
 NpuWorkspaceMemoryPool::~NpuWorkspaceMemoryPool() {
   if (device_memory_base_ != nullptr) {
-    aclError ret = npu::aclrtFree(device_memory_base_);
+    aclError ret = dep::aclrtFree(device_memory_base_);
     if (ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(ERROR, "Failed to free workspace memory pool: %d",
                            ret);
@@ -80,7 +80,7 @@ absl::Status NpuWorkspaceMemoryPool::Initialize() {
   stream_mapping_count_ = 0;
 
   aclError ret =
-      npu::aclrtMalloc(&device_memory_base_, kWorkspaceMemoryPoolTotalSize,
+      dep::aclrtMalloc(&device_memory_base_, kWorkspaceMemoryPoolTotalSize,
                        ACL_MEM_MALLOC_HUGE_FIRST);
   if (ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrFormat(

@@ -17,7 +17,8 @@ limitations under the License.
 
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 REGISTER_LIBRARY(libopapi)
 REGISTER_FUNCTION(libopapi, aclnnExpandGetWorkspaceSize)
@@ -53,4 +54,5 @@ REGISTER_FUNCTION(libopapi, aclnnAmax)
 REGISTER_FUNCTION(libopapi, aclnnMaxDimGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnMaxDim)
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla

@@ -25,7 +25,8 @@ limitations under the License.
 #include <iostream>
 #include <string>
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 // 获取环境变量设置的日志级别
 static Log::Level GetEnvLogLevel() {
@@ -114,4 +115,5 @@ void Log::Print(const char* file_path, int line, const char* func,
   std::cout << std::endl;
 }
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla
