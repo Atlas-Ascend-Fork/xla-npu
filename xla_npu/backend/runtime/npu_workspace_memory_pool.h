@@ -35,10 +35,10 @@ namespace xla {
 inline constexpr size_t kWorkspaceMemoryPoolTotalSize =
     1ULL * 1024 * 1024 * 1024;
 
-// 每个流分配的内存块大小: 256MB
-inline constexpr size_t kWorkspaceMemoryPerStream = 256ULL * 1024 * 1024;
+// 每个流分配的内存块大小: 1GB
+inline constexpr size_t kWorkspaceMemoryPerStream = 1ULL * 1024 * 1024 * 1024;
 
-// 最大支持的并发流数量
+// 最大支持的并发流数量 （暂时只支持一个流）
 inline constexpr size_t kMaxStreamCount =
     kWorkspaceMemoryPoolTotalSize / kWorkspaceMemoryPerStream;
 

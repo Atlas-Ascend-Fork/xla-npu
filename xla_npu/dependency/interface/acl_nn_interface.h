@@ -38,6 +38,9 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclScalar*, aclCreateScalar,
                              (void* value, aclDataType dataType),
                              (value, dataType))
 
+DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyScalar,
+                             (const aclScalar* scalar), (scalar))
+
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclIntArray*, aclCreateIntArray,
                              (const int64_t* value, uint64_t size),
                              (value, size))
@@ -51,6 +54,9 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyTensorList,
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyIntArray,
                              (const aclIntArray* array), (array))
+
+DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyTensor, (const aclTensor* tensor),
+                             (tensor))
 
 }  // namespace dep
 }  // namespace xla

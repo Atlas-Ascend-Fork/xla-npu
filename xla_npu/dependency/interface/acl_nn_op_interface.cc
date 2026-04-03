@@ -54,5 +54,59 @@ REGISTER_FUNCTION(libopapi, aclnnAmax)
 REGISTER_FUNCTION(libopapi, aclnnMaxDimGetWorkspaceSize)
 REGISTER_FUNCTION(libopapi, aclnnMaxDim)
 
+// Rsqrt operation
+REGISTER_FUNCTION(libopapi, aclnnRsqrtGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnRsqrt)
+
+// Sin operation
+REGISTER_FUNCTION(libopapi, aclnnSinGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnSin)
+
+// Cos operation
+REGISTER_FUNCTION(libopapi, aclnnCosGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnCos)
+
+// Transpose/Permute operation
+REGISTER_FUNCTION(libopapi, aclnnPermuteGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnPermute)
+
+// Slice operation (V2 version)
+REGISTER_FUNCTION(libopapi, aclnnSliceV2GetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnSliceV2)
+
+// Gather operation
+REGISTER_FUNCTION(libopapi, aclnnGatherGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnGather)
+
+// Compare operations
+REGISTER_FUNCTION(libopapi, aclnnEqTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnEqTensor)
+REGISTER_FUNCTION(libopapi, aclnnNeTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnNeTensor)
+REGISTER_FUNCTION(libopapi, aclnnLtTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnLtTensor)
+REGISTER_FUNCTION(libopapi, aclnnLeTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnLeTensor)
+REGISTER_FUNCTION(libopapi, aclnnGtTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnGtTensor)
+REGISTER_FUNCTION(libopapi, aclnnGeTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnGeTensor)
+
+// SWhere (Select/Where) operation
+REGISTER_FUNCTION(libopapi, aclnnSWhereGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnSWhere)
+
+// BitwiseAnd/LogicalAnd operation
+REGISTER_FUNCTION(libopapi, aclnnBitwiseAndTensorGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnBitwiseAndTensor)
+
+// IndexSelect operation
+REGISTER_FUNCTION(libopapi, aclnnIndexSelectGetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnIndexSelect)
+
+// GatherV2 operation
+REGISTER_FUNCTION(libopapi, aclnnGatherV2GetWorkspaceSize)
+REGISTER_FUNCTION(libopapi, aclnnGatherV2)
+
 }  // namespace dep
 }  // namespace xla

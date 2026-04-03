@@ -19,6 +19,7 @@ Operations Configuration - All constants and configuration parameters
 import os
 import sys
 import numpy as np
+import jax
 import jax.numpy as jnp
 
 from common.config import (
@@ -160,5 +161,71 @@ ops_configs = [
             'x': generate_input(CONFIG_REDUCE_SHAPE)
         },
         'func': lambda x: jnp.sum(x, axis=0)
+    },
+    {
+        'name': 'Rsqrt Operation',
+        'inputs': lambda: {
+            'x': np.abs(generate_input(CONFIG_INPUT_SHAPE)) + 0.1  # Ensure all positive
+        },
+        'func': lambda x: jax.lax.rsqrt(x)
+    },
+    {
+        'name': 'Sin Operation',
+        'inputs': lambda: {
+            'x': generate_input(CONFIG_INPUT_SHAPE)
+        },
+        'func': lambda x: jnp.sin(x)
+    },
+    {
+        'name': 'Cos Operation',
+        'inputs': lambda: {
+            'x': generate_input(CONFIG_INPUT_SHAPE)
+        },
+        'func': lambda x: jnp.cos(x)
+    },
+    {
+        'name': 'Transpose Operation',
+        'inputs': lambda: {
+            'x': generate_input((2, 3, 4))
+        },
+        'func': lambda x: jnp.transpose(x, (1, 2, 0))
+    },
+    {
+        'name': 'Slice Operation',
+        'inputs': lambda: {
+            'x': generate_input((4, 4))
+        },
+        'func': lambda x: x[1:3, 0:2]
+    },
+    {
+        'name': 'Gather Operation',
+        'inputs': lambda: {
+            'x': generate_input((4, 4))
+        },
+        'func': lambda x: x[jnp.array([0, 2]), :]
+    },
+    {
+        'name': 'Compare EQ Operation',
+        'inputs': lambda: {
+            'x1': generate_input(CONFIG_INPUT_SHAPE),
+            'x2': generate_input(CONFIG_INPUT_SHAPE)
+        },
+        'func': lambda x1, x2: x1 == x2
+    },
+    {
+        'name': 'Select Operation',
+        'inputs': lambda: {
+            'x1': generate_input(CONFIG_INPUT_SHAPE),
+            'x2': generate_input(CONFIG_INPUT_SHAPE)
+        },
+        'func': lambda x1, x2: jnp.where(x1 > 0, x1, x2)
+    },
+    {
+        'name': 'And Operation',
+        'inputs': lambda: {
+            'x1': generate_input(CONFIG_INPUT_SHAPE) > 0,
+            'x2': generate_input(CONFIG_INPUT_SHAPE) > 0
+        },
+        'func': lambda x1, x2: jnp.logical_and(x1, x2)
     }
 ]

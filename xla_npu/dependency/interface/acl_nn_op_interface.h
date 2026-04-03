@@ -163,6 +163,163 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnAmaxGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnAmax)
 
+// ==================== 新增算子接口声明 ====================
+
+// Rsqrt operation: 1/sqrt(x)
+// Reference: acl_nn_op/aclnn_rsqrt.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnRsqrtGetWorkspaceSize,
+                          (const aclTensor* self, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnRsqrt)
+
+// Sin operation: sin(x)
+// Reference: acl_nn_op/aclnn_sin.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSinGetWorkspaceSize,
+                          (const aclTensor* self, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSin)
+
+// Cos operation: cos(x)
+// Reference: acl_nn_op/aclnn_cos.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnCosGetWorkspaceSize,
+                          (const aclTensor* input, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (input, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnCos)
+
+// Transpose/Permute operation
+// Reference: acl_nn_op/aclnn_permute.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnPermuteGetWorkspaceSize,
+                          (const aclTensor* self, const aclIntArray* dims,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, dims, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnPermute)
+
+// Slice operation (V2 version with array parameters)
+// Reference: acl_nn_op/aclnn_slice_v2.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSliceV2GetWorkspaceSize,
+                          (const aclTensor* self, const aclIntArray* starts,
+                           const aclIntArray* ends, const aclIntArray* axes,
+                           const aclIntArray* steps, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, starts, ends, axes, steps, out, workspaceSize,
+                           executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSliceV2)
+
+// Gather operation
+// Reference: acl_nn_op/aclnn_gather.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnGatherGetWorkspaceSize,
+                          (const aclTensor* self, int64_t dim,
+                           const aclTensor* index, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dim, index, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnGather)
+
+// Compare operations (Tensor-Tensor comparison)
+// Reference: acl_nn_op/aclnn_eq_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnEqTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnEqTensor)
+
+// Reference: acl_nn_op/aclnn_ne_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnNeTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnNeTensor)
+
+// Reference: acl_nn_op/aclnn_lt_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnLtTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnLtTensor)
+
+// Reference: acl_nn_op/aclnn_le_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnLeTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnLeTensor)
+
+// Reference: acl_nn_op/aclnn_gt_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnGtTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnGtTensor)
+
+// Reference: acl_nn_op/aclnn_ge_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnGeTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnGeTensor)
+
+// SWhere (Select/Where) operation: select elements from self or other based on condition
+// Reference: acl_nn_op/aclnn_s_where.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSWhereGetWorkspaceSize,
+                          (const aclTensor* condition, const aclTensor* self,
+                           const aclTensor* other, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (condition, self, other, out, workspaceSize,
+                           executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSWhere)
+
+// BitwiseAnd/LogicalAnd operation: element-wise logical/bitwise AND
+// Reference: acl_nn_op/aclnn_bitwise_and_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnBitwiseAndTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnBitwiseAndTensor)
+
+// IndexSelect operation: gather elements along specified dimension
+// Reference: acl_nn_op/aclnn_index_select.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnIndexSelectGetWorkspaceSize,
+                          (const aclTensor* self, int64_t dim,
+                           const aclTensor* index, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dim, index, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnIndexSelect)
+
+// GatherV2 operation: gather elements along specified dimension
+// Reference: acl_nn_op/aclnn_gather_v2.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnGatherV2GetWorkspaceSize,
+                          (const aclTensor* self, int64_t dim,
+                           const aclTensor* index, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, dim, index, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnGatherV2)
+
 }  // namespace dep
 }  // namespace xla
 

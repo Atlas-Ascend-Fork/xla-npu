@@ -205,6 +205,26 @@ class NpuTool {
 
   static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {
     switch (type) {
+      case PrimitiveType::PRED:
+        return aclDataType::ACL_BOOL;
+      case PrimitiveType::F32:
+        return aclDataType::ACL_FLOAT;
+      case PrimitiveType::F64:
+        return aclDataType::ACL_DOUBLE;
+      case PrimitiveType::S32:
+        return aclDataType::ACL_INT32;
+      case PrimitiveType::S64:
+        return aclDataType::ACL_INT64;
+      case PrimitiveType::S16:
+        return aclDataType::ACL_INT16;
+      case PrimitiveType::S8:
+        return aclDataType::ACL_INT8;
+      case PrimitiveType::U8:
+        return aclDataType::ACL_UINT8;
+      case PrimitiveType::F16:
+        return aclDataType::ACL_FLOAT16;
+      case PrimitiveType::BF16:
+        return aclDataType::ACL_BF16;
       default:
         return aclDataType::ACL_FLOAT;
     };

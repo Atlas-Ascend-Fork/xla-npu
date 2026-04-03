@@ -35,6 +35,7 @@ REGISTER_FUNCTION(libascendcl, aclrtMemcpy)
 REGISTER_FUNCTION(libascendcl, aclrtMemset)
 REGISTER_FUNCTION(libascendcl, aclrtMallocHost)
 REGISTER_FUNCTION(libascendcl, aclrtFreeHost)
+
 REGISTER_FUNCTION(libascendcl, aclrtBinaryLoadFromFile)
 REGISTER_FUNCTION(libascendcl, aclrtBinaryLoadFromData)
 REGISTER_FUNCTION(libascendcl, aclrtBinaryGetFunction)

@@ -26,7 +26,9 @@ REGISTER_FUNCTION(libnnopbase, aclCreateScalar)
 REGISTER_FUNCTION(libnnopbase, aclCreateIntArray)
 REGISTER_FUNCTION(libnnopbase, aclCreateTensorList)
 REGISTER_FUNCTION(libnnopbase, aclDestroyTensorList)
+REGISTER_FUNCTION(libnnopbase, aclDestroyScalar)
 REGISTER_FUNCTION(libnnopbase, aclDestroyIntArray)
+REGISTER_FUNCTION(libnnopbase, aclDestroyTensor)
 
 }  // namespace dep
 }  // namespace xla
