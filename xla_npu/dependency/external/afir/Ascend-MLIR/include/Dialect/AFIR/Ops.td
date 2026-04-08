@@ -43,5 +43,6 @@ include "Dialect/AFIR/Ops/Basic/math.td"
 
 include "Dialect/AFIR/Ops/Adv/concat.td"
 include "Dialect/AFIR/Ops/Adv/reduce.td"
+include "Dialect/AFIR/Ops/Adv/transpose.td"
 
 #endif // AFIR_OPS

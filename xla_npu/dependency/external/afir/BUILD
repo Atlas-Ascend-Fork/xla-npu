@@ -99,6 +99,7 @@ cc_library(
         "Ascend-MLIR/lib/Dialect/AFIR/Dialect.cpp",
         "Ascend-MLIR/lib/Dialect/AFIR/Ops/Adv/concat.cpp",
         "Ascend-MLIR/lib/Dialect/AFIR/Ops/Adv/reduce.cpp",
+        "Ascend-MLIR/lib/Dialect/AFIR/Ops/Adv/transpose.cpp",
         "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/broadcast.cpp",
         "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/cast.cpp",
         "Ascend-MLIR/lib/Dialect/AFIR/Ops/Basic/condition.cpp",

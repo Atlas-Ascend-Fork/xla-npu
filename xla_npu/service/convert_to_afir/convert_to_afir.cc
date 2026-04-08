@@ -110,6 +110,10 @@ class HloToAfirConverter {
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertConcatenateOp(
       const HloInstruction* instruction);
+  absl::StatusOr<mlir::Value> ConvertTransposeOp(
+      const HloInstruction* instruction);
+  absl::StatusOr<mlir::Value> ConvertSliceOp(
+      const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertFusionOp(
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertCallOp(const HloInstruction* instruction);
@@ -466,6 +470,12 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertInstruction(
 
     case HloOpcode::kConcatenate:
       return ConvertConcatenateOp(instruction);
+
+    case HloOpcode::kTranspose:
+      return ConvertTransposeOp(instruction);
+
+    case HloOpcode::kSlice:
+      return ConvertSliceOp(instruction);
 
     case HloOpcode::kFusion:
       return ConvertFusionOp(instruction);
@@ -1177,6 +1187,166 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConcatenateOp(
   // For now, return unimplemented
   return absl::UnimplementedError(
       "Concatenate operation requires emit_afir_dialect to be enabled");
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertTransposeOp(
+    const HloInstruction* instruction) {
+  if (instruction->operand_count() != 1) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Transpose operation must have 1 operand, got ",
+                     instruction->operand_count()));
+  }
+
+  mlir::Location loc = ConvertLocation(instruction);
+  mlir::Value operand = value_map_[instruction->operand(0)];
+  mlir::Type result_type = ConvertShape(instruction->shape());
+
+  if (!options_.emit_afir_dialect) {
+    return absl::UnimplementedError(
+        "Transpose operation requires emit_afir_dialect to be enabled");
+  }
+
+  auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+  if (!result_tensor_type) {
+    return absl::InternalError("Transpose result must be a ranked tensor");
+  }
+
+  int64_t rank = result_tensor_type.getRank();
+
+  // Build identity indexing maps for input and result
+  auto identity_map = GetIdentityAffineMap(rank);
+  llvm::SmallVector<mlir::AffineMap> maps;
+  maps.push_back(identity_map);
+  maps.push_back(identity_map);
+  auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+  auto output_attr = CreateDefaultOutputAttr(result_type);
+  llvm::SmallVector<mlir::Attribute> output_attrs;
+  output_attrs.push_back(output_attr);
+  auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+  // Build permutation attribute from HLO instruction dimensions
+  const auto& dimensions = instruction->dimensions();
+  llvm::SmallVector<mlir::Attribute> perm_attrs;
+  for (int64_t dim : dimensions) {
+    perm_attrs.push_back(builder_.getI64IntegerAttr(dim));
+  }
+  auto permutation_attr = builder_.getArrayAttr(perm_attrs);
+
+  auto transpose_op = builder_.create<mlir::afir::TransposeOp>(
+      loc, result_type, operand, permutation_attr, indexing_maps_attr,
+      nullptr,                         // loop_axis
+      builder_.getDictionaryAttr({}),  // ir_attr_def
+      nullptr,                         // tmp_buffers
+      outputs_array);
+
+  return transpose_op.getResult();
+}
+
+absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSliceOp(
+    const HloInstruction* instruction) {
+  if (instruction->operand_count() != 1) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Slice operation must have 1 operand, got ",
+                     instruction->operand_count()));
+  }
+
+  mlir::Location loc = ConvertLocation(instruction);
+  mlir::Value operand = value_map_[instruction->operand(0)];
+  mlir::Type result_type = ConvertShape(instruction->shape());
+
+  if (!options_.emit_afir_dialect) {
+    return absl::UnimplementedError(
+        "Slice operation requires emit_afir_dialect to be enabled");
+  }
+
+  auto source_tensor_type =
+      llvm::dyn_cast<mlir::RankedTensorType>(operand.getType());
+  if (!source_tensor_type) {
+    return absl::InternalError("Slice source must be a ranked tensor");
+  }
+  auto result_tensor_type =
+      llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+  if (!result_tensor_type) {
+    return absl::InternalError("Slice result must be a ranked tensor");
+  }
+
+  int64_t rank = source_tensor_type.getRank();
+  auto source_shape = source_tensor_type.getShape();
+
+  // Compute base_offset = sum(start[i] * product(source_shape[i+1..rank-1]))
+  int64_t offset = 0;
+  for (int64_t i = 0; i < rank; ++i) {
+    int64_t phys = 1;
+    for (int64_t j = i + 1; j < rank; ++j) {
+      phys *= source_shape[j];
+    }
+    offset += instruction->slice_starts(i) * phys;
+  }
+
+  // ir_attr_def carries:
+  //   "offset": linear base offset into the source buffer
+  //   "source_shape": original source shape for strides computation in AFIRToASCIRText
+  std::string source_shape_str;
+  for (int64_t i = 0; i < rank; ++i) {
+    if (i > 0) source_shape_str += ",";
+    source_shape_str += std::to_string(source_shape[i]);
+  }
+  auto ir_attr_def = builder_.getDictionaryAttr(
+      {builder_.getNamedAttr(
+           "offset", builder_.getStringAttr(std::to_string(offset))),
+       builder_.getNamedAttr(
+           "source_shape", builder_.getStringAttr(source_shape_str))});
+
+  // The slice-load operand must share the same type as the result (slice output shape).
+  // operand is the result of the parameter LoadOp; we:
+  //   1. Take the parameter LoadOp's input (block argument) as the real operand
+  //   2. Update the block argument's type to result_type (slice output shape)
+  //   3. Erase the now-unused parameter LoadOp
+  mlir::Value raw_arg = operand;
+  mlir::Operation* param_load_op = operand.getDefiningOp();
+  if (param_load_op && llvm::isa<mlir::afir::LoadOp>(param_load_op) &&
+      param_load_op->getNumOperands() == 1) {
+    raw_arg = param_load_op->getOperand(0);
+    param_load_op->erase();
+  }
+  // Update the block argument type to match result_type so LoadOp verify passes,
+  // and sync the enclosing func's signature so func type stays consistent.
+  raw_arg.setType(result_type);
+  if (auto block_arg = llvm::dyn_cast<mlir::BlockArgument>(raw_arg)) {
+    mlir::Block* block = block_arg.getOwner();
+    if (auto func_op = llvm::dyn_cast<mlir::func::FuncOp>(
+            block->getParentOp())) {
+      unsigned arg_idx = block_arg.getArgNumber();
+      llvm::SmallVector<mlir::Type> new_input_types(
+          func_op.getFunctionType().getInputs().begin(),
+          func_op.getFunctionType().getInputs().end());
+      new_input_types[arg_idx] = result_type;
+      func_op.setType(builder_.getFunctionType(
+          new_input_types, func_op.getFunctionType().getResults()));
+    }
+  }
+
+  // LoadOp takes exactly ONE identity indexing map.
+  int64_t result_rank = result_tensor_type.getRank();
+  llvm::SmallVector<mlir::AffineMap> maps;
+  maps.push_back(GetIdentityAffineMap(result_rank));
+  auto indexing_maps_attr = CreateIndexingMaps(maps);
+
+  auto output_attr = CreateDefaultOutputAttr(result_type);
+  llvm::SmallVector<mlir::Attribute> output_attrs;
+  output_attrs.push_back(output_attr);
+  auto outputs_array = builder_.getArrayAttr(output_attrs);
+
+  auto load_op = builder_.create<mlir::afir::LoadOp>(
+      loc, result_type, raw_arg,
+      indexing_maps_attr,
+      nullptr,      // loop_axis
+      ir_attr_def,
+      nullptr,      // tmp_buffers
+      outputs_array);
+
+  return load_op.getResult();
 }
 
 absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertBroadcastOp(

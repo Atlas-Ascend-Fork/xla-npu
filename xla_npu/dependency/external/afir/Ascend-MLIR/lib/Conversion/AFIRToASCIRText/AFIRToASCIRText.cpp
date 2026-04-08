@@ -118,7 +118,7 @@ AFIRToASCIRTextPass::OpInfo AFIRToASCIRTextPass::getOpInfo(StringRef opName) {
         {"sign", {1, 5, 3, false}},         {"logical_or", {1, 5, 3, false}}, {"logical_and", {1, 5, 3, false}},
         {"ge", {1, 5, 3, false}},           {"eq", {1, 5, 3, false}},         {"ne", {1, 5, 3, false}},
         {"gt", {1, 5, 3, false}},           {"le", {1, 5, 3, false}},         {"lt", {1, 5, 3, false}},
-        {"clip_by_value", {1, 5, 3, false}}};
+        {"clip_by_value", {1, 5, 3, false}},  {"transpose", {1, 3, 6, false}}};
 
     auto it = opInfoMap.find(opName);
     if (it != opInfoMap.end()) {
@@ -561,17 +561,41 @@ std::string AFIRToASCIRTextPass::generateTensorAttr(Operation* op, const llvm::S
                 os << "      repeats: \"1\"\n";
             }
 
-            // Generate strides directly using column-major layout
-            // For a tensor with shape [d0, d1, d2, ...], strides are [d1*d2*..., d2*..., ..., 1]
+            // For slice-derived LoadOp, strides are computed from the original
+            // source shape (stored in ir_attr_def["source_shape"]), while the
+            // zero-gate is keyed on the result shape (shape[i]).
+            // For all other ops, strideShape == shape (result shape).
+            llvm::SmallVector<int64_t> sourceShapeVec;
+            ArrayRef<int64_t> strideShape = shape;
+            if (auto irAttrDef = op->getAttrOfType<DictionaryAttr>("ir_attr_def")) {
+                if (auto srcShapeAttr = dyn_cast_or_null<StringAttr>(
+                        irAttrDef.get("source_shape"))) {
+                    llvm::StringRef s = srcShapeAttr.getValue();
+                    while (!s.empty()) {
+                        llvm::StringRef token;
+                        std::tie(token, s) = s.split(',');
+                        int64_t v = 0;
+                        token.trim().getAsInteger(10, v);
+                        sourceShapeVec.push_back(v);
+                    }
+                    if ((int)sourceShapeVec.size() == rank)
+                        strideShape = sourceShapeVec;
+                }
+            }
+
+            // Generate strides using column-major layout.
+            // Zero-gate: if result shape[i] == 1, stride = 0 (keyed on result shape).
+            // Otherwise: stride computed from strideShape (source shape for slice LoadOp).
             for (int i = 0; i < std::min(numAxes, rank); i++) {
-                int64_t repeat_val = shape[i];
+                int64_t repeat_val = shape[i];  // zero-gate uses result shape
 
                 if (repeat_val == 1) {
-                    // dimension with shape 1, stride is 0
+                    // dimension with repeat 1, stride is 0
                     os << "      strides: \"0\"\n";
                 } else {
-                    // Calculate stride for this dimension (column-major)
-                    int64_t stride = calculateStrideForShapeIndex(i, shape);
+                    // Calculate stride from strideShape (source shape for slice LoadOp,
+                    // result shape for all other ops)
+                    int64_t stride = calculateStrideForShapeIndex(i, strideShape);
                     os << "      strides: \"" << stride << "\"\n";
                 }
             }

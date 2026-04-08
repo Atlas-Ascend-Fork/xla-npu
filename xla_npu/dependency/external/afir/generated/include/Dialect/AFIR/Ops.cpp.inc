@@ -73,6 +73,7 @@
 ::mlir::afir::SubOp,
 ::mlir::afir::SumOp,
 ::mlir::afir::TanhOp,
+::mlir::afir::TransposeOp,
 ::mlir::afir::TrueDivOp,
 ::mlir::afir::WhereOp
 #endif // GET_OP_LIST
@@ -31986,6 +31987,571 @@ void WhereOp::getEffects(::llvm::SmallVectorImpl<::mlir::SideEffects::EffectInst
 
 } // namespace mlir::afir
 MLIR_DEFINE_EXPLICIT_TYPE_ID(::mlir::afir::WhereOp)
+
+namespace mlir::afir {
+
+
+//===----------------------------------------------------------------------===//
+// ::mlir::afir::TransposeOp definitions
+//===----------------------------------------------------------------------===//
+
+namespace detail {
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getIndexingMapsAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::dyn_cast_or_null<::mlir::ArrayAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getIndexingMapsAttrName(*odsOpName)));
+  return attr;
+}
+
+::std::optional< ::mlir::ArrayAttr > TransposeOpGenericAdaptorBase::getIndexingMaps() {
+  auto attr = getIndexingMapsAttr();
+  return attr ? ::std::optional< ::mlir::ArrayAttr >(attr) : (::std::nullopt);
+}
+
+::mlir::DictionaryAttr TransposeOpGenericAdaptorBase::getIrAttrDefAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::dyn_cast_or_null<::mlir::DictionaryAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getIrAttrDefAttrName(*odsOpName)));
+  if (!attr)
+    attr = ::mlir::Builder(odsAttrs.getContext()).getDictionaryAttr({});
+  return attr;
+}
+
+::mlir::DictionaryAttr TransposeOpGenericAdaptorBase::getIrAttrDef() {
+  auto attr = getIrAttrDefAttr();
+    if (!attr)
+      return ::mlir::Builder(odsAttrs.getContext()).getDictionaryAttr({});
+  return attr;
+}
+
+::mlir::IntegerAttr TransposeOpGenericAdaptorBase::getLoopAxisAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::dyn_cast_or_null<::mlir::IntegerAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getLoopAxisAttrName(*odsOpName)));
+  if (!attr)
+    attr = ::mlir::Builder(odsAttrs.getContext()).getIntegerAttr(::mlir::Builder(odsAttrs.getContext()).getIntegerType(32), -1);
+  return attr;
+}
+
+uint32_t TransposeOpGenericAdaptorBase::getLoopAxis() {
+  auto attr = getLoopAxisAttr();
+    if (!attr)
+      return ::mlir::Builder(odsAttrs.getContext()).getIntegerAttr(::mlir::Builder(odsAttrs.getContext()).getIntegerType(32), -1).getValue().getZExtValue();
+  return attr.getValue().getZExtValue();
+}
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getOutputsAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::dyn_cast_or_null<::mlir::ArrayAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getOutputsAttrName(*odsOpName)));
+  return attr;
+}
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getOutputs() {
+  auto attr = getOutputsAttr();
+  return attr;
+}
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getPermutationAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::cast<::mlir::ArrayAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getPermutationAttrName(*odsOpName)));
+  return attr;
+}
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getPermutation() {
+  auto attr = getPermutationAttr();
+  return attr;
+}
+
+::mlir::ArrayAttr TransposeOpGenericAdaptorBase::getTmpBuffersAttr() {
+  assert(odsAttrs && "no attributes when constructing adapter");
+  auto attr = ::llvm::dyn_cast_or_null<::mlir::ArrayAttr>(::mlir::impl::getAttrFromSortedRange(odsAttrs.begin() + 0, odsAttrs.end() - 0, TransposeOp::getTmpBuffersAttrName(*odsOpName)));
+  return attr;
+}
+
+::std::optional< ::mlir::ArrayAttr > TransposeOpGenericAdaptorBase::getTmpBuffers() {
+  auto attr = getTmpBuffersAttr();
+  return attr ? ::std::optional< ::mlir::ArrayAttr >(attr) : (::std::nullopt);
+}
+
+
+} // namespace detail
+TransposeOpAdaptor::TransposeOpAdaptor(TransposeOp op) : TransposeOpGenericAdaptor(op->getOperands(), op) {}
+
+::llvm::LogicalResult TransposeOpAdaptor::verify(::mlir::Location loc) {
+  auto namedAttrRange = odsAttrs;
+  auto namedAttrIt = namedAttrRange.begin();
+  ::mlir::Attribute tblgen_permutation;
+
+  while (true) {
+    if (namedAttrIt == namedAttrRange.end())
+      return emitError(loc, "'afir.transpose' op requires attribute 'permutation'");
+    if (namedAttrIt->getName() == TransposeOp::getPermutationAttrName(*odsOpName)) {
+      tblgen_permutation = namedAttrIt->getValue();
+      break;
+    }
+    ++namedAttrIt;
+  }
+  ::mlir::Attribute tblgen_indexing_maps;
+  ::mlir::Attribute tblgen_ir_attr_def;
+  ::mlir::Attribute tblgen_loop_axis;
+  ::mlir::Attribute tblgen_outputs;
+  ::mlir::Attribute tblgen_tmp_buffers;
+  while (true) {
+    if (namedAttrIt == namedAttrRange.end()) {
+      break;
+    }
+    else if (namedAttrIt->getName() == TransposeOp::getIndexingMapsAttrName(*odsOpName)) {
+      tblgen_indexing_maps = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == TransposeOp::getIrAttrDefAttrName(*odsOpName)) {
+      tblgen_ir_attr_def = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == TransposeOp::getLoopAxisAttrName(*odsOpName)) {
+      tblgen_loop_axis = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == TransposeOp::getOutputsAttrName(*odsOpName)) {
+      tblgen_outputs = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == TransposeOp::getTmpBuffersAttrName(*odsOpName)) {
+      tblgen_tmp_buffers = namedAttrIt->getValue();
+    }
+    ++namedAttrIt;
+  }
+
+  if (tblgen_permutation && !(((::llvm::isa<::mlir::ArrayAttr>(tblgen_permutation))) && (::llvm::all_of(::llvm::cast<::mlir::ArrayAttr>(tblgen_permutation), [&](::mlir::Attribute attr) { return attr && ((::llvm::isa<::mlir::IntegerAttr>(attr))) && ((::llvm::cast<::mlir::IntegerAttr>(attr).getType().isSignlessInteger(64))); }))))
+    return emitError(loc, "'afir.transpose' op attribute 'permutation' failed to satisfy constraint: 64-bit integer array attribute");
+
+  if (tblgen_indexing_maps && !(((::llvm::isa<::mlir::ArrayAttr>(tblgen_indexing_maps))) && (::llvm::all_of(::llvm::cast<::mlir::ArrayAttr>(tblgen_indexing_maps), [&](::mlir::Attribute attr) { return attr && ((::llvm::isa<::mlir::AffineMapAttr>(attr))); }))))
+    return emitError(loc, "'afir.transpose' op attribute 'indexing_maps' failed to satisfy constraint: AffineMap array attribute");
+
+  if (tblgen_loop_axis && !(((::llvm::isa<::mlir::IntegerAttr>(tblgen_loop_axis))) && ((::llvm::cast<::mlir::IntegerAttr>(tblgen_loop_axis).getType().isSignlessInteger(32)))))
+    return emitError(loc, "'afir.transpose' op attribute 'loop_axis' failed to satisfy constraint: 32-bit signless integer attribute");
+
+  if (tblgen_ir_attr_def && !((::llvm::isa<::mlir::DictionaryAttr>(tblgen_ir_attr_def))))
+    return emitError(loc, "'afir.transpose' op attribute 'ir_attr_def' failed to satisfy constraint: dictionary of named attribute values");
+
+  if (tblgen_tmp_buffers && !(((::llvm::isa<::mlir::ArrayAttr>(tblgen_tmp_buffers))) && (::llvm::all_of(::llvm::cast<::mlir::ArrayAttr>(tblgen_tmp_buffers), [&](::mlir::Attribute attr) { return attr && ((::llvm::isa<::mlir::afir::TmpBufDescAttr>(attr))); }))))
+    return emitError(loc, "'afir.transpose' op attribute 'tmp_buffers' failed to satisfy constraint: Array of TmpBufDesc attributes");
+
+  if (tblgen_outputs && !(((::llvm::isa<::mlir::ArrayAttr>(tblgen_outputs))) && (::llvm::all_of(::llvm::cast<::mlir::ArrayAttr>(tblgen_outputs), [&](::mlir::Attribute attr) { return attr && ((::llvm::isa<::mlir::afir::AscTensorGroupsAttr>(attr))); }))))
+    return emitError(loc, "'afir.transpose' op attribute 'outputs' failed to satisfy constraint: Array of AscTensorGroups attributes");
+  return ::mlir::success();
+}
+
+::std::optional< ::mlir::ArrayAttr > TransposeOp::getIndexingMaps() {
+  auto attr = getIndexingMapsAttr();
+  return attr ? ::std::optional< ::mlir::ArrayAttr >(attr) : (::std::nullopt);
+}
+
+::mlir::DictionaryAttr TransposeOp::getIrAttrDef() {
+  auto attr = getIrAttrDefAttr();
+    if (!attr)
+      return ::mlir::Builder((*this)->getContext()).getDictionaryAttr({});
+  return attr;
+}
+
+uint32_t TransposeOp::getLoopAxis() {
+  auto attr = getLoopAxisAttr();
+    if (!attr)
+      return ::mlir::Builder((*this)->getContext()).getIntegerAttr(::mlir::Builder((*this)->getContext()).getIntegerType(32), -1).getValue().getZExtValue();
+  return attr.getValue().getZExtValue();
+}
+
+::mlir::ArrayAttr TransposeOp::getOutputs() {
+  auto attr = getOutputsAttr();
+  return attr;
+}
+
+::mlir::ArrayAttr TransposeOp::getPermutation() {
+  auto attr = getPermutationAttr();
+  return attr;
+}
+
+::std::optional< ::mlir::ArrayAttr > TransposeOp::getTmpBuffers() {
+  auto attr = getTmpBuffersAttr();
+  return attr ? ::std::optional< ::mlir::ArrayAttr >(attr) : (::std::nullopt);
+}
+
+void TransposeOp::setLoopAxis(::std::optional<uint32_t> attrValue) {
+    if (attrValue)
+      return (*this)->setAttr(getLoopAxisAttrName(), ::mlir::Builder((*this)->getContext()).getIntegerAttr(::mlir::Builder((*this)->getContext()).getIntegerType(32), *attrValue));
+    (*this)->removeAttr(getLoopAxisAttrName());
+}
+
+void TransposeOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ::mlir::Type result, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  odsState.addOperands(input);
+  odsState.addAttribute(getPermutationAttrName(odsState.name), permutation);
+  if (indexing_maps) {
+    odsState.addAttribute(getIndexingMapsAttrName(odsState.name), indexing_maps);
+  }
+  if (loop_axis) {
+    odsState.addAttribute(getLoopAxisAttrName(odsState.name), loop_axis);
+  }
+  if (ir_attr_def) {
+    odsState.addAttribute(getIrAttrDefAttrName(odsState.name), ir_attr_def);
+  }
+  if (tmp_buffers) {
+    odsState.addAttribute(getTmpBuffersAttrName(odsState.name), tmp_buffers);
+  }
+  if (outputs) {
+    odsState.addAttribute(getOutputsAttrName(odsState.name), outputs);
+  }
+  odsState.addTypes(result);
+}
+
+TransposeOp TransposeOp::create(::mlir::OpBuilder &builder, ::mlir::Location location, ::mlir::Type result, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  ::mlir::OperationState __state__(location, getOperationName());
+  build(builder, __state__, std::forward<decltype(result)>(result), std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+  auto __res__ = ::llvm::dyn_cast<TransposeOp>(builder.create(__state__));
+  assert(__res__ && "builder didn't return the right type");
+  return __res__;
+}
+
+TransposeOp TransposeOp::create(::mlir::ImplicitLocOpBuilder &builder, ::mlir::Type result, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  return create(builder, builder.getLoc(), std::forward<decltype(result)>(result), std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+}
+
+void TransposeOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  odsState.addOperands(input);
+  odsState.addAttribute(getPermutationAttrName(odsState.name), permutation);
+  if (indexing_maps) {
+    odsState.addAttribute(getIndexingMapsAttrName(odsState.name), indexing_maps);
+  }
+  if (loop_axis) {
+    odsState.addAttribute(getLoopAxisAttrName(odsState.name), loop_axis);
+  }
+  if (ir_attr_def) {
+    odsState.addAttribute(getIrAttrDefAttrName(odsState.name), ir_attr_def);
+  }
+  if (tmp_buffers) {
+    odsState.addAttribute(getTmpBuffersAttrName(odsState.name), tmp_buffers);
+  }
+  if (outputs) {
+    odsState.addAttribute(getOutputsAttrName(odsState.name), outputs);
+  }
+
+        ::llvm::SmallVector<::mlir::Type, 2> inferredReturnTypes;
+        if (::mlir::succeeded(TransposeOp::inferReturnTypes(odsBuilder.getContext(),
+                      odsState.location, odsState.operands,
+                      odsState.attributes.getDictionary(odsState.getContext()),
+                      odsState.getRawProperties(),
+                      odsState.regions, inferredReturnTypes)))
+          odsState.addTypes(inferredReturnTypes);
+        else
+          ::mlir::detail::reportFatalInferReturnTypesError(odsState);
+
+}
+
+TransposeOp TransposeOp::create(::mlir::OpBuilder &builder, ::mlir::Location location, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  ::mlir::OperationState __state__(location, getOperationName());
+  build(builder, __state__, std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+  auto __res__ = ::llvm::dyn_cast<TransposeOp>(builder.create(__state__));
+  assert(__res__ && "builder didn't return the right type");
+  return __res__;
+}
+
+TransposeOp TransposeOp::create(::mlir::ImplicitLocOpBuilder &builder, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  return create(builder, builder.getLoc(), std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+}
+
+void TransposeOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ::mlir::TypeRange resultTypes, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  odsState.addOperands(input);
+  odsState.addAttribute(getPermutationAttrName(odsState.name), permutation);
+  if (indexing_maps) {
+    odsState.addAttribute(getIndexingMapsAttrName(odsState.name), indexing_maps);
+  }
+  if (loop_axis) {
+    odsState.addAttribute(getLoopAxisAttrName(odsState.name), loop_axis);
+  }
+  if (ir_attr_def) {
+    odsState.addAttribute(getIrAttrDefAttrName(odsState.name), ir_attr_def);
+  }
+  if (tmp_buffers) {
+    odsState.addAttribute(getTmpBuffersAttrName(odsState.name), tmp_buffers);
+  }
+  if (outputs) {
+    odsState.addAttribute(getOutputsAttrName(odsState.name), outputs);
+  }
+  assert(resultTypes.size() == 1u && "mismatched number of results");
+  odsState.addTypes(resultTypes);
+}
+
+TransposeOp TransposeOp::create(::mlir::OpBuilder &builder, ::mlir::Location location, ::mlir::TypeRange resultTypes, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  ::mlir::OperationState __state__(location, getOperationName());
+  build(builder, __state__, std::forward<decltype(resultTypes)>(resultTypes), std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+  auto __res__ = ::llvm::dyn_cast<TransposeOp>(builder.create(__state__));
+  assert(__res__ && "builder didn't return the right type");
+  return __res__;
+}
+
+TransposeOp TransposeOp::create(::mlir::ImplicitLocOpBuilder &builder, ::mlir::TypeRange resultTypes, ::mlir::Value input, ::mlir::ArrayAttr permutation, /*optional*/::mlir::ArrayAttr indexing_maps, /*optional*/::mlir::IntegerAttr loop_axis, /*optional*/::mlir::DictionaryAttr ir_attr_def, /*optional*/::mlir::ArrayAttr tmp_buffers, ::mlir::ArrayAttr outputs) {
+  return create(builder, builder.getLoc(), std::forward<decltype(resultTypes)>(resultTypes), std::forward<decltype(input)>(input), std::forward<decltype(permutation)>(permutation), std::forward<decltype(indexing_maps)>(indexing_maps), std::forward<decltype(loop_axis)>(loop_axis), std::forward<decltype(ir_attr_def)>(ir_attr_def), std::forward<decltype(tmp_buffers)>(tmp_buffers), std::forward<decltype(outputs)>(outputs));
+}
+
+void TransposeOp::build(::mlir::OpBuilder &, ::mlir::OperationState &odsState, ::mlir::TypeRange resultTypes, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  assert(operands.size() == 1u && "mismatched number of parameters");
+  odsState.addOperands(operands);
+  odsState.addAttributes(attributes);
+  assert(resultTypes.size() == 1u && "mismatched number of return types");
+  odsState.addTypes(resultTypes);
+}
+
+TransposeOp TransposeOp::create(::mlir::OpBuilder &builder, ::mlir::Location location, ::mlir::TypeRange resultTypes, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  ::mlir::OperationState __state__(location, getOperationName());
+  build(builder, __state__, std::forward<decltype(resultTypes)>(resultTypes), std::forward<decltype(operands)>(operands), std::forward<decltype(attributes)>(attributes));
+  auto __res__ = ::llvm::dyn_cast<TransposeOp>(builder.create(__state__));
+  assert(__res__ && "builder didn't return the right type");
+  return __res__;
+}
+
+TransposeOp TransposeOp::create(::mlir::ImplicitLocOpBuilder &builder, ::mlir::TypeRange resultTypes, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  return create(builder, builder.getLoc(), std::forward<decltype(resultTypes)>(resultTypes), std::forward<decltype(operands)>(operands), std::forward<decltype(attributes)>(attributes));
+}
+
+void TransposeOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  assert(operands.size() == 1u && "mismatched number of parameters");
+  odsState.addOperands(operands);
+  odsState.addAttributes(attributes);
+
+  ::llvm::SmallVector<::mlir::Type, 2> inferredReturnTypes;
+  if (::mlir::succeeded(TransposeOp::inferReturnTypes(odsBuilder.getContext(),
+          odsState.location, operands,
+          odsState.attributes.getDictionary(odsState.getContext()),
+          odsState.getRawProperties(),
+          odsState.regions, inferredReturnTypes))) {
+    assert(inferredReturnTypes.size() == 1u && "mismatched number of return types");
+    odsState.addTypes(inferredReturnTypes);
+  } else {
+    ::llvm::report_fatal_error("Failed to infer result type(s).");
+  }
+}
+
+TransposeOp TransposeOp::create(::mlir::OpBuilder &builder, ::mlir::Location location, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  ::mlir::OperationState __state__(location, getOperationName());
+  build(builder, __state__, std::forward<decltype(operands)>(operands), std::forward<decltype(attributes)>(attributes));
+  auto __res__ = ::llvm::dyn_cast<TransposeOp>(builder.create(__state__));
+  assert(__res__ && "builder didn't return the right type");
+  return __res__;
+}
+
+TransposeOp TransposeOp::create(::mlir::ImplicitLocOpBuilder &builder, ::mlir::ValueRange operands, ::llvm::ArrayRef<::mlir::NamedAttribute> attributes) {
+  return create(builder, builder.getLoc(), std::forward<decltype(operands)>(operands), std::forward<decltype(attributes)>(attributes));
+}
+
+void TransposeOp::populateDefaultAttrs(const ::mlir::OperationName &opName, ::mlir::NamedAttrList &attributes) {
+  auto attrNames = opName.getAttributeNames();
+  ::mlir::Builder odsBuilder(attrNames.front().getContext());
+  if (!attributes.get(attrNames[3])) {
+    attributes.append(attrNames[3], ::mlir::ArrayAttr::get(odsBuilder.getContext(), {::mlir::afir::AscTensorGroupsAttr::get(odsBuilder.getContext(), ::llvm::ArrayRef<int64_t>{}, ::llvm::ArrayRef<::mlir::Attribute>{}, -1, -1, ::mlir::afir::PositionConfigAttr::get(odsBuilder.getContext(), ::mlir::afir::Position::GM, 0, false), -1)}));
+  }
+}
+
+::llvm::LogicalResult TransposeOp::verifyInvariantsImpl() {
+  auto namedAttrRange = (*this)->getAttrs();
+  auto namedAttrIt = namedAttrRange.begin();
+  ::mlir::Attribute tblgen_permutation;
+
+  while (true) {
+    if (namedAttrIt == namedAttrRange.end())
+      return emitOpError("requires attribute 'permutation'");
+    if (namedAttrIt->getName() == getPermutationAttrName()) {
+      tblgen_permutation = namedAttrIt->getValue();
+      break;
+    }
+    ++namedAttrIt;
+  }
+  ::mlir::Attribute tblgen_indexing_maps;
+  ::mlir::Attribute tblgen_ir_attr_def;
+  ::mlir::Attribute tblgen_loop_axis;
+  ::mlir::Attribute tblgen_outputs;
+  ::mlir::Attribute tblgen_tmp_buffers;
+  while (true) {
+    if (namedAttrIt == namedAttrRange.end()) {
+      break;
+    }
+    else if (namedAttrIt->getName() == getIndexingMapsAttrName()) {
+      tblgen_indexing_maps = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == getIrAttrDefAttrName()) {
+      tblgen_ir_attr_def = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == getLoopAxisAttrName()) {
+      tblgen_loop_axis = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == getOutputsAttrName()) {
+      tblgen_outputs = namedAttrIt->getValue();
+    }
+    else if (namedAttrIt->getName() == getTmpBuffersAttrName()) {
+      tblgen_tmp_buffers = namedAttrIt->getValue();
+    }
+    ++namedAttrIt;
+  }
+
+  if (tblgen_permutation && !(((::llvm::isa<::mlir::ArrayAttr>(tblgen_permutation))) && (::llvm::all_of(::llvm::cast<::mlir::ArrayAttr>(tblgen_permutation), [&](::mlir::Attribute attr) { return attr && ((::llvm::isa<::mlir::IntegerAttr>(attr))) && ((::llvm::cast<::mlir::IntegerAttr>(attr).getType().isSignlessInteger(64))); }))))
+    return emitOpError("attribute 'permutation' failed to satisfy constraint: 64-bit integer array attribute");
+
+  if (::mlir::failed(__mlir_ods_local_attr_constraint_Ops1(*this, tblgen_indexing_maps, "indexing_maps")))
+    return ::mlir::failure();
+
+  if (::mlir::failed(__mlir_ods_local_attr_constraint_Ops2(*this, tblgen_loop_axis, "loop_axis")))
+    return ::mlir::failure();
+
+  if (::mlir::failed(__mlir_ods_local_attr_constraint_Ops3(*this, tblgen_ir_attr_def, "ir_attr_def")))
+    return ::mlir::failure();
+
+  if (::mlir::failed(__mlir_ods_local_attr_constraint_Ops4(*this, tblgen_tmp_buffers, "tmp_buffers")))
+    return ::mlir::failure();
+
+  if (::mlir::failed(__mlir_ods_local_attr_constraint_Ops5(*this, tblgen_outputs, "outputs")))
+    return ::mlir::failure();
+  {
+    unsigned index = 0; (void)index;
+    auto valueGroup0 = getODSOperands(0);
+
+    for (auto v : valueGroup0) {
+      if (::mlir::failed(__mlir_ods_local_type_constraint_Ops17(*this, v.getType(), "operand", index++)))
+        return ::mlir::failure();
+    }
+  }
+  {
+    unsigned index = 0; (void)index;
+    auto valueGroup0 = getODSResults(0);
+
+    for (auto v : valueGroup0) {
+      if (::mlir::failed(__mlir_ods_local_type_constraint_Ops17(*this, v.getType(), "result", index++)))
+        return ::mlir::failure();
+    }
+  }
+  return ::mlir::success();
+}
+
+::llvm::LogicalResult TransposeOp::verifyInvariants() {
+  if(::mlir::succeeded(verifyInvariantsImpl()) && ::mlir::succeeded(verify()))
+    return ::mlir::success();
+  return ::mlir::failure();
+}
+
+::mlir::ParseResult TransposeOp::parse(::mlir::OpAsmParser &parser, ::mlir::OperationState &result) {
+  ::mlir::OpAsmParser::UnresolvedOperand inputRawOperand{};
+  ::llvm::ArrayRef<::mlir::OpAsmParser::UnresolvedOperand> inputOperands(&inputRawOperand, 1);  ::llvm::SMLoc inputOperandsLoc;
+  (void)inputOperandsLoc;
+  ::mlir::Type inputRawType{};
+  ::llvm::ArrayRef<::mlir::Type> inputTypes(&inputRawType, 1);
+  ::mlir::Type resultRawType{};
+  ::llvm::ArrayRef<::mlir::Type> resultTypes(&resultRawType, 1);
+
+  inputOperandsLoc = parser.getCurrentLocation();
+  if (parser.parseOperand(inputRawOperand))
+    return ::mlir::failure();
+  {
+    auto loc = parser.getCurrentLocation();(void)loc;
+    if (parser.parseOptionalAttrDict(result.attributes))
+      return ::mlir::failure();
+  }
+  if (parser.parseColon())
+    return ::mlir::failure();
+
+  {
+    ::mlir::TensorType type;
+    if (parser.parseCustomTypeWithFallback(type))
+      return ::mlir::failure();
+    inputRawType = type;
+  }
+  if (parser.parseArrow())
+    return ::mlir::failure();
+
+  {
+    ::mlir::TensorType type;
+    if (parser.parseCustomTypeWithFallback(type))
+      return ::mlir::failure();
+    resultRawType = type;
+  }
+  result.addTypes(resultTypes);
+  if (parser.resolveOperands(inputOperands, inputTypes, inputOperandsLoc, result.operands))
+    return ::mlir::failure();
+  return ::mlir::success();
+}
+
+void TransposeOp::print(::mlir::OpAsmPrinter &_odsPrinter) {
+  _odsPrinter << ' ';
+  _odsPrinter << getInput();
+  ::llvm::SmallVector<::llvm::StringRef, 2> elidedAttrs;
+  {
+     ::mlir::Builder odsBuilder(getContext());
+     ::mlir::Attribute attr = getLoopAxisAttr();
+     if(attr && (attr == odsBuilder.getIntegerAttr(odsBuilder.getIntegerType(32), -1)))
+       elidedAttrs.push_back("loop_axis");
+  }
+  {
+     ::mlir::Builder odsBuilder(getContext());
+     ::mlir::Attribute attr = getIrAttrDefAttr();
+     if(attr && (attr == odsBuilder.getDictionaryAttr({})))
+       elidedAttrs.push_back("ir_attr_def");
+  }
+  {
+     ::mlir::Builder odsBuilder(getContext());
+     ::mlir::Attribute attr = getOutputsAttr();
+     if(attr && (attr == ::mlir::ArrayAttr::get(odsBuilder.getContext(), {::mlir::afir::AscTensorGroupsAttr::get(odsBuilder.getContext(), ::llvm::ArrayRef<int64_t>{}, ::llvm::ArrayRef<::mlir::Attribute>{}, -1, -1, ::mlir::afir::PositionConfigAttr::get(odsBuilder.getContext(), ::mlir::afir::Position::GM, 0, false), -1)})))
+       elidedAttrs.push_back("outputs");
+  }
+  _odsPrinter.printOptionalAttrDict((*this)->getAttrs(), elidedAttrs);
+  _odsPrinter << ' ' << ":";
+  _odsPrinter << ' ';
+  {
+    auto type = getInput().getType();
+    if (auto validType = ::llvm::dyn_cast<::mlir::TensorType>(type))
+      _odsPrinter.printStrippedAttrOrType(validType);
+   else
+     _odsPrinter << type;
+  }
+  _odsPrinter << ' ' << "->";
+  _odsPrinter << ' ';
+  {
+    auto type = getResult().getType();
+    if (auto validType = ::llvm::dyn_cast<::mlir::TensorType>(type))
+      _odsPrinter.printStrippedAttrOrType(validType);
+   else
+     _odsPrinter << type;
+  }
+}
+
+void TransposeOp::getEffects(::llvm::SmallVectorImpl<::mlir::SideEffects::EffectInstance<::mlir::MemoryEffects::Effect>> &effects) {
+}
+
+    ::llvm::LogicalResult
+    TransposeOp::inferReturnTypeComponents(::mlir::MLIRContext *context,
+                      std::optional<::mlir::Location> location,
+                      ::mlir::ValueShapeRange operands, ::mlir::DictionaryAttr attributes,
+                      ::mlir::OpaqueProperties properties, ::mlir::RegionRange regions,
+                      ::llvm::SmallVectorImpl<::mlir::ShapedTypeComponents> &inferredReturnShapes) {
+      TransposeOp::Adaptor adaptor(operands, attributes, properties, regions);
+      return TransposeOp::inferReturnTypeComponents(context,
+        location, adaptor, inferredReturnShapes);
+    }
+
+
+    LogicalResult
+    TransposeOp::inferReturnTypes(::mlir::MLIRContext *context,
+                      std::optional<::mlir::Location> location,
+                      ::mlir::ValueRange operands, ::mlir::DictionaryAttr attributes,
+                      ::mlir::OpaqueProperties properties, ::mlir::RegionRange regions,
+                      ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+      SmallVector<ShapedTypeComponents, 2> retComponents;
+      if (failed(TransposeOp::inferReturnTypeComponents(context, location,
+                                operands, attributes, properties, regions,
+                                retComponents)))
+        return failure();
+      return ::mlir::detail::inferReturnTensorTypes(retComponents,
+                                inferredReturnTypes);
+    }
+
+
+bool TransposeOp::isCompatibleReturnTypes(TypeRange l, TypeRange r) {
+  if (l.size() != r.size() || l.size() != 1) return false;
+  return succeeded(verifyCompatibleShape(l[0], r[0]));
+}
+
+} // namespace mlir::afir
+MLIR_DEFINE_EXPLICIT_TYPE_ID(::mlir::afir::TransposeOp)
+
 
 
 #endif // GET_OP_CLASSES
