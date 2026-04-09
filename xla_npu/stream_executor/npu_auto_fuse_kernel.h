@@ -68,7 +68,7 @@ class NpuAutoFuseKernel : public Kernel {
   std::string load_file_base_dir_;  // 编译生成的.o, .bin, .so后缀文件的根路径
   std::string kernel_name_;
   // 由于这里的库生命周期仅伴随单个融合算子,因此不使用functionLoader中的FunctionRegister类单例
-  std::unordered_map<std::string, std::unique_ptr<npu::FunctionLoader>>
+  std::unordered_map<std::string, std::unique_ptr<::xla::dep::FunctionLoader>>
       registry;
 };
 

@@ -18,7 +18,8 @@ limitations under the License.
 #include "xla/tsl/util/env_var.h"
 #include "xla/xla_npu/dependency/tool/log.h"
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 void ConfigLoader::Register(const ConfigDescMap& desc_map) {
   NPU_LOG_FORMAT_PRINT(INFO, "Register config for ConfigLoader.");
@@ -101,4 +102,5 @@ template std::string ConfigLoader::GetTypedValue<std::string>(int key) const;
 template bool ConfigLoader::GetTypedValue<bool>(int key) const;
 template int ConfigLoader::GetTypedValue<int>(int key) const;
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla

@@ -41,7 +41,7 @@ volatile sig_atomic_t g_acl_initialized = 0;
 
 void AclCleanup() {
   if (g_acl_initialized) {
-    aclError ret = npu::aclFinalize();
+    aclError ret = ::xla::dep::aclFinalize();
     if (ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(ERROR, "ACL finalize failed in atexit, ret: %d",
                            ret);
@@ -59,7 +59,7 @@ NpuPlatform::NpuPlatform() : name_(xla::NpuConstant::platformName) {}
 NpuPlatform::~NpuPlatform() {
   NPU_LOG_FORMAT_PRINT(INFO, "Finalize platform for '%s'.", name_);
   if (g_acl_initialized) {
-    auto ret = npu::aclFinalize();
+    auto ret = ::xla::dep::aclFinalize();
     if (ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(ERROR,
                            "Finalize platform for '%s' failed, error code %d",
@@ -78,7 +78,7 @@ bool NpuPlatform::Initialized() const { return g_acl_initialized; }
 
 absl::Status NpuPlatform::Initialize() {
   const char* acl_config_json_file_path = nullptr;
-  aclError acl_ret = npu::aclInit(acl_config_json_file_path);
+  aclError acl_ret = ::xla::dep::aclInit(acl_config_json_file_path);
   if (acl_ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(ERROR, "Init platform for '%s' failed.", name_);
     return absl::UnavailableError("Acl init failed.");
@@ -93,7 +93,7 @@ absl::Status NpuPlatform::Initialize() {
 
 int NpuPlatform::VisibleDeviceCount() const {
   uint32_t device_count = 0;
-  aclError acl_ret = npu::aclrtGetDeviceCount(&device_count);
+  aclError acl_ret = ::xla::dep::aclrtGetDeviceCount(&device_count);
   if (acl_ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(ERROR, "Get device count for '%s' failed.", name_);
     return 0;

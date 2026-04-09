@@ -22,7 +22,8 @@ limitations under the License.
 #define DECLARE_ACL_FUNC_IN_NNOPBASE(ret, func_name, args_type, args_name) \
   DECLARE_ACL_FUNC(libnnopbase, ret, func_name, args_type, args_name)
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclTensor*, aclCreateTensor,
                              (const int64_t* viewDims, uint64_t viewDimsNum,
@@ -36,6 +37,9 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclTensor*, aclCreateTensor,
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclScalar*, aclCreateScalar,
                              (void* value, aclDataType dataType),
                              (value, dataType))
+
+DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyScalar,
+                             (const aclScalar* scalar), (scalar))
 
 DECLARE_ACL_FUNC_IN_NNOPBASE(aclIntArray*, aclCreateIntArray,
                              (const int64_t* value, uint64_t size),
@@ -51,6 +55,10 @@ DECLARE_ACL_FUNC_IN_NNOPBASE(aclnnStatus, aclDestroyTensorList,
 DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyIntArray,
                              (const aclIntArray* array), (array))
 
-}  // namespace npu
+DECLARE_ACL_FUNC_IN_NNOPBASE(void, aclDestroyTensor, (const aclTensor* tensor),
+                             (tensor))
+
+}  // namespace dep
+}  // namespace xla
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_NN_INTERFACE_H_

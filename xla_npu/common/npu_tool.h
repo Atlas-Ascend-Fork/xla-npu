@@ -113,7 +113,7 @@ class NpuTool {
 
     int64_t print_count = std::min(size, max_print_count);
     std::vector<printDataType> resultData(print_count, 0);
-    aclError acl_ret = npu::aclrtMemcpy(
+    aclError acl_ret = dep::aclrtMemcpy(
         resultData.data(), resultData.size() * sizeof(printDataType),
         deviceAddr, print_count * sizeof(printDataType),
         ACL_MEMCPY_DEVICE_TO_HOST);
@@ -205,6 +205,26 @@ class NpuTool {
 
   static aclDataType ConvertXlaType2AclDataType(const PrimitiveType& type) {
     switch (type) {
+      case PrimitiveType::PRED:
+        return aclDataType::ACL_BOOL;
+      case PrimitiveType::F32:
+        return aclDataType::ACL_FLOAT;
+      case PrimitiveType::F64:
+        return aclDataType::ACL_DOUBLE;
+      case PrimitiveType::S32:
+        return aclDataType::ACL_INT32;
+      case PrimitiveType::S64:
+        return aclDataType::ACL_INT64;
+      case PrimitiveType::S16:
+        return aclDataType::ACL_INT16;
+      case PrimitiveType::S8:
+        return aclDataType::ACL_INT8;
+      case PrimitiveType::U8:
+        return aclDataType::ACL_UINT8;
+      case PrimitiveType::F16:
+        return aclDataType::ACL_FLOAT16;
+      case PrimitiveType::BF16:
+        return aclDataType::ACL_BF16;
       default:
         return aclDataType::ACL_FLOAT;
     };
@@ -256,7 +276,7 @@ class NpuTool {
 
     // 调用 aclCreateTensor 接口创建 aclTensor
     auto tensor =
-        npu::aclCreateTensor(data_shape.data(), data_shape.size(), data_type,
+        dep::aclCreateTensor(data_shape.data(), data_shape.size(), data_type,
                              strides.data(), 0, aclFormat::ACL_FORMAT_ND,
                              data_shape.data(), data_shape.size(), device_addr);
 

@@ -17,7 +17,8 @@ limitations under the License.
 
 #include "xla/xla_npu/dependency/tool/function_loader.h"
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 REGISTER_LIBRARY(libascendcl)
 REGISTER_FUNCTION(libascendcl, aclInit)
@@ -34,6 +35,7 @@ REGISTER_FUNCTION(libascendcl, aclrtMemcpy)
 REGISTER_FUNCTION(libascendcl, aclrtMemset)
 REGISTER_FUNCTION(libascendcl, aclrtMallocHost)
 REGISTER_FUNCTION(libascendcl, aclrtFreeHost)
+
 REGISTER_FUNCTION(libascendcl, aclrtBinaryLoadFromFile)
 REGISTER_FUNCTION(libascendcl, aclrtBinaryLoadFromData)
 REGISTER_FUNCTION(libascendcl, aclrtBinaryGetFunction)
@@ -45,4 +47,5 @@ REGISTER_FUNCTION(libascendcl, aclrtKernelArgsFinalize)
 REGISTER_FUNCTION(libascendcl, aclrtLaunchKernel)
 REGISTER_FUNCTION(libascendcl, aclrtLaunchKernelWithConfig)
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla

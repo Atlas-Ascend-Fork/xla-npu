@@ -105,7 +105,7 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
   xla::NpuOperation::SetDevice(device_ordinal_);
 
   void* base = nullptr;
-  aclError ret = npu::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
+  aclError ret = ::xla::dep::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(
         ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);
@@ -124,7 +124,7 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
   if (!status.ok()) {
     NPU_LOG_FORMAT_PRINT(ERROR, "Failed to zero memory at %p, size %d: %s",
                          base, size, status.ToString().c_str());
-    npu::aclrtFree(base);
+    ::xla::dep::aclrtFree(base);
     return DeviceMemoryBase(nullptr, size);
   }
 
@@ -158,7 +158,7 @@ void NpuExecutor::Deallocate(DeviceMemoryBase* mem) {
 
   NPU_LOG_FORMAT_PRINT(DEBUG, "Npu memory free, addr: %p, size: %d",
                        mem->opaque(), mem->size());
-  npu::aclrtFree(mem->opaque());
+  ::xla::dep::aclrtFree(mem->opaque());
 }
 
 absl::Status NpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
@@ -166,7 +166,7 @@ absl::Status NpuExecutor::SynchronousMemZero(DeviceMemoryBase* location,
   // 保证当前线程执行过set device
   xla::NpuOperation::SetDevice(device_ordinal_);
 
-  aclError ret = npu::aclrtMemset(location->opaque(), size, 0, size);
+  aclError ret = ::xla::dep::aclrtMemset(location->opaque(), size, 0, size);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(
         ERROR, "SynchronousMemZero failed, addr %p, size %d, error code: %d",

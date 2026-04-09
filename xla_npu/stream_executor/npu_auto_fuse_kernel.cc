@@ -45,11 +45,11 @@ absl::Status NpuAutoFuseKernel::Load() {
       tsl::io::JoinPath(load_file_base_dir_, GetKernelFileName());
   if (registry.count(GetTilingFileName()) == 0) {
     registry[GetTilingFileName()] =
-        std::make_unique<npu::FunctionLoader>(tiling_file_path, ".so");
+        std::make_unique<::xla::dep::FunctionLoader>(tiling_file_path, ".so");
   }
   if (registry.count(GetKernelFileName()) == 0) {
     registry[GetKernelFileName()] =
-        std::make_unique<npu::FunctionLoader>(kernel_file_path, ".so");
+        std::make_unique<::xla::dep::FunctionLoader>(kernel_file_path, ".so");
   }
 
   // 注册func

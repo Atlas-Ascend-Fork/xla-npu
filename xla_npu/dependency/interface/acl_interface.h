@@ -22,7 +22,8 @@ limitations under the License.
 #define DECLARE_ACL_FUNC_IN_ASCENDCL(func_name, args_type, args_name) \
   DECLARE_ACL_FUNC(libascendcl, aclError, func_name, args_type, args_name)
 
-namespace npu {
+namespace xla {
+namespace dep {
 
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclInit, (const char* configPath), (configPath))
 
@@ -119,6 +120,7 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtLaunchKernelWithConfig,
                              (funcHandle, blockDim, stream, cfg, argsHandle,
                               reserve))
 
-}  // namespace npu
+}  // namespace dep
+}  // namespace xla
 
 #endif  // XLA_XLA_NPU_DEPENDENCY_INTERFACE_ACL_INTERFACE_H_

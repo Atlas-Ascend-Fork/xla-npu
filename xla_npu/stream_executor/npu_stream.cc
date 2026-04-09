@@ -66,7 +66,7 @@ absl::Status NpuStream::BlockHostUntilDone() {
   NPU_LOG_FORMAT_PRINT(DEBUG, "Block host until stream '%s' done", GetName());
   TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
-  auto acl_ret = npu::aclrtSynchronizeStream(stream_);
+  auto acl_ret = ::xla::dep::aclrtSynchronizeStream(stream_);
   CHECK_COND_AND_PRINT_NPU_LOG(acl_ret != ACL_SUCCESS,
                                "Synchronize stream failed. Error code: %d",
                                acl_ret);
@@ -80,7 +80,7 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst,
 
   void* dst_mem = npu_dst->opaque();
   void* src_mem = const_cast<void*>(npu_src.opaque());
-  auto acl_ret = npu::aclrtMemcpy(dst_mem, size, src_mem, size,
+  auto acl_ret = ::xla::dep::aclrtMemcpy(dst_mem, size, src_mem, size,
                                   ACL_MEMCPY_DEVICE_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(
@@ -99,7 +99,7 @@ absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src,
   TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
   void* src_mem = const_cast<void*>(npu_src.opaque());
-  auto acl_ret = npu::aclrtMemcpy(host_dst, size, src_mem, size,
+  auto acl_ret = ::xla::dep::aclrtMemcpy(host_dst, size, src_mem, size,
                                   ACL_MEMCPY_DEVICE_TO_HOST);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat(
@@ -118,7 +118,7 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const void* host_src,
   TF_RETURN_IF_ERROR(xla::NpuOperation::SetDevice(parent()->device_ordinal()));
 
   void* dst_mem = npu_dst->opaque();
-  auto acl_ret = npu::aclrtMemcpy(dst_mem, size, host_src, size,
+  auto acl_ret = ::xla::dep::aclrtMemcpy(dst_mem, size, host_src, size,
                                   ACL_MEMCPY_HOST_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat(
@@ -143,7 +143,7 @@ absl::Status NpuStream::MemZero(DeviceMemoryBase* location, uint64_t size) {
     return absl::InvalidArgumentError("Cannot memset nullptr");
   }
   // 使用aclrtMemset将内存清零
-  aclError ret = npu::aclrtMemset(npu_mem, size, 0, size);
+  aclError ret = ::xla::dep::aclrtMemset(npu_mem, size, 0, size);
   if (ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat("Execute aclrtMemset on stream '",
                                             GetName(),

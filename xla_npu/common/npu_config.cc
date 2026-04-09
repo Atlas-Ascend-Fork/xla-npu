@@ -18,28 +18,28 @@ limitations under the License.
 namespace xla {
 
 void NpuConfig::Init() {
-  npu::ConfigLoader::ConfigDescMap desc_map = {
+  dep::ConfigLoader::ConfigDescMap desc_map = {
       {static_cast<int>(Key::NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR),
        {"NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR",
-        npu::ConfigLoader::DefaultValueType(std::string("")),
-        npu::ConfigLoader::ValueType::STRING}},
+        dep::ConfigLoader::DefaultValueType(std::string("")),
+        dep::ConfigLoader::ValueType::STRING}},
       {static_cast<int>(Key::USE_OLD_CANN_STYLE),
-       {"USE_OLD_CANN_STYLE", npu::ConfigLoader::DefaultValueType(false),
-        npu::ConfigLoader::ValueType::BOOL}},
+       {"USE_OLD_CANN_STYLE", dep::ConfigLoader::DefaultValueType(false),
+        dep::ConfigLoader::ValueType::BOOL}},
       {static_cast<int>(Key::XLA_NPU_MAX_PRINT_COUNT),
-       {"XLA_NPU_MAX_PRINT_COUNT", npu::ConfigLoader::DefaultValueType(8),
-        npu::ConfigLoader::ValueType::INT}},
+       {"XLA_NPU_MAX_PRINT_COUNT", dep::ConfigLoader::DefaultValueType(8),
+        dep::ConfigLoader::ValueType::INT}},
       {static_cast<int>(Key::XLA_NPU_DEVICE_ID),
-       {"XLA_NPU_DEVICE_ID", npu::ConfigLoader::DefaultValueType(0),
-        npu::ConfigLoader::ValueType::INT}},
+       {"XLA_NPU_DEVICE_ID", dep::ConfigLoader::DefaultValueType(0),
+        dep::ConfigLoader::ValueType::INT}},
       {static_cast<int>(Key::ENABLE_SYNC_AFTER_EXECUTE),
-       {"ENABLE_SYNC_AFTER_EXECUTE", npu::ConfigLoader::DefaultValueType(false),
-        npu::ConfigLoader::ValueType::BOOL}},
+       {"ENABLE_SYNC_AFTER_EXECUTE", dep::ConfigLoader::DefaultValueType(false),
+        dep::ConfigLoader::ValueType::BOOL}},
       {static_cast<int>(Key::ENABLE_PRINT_IO_VALUES),
-       {"ENABLE_PRINT_IO_VALUES", npu::ConfigLoader::DefaultValueType(false),
-        npu::ConfigLoader::ValueType::BOOL}},
+       {"ENABLE_PRINT_IO_VALUES", dep::ConfigLoader::DefaultValueType(false),
+        dep::ConfigLoader::ValueType::BOOL}},
   };
-  npu::ConfigLoader::GetInstance().Register(desc_map);
+  dep::ConfigLoader::GetInstance().Register(desc_map);
 }
 
 }  // namespace xla

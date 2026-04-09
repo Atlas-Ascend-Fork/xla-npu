@@ -125,7 +125,7 @@ NpuRawBuffer::CopyRawHostToDeviceAndReturnEvent(const void* src, int64_t offset,
                                                 int64_t transfer_size) {
   TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
   void* dst = static_cast<char*>(buffer_->untyped_data()) + offset;
-  auto acl_ret = npu::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_HOST_TO_DEVICE);
+  auto acl_ret = dep::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_HOST_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
   }
@@ -138,7 +138,7 @@ NpuRawBuffer::CopyRawDeviceToHostAndReturnEvent(void* dst, int64_t offset,
                                                 int64_t transfer_size) {
   TF_RETURN_IF_ERROR(ValidateSlice(offset, transfer_size));
   const void* src = static_cast<const char*>(buffer_->untyped_data()) + offset;
-  auto acl_ret = npu::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_DEVICE_TO_HOST);
+  auto acl_ret = dep::aclrtMemcpy(dst, transfer_size, src, transfer_size, ACL_MEMCPY_DEVICE_TO_HOST);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat("AclrtMemcpy D2H failed, error code: ", acl_ret));
   }
@@ -193,7 +193,7 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
     if (!is_packed) {
       auto data_transposed = std::make_unique<char[]>(byte_size);
       transpose->Execute(data, data_transposed.get());
-      auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+      auto acl_ret = dep::aclrtMemcpy(dst_data_ptr, byte_size, data_transposed.get(), byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
       if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed during transpose, error code: ", acl_ret));
       }
@@ -206,7 +206,7 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
       absl::Span<const char> src_data_span(data_transposed.get(), byte_size);
       absl::Span<char> dst_data_span(data_packed.get(), dst_byte_size);
       PackIntN(bit_width, src_data_span, dst_data_span);
-      auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+      auto acl_ret = dep::aclrtMemcpy(dst_data_ptr, dst_byte_size, data_packed.get(), dst_byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
       if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed during packed transpose, error code: ", acl_ret));
       }
@@ -216,7 +216,7 @@ absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>> NpuRawBuffer::CopyFromHostBuff
       on_done_with_host_buffer = nullptr;
     }
   } else {
-    auto acl_ret = npu::aclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
+    auto acl_ret = dep::aclrtMemcpy(dst_data_ptr, byte_size, data, byte_size, ACL_MEMCPY_HOST_TO_DEVICE);
     if (acl_ret != ACL_SUCCESS) {
         return absl::InternalError(absl::StrCat("AclrtMemcpy H2D failed, error code: ", acl_ret));
     }
@@ -251,7 +251,7 @@ void NpuRawBuffer::CopyToLiteralAsync(
   size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(literal->shape()));
   void* dst_host_ptr = literal->untyped_data();
   
-  aclError acl_ret = npu::aclrtSetDevice(0);
+  aclError acl_ret = dep::aclrtSetDevice(0);
   if (acl_ret != ACL_SUCCESS) {
       auto error = absl::InternalError(
           absl::StrCat("AclrtSetDevice set device 0 failed, error code: ", acl_ret));
@@ -266,7 +266,7 @@ void NpuRawBuffer::CopyToLiteralAsync(
     // First copy packed data from device to a temporary buffer
     auto temp_buffer = std::make_unique<char[]>(device_buffer_size);
     
-    acl_ret = npu::aclrtMemcpy(temp_buffer.get(), device_buffer_size, 
+    acl_ret = dep::aclrtMemcpy(temp_buffer.get(), device_buffer_size, 
                                 src_device_ptr, device_buffer_size, 
                                 ACL_MEMCPY_DEVICE_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {
@@ -283,7 +283,7 @@ void NpuRawBuffer::CopyToLiteralAsync(
     primitive_util::UnpackIntN(shape.element_type(), input_span, output_span);
   } else {
     // For normal types, direct copy from device to host
-    acl_ret = npu::aclrtMemcpy(dst_host_ptr, output_size, 
+    acl_ret = dep::aclrtMemcpy(dst_host_ptr, output_size, 
                                 src_device_ptr, output_size, 
                                 ACL_MEMCPY_DEVICE_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {

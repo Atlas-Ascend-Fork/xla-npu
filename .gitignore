@@ -7,3 +7,4 @@ build/*
 !build/build.sh
 compile_commands.json
 auto_fuse_compile_artifacts
+*.npz

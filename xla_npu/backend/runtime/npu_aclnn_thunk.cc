@@ -54,6 +54,9 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
     case HloOpcode::kReshape:
     case HloOpcode::kNegate:
     case HloOpcode::kExp:
+    case HloOpcode::kRsqrt:
+    case HloOpcode::kSin:
+    case HloOpcode::kCos:
       if (param_shapes.size() != 2) {
         NPU_LOG_FORMAT_PRINT(ERROR,
                              "Param shape size %d does not meet target value 2",
@@ -75,7 +78,7 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
       }
       break;
     case HloOpcode::kConcatenate:
-      // Concatenate 是变长参数算子,至少需要 2 个输入 + 1 个输出 = 至少 3 个参数
+      // Concatenate 是变长参数算子，至少需要 2 个输入 + 1 个输出 = 至少 3 个参数
       if (param_shapes.size() < 3) {
         NPU_LOG_FORMAT_PRINT(ERROR,
                              "Concatenate param shape size %d is less than 3",
@@ -84,11 +87,65 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
       }
       break;
     case HloOpcode::kReduce:
-      // Reduce 操作: 输入 + 初始值 + 输出 = 3 个参数
+      // Reduce 操作：输入 + 初始值 + 输出 = 3 个参数
       if (param_shapes.size() != 3) {
         NPU_LOG_FORMAT_PRINT(
             ERROR, "Reduce param shape size %d does not meet target value 3",
             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kTranspose:
+      // Transpose 操作：输入 + 输出 = 2 个参数
+      if (param_shapes.size() != 2) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "Transpose param shape size %d does not meet target value 2",
+                             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kDynamicSlice:
+      // DynamicSlice 操作：输入 + 输出 = 2 个参数（简化实现）
+      if (param_shapes.size() != 2) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "DynamicSlice param shape size %d does not meet target value 2",
+                             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kGather:
+      // Gather 操作：输入 + 索引 + 输出 = 3 个参数
+      if (param_shapes.size() != 3) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "Gather param shape size %d does not meet target value 3",
+                             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kCompare:
+      // Compare 操作：输入 1 + 输入 2 + 输出 = 3 个参数
+      if (param_shapes.size() != 3) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "Compare param shape size %d does not meet target value 3",
+                             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kSelect:
+      // Select (Where) 操作：condition + self + other + output = 4 个参数
+      if (param_shapes.size() != 4) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "Select param shape size %d does not meet target value 4",
+                             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kAnd:
+      // And (BitwiseAnd/LogicalAnd) 操作：input1 + input2 + output = 3 个参数
+      if (param_shapes.size() != 3) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "And param shape size %d does not meet target value 3",
+                             param_shapes.size());
         return false;
       }
       break;
@@ -186,7 +243,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ShapeUtil::ByteSizeOfPrimitiveType(param_shapes[0].element_type());
 
       // Perform device-to-device memory copy
-      ret = npu::aclrtMemcpy(output_device_addr, input_size, input_device_addr,
+      ret = dep::aclrtMemcpy(output_device_addr, input_size, input_device_addr,
                              input_size, ACL_MEMCPY_DEVICE_TO_DEVICE);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
@@ -305,7 +362,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         auto input_addr = allocations->GetDeviceAddress(args_[0]);
         void* device_addr = input_addr.opaque();
 
-        input_tensor = npu::aclCreateTensor(
+        input_tensor = dep::aclCreateTensor(
             expanded_shape.data(), expanded_shape.size(), data_type,
             expanded_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
             expanded_shape.data(), expanded_shape.size(), device_addr);
@@ -316,11 +373,11 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         }
       }
 
-      aclIntArray* output_param_size = npu::aclCreateIntArray(
+      aclIntArray* output_param_size = dep::aclCreateIntArray(
           output_param_size_data.data(), output_param_size_data.size());
 
       // 调用 aclnnExpand 第一段接口
-      ret = npu::aclnnExpandGetWorkspaceSize(input_tensor, output_param_size,
+      ret = dep::aclnnExpandGetWorkspaceSize(input_tensor, output_param_size,
                                              acl_tensor_ptr_vector.back(),
                                              &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -331,36 +388,93 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExpand);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnExpand);
 
       // Clean up the output_param_size array
-      npu::aclDestroyIntArray(output_param_size);
+      dep::aclDestroyIntArray(output_param_size);
       break;
     }
 
     case HloOpcode::kAdd: {
-      float alphaValue = 1.0;
-      aclScalar* alpha =
-          npu::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+      // 优化：对于 RMSNorm 中的 variance + epsilon 场景
+      // 检测输入类型，如果是 FP16/BF16，尝试使用 FP32 计算以减少精度损失
+      aclDataType input_type =
+          NpuTool::ConvertXlaType2AclDataType(param_shapes[0].element_type());
+      
+      // RMSNorm 关键优化：FP16/BF16 输入时，使用 FP32 计算
+      bool use_fp32_compute = (input_type == ACL_FLOAT16 || input_type == ACL_BF16);
+      
+      if (use_fp32_compute) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, 
+            "Add: Using FP32 compute for FP16/BF16 input to improve precision (RMSNorm optimization)");
+      }
+      
+      // 使用 union 存储不同类型的 alpha 值
+      union {
+        int32_t i32;
+        int64_t i64;
+        float f32;
+        double f64;
+        aclFloat16 f16;
+        uint16_t bf16;
+      } alpha_val;
+      
+      // 如果启用 FP32 计算，使用 FP32 类型创建 alpha
+      aclDataType alpha_type = use_fp32_compute ? ACL_FLOAT : input_type;
+      
+      // 根据类型设置 alpha 值（统一为 1 或 1.0）
+      switch (alpha_type) {
+        case ACL_INT32:
+        case ACL_INT16:
+        case ACL_INT8:
+          alpha_val.i32 = 1;
+          break;
+        case ACL_INT64:
+          alpha_val.i64 = 1;
+          break;
+        case ACL_UINT8:
+          alpha_val.i32 = 1;
+          break;
+        case ACL_FLOAT:
+          alpha_val.f32 = 1.0f;
+          break;
+        case ACL_DOUBLE:
+          alpha_val.f64 = 1.0;
+          break;
+        case ACL_FLOAT16:
+          alpha_val.f16 = 1.0f;
+          break;
+        case ACL_BF16:
+          alpha_val.bf16 = 0x3F80;
+          break;
+        default:
+          alpha_val.f32 = 1.0f;
+          alpha_type = ACL_FLOAT;
+          break;
+      }
+      
+      aclScalar* alpha = dep::aclCreateScalar(&alpha_val, alpha_type);
 
-      // 调用aclnnAdd第一段接口
-      ret = npu::aclnnAddGetWorkspaceSize(
+      ret = dep::aclnnAddGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnAddGetWorkspaceSize failed. Error code: %d", ret);
         NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        dep::aclDestroyScalar(alpha);
         return absl::InternalError(err_msg);
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAdd);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnAdd);
+
+      dep::aclDestroyScalar(alpha);
       break;
     }
 
     case HloOpcode::kTanh: {
-      ret = npu::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnTanhGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                            acl_tensor_ptr_vector.back(),
                                            &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -371,12 +485,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnTanh);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnTanh);
       break;
     }
 
     case HloOpcode::kMultiply: {
-      ret = npu::aclnnMulGetWorkspaceSize(
+      ret = dep::aclnnMulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -387,13 +501,13 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMul);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMul);
       break;
     }
 
     case HloOpcode::kDot: {
-      int8_t cubeMathType = 0;
-      ret = npu::aclnnMatmulGetWorkspaceSize(
+      int8_t cubeMathType = 4;  // 0：保持输入的数据类型进行计算；4：FORCE_GRP_ACC_FOR_FP32，支持使用分组累加方式进行计算。
+      ret = dep::aclnnMatmulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize,
           &executor);
@@ -405,12 +519,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMatmul);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMatmul);
       break;
     }
 
     case HloOpcode::kDivide: {
-      ret = npu::aclnnDivGetWorkspaceSize(
+      ret = dep::aclnnDivGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -421,16 +535,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnDiv);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnDiv);
       break;
     }
 
     case HloOpcode::kSubtract: {
       float alphaValue = 1.0;
       aclScalar* alpha =
-          npu::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
+          dep::aclCreateScalar(&alphaValue, aclDataType::ACL_FLOAT);
 
-      ret = npu::aclnnSubGetWorkspaceSize(
+      ret = dep::aclnnSubGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -441,12 +555,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnSub);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSub);
       break;
     }
 
     case HloOpcode::kNegate: {
-      ret = npu::aclnnNegGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnNegGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -457,12 +571,12 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnNeg);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnNeg);
       break;
     }
 
     case HloOpcode::kExp: {
-      ret = npu::aclnnExpGetWorkspaceSize(acl_tensor_ptr_vector[0],
+      ret = dep::aclnnExpGetWorkspaceSize(acl_tensor_ptr_vector[0],
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -473,12 +587,70 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnExp);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnExp);
+      break;
+    }
+
+    case HloOpcode::kRsqrt: {
+      // 优化：对于 RMSNorm 等场景，检查输入类型
+      // Rsqrt 在 FP16 输入时可能有精度损失，但 ACLNN 没有特殊处理
+      aclDataType input_dtype = NpuTool::ConvertXlaType2AclDataType(
+          param_shapes[0].element_type());
+      
+      if (input_dtype == ACL_FLOAT16 || input_dtype == ACL_BF16) {
+        NPU_LOG_FORMAT_PRINT(DEBUG, 
+            "Rsqrt: FP16/BF16 input detected, using default ACLNN implementation");
+      }
+      
+      ret = dep::aclnnRsqrtGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                            acl_tensor_ptr_vector.back(),
+                                            &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnRsqrtGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnRsqrt);
+      break;
+    }
+
+    case HloOpcode::kSin: {
+      ret = dep::aclnnSinGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                          acl_tensor_ptr_vector.back(),
+                                          &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSinGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSin);
+      break;
+    }
+
+    case HloOpcode::kCos: {
+      ret = dep::aclnnCosGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                          acl_tensor_ptr_vector.back(),
+                                          &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnCosGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnCos);
       break;
     }
 
     case HloOpcode::kMaximum: {
-      ret = npu::aclnnMaximumGetWorkspaceSize(
+      ret = dep::aclnnMaximumGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -489,7 +661,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnMaximum);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMaximum);
       break;
     }
 
@@ -508,7 +680,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         input_tensors.push_back(acl_tensor_ptr_vector[i]);
       }
       aclTensorList* tensor_list =
-          npu::aclCreateTensorList(input_tensors.data(), input_tensors.size());
+          dep::aclCreateTensorList(input_tensors.data(), input_tensors.size());
       if (tensor_list == nullptr) {
         const std::string err_msg =
             "Failed to create aclTensorList for concatenate";
@@ -517,7 +689,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       // 调用 aclnnCatGetWorkspaceSize
-      ret = npu::aclnnCatGetWorkspaceSize(tensor_list, dim,
+      ret = dep::aclnnCatGetWorkspaceSize(tensor_list, dim,
                                           acl_tensor_ptr_vector.back(),
                                           &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
@@ -528,7 +700,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnCat);
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnCat);
 
       // 清理 tensor_list
       break;
@@ -543,7 +715,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       }
 
       // 创建维度数组
-      aclIntArray* dims = npu::aclCreateIntArray(
+      aclIntArray* dims = dep::aclCreateIntArray(
           thunk_info().dimensions.data(), thunk_info().dimensions.size());
       if (dims == nullptr) {
         const std::string err_msg =
@@ -552,9 +724,18 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         return absl::InternalError(err_msg);
       }
 
-      // 获取输出数据类型
-      aclDataType out_dtype = NpuTool::ConvertXlaType2AclDataType(
-          param_shapes.back().element_type());
+      // 获取输入数据类型
+      aclDataType input_dtype = NpuTool::ConvertXlaType2AclDataType(
+          param_shapes[0].element_type());
+      
+      // 优化：对于 FP16/BF16 输入，使用 FP32 累加以减少精度损失
+      // 对于 FP32 输入，使用输入类型以保持数据类型匹配
+      aclDataType accumulate_dtype = input_dtype;
+      if (input_dtype == ACL_FLOAT16 || input_dtype == ACL_BF16) {
+        accumulate_dtype = ACL_FLOAT;
+        NPU_LOG_FORMAT_PRINT(DEBUG, 
+            "ReduceSum: Using FP32 accumulation for FP16/BF16 input to reduce precision loss");
+      }
 
       // 对于reduce操作,aclnnReduceSum只需要输入和输出,不需要初始值
       // XLA的reduce有3个参数:输入、初始值、输出
@@ -567,7 +748,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "got %d",
             acl_tensor_ptr_vector.size());
         NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-        npu::aclDestroyIntArray(dims);
+        dep::aclDestroyIntArray(dims);
         return absl::InternalError(err_msg);
       }
 
@@ -607,23 +788,23 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
         // 调用 aclnnAmax 第一段接口
         // aclnnAmax 接口参数: input, dim, keepDim, out, workspaceSize, executor
-        ret = npu::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims,
+        ret = dep::aclnnAmaxGetWorkspaceSize(acl_tensor_ptr_vector[0], dims,
                                              false, acl_tensor_ptr_vector[2],
                                              &workspaceSize, &executor);
         if (ret != ACL_SUCCESS) {
           const std::string err_msg = absl::StrFormat(
               "Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
           NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
 
         exec_ret =
-            ExecuteAclnn(acl_stream, workspaceSize, executor, npu::aclnnAmax);
+            ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnAmax);
         if (!exec_ret.ok()) {
           NPU_LOG_FORMAT_PRINT(ERROR, "ExecuteAclnn for aclnnAmax failed: %s",
                                exec_ret.ToString().c_str());
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return exec_ret;
         }
       } else {
@@ -631,24 +812,535 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         // 调用 aclnnReduceSum 第一段接口
         // aclnnReduceSum 接口参数: input, dims, keepDims, dtype, output,
         // workspaceSize, executor
-        ret = npu::aclnnReduceSumGetWorkspaceSize(
-            acl_tensor_ptr_vector[0], dims, false, out_dtype,
+        ret = dep::aclnnReduceSumGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], dims, false, accumulate_dtype,
             acl_tensor_ptr_vector[2], &workspaceSize, &executor);
         if (ret != ACL_SUCCESS) {
           const std::string err_msg = absl::StrFormat(
               "Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d",
               ret);
           NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
-          npu::aclDestroyIntArray(dims);
+          dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
 
         exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
-                                npu::aclnnReduceSum);
+                                dep::aclnnReduceSum);
       }
 
       // 清理维度数组
-      npu::aclDestroyIntArray(dims);
+      dep::aclDestroyIntArray(dims);
+      break;
+    }
+
+    case HloOpcode::kTranspose: {
+      // Transpose 需要 dimensions 参数作为 permute 的维度顺序
+      if (thunk_info().dimensions.empty()) {
+        const std::string err_msg = "Transpose dimensions is empty";
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // 创建 aclIntArray 作为 permute 维度
+      aclIntArray* perm = dep::aclCreateIntArray(
+          thunk_info().dimensions.data(), thunk_info().dimensions.size());
+      if (perm == nullptr) {
+        const std::string err_msg = "Failed to create perm array for transpose";
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // 调用 aclnnPermuteGetWorkspaceSize
+      ret = dep::aclnnPermuteGetWorkspaceSize(
+          acl_tensor_ptr_vector[0], perm, acl_tensor_ptr_vector.back(),
+          &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnPermuteGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        dep::aclDestroyIntArray(perm);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnPermute);
+
+      // 清理 perm 数组
+      dep::aclDestroyIntArray(perm);
+      break;
+    }
+
+    case HloOpcode::kSlice: {
+      // Slice 操作：从 HLO 指令描述中解析 starts, ends, axes, steps
+      // Slice 是静态的，参数在编译时确定
+      const auto& input_shape = param_shapes[0];
+      const auto& output_shape = param_shapes.back();
+      
+      // 从 hloInstrDesc 解析 slice 参数
+      // 格式示例: "slice={[0:1], [0:14], [0:8], [32:64]}"
+      std::vector<int64_t> starts_data;
+      std::vector<int64_t> ends_data;
+      std::vector<int64_t> axes_data;
+      std::vector<int64_t> steps_data;
+      
+      const std::string& desc = thunk_info().hloInstrDesc;
+      
+      // 尝试从 hloInstrDesc 解析 slice 参数
+      // 查找 "slice={" 的位置
+      size_t slice_pos = desc.find("slice={");
+      if (slice_pos != std::string::npos) {
+        // 提取 slice 参数部分
+        size_t start_pos = slice_pos + strlen("slice={");
+        size_t end_pos = desc.find("}", start_pos);
+        if (end_pos != std::string::npos) {
+          std::string slice_str = desc.substr(start_pos, end_pos - start_pos);
+          NPU_LOG_FORMAT_PRINT(DEBUG, "Parsing slice params from: %s", slice_str.c_str());
+          
+          // 解析每个维度的 [start:end]
+          int dim = 0;
+          size_t bracket_pos = 0;
+          while ((bracket_pos = slice_str.find("[", bracket_pos)) != std::string::npos) {
+            size_t close_bracket = slice_str.find("]", bracket_pos);
+            if (close_bracket == std::string::npos) break;
+            
+            std::string range_str = slice_str.substr(bracket_pos + 1, close_bracket - bracket_pos - 1);
+            
+            // 解析 start:end
+            size_t colon_pos = range_str.find(":");
+            if (colon_pos != std::string::npos) {
+              std::string start_str = range_str.substr(0, colon_pos);
+              std::string end_str = range_str.substr(colon_pos + 1);
+              
+              try {
+                int64_t start_val = std::stoll(start_str);
+                int64_t end_val = std::stoll(end_str);
+                
+                starts_data.push_back(start_val);
+                ends_data.push_back(end_val);
+                axes_data.push_back(dim);
+                steps_data.push_back(1);
+                
+                NPU_LOG_FORMAT_PRINT(DEBUG, "Slice dim %d: [%ld:%ld]", dim, start_val, end_val);
+              } catch (...) {
+                NPU_LOG_FORMAT_PRINT(ERROR, "Failed to parse slice range: %s", range_str.c_str());
+              }
+            }
+            
+            dim++;
+            bracket_pos = close_bracket + 1;
+          }
+        }
+      }
+      
+      // 如果解析失败，使用默认参数
+      if (starts_data.empty()) {
+        NPU_LOG_FORMAT_PRINT(WARN, "Failed to parse slice params from hloInstrDesc, using default");
+        for (int64_t i = 0; i < input_shape.dimensions().size(); ++i) {
+          starts_data.push_back(0);
+          ends_data.push_back((i < output_shape.dimensions().size()) ? 
+                              output_shape.dimensions()[i] : input_shape.dimensions()[i]);
+          axes_data.push_back(i);
+          steps_data.push_back(1);
+        }
+      }
+      
+      NPU_LOG_FORMAT_PRINT(DEBUG, "Slice: input=%s, output=%s",
+                           NpuTool::GetXlaShapeString(input_shape).c_str(),
+                           NpuTool::GetXlaShapeString(output_shape).c_str());
+      
+      // 创建 aclIntArray
+      aclIntArray* starts = dep::aclCreateIntArray(starts_data.data(), starts_data.size());
+      aclIntArray* ends = dep::aclCreateIntArray(ends_data.data(), ends_data.size());
+      aclIntArray* axes = dep::aclCreateIntArray(axes_data.data(), axes_data.size());
+      aclIntArray* steps = dep::aclCreateIntArray(steps_data.data(), steps_data.size());
+      
+      if (starts == nullptr || ends == nullptr || axes == nullptr || steps == nullptr) {
+        const std::string err_msg = "Failed to create aclIntArray for slice";
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        if (starts) dep::aclDestroyIntArray(starts);
+        if (ends) dep::aclDestroyIntArray(ends);
+        if (axes) dep::aclDestroyIntArray(axes);
+        if (steps) dep::aclDestroyIntArray(steps);
+        return absl::InternalError(err_msg);
+      }
+      
+      // 调用 aclnnSliceV2GetWorkspaceSize
+      ret = dep::aclnnSliceV2GetWorkspaceSize(
+          acl_tensor_ptr_vector[0], starts, ends, axes, steps,
+          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      
+      // 清理 aclIntArray
+      dep::aclDestroyIntArray(starts);
+      dep::aclDestroyIntArray(ends);
+      dep::aclDestroyIntArray(axes);
+      dep::aclDestroyIntArray(steps);
+      
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSliceV2GetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+      
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSliceV2);
+      break;
+    }
+
+    case HloOpcode::kDynamicSlice: {
+      // Slice V2 接口需要 starts, ends, axes, steps 四个 aclIntArray 参数
+      // 从 HLO 指令中解析这些参数
+      const auto& slice_sizes = thunk_info().dimensions;
+      
+      if (slice_sizes.empty()) {
+        const std::string err_msg = "DynamicSlice dimensions is empty";
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+      
+      // 获取输入 tensor 的 shape
+      const auto& input_shape = param_shapes[0];
+      const auto& output_shape = param_shapes.back();
+      
+      // 构建 starts, ends, axes, steps 数组
+      // 注意：这里假设是静态 slice，动态 start_indices 需要特殊处理
+      std::vector<int64_t> starts_data;
+      std::vector<int64_t> ends_data;
+      std::vector<int64_t> axes_data;
+      std::vector<int64_t> steps_data;
+      
+      // 简化实现：假设对所有维度进行 slice
+      for (size_t i = 0; i < slice_sizes.size(); ++i) {
+        starts_data.push_back(0);  // 简化：假设从 0 开始
+        ends_data.push_back(slice_sizes[i]);
+        axes_data.push_back(i);
+        steps_data.push_back(1);
+      }
+      
+      // 创建 aclIntArray
+      aclIntArray* starts = dep::aclCreateIntArray(starts_data.data(), starts_data.size());
+      aclIntArray* ends = dep::aclCreateIntArray(ends_data.data(), ends_data.size());
+      aclIntArray* axes = dep::aclCreateIntArray(axes_data.data(), axes_data.size());
+      aclIntArray* steps = dep::aclCreateIntArray(steps_data.data(), steps_data.size());
+      
+      if (starts == nullptr || ends == nullptr || axes == nullptr || steps == nullptr) {
+        const std::string err_msg = "Failed to create aclIntArray for slice";
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        if (starts) dep::aclDestroyIntArray(starts);
+        if (ends) dep::aclDestroyIntArray(ends);
+        if (axes) dep::aclDestroyIntArray(axes);
+        if (steps) dep::aclDestroyIntArray(steps);
+        return absl::InternalError(err_msg);
+      }
+      
+      // 调用 aclnnSliceV2GetWorkspaceSize
+      ret = dep::aclnnSliceV2GetWorkspaceSize(
+          acl_tensor_ptr_vector[0], starts, ends, axes, steps,
+          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      
+      // 清理 aclIntArray
+      dep::aclDestroyIntArray(starts);
+      dep::aclDestroyIntArray(ends);
+      dep::aclDestroyIntArray(axes);
+      dep::aclDestroyIntArray(steps);
+      
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSliceV2GetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+      
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSliceV2);
+      break;
+    }
+
+    case HloOpcode::kGather: {
+      // Gather 操作：输入 + 索引 + 输出 = 3 个参数
+      // XLA Gather 是一个复杂的操作，涉及 offset_dims, collapsed_slice_dims, start_index_map 等参数
+      if (acl_tensor_ptr_vector.size() < 3) {
+        const std::string err_msg = absl::StrFormat(
+            "Gather operation expects 3 parameters (input, index, output), but got %d",
+            acl_tensor_ptr_vector.size());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // 解析 Gather 维度信息
+      int64_t dim = 0;
+      const std::string& desc = thunk_info().hloInstrDesc;
+      
+      // 尝试从 start_index_map 解析维度
+      size_t pos = desc.find("start_index_map={");
+      if (pos != std::string::npos) {
+        size_t start = pos + strlen("start_index_map={");
+        size_t end = desc.find("}", start);
+        if (end != std::string::npos) {
+          std::string map_str = desc.substr(start, end - start);
+          try {
+            dim = std::stoll(map_str);
+          } catch (...) {
+            dim = 0;
+          }
+        }
+      }
+      
+      // 如果 dimensions 不为空，优先使用
+      if (!thunk_info().dimensions.empty()) {
+        dim = thunk_info().dimensions[0];
+      }
+
+      NPU_LOG_FORMAT_PRINT(DEBUG, "Gather using dim=%d, hloDesc: %s", dim, desc.c_str());
+
+      // 获取输入和索引的形状信息
+      const auto& input_shape = param_shapes[0];
+      const auto& index_shape = param_shapes[1];
+      const auto& output_shape = param_shapes[2];
+      
+      // GatherV2 输出维度 = input_dims + index_dims - 1
+      // XLA 期望的输出维度可能会压缩某些维度
+      int64_t gather_output_dims = input_shape.dimensions().size() + index_shape.dimensions().size() - 1;
+      int64_t xla_output_dims = output_shape.dimensions().size();
+      
+      NPU_LOG_FORMAT_PRINT(DEBUG, 
+          "Gather shapes: input=%s, index=%s, XLA output=%s, GatherV2 output dims=%d, XLA output dims=%d",
+          NpuTool::GetXlaShapeString(input_shape).c_str(),
+          NpuTool::GetXlaShapeString(index_shape).c_str(),
+          NpuTool::GetXlaShapeString(output_shape).c_str(),
+          gather_output_dims, xla_output_dims);
+      
+      aclTensor* output_tensor = acl_tensor_ptr_vector[2];
+      aclTensor* expanded_output_tensor = nullptr;
+      bool need_cleanup = false;
+      
+      if (gather_output_dims > xla_output_dims) {
+        // 需要创建扩展形状的输出tensor
+        // GatherV2的输出形状 = index_shape + input_shape[dim+1:]
+        // 例如：index=[1,8,1], input=[151936,896], dim=0
+        // GatherV2输出 = [1,8,1,896]
+        // XLA输出 = [1,8,896]（压缩了index的最后一个维度）
+        
+        // 构建GatherV2期望的输出形状
+        std::vector<int64_t> expanded_dims;
+        
+        // 首先添加索引的所有维度
+        for (int64_t dim_val : index_shape.dimensions()) {
+          expanded_dims.push_back(dim_val);
+        }
+        
+        // 然后添加输入除dim维度外的其他维度
+        for (int64_t i = 0; i < input_shape.dimensions().size(); ++i) {
+          if (i != dim) {
+            expanded_dims.push_back(input_shape.dimensions()[i]);
+          }
+        }
+        
+        // 计算stride（连续内存布局）
+        std::vector<int64_t> expanded_strides(expanded_dims.size());
+        int64_t stride = 1;
+        for (int i = expanded_dims.size() - 1; i >= 0; --i) {
+          expanded_strides[i] = stride;
+          stride *= expanded_dims[i];
+        }
+        
+        // 获取输出数据类型
+        aclDataType data_type = NpuTool::ConvertXlaType2AclDataType(output_shape.element_type());
+        
+        // 获取输出缓冲区地址
+        auto output_addr = allocations->GetDeviceAddress(args_.back());
+        void* device_addr = output_addr.opaque();
+        
+        // 创建扩展形状的tensor，指向相同的内存
+        // 注意：storageDims应该与viewDims相同，因为数据是连续的
+        expanded_output_tensor = dep::aclCreateTensor(
+            expanded_dims.data(), expanded_dims.size(), data_type,
+            expanded_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
+            expanded_dims.data(), expanded_dims.size(), device_addr);
+        
+        if (expanded_output_tensor == nullptr) {
+          const std::string err_msg = "Failed to create expanded output tensor for Gather";
+          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          return absl::InternalError(err_msg);
+        }
+        
+        output_tensor = expanded_output_tensor;
+        need_cleanup = true;
+        
+        std::string expanded_shape_str = "[";
+        for (size_t i = 0; i < expanded_dims.size(); ++i) {
+          if (i > 0) expanded_shape_str += ", ";
+          expanded_shape_str += std::to_string(expanded_dims[i]);
+        }
+        expanded_shape_str += "]";
+        NPU_LOG_FORMAT_PRINT(DEBUG, "Created expanded output tensor with shape %s for GatherV2",
+                             expanded_shape_str.c_str());
+      }
+
+      // 使用 GatherV2
+      ret = dep::aclnnGatherV2GetWorkspaceSize(
+          acl_tensor_ptr_vector[0], dim, acl_tensor_ptr_vector[1],
+          output_tensor, &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnGatherV2GetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        if (need_cleanup && expanded_output_tensor) {
+          dep::aclDestroyTensor(expanded_output_tensor);
+        }
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnGatherV2);
+      
+      // 清理创建的tensor
+      if (need_cleanup && expanded_output_tensor) {
+        dep::aclDestroyTensor(expanded_output_tensor);
+      }
+      
+      break;
+    }
+
+    case HloOpcode::kCompare: {
+      // Compare 操作：输入 1 + 输入 2 + 输出 = 3 个参数
+      if (acl_tensor_ptr_vector.size() < 3) {
+        const std::string err_msg = absl::StrFormat(
+            "Compare operation expects 3 parameters (input1, input2, output), but got %d",
+            acl_tensor_ptr_vector.size());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // 根据 hloInstrDesc 判断比较方向
+      // 格式：comparison_direction=EQ/NE/LT/LE/GT/GE
+      const std::string& hlo_desc = thunk_info().hloInstrDesc;
+      
+      aclnnStatus compare_ret = ACL_SUCCESS;
+      
+      if (hlo_desc.find("direction=EQ") != std::string::npos ||
+          hlo_desc.find("comparison_direction=EQ") != std::string::npos) {
+        // Equal
+        compare_ret = dep::aclnnEqTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnEqTensor);
+        }
+      } else if (hlo_desc.find("direction=NE") != std::string::npos ||
+                 hlo_desc.find("comparison_direction=NE") != std::string::npos) {
+        // Not Equal
+        compare_ret = dep::aclnnNeTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnNeTensor);
+        }
+      } else if (hlo_desc.find("direction=LT") != std::string::npos ||
+                 hlo_desc.find("comparison_direction=LT") != std::string::npos) {
+        // Less Than
+        compare_ret = dep::aclnnLtTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnLtTensor);
+        }
+      } else if (hlo_desc.find("direction=LE") != std::string::npos ||
+                 hlo_desc.find("comparison_direction=LE") != std::string::npos) {
+        // Less Equal
+        compare_ret = dep::aclnnLeTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnLeTensor);
+        }
+      } else if (hlo_desc.find("direction=GT") != std::string::npos ||
+                 hlo_desc.find("comparison_direction=GT") != std::string::npos) {
+        // Greater Than
+        compare_ret = dep::aclnnGtTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnGtTensor);
+        }
+      } else if (hlo_desc.find("direction=GE") != std::string::npos ||
+                 hlo_desc.find("comparison_direction=GE") != std::string::npos) {
+        // Greater Equal
+        compare_ret = dep::aclnnGeTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (compare_ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnGeTensor);
+        }
+      } else {
+        const std::string err_msg =
+            absl::StrFormat("Unknown comparison direction in: %s", hlo_desc.c_str());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      if (compare_ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Compare GetWorkspaceSize failed. Error code: %d", compare_ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+      break;
+    }
+
+    case HloOpcode::kSelect: {
+      // Select (Where) 操作：condition + self + other + output = 4 个参数
+      // 根据 condition 选择 self 或 other 中的元素
+      if (acl_tensor_ptr_vector.size() < 4) {
+        const std::string err_msg = absl::StrFormat(
+            "Select operation expects 4 parameters (condition, self, other, output), but got %d",
+            acl_tensor_ptr_vector.size());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // acl_tensors[0] = condition
+      // acl_tensors[1] = self
+      // acl_tensors[2] = other
+      // acl_tensors[3] = output
+      ret = dep::aclnnSWhereGetWorkspaceSize(
+          acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+          acl_tensor_ptr_vector[2], acl_tensor_ptr_vector[3],
+          &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSWhereGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSWhere);
+      break;
+    }
+
+    case HloOpcode::kAnd: {
+      // And (BitwiseAnd/LogicalAnd) 操作：输入 1 + 输入 2 + 输出 = 3 个参数
+      // 支持 BOOL 类型的逻辑与和整数类型的按位与
+      if (acl_tensor_ptr_vector.size() < 3) {
+        const std::string err_msg = absl::StrFormat(
+            "And operation expects 3 parameters (input1, input2, output), but got %d",
+            acl_tensor_ptr_vector.size());
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      // acl_tensors[0] = self
+      // acl_tensors[1] = other
+      // acl_tensors[2] = output
+      ret = dep::aclnnBitwiseAndTensorGetWorkspaceSize(
+          acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnBitwiseAndTensorGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnBitwiseAndTensor);
       break;
     }
 

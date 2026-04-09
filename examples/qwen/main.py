@@ -135,6 +135,7 @@ class Qwen2Runner(BaseRunner):
             # Print CPU output stats
             print(f"[CPU] Output:")
             print(f"[CPU]   Shape: {cpu_output.shape}")
+            print(f"[CPU]   Dtype: {cpu_output.dtype}")
             print(f"[CPU]   Min: {cpu_output.min():.6f}")
             print(f"[CPU]   Max: {cpu_output.max():.6f}")
             print(f"[CPU]   Mean: {cpu_output.mean():.6f}")
@@ -142,6 +143,7 @@ class Qwen2Runner(BaseRunner):
             # Print NPU output stats
             print(f"\n[NPU] Output:")
             print(f"[NPU]   Shape: {npu_output.shape}")
+            print(f"[NPU]   Dtype: {npu_output.dtype}")
             print(f"[NPU]   Min: {npu_output.min():.6f}")
             print(f"[NPU]   Max: {npu_output.max():.6f}")
             print(f"[NPU]   Mean: {npu_output.mean():.6f}")

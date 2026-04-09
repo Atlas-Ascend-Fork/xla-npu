@@ -21,7 +21,7 @@ limitations under the License.
 namespace xla {
 
 absl::Status NpuOperation::SetDevice(int device_id) {
-  aclError ret = npu::aclrtSetDevice(device_id);
+  aclError ret = dep::aclrtSetDevice(device_id);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(ERROR, "Set device %d for '%s' failed, error code: %d",
                          device_id, NpuConstant::platformName, ret);
@@ -36,7 +36,7 @@ absl::Status NpuOperation::SetDevice(int device_id) {
 }
 
 absl::Status NpuOperation::CreateStream(aclrtStream* stream) {
-  aclError ret = npu::aclrtCreateStream(stream);
+  aclError ret = dep::aclrtCreateStream(stream);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(ERROR, "Create stream for '%s' failed. Error code: %d",
                          NpuConstant::platformName, ret);
@@ -51,7 +51,7 @@ absl::Status NpuOperation::CreateStream(aclrtStream* stream) {
 
 absl::Status NpuOperation::Malloc(void** new_device_addr, size_t size_bytes) {
   aclError ret =
-      npu::aclrtMalloc(new_device_addr, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+      dep::aclrtMalloc(new_device_addr, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(ERROR,
                          "Allocate %d byte on npu failed, error code: %d",
@@ -82,7 +82,7 @@ absl::Status NpuOperation::Memcpy(void* dst, void* src, size_t size_bytes,
       break;
   };
 
-  aclError ret = npu::aclrtMemcpy(dst, size_bytes, src, size_bytes, memcpyKind);
+  aclError ret = dep::aclrtMemcpy(dst, size_bytes, src, size_bytes, memcpyKind);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(
         ERROR,
