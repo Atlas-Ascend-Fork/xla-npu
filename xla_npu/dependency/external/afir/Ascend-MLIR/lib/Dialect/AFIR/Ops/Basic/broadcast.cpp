@@ -32,6 +32,69 @@ using namespace mlir::afir;
 
 namespace {
 
+// Verify broadcast compatibility using indexing_maps attribute.
+// This supports HLO-style broadcasts with explicit dimension mapping.
+static LogicalResult verifyBroadcastViaIndexingMaps(
+    Operation *op,
+    ArrayRef<int64_t> inputShape,
+    ArrayRef<int64_t> resultShape,
+    size_t inputRank,
+    size_t resultRank) {
+
+  auto broadcastOp = mlir::dyn_cast<mlir::afir::BroadcastOp>(op);
+  if (!broadcastOp) return failure();
+
+  auto indexingMapsOpt = broadcastOp.getIndexingMaps();
+  if (!indexingMapsOpt.has_value()) return failure();
+
+  auto indexingMaps = *indexingMapsOpt;
+  if (indexingMaps.size() < 2) return failure();
+
+  // The first map is for the operand, the second is for the result
+  auto operandMapAttr = mlir::dyn_cast<mlir::AffineMapAttr>(indexingMaps[0]);
+  auto resultMapAttr = mlir::dyn_cast<mlir::AffineMapAttr>(indexingMaps[1]);
+  if (!operandMapAttr || !resultMapAttr) return failure();
+
+  auto operandMap = operandMapAttr.getValue();
+  auto resultMap = resultMapAttr.getValue();
+
+  // Validate map structure
+  if (operandMap.getNumInputs() != static_cast<unsigned>(resultRank) ||
+      operandMap.getNumResults() != static_cast<unsigned>(inputRank) ||
+      resultMap.getNumInputs() != static_cast<unsigned>(resultRank) ||
+      resultMap.getNumResults() != static_cast<unsigned>(resultRank)) {
+    return failure();
+  }
+
+  // Check that the operand dimensions are compatible with result dimensions
+  // according to the operand_map
+  for (size_t i = 0; i < inputRank; ++i) {
+    int64_t inputDim = inputShape[i];
+    if (inputDim == ShapedType::kDynamic) continue;
+
+    auto expr = operandMap.getResult(i);
+    if (auto dimExpr = mlir::dyn_cast<mlir::AffineDimExpr>(expr)) {
+      // This input dimension maps to a result dimension
+      size_t resultDimIdx = dimExpr.getPosition();
+      if (resultDimIdx < resultShape.size()) {
+        int64_t resultDim = resultShape[resultDimIdx];
+        if (resultDim != ShapedType::kDynamic && inputDim != 1 && inputDim != resultDim) {
+          return op->emitOpError("input dimension ")
+                 << i << " (size " << inputDim << ") is not broadcastable to "
+                 << "result dimension " << resultDimIdx << " (size " << resultDim << ")";
+        }
+      }
+    } else if (mlir::dyn_cast<mlir::AffineConstantExpr>(expr)) {
+      // This is a constant expression, typically 0 for broadcast dimensions
+      // No need to check
+    } else {
+      // More complex expression, skip detailed check
+    }
+  }
+
+  return success();
+}
+
 static LogicalResult verifyUnaryOp(Operation *op) {
   if (op->getNumOperands() != 1) {
     return op->emitOpError("expected 1 operand");
@@ -58,6 +121,13 @@ static LogicalResult verifyUnaryOp(Operation *op) {
       return op->emitOpError("result rank must be >= input rank for broadcast");
     }
 
+    // Try to verify using indexing_maps attribute (HLO-style broadcast)
+    if (succeeded(verifyBroadcastViaIndexingMaps(op, inputShape, resultShape,
+                                                  inputRank, resultRank))) {
+      return success();
+    }
+
+    // Fall back to numpy-style right-aligned broadcast validation
     size_t offset = resultRank - inputRank;
     for (size_t i = 0; i < inputRank; ++i) {
       int64_t inputDim = inputShape[i];
