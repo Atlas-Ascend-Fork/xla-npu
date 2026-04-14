@@ -25,39 +25,43 @@ using namespace std;
 #define CREATE_EXECUTOR() UniqueExecutor(__func__)
 
 // todo: consider reusing OpArgContext
-#define INFER_SHAPE(KERNEL_NAME, op_args...)                                                           \
-    ({  aclnnStatus inferShapeRet;                                                                     \
-        do {                                                                                           \
-            op::OpArgContext *opArgCtx = GetOpArgContext(op_args);                                     \
-            if (opArgCtx == nullptr){                                                                  \
-                inferShapeRet = ACLNN_ERR_PARAM_NULLPTR;                                               \
-            } else {                                                                                   \
-                inferShapeRet = InferShape(KERNEL_NAME##OpTypeId(),                                    \
-                                            *opArgCtx->GetOpArg(op::OP_INPUT_ARG),                     \
-                                            *opArgCtx->GetOpArg(op::OP_OUTPUT_ARG),                    \
-                                            *opArgCtx->GetOpArg(op::OP_ATTR_ARG));                     \
-                op::DestroyOpArgContext(opArgCtx);                                                     \
-            }                                                                                          \
-        } while (0); inferShapeRet;                                                                    \
-    })
+#define INFER_SHAPE(KERNEL_NAME, op_args...)                               \
+  ({                                                                       \
+    aclnnStatus inferShapeRet;                                             \
+    do {                                                                   \
+      op::OpArgContext *opArgCtx = GetOpArgContext(op_args);               \
+      if (opArgCtx == nullptr) {                                           \
+        inferShapeRet = ACLNN_ERR_PARAM_NULLPTR;                           \
+      } else {                                                             \
+        inferShapeRet = InferShape(KERNEL_NAME##OpTypeId(),                \
+                                   *opArgCtx->GetOpArg(op::OP_INPUT_ARG),  \
+                                   *opArgCtx->GetOpArg(op::OP_OUTPUT_ARG), \
+                                   *opArgCtx->GetOpArg(op::OP_ATTR_ARG));  \
+        op::DestroyOpArgContext(opArgCtx);                                 \
+      }                                                                    \
+    } while (0);                                                           \
+    inferShapeRet;                                                         \
+  })
 
 // WARNING: args are rvalue and will be moved. but args are used twice in the macro,
 //          so DO NOT put rvalue in args as the rvalue in args will be empty in second usage.
 // TODO: check GET_WORKSPACE error
-#define ADD_TO_LAUNCHER_LIST_AICORE(KERNEL_NAME, op_args...)                                 \
-    ({  aclnnStatus addToLaunchRet;                                                          \
-        do {                                                                                 \
-            op::OpArgContext *opArgCtx = GetOpArgContext(op_args);                           \
-            addToLaunchRet = CreatAiCoreKernelLauncher(#KERNEL_NAME, KERNEL_NAME##OpTypeId(),\
-                                                       executor, opArgCtx);                  \
-        } while (0); addToLaunchRet;                                                         \
-    })
+#define ADD_TO_LAUNCHER_LIST_AICORE(KERNEL_NAME, op_args...)          \
+  ({                                                                  \
+    aclnnStatus addToLaunchRet;                                       \
+    do {                                                              \
+      op::OpArgContext *opArgCtx = GetOpArgContext(op_args);          \
+      addToLaunchRet = CreatAiCoreKernelLauncher(                     \
+          #KERNEL_NAME, KERNEL_NAME##OpTypeId(), executor, opArgCtx); \
+    } while (0);                                                      \
+    addToLaunchRet;                                                   \
+  })
 
-#define ADD_TO_LAUNCHER_LIST_DSA(KERNEL_NAME, op_args...)                                    \
-    do {                                                                                     \
-        op::OpArgContext *opArgCtx = GetOpArgContext(op_args);                               \
-        CreatDSAKernelLauncher(#KERNEL_NAME, KERNEL_NAME##OpTypeId(), KERNEL_NAME##TaskType, \
-            executor, opArgCtx);                                                             \
-    } while (0)
+#define ADD_TO_LAUNCHER_LIST_DSA(KERNEL_NAME, op_args...)              \
+  do {                                                                 \
+    op::OpArgContext *opArgCtx = GetOpArgContext(op_args);             \
+    CreatDSAKernelLauncher(#KERNEL_NAME, KERNEL_NAME##OpTypeId(),      \
+                           KERNEL_NAME##TaskType, executor, opArgCtx); \
+  } while (0)
 
 #endif

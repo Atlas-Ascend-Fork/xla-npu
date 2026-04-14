@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef OP_API_INC_EXP_SEGSUM_BACKWARD_H_
 #define OP_API_INC_EXP_SEGSUM_BACKWARD_H_
 
@@ -68,11 +68,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnExpSegsumBackwardGetWorkspaceSize(const aclTensor* gradOutput,const aclTensor* gradSelf,
-                                                             aclTensor* gradInput, uint64_t* workspaceSize,
-                                                             aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnExpSegsumBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* gradSelf,
+    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
 
- /**
+/**
  * @brief aclnnExpSegsumBackward的第二段接口，用于执行计算。
  *
  * @param [in] workspace: 在npu device侧申请的workspace内存起址。
@@ -82,8 +82,10 @@ ACLNN_API aclnnStatus aclnnExpSegsumBackwardGetWorkspaceSize(const aclTensor* gr
  * @param [in] stream: 指定执行任务的AscendCL Stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnExpSegsumBackward(void* workspace, uint64_t workspaceSize,
-                                             aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnExpSegsumBackward(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }

@@ -46,11 +46,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnInplaceQuantScatterV2GetWorkspaceSize(aclTensor* selfRef, const aclTensor* indices,
-                                                                 const aclTensor* updates, const aclTensor* quantScales,
-                                                                 const aclTensor* quantZeroPoints, int64_t axis,
-                                                                 int64_t quantAxis, int64_t reduction, const char* roundMode,
-                                                                 uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceQuantScatterV2GetWorkspaceSize(
+    aclTensor* selfRef, const aclTensor* indices, const aclTensor* updates,
+    const aclTensor* quantScales, const aclTensor* quantZeroPoints,
+    int64_t axis, int64_t quantAxis, int64_t reduction, const char* roundMode,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnInplaceQuantScatterV2的第二段接口，用于执行计算
@@ -65,7 +65,9 @@ ACLNN_API aclnnStatus aclnnInplaceQuantScatterV2GetWorkspaceSize(aclTensor* self
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceQuantScatterV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceQuantScatterV2(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
                                                  aclrtStream stream);
 
 #ifdef __cplusplus

@@ -23,17 +23,17 @@ extern "C" {
  * @brief aclnnMaxPool的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_infer
  */
-ACLNN_API aclnnStatus aclnnMaxPoolGetWorkspaceSize(const aclTensor* self, const aclIntArray* kernelShape,
-                                                   const aclIntArray* strides, const int64_t autoPad,
-                                                   const aclIntArray* pads, const aclIntArray* dilations,
-                                                   const int64_t ceilMode, aclTensor* out, uint64_t* workspaceSize,
-                                                   aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnMaxPoolGetWorkspaceSize(
+    const aclTensor* self, const aclIntArray* kernelShape,
+    const aclIntArray* strides, const int64_t autoPad, const aclIntArray* pads,
+    const aclIntArray* dilations, const int64_t ceilMode, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMaxPool的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnMaxPool(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                   aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMaxPool(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

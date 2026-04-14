@@ -37,9 +37,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceRandomGetWorkspaceSize(const aclTensor* selfRef, int64_t from, int64_t to,
-                                                         int64_t seed, int64_t offset, uint64_t* workspaceSize,
-                                                         aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceRandomGetWorkspaceSize(
+    const aclTensor* selfRef, int64_t from, int64_t to, int64_t seed,
+    int64_t offset, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceRandom的第二段接口，用于执行计算。
@@ -50,7 +50,9 @@ ACLNN_API aclnnStatus aclnnInplaceRandomGetWorkspaceSize(const aclTensor* selfRe
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnInplaceRandom(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceRandom(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
                                          aclrtStream stream);
 
 /**
@@ -71,9 +73,10 @@ ACLNN_API aclnnStatus aclnnInplaceRandom(void* workspace, uint64_t workspaceSize
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceRandomTensorGetWorkspaceSize(const aclTensor* selfRef, int64_t from, int64_t to,
-                                                         const aclTensor* seedTensor, const aclTensor* offsetTensor,
-                                                         int64_t offset, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceRandomTensorGetWorkspaceSize(
+    const aclTensor* selfRef, int64_t from, int64_t to,
+    const aclTensor* seedTensor, const aclTensor* offsetTensor, int64_t offset,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceRandomTensor的第二段接口，用于执行计算。
@@ -86,8 +89,10 @@ ACLNN_API aclnnStatus aclnnInplaceRandomTensorGetWorkspaceSize(const aclTensor* 
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnInplaceRandomTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                         aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceRandomTensor(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }

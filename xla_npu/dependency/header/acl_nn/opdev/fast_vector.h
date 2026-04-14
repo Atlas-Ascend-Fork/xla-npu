@@ -21,7 +21,7 @@
 #include "small_vector.h"
 
 namespace op {
-template<typename T, size_t N = 8>
+template <typename T, size_t N = 8>
 using FVector = op::internal::SmallVector<T, N, op::internal::PoolAllocator<T>>;
 }
 #endif

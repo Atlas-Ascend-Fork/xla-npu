@@ -35,7 +35,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnChannelShuffleGetWorkspaceSize(
-    const aclTensor* self, int64_t groups, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, int64_t groups, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnChannelShuffle的第二段接口，用于执行计算。
@@ -45,11 +46,13 @@ ACLNN_API aclnnStatus aclnnChannelShuffleGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnChannelShuffle(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnChannelShuffle(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
+                                          aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_CHANNEL_SHUFFLE_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_CHANNEL_SHUFFLE_H_

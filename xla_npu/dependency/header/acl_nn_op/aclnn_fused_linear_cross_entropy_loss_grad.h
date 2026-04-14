@@ -43,9 +43,12 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnFusedLinearCrossEntropyLossGradGetWorkspaceSize(
-    const aclTensor *grad, const aclTensor *input, const aclTensor *weight, const aclTensor *targetMask, const aclTensor *maskedTarget,
-    float labelSmoothing, const aclTensor *logitsMaxOptional, const aclTensor *sumExpLogitsOptional, const aclTensor *softmaxOptional,
-    aclTensor *inputGradOut, aclTensor *weightGradOut, uint64_t *workspaceSize, aclOpExecutor **executor);
+    const aclTensor *grad, const aclTensor *input, const aclTensor *weight,
+    const aclTensor *targetMask, const aclTensor *maskedTarget,
+    float labelSmoothing, const aclTensor *logitsMaxOptional,
+    const aclTensor *sumExpLogitsOptional, const aclTensor *softmaxOptional,
+    aclTensor *inputGradOut, aclTensor *weightGradOut, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 
 /**
  * @brief aclnnFusedLinearCrossEntropyLossGrad的第二段接口，用于执行计算。
@@ -56,7 +59,8 @@ ACLNN_API aclnnStatus aclnnFusedLinearCrossEntropyLossGradGetWorkspaceSize(
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnFusedLinearCrossEntropyLossGrad(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

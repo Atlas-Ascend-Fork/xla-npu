@@ -83,7 +83,8 @@ void AFIRDialect::printType(Type type, DialectAsmPrinter &printer) const {
 // Attribute Parsing and Printing
 //===----------------------------------------------------------------------===//
 
-Attribute AFIRDialect::parseAttribute(DialectAsmParser &parser, Type type) const {
+Attribute AFIRDialect::parseAttribute(DialectAsmParser &parser,
+                                      Type type) const {
   StringRef attrType;
   Attribute attr;
   auto parseResult = generatedAttributeParser(parser, &attrType, type, attr);
@@ -93,7 +94,8 @@ Attribute AFIRDialect::parseAttribute(DialectAsmParser &parser, Type type) const
   return Attribute();
 }
 
-void AFIRDialect::printAttribute(Attribute attr, DialectAsmPrinter &printer) const {
+void AFIRDialect::printAttribute(Attribute attr,
+                                 DialectAsmPrinter &printer) const {
   if (failed(generatedAttributePrinter(attr, printer))) {
     return;
   }

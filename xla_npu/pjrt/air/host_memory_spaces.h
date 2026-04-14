@@ -21,52 +21,33 @@ limitations under the License.
 namespace xla {
 
 class NpuDeviceMemorySpace : public PjRtMemorySpace {
-public:
-    static constexpr absl::string_view kKind = "device";
-    static const int kKindId;
+ public:
+  static constexpr absl::string_view kKind = "device";
+  static const int kKindId;
 
-    NpuDeviceMemorySpace(int id, PjRtDevice* device);
+  NpuDeviceMemorySpace(int id, PjRtDevice* device);
 
-    PjRtClient* client() const override
-    {
-        return device_->client();
-    }
+  PjRtClient* client() const override { return device_->client(); }
 
-    absl::Span<PjRtDevice* const> devices() const override
-    {
-        return absl::Span<PjRtDevice* const>(&device_, device_ != nullptr ? 1 : 0);
-    }
+  absl::Span<PjRtDevice* const> devices() const override {
+    return absl::Span<PjRtDevice* const>(&device_, device_ != nullptr ? 1 : 0);
+  }
 
-    int id() const override
-    {
-        return id_;
-    }
+  int id() const override { return id_; }
 
-    absl::string_view kind() const override
-    {
-        return kKind;
-    }
+  absl::string_view kind() const override { return kKind; }
 
-    int kind_id() const override
-    {
-        return kKindId;
-    }
+  int kind_id() const override { return kKindId; }
 
-    absl::string_view DebugString() const override
-    {
-        return debug_string_;
-    }
+  absl::string_view DebugString() const override { return debug_string_; }
 
-    absl::string_view ToString() const override
-    {
-        return to_string_;
-    }
+  absl::string_view ToString() const override { return to_string_; }
 
-private:
-    int id_;
-    PjRtDevice* device_ = nullptr;
-    std::string debug_string_;
-    std::string to_string_;
+ private:
+  int id_;
+  PjRtDevice* device_ = nullptr;
+  std::string debug_string_;
+  std::string to_string_;
 };
 
 }  // namespace xla

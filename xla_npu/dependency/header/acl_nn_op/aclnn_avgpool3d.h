@@ -45,9 +45,10 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnAvgPool3dGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* kernelSize, const aclIntArray* stride, const aclIntArray* padding,
-    bool ceilMode, bool countIncludePad, int64_t divisorOverride, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* kernelSize,
+    const aclIntArray* stride, const aclIntArray* padding, bool ceilMode,
+    bool countIncludePad, int64_t divisorOverride, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAvgPool3d的第二段接口，用于执行计算。
@@ -59,8 +60,9 @@ ACLNN_API aclnnStatus aclnnAvgPool3dGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAvgPool3d(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAvgPool3d(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
+                                     aclrtStream stream);
 
 #ifdef __cplusplus
 }

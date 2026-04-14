@@ -49,7 +49,12 @@ enum class AddrType {
   PLACEHOLDER
 };
 
-enum class TilingContextSubType { TILING_CONTEXT = -1, TILING_DATA, TILING_KEY, BLOCK_DIM };
+enum class TilingContextSubType {
+  TILING_CONTEXT = -1,
+  TILING_DATA,
+  TILING_KEY,
+  BLOCK_DIM
+};
 
 struct ArgDesc {
   AddrType addr_type;
@@ -65,20 +70,24 @@ class ArgsFormatDescUtils {
   // 对于workspace -1表示个数未知，folded暂时无意义
   // 对ffts尾块非尾块地址，idx=0表示非尾块，idx=1表示尾块
   // 对于其他类型, idx和fold 暂时没有意义
-  static void Append(std::vector<ArgDesc> &arg_descs, AddrType type, int32_t ir_idx = -1, bool folded = false);
+  static void Append(std::vector<ArgDesc> &arg_descs, AddrType type,
+                     int32_t ir_idx = -1, bool folded = false);
 
-  static void AppendHiddenInput(std::vector<ArgDesc> &arg_descs, HiddenInputType hidden_type);
+  static void AppendHiddenInput(std::vector<ArgDesc> &arg_descs,
+                                HiddenInputType hidden_type);
 
-  static void AppendTilingContext(std::vector<ArgDesc> &arg_descs,
-                                  TilingContextSubType sub_type = TilingContextSubType::TILING_CONTEXT);
+  static void AppendTilingContext(
+      std::vector<ArgDesc> &arg_descs,
+      TilingContextSubType sub_type = TilingContextSubType::TILING_CONTEXT);
 
   static std::string ToString(const std::vector<ArgDesc> &arg_descs);
 
   // 字符串用i*这样的通配符时，返回的argDesc不会按照实际个数展开
-  static graphStatus Parse(const std::string &str, std::vector<ArgDesc> &arg_descs);
+  static graphStatus Parse(const std::string &str,
+                           std::vector<ArgDesc> &arg_descs);
 
   static std::string Serialize(const std::vector<ArgDesc> &arg_descs);
 };
-}
+}  // namespace ge
 
 #endif  // METADEF_CXX_ARGS_FORMAT_DESC_UTILS_H

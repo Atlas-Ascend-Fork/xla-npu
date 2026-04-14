@@ -36,19 +36,24 @@ NpuTransferManager::NpuTransferManager()
     : GenericTransferManager(stream_executor::kNpuPlatformId,
                              /*pointer_size=*/sizeof(void*)) {}
 
-absl::Status NpuTransferManager::TransferLiteralToInfeed(stream_executor::StreamExecutor* executor,
-                                                         const LiteralSlice& literal) {
-    return absl::UnimplementedError("NpuTransferManager::TransferLiteralToInfeed is not supported.");
+absl::Status NpuTransferManager::TransferLiteralToInfeed(
+    stream_executor::StreamExecutor* executor, const LiteralSlice& literal) {
+  return absl::UnimplementedError(
+      "NpuTransferManager::TransferLiteralToInfeed is not supported.");
 }
 
-absl::Status NpuTransferManager::TransferLiteralFromOutfeed(stream_executor::StreamExecutor* executor,
-                                                            MutableBorrowingLiteral literal) {
-    return absl::UnimplementedError("NpuTransferManager::TransferLiteralFromOutfeed is not supported.");
+absl::Status NpuTransferManager::TransferLiteralFromOutfeed(
+    stream_executor::StreamExecutor* executor,
+    MutableBorrowingLiteral literal) {
+  return absl::UnimplementedError(
+      "NpuTransferManager::TransferLiteralFromOutfeed is not supported.");
 }
 
-absl::Status NpuTransferManager::ReadDynamicShapes(stream_executor::Stream* stream, const ShapedBuffer* device_buffer,
-                                                   Shape* device_shape) {
-    return absl::UnimplementedError("NpuTransferManager::ReadDynamicShapes is not supported.");
+absl::Status NpuTransferManager::ReadDynamicShapes(
+    stream_executor::Stream* stream, const ShapedBuffer* device_buffer,
+    Shape* device_shape) {
+  return absl::UnimplementedError(
+      "NpuTransferManager::ReadDynamicShapes is not supported.");
 }
 
 }  // namespace xla

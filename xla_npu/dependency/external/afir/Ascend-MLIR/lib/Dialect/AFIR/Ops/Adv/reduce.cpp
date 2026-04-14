@@ -62,32 +62,19 @@ static LogicalResult verifyUnaryOp(Operation *op) {
 // Reduce Operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult MaxOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult MinOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult SumOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult MeanOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult ProdOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult AnyOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult AllOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
+LogicalResult MaxOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult MinOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult SumOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult MeanOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult ProdOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult AnyOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult AllOp::verify() { return verifyUnaryOp(getOperation()); }
 
 template <typename OpAdaptor>
-LogicalResult inferReduceReturnTypeComponents(mlir::MLIRContext *context, std::optional<mlir::Location> location,
-                                              OpAdaptor adaptor,
-                                              llvm::SmallVectorImpl<mlir::ShapedTypeComponents> &inferredReturnType) {
+LogicalResult inferReduceReturnTypeComponents(
+    mlir::MLIRContext *context, std::optional<mlir::Location> location,
+    OpAdaptor adaptor,
+    llvm::SmallVectorImpl<mlir::ShapedTypeComponents> &inferredReturnType) {
   auto opType = llvm::dyn_cast<RankedTensorType>(adaptor.getInput().getType());
   if (!opType) {
     return failure();
@@ -97,18 +84,21 @@ LogicalResult inferReduceReturnTypeComponents(mlir::MLIRContext *context, std::o
   if (axis < 0 || axis >= rank) {
     return failure();
   }
-  SmallVector<int64_t> newShape(opType.getShape().begin(), opType.getShape().end());
+  SmallVector<int64_t> newShape(opType.getShape().begin(),
+                                opType.getShape().end());
   newShape.erase(newShape.begin() + axis);
   auto eleType = opType.getElementType();
   inferredReturnType.push_back(ShapedTypeComponents(newShape, eleType));
   return success();
 }
 
-#define REGISTERREDUCEINFER(OP)                                                                              \
-  LogicalResult OP::inferReturnTypeComponents(MLIRContext *context, ::std::optional<Location> location,      \
-                                              OP##Adaptor adaptor,                                           \
-                                              SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) { \
-    return inferReduceReturnTypeComponents<OP##Adaptor>(context, location, adaptor, inferredReturnShapes);   \
+#define REGISTERREDUCEINFER(OP)                                      \
+  LogicalResult OP::inferReturnTypeComponents(                       \
+      MLIRContext *context, ::std::optional<Location> location,      \
+      OP##Adaptor adaptor,                                           \
+      SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) { \
+    return inferReduceReturnTypeComponents<OP##Adaptor>(             \
+        context, location, adaptor, inferredReturnShapes);           \
   }
 
 REGISTERREDUCEINFER(afir::MaxOp)

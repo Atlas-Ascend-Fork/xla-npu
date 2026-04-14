@@ -20,19 +20,22 @@ extern "C" {
  * @brief aclnnDynamicQuantV2GetWorkspaceSize的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_infer
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV2GetWorkspaceSize(
-    const aclTensor* x, const aclTensor* smoothScalesOptional, const aclTensor* groupIndexOptional, int64_t dstType,
-    const aclTensor* yOut, const aclTensor* scaleOut, const aclTensor* offsetOut, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnDynamicQuantV2GetWorkspaceSize(
+    const aclTensor* x, const aclTensor* smoothScalesOptional,
+    const aclTensor* groupIndexOptional, int64_t dstType, const aclTensor* yOut,
+    const aclTensor* scaleOut, const aclTensor* offsetOut,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnDynamicQuantV2的第二段接口，用于执行计算。
  */
 __attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV2(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ACLNN_DYNAMIC_QUANT_V2_H_
+#endif  // ACLNN_DYNAMIC_QUANT_V2_H_

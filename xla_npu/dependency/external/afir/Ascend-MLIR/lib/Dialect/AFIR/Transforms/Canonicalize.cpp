@@ -41,7 +41,8 @@ namespace {
 // Pattern: mul(x, 1) -> x (when 1 is a constant)
 // These patterns can be expanded based on needs
 
-struct AFIRCanonicalizePass : public impl::AFIRCanonicalizePassBase<AFIRCanonicalizePass> {
+struct AFIRCanonicalizePass
+    : public impl::AFIRCanonicalizePassBase<AFIRCanonicalizePass> {
   void runOnOperation() override {
     ModuleOp module = getOperation();
     RewritePatternSet patterns(&getContext());
@@ -49,7 +50,8 @@ struct AFIRCanonicalizePass : public impl::AFIRCanonicalizePassBase<AFIRCanonica
     // Add canonicalization patterns here
     // patterns.add<...>(patterns.getContext());
 
-    if (failed(applyPatternsGreedily(module, std::move(patterns)))) signalPassFailure();
+    if (failed(applyPatternsGreedily(module, std::move(patterns))))
+      signalPassFailure();
   }
 };
 

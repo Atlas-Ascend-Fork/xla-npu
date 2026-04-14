@@ -23,18 +23,22 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnBatchNormReduceBackwardGetWorkspaceSize(
-    const aclTensor* gradOut, const aclTensor* input, const aclTensor* mean, const aclTensor* invstd,
-    const aclTensor* weight, const bool inputG, const bool weightG, const bool biasG, aclTensor* sumDy,
-    aclTensor* sumDyXmu, aclTensor* gradWeight, aclTensor* gradBias, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOut, const aclTensor* input, const aclTensor* mean,
+    const aclTensor* invstd, const aclTensor* weight, const bool inputG,
+    const bool weightG, const bool biasG, aclTensor* sumDy, aclTensor* sumDyXmu,
+    aclTensor* gradWeight, aclTensor* gradBias, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnBatchNormReduceBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnBatchNormReduceBackward(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBatchNormReduceBackward(void* workspace,
+                                                   uint64_t workspaceSize,
+                                                   aclOpExecutor* executor,
+                                                   const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_BATCH_NORM_BACKWARD_REDUCE_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_BATCH_NORM_BACKWARD_REDUCE_H_

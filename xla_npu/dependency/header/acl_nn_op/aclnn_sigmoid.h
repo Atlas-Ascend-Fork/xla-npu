@@ -29,7 +29,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnSigmoidGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnSigmoidGetWorkspaceSize(const aclTensor* self,
+                                                   aclTensor* out,
+                                                   uint64_t* workspaceSize,
                                                    aclOpExecutor** executor);
 
 /**
@@ -42,7 +44,8 @@ ACLNN_API aclnnStatus aclnnSigmoidGetWorkspaceSize(const aclTensor* self, aclTen
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSigmoid(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnSigmoid(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor,
                                    const aclrtStream stream);
 
 /**
@@ -57,8 +60,8 @@ ACLNN_API aclnnStatus aclnnSigmoid(void* workspace, uint64_t workspaceSize, aclO
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnInplaceSigmoidGetWorkspaceSize(aclTensor* selfRef, uint64_t* workspaceSize,
-                                                          aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceSigmoidGetWorkspaceSize(
+    aclTensor* selfRef, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnInplaceSigmoid的第二段接口，用于执行计算
@@ -70,7 +73,9 @@ ACLNN_API aclnnStatus aclnnInplaceSigmoidGetWorkspaceSize(aclTensor* selfRef, ui
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceSigmoid(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceSigmoid(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           const aclrtStream stream);
 
 #ifdef __cplusplus

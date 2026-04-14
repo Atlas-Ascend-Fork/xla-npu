@@ -46,7 +46,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnInplaceFillTensorGetWorkspaceSize(
-    aclTensor* selfRef, const aclTensor* value, uint64_t* workspaceSize, aclOpExecutor** executor);
+    aclTensor* selfRef, const aclTensor* value, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceFillTensor的第二段接口，用于执行计算。
@@ -56,11 +57,13 @@ ACLNN_API aclnnStatus aclnnInplaceFillTensorGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceFillTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceFillTensor(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_FILL_TENSOR_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_FILL_TENSOR_H_

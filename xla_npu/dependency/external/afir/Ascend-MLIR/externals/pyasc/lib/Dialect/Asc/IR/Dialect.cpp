@@ -29,20 +29,19 @@ using namespace mlir::ascendc;
 // AscendCDialect
 //===----------------------------------------------------------------------===//
 
-void AscendCDialect::initialize()
-{
-    registerAttributes();
-    registerTypes();
-    registerOps();
+void AscendCDialect::initialize() {
+  registerAttributes();
+  registerTypes();
+  registerOps();
 }
 
 //===----------------------------------------------------------------------===//
 // External models
 //===----------------------------------------------------------------------===//
 
-void ascendc::registerExternalModels(DialectRegistry &registry)
-{
-    using namespace ascir;
-    registry.addExtension(
-        +[](MLIRContext *ctx, AscendCDialect *dialect) { dialect->addInterface<PermissiveInlinerInterface>(); });
+void ascendc::registerExternalModels(DialectRegistry &registry) {
+  using namespace ascir;
+  registry.addExtension(+[](MLIRContext *ctx, AscendCDialect *dialect) {
+    dialect->addInterface<PermissiveInlinerInterface>();
+  });
 }

@@ -38,11 +38,15 @@ extern "C" {
  * workspaceSize : size of workspace(output).
  * executor : executor context(output).
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnMoeInitRoutingV2GetWorkspaceSize(
-    const aclTensor *x, const aclTensor *expertIdx, int64_t activeNumOptional, int64_t expertCapacityOptional,
-    int64_t expertNumOptional, int64_t dropPadModeOptional, int64_t expertTokensCountOrCumsumFlagOptional,
-    bool expertTokensBeforeCapacityFlagOptional, const aclTensor *expandedXOut, const aclTensor *expandedRowIdxOut,
-    const aclTensor *expertTokensCountOrCumsumOutOptional, const aclTensor *expertTokensBeforeCapacityOutOptional,
+__attribute__((visibility("default"))) aclnnStatus
+aclnnMoeInitRoutingV2GetWorkspaceSize(
+    const aclTensor *x, const aclTensor *expertIdx, int64_t activeNumOptional,
+    int64_t expertCapacityOptional, int64_t expertNumOptional,
+    int64_t dropPadModeOptional, int64_t expertTokensCountOrCumsumFlagOptional,
+    bool expertTokensBeforeCapacityFlagOptional, const aclTensor *expandedXOut,
+    const aclTensor *expandedRowIdxOut,
+    const aclTensor *expertTokensCountOrCumsumOutOptional,
+    const aclTensor *expertTokensBeforeCapacityOutOptional,
     uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /* funtion: aclnnMoeInitRoutingV2
@@ -52,8 +56,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnMoeInitRoutingV2GetWorks
  * executor : executor context(input).
  * stream : acl stream.
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnMoeInitRoutingV2(void *workspace, uint64_t workspaceSize,
-                                                                         aclOpExecutor *executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnMoeInitRoutingV2(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

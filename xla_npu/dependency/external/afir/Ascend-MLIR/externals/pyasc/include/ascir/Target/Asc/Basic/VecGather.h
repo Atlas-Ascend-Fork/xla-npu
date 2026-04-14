@@ -37,7 +37,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::GatherL1Op op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::GatherL2Op op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_GATHER_H
+#endif  // ASCIR_TARGET_ASC_BASIC_GATHER_H

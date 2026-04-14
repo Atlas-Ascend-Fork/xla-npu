@@ -53,7 +53,8 @@ LogicalResult TransposeOp::verify() {
   for (auto attr : permutation) {
     int64_t dim = llvm::cast<IntegerAttr>(attr).getInt();
     if (dim < 0 || dim >= rank) {
-      return emitOpError("permutation dimension ") << dim << " out of range [0, " << rank << ")";
+      return emitOpError("permutation dimension ")
+             << dim << " out of range [0, " << rank << ")";
     }
     if (seen[dim]) {
       return emitOpError("duplicate dimension ") << dim << " in permutation";
@@ -80,7 +81,8 @@ LogicalResult TransposeOp::inferReturnTypeComponents(
     mlir::MLIRContext *context, std::optional<mlir::Location> location,
     mlir::afir::TransposeOpAdaptor adaptor,
     llvm::SmallVectorImpl<mlir::ShapedTypeComponents> &inferredReturnType) {
-  auto inputType = llvm::dyn_cast<RankedTensorType>(adaptor.getInput().getType());
+  auto inputType =
+      llvm::dyn_cast<RankedTensorType>(adaptor.getInput().getType());
   if (!inputType) {
     return failure();
   }
@@ -98,6 +100,7 @@ LogicalResult TransposeOp::inferReturnTypeComponents(
     resultShape[i] = inputShape[srcDim];
   }
 
-  inferredReturnType.push_back(ShapedTypeComponents(resultShape, inputType.getElementType()));
+  inferredReturnType.push_back(
+      ShapedTypeComponents(resultShape, inputType.getElementType()));
   return success();
 }

@@ -30,27 +30,31 @@ limitations under the License.
 
 namespace op {
 namespace internal {
-#define AICPU_ASSERT(exp)                                         \
-    do {                                                          \
-        if (!(exp)) {                                             \
-            OP_LOGE(ACLNN_ERR_INNER, "Assert %s failed", #exp);   \
-            return;                                               \
-        }                                                         \
-    } while (false)
+#define AICPU_ASSERT(exp)                                 \
+  do {                                                    \
+    if (!(exp)) {                                         \
+      OP_LOGE(ACLNN_ERR_INNER, "Assert %s failed", #exp); \
+      return;                                             \
+    }                                                     \
+  } while (false)
 
-#define AICPU_ASSERT_RETVAL(exp, ret)                             \
-    do {                                                          \
-        if (!(exp)) {                                             \
-            OP_LOGE(ret, "Assert %s failed", #exp);               \
-            return (ret);                                         \
-        }                                                         \
-    } while (false)
+#define AICPU_ASSERT_RETVAL(exp, ret)         \
+  do {                                        \
+    if (!(exp)) {                             \
+      OP_LOGE(ret, "Assert %s failed", #exp); \
+      return (ret);                           \
+    }                                         \
+  } while (false)
 
 #define AICPU_ASSERT_OK_RETVAL(v) AICPU_ASSERT_RETVAL(((v) == OK), (v))
-#define AICPU_ASSERT_RTOK_RETVAL(v) AICPU_ASSERT_RETVAL(((v) == 0), (ACLNN_ERR_RUNTIME_ERROR))
-#define AICPU_ASSERT_NOTNULL_RETVAL(v) AICPU_ASSERT_RETVAL(((v) != nullptr), (ACLNN_ERR_PARAM_NULLPTR))
-#define AICPU_ASSERT_TRUE_RETVAL(v) AICPU_ASSERT_RETVAL((v), (ACLNN_ERR_PARAM_INVALID))
-#define AICPU_ASSERT_GE_SUCCESS(v) AICPU_ASSERT_RETVAL(((v) == ge::GRAPH_SUCCESS), (ACLNN_ERR_INNER))
+#define AICPU_ASSERT_RTOK_RETVAL(v) \
+  AICPU_ASSERT_RETVAL(((v) == 0), (ACLNN_ERR_RUNTIME_ERROR))
+#define AICPU_ASSERT_NOTNULL_RETVAL(v) \
+  AICPU_ASSERT_RETVAL(((v) != nullptr), (ACLNN_ERR_PARAM_NULLPTR))
+#define AICPU_ASSERT_TRUE_RETVAL(v) \
+  AICPU_ASSERT_RETVAL((v), (ACLNN_ERR_PARAM_INVALID))
+#define AICPU_ASSERT_GE_SUCCESS(v) \
+  AICPU_ASSERT_RETVAL(((v) == ge::GRAPH_SUCCESS), (ACLNN_ERR_INNER))
 
 #define AICPU_ASSERT_OK(v) AICPU_ASSERT(((v) == OK))
 #define AICPU_ASSERT_RTOK(v) AICPU_ASSERT(((v) == 0))
@@ -70,19 +74,18 @@ static constexpr size_t kUpdateOutputShapeEnd = 9U;
 static constexpr size_t kAicpuTimeStampNum = kUpdateOutputShapeEnd + 1U;
 
 struct AicpuTimeStamp {
-    struct timespec tp[kAicpuTimeStampNum];
-    bool isEnable;
+  struct timespec tp[kAicpuTimeStampNum];
+  bool isEnable;
 };
 extern AicpuTimeStamp gAicpuTimeStamp;
 
 static std::mutex gTimeStampMutex;
-static inline void RecordAicpuTime(const size_t index)
-{
-    if (gAicpuTimeStamp.isEnable && index < kAicpuTimeStampNum) {
-        const std::lock_guard<std::mutex> lk(gTimeStampMutex);
-        clock_gettime(CLOCK_MONOTONIC, &(gAicpuTimeStamp.tp[index]));
-    }
+static inline void RecordAicpuTime(const size_t index) {
+  if (gAicpuTimeStamp.isEnable && index < kAicpuTimeStampNum) {
+    const std::lock_guard<std::mutex> lk(gTimeStampMutex);
+    clock_gettime(CLOCK_MONOTONIC, &(gAicpuTimeStamp.tp[index]));
+  }
 }
-} // namespace internal
-} // namespace op
-#endif // OP_API_COMMON_INC_OPDEV_AICPU_AICPU_UTILS_H_
+}  // namespace internal
+}  // namespace op
+#endif  // OP_API_COMMON_INC_OPDEV_AICPU_AICPU_UTILS_H_

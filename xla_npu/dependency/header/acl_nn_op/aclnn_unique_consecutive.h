@@ -56,10 +56,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnUniqueConsecutiveGetWorkspaceSize(const aclTensor* self, bool returnInverse,
-                                                             bool returnCounts, int64_t dim, aclTensor* valueOut,
-                                                             aclTensor* inverseOut, aclTensor* countsOut,
-                                                             uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnUniqueConsecutiveGetWorkspaceSize(
+    const aclTensor* self, bool returnInverse, bool returnCounts, int64_t dim,
+    aclTensor* valueOut, aclTensor* inverseOut, aclTensor* countsOut,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnUniqueConsecutive的第二段接口，用于执行计算。
@@ -71,7 +71,9 @@ ACLNN_API aclnnStatus aclnnUniqueConsecutiveGetWorkspaceSize(const aclTensor* se
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnUniqueConsecutive(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnUniqueConsecutive(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
 #ifdef __cplusplus

@@ -46,10 +46,12 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV3GetWorkspaceSize(
-    const aclTensor* x, const aclTensor* smoothScalesOptional, const aclTensor* groupIndexOptional,
-    int64_t dstType, bool isSymmetrical, const char* quantMode,
-    const aclTensor* yOut, const aclTensor* scaleOut, const aclTensor* offsetOut, uint64_t* workspaceSize,
+__attribute__((visibility("default"))) aclnnStatus
+aclnnDynamicQuantV3GetWorkspaceSize(
+    const aclTensor* x, const aclTensor* smoothScalesOptional,
+    const aclTensor* groupIndexOptional, int64_t dstType, bool isSymmetrical,
+    const char* quantMode, const aclTensor* yOut, const aclTensor* scaleOut,
+    const aclTensor* offsetOut, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /**
@@ -61,8 +63,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV3GetWorkspa
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV3(void* workspace, uint64_t workspaceSize,
-                                                                       aclOpExecutor* executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnDynamicQuantV3(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

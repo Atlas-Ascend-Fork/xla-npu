@@ -31,8 +31,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnHardsigmoidBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnHardsigmoidBackward的第二段接口，执行计算。
@@ -46,11 +46,13 @@ ACLNN_API aclnnStatus aclnnHardsigmoidBackwardGetWorkspaceSize(
  * @param [in] stream(aclrtStream, 入参): acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnHardsigmoidBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnHardsigmoidBackward(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_HARDSIGMOID_BACKWARD_H_
+#endif  // OP_API_INC_HARDSIGMOID_BACKWARD_H_

@@ -58,38 +58,38 @@ namespace xla {
 // AsyncValueRef<NpuEvent> to be ready. This class could make such code more
 // robust by using setting the AsyncValue in the destructor.
 class MarkEventReadyOnExit {
-public:
-    explicit MarkEventReadyOnExit(tsl::AsyncValueRef<NpuEvent> event)
-        : event_(std::move(event)) {}
+ public:
+  explicit MarkEventReadyOnExit(tsl::AsyncValueRef<NpuEvent> event)
+      : event_(std::move(event)) {}
 
-    MarkEventReadyOnExit(const MarkEventReadyOnExit&) = delete;
-    MarkEventReadyOnExit& operator=(const MarkEventReadyOnExit&) = delete;
-    MarkEventReadyOnExit(MarkEventReadyOnExit&&) noexcept = default;
-    MarkEventReadyOnExit& operator=(MarkEventReadyOnExit&&) noexcept = default;
+  MarkEventReadyOnExit(const MarkEventReadyOnExit&) = delete;
+  MarkEventReadyOnExit& operator=(const MarkEventReadyOnExit&) = delete;
+  MarkEventReadyOnExit(MarkEventReadyOnExit&&) noexcept = default;
+  MarkEventReadyOnExit& operator=(MarkEventReadyOnExit&&) noexcept = default;
 
-    ~MarkEventReadyOnExit() {
-      if (event_) event_.SetStateConcrete();
-    }
+  ~MarkEventReadyOnExit() {
+    if (event_) event_.SetStateConcrete();
+  }
 
-    tsl::AsyncValueRef<NpuEvent> Release() && { return std::move(event_); }
+  tsl::AsyncValueRef<NpuEvent> Release() && { return std::move(event_); }
 
-private:
-    tsl::AsyncValueRef<NpuEvent> event_;
+ private:
+  tsl::AsyncValueRef<NpuEvent> event_;
 };
 
 class AbstractNpuBuffer {
-public:
-    // A helper function to determine if a BufferFromHostBuffer call is eligible
-    // for zero copy construction.
-    static bool BufferFromHostBufferSupportsZeroCopy(
-        const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
-        std::optional<absl::Span<int64_t const>> byte_strides,
-        const Shape& shape);
+ public:
+  // A helper function to determine if a BufferFromHostBuffer call is eligible
+  // for zero copy construction.
+  static bool BufferFromHostBufferSupportsZeroCopy(
+      const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
+      std::optional<absl::Span<int64_t const>> byte_strides,
+      const Shape& shape);
 };
 
 // Helper for copying into potentially sub-byte packed literals.
 void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
-    void* data, int64_t size);
+                void* data, int64_t size);
 
 }  // namespace xla
 

@@ -34,7 +34,7 @@ struct CountBatch {
   int64_t slide_stride = 0L;
   int64_t timeout = 0L;
   int64_t batch_dim = 0L;
-  int32_t flag = 0; // eg: eos/seg
+  int32_t flag = 0;  // eg: eos/seg
   bool padding = false;
   bool drop_remainder = false;
   int8_t rsv[90] = {};
@@ -45,7 +45,7 @@ struct TimeBatch {
   int64_t time_interval = 0L;
   int64_t timeout = 0L;
   int64_t batch_dim = -1;
-  int32_t flag = 0; // eg: eos/seg
+  int32_t flag = 0;  // eg: eos/seg
   bool padding = false;
   bool drop_remainder = false;
   int8_t rsv[90] = {};
@@ -61,6 +61,6 @@ struct DataFlowInputAttr {
   DataFlowAttrType attr_type;
   void *attr_value;
 };
-} // namespace dflow
-} // namespace ge
-#endif // INC_EXTERNAL_FLOW_GRAPH_FLOW_ATTR_H_
+}  // namespace dflow
+}  // namespace ge
+#endif  // INC_EXTERNAL_FLOW_GRAPH_FLOW_ATTR_H_

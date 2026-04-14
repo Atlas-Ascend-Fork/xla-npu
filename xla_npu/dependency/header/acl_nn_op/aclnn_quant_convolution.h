@@ -65,14 +65,13 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnQuantConvolutionGetWorkspaceSize(const aclTensor* input, const aclTensor* weight,
-                                                            const aclTensor* bias, const aclTensor *scale,
-                                                            const aclTensor *offset, const aclIntArray* stride,
-                                                            const aclIntArray* padding, const aclIntArray* dilation,
-                                                            bool transposed, const aclIntArray* outputPadding,
-                                                            int64_t groups, int32_t offsetx,
-                                                            const char* roundMode, aclTensor* output,
-                                                            uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnQuantConvolutionGetWorkspaceSize(
+    const aclTensor* input, const aclTensor* weight, const aclTensor* bias,
+    const aclTensor* scale, const aclTensor* offset, const aclIntArray* stride,
+    const aclIntArray* padding, const aclIntArray* dilation, bool transposed,
+    const aclIntArray* outputPadding, int64_t groups, int32_t offsetx,
+    const char* roundMode, aclTensor* output, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 /**
  * @brief quant convolution接口，进行kernellaunch
  *
@@ -82,7 +81,9 @@ ACLNN_API aclnnStatus aclnnQuantConvolutionGetWorkspaceSize(const aclTensor* inp
  * @param [in] executor: op执行器，包含了算子计算流程。调用该接口后，executor不再可用
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnQuantConvolution(void *workspace, const uint64_t workspaceSize, aclOpExecutor *executor,
+ACLNN_API aclnnStatus aclnnQuantConvolution(void* workspace,
+                                            const uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 #ifdef __cplusplus
 }

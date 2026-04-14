@@ -44,8 +44,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnIsCloseGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* other, double rtol, double atol, bool equal_nan, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* other, double rtol, double atol,
+    bool equal_nan, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnIsClose的第二段接口，用于执行计算。
@@ -60,11 +61,11 @@ ACLNN_API aclnnStatus aclnnIsCloseGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnIsClose(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnIsClose(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ISCLOSE_H_
+#endif  // OP_API_INC_LEVEL2_ISCLOSE_H_

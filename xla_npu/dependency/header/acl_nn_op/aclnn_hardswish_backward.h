@@ -58,8 +58,8 @@ graph LR
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnHardswishBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnHardswishBackward的第二段接口，用于执行计算。
@@ -93,11 +93,13 @@ graph LR
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnHardswishBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnHardswishBackward(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_HARDSWISH_BACKWARD_H_
+#endif  // OP_API_INC_HARDSWISH_BACKWARD_H_

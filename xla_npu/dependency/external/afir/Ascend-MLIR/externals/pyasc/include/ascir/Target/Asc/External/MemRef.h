@@ -28,6 +28,6 @@ LogicalResult printOperation(CodeEmitter &emitter, memref::StoreOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, memref::CastOp op);
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_MLIR_MEMREF_H
+#endif  // ASCIR_TARGET_ASC_MLIR_MEMREF_H

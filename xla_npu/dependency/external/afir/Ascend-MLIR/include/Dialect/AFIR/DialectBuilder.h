@@ -47,15 +47,12 @@ class AFIRBuilder {
  public:
   AFIRBuilder(OpBuilder &builder, Location loc) : builder(builder), loc(loc) {}
 
-  AFIRBuilder(OpBuilder &builder, Operation *op) : builder(builder), loc(op->getLoc()) {}
+  AFIRBuilder(OpBuilder &builder, Operation *op)
+      : builder(builder), loc(op->getLoc()) {}
 
   // Get the underlying builder and location
-  OpBuilder &getBuilder() const {
-    return builder;
-  }
-  Location getLoc() const {
-    return loc;
-  }
+  OpBuilder &getBuilder() const { return builder; }
+  Location getLoc() const { return loc; }
 
   //===--------------------------------------------------------------------===//
   // Arithmetic Operations
@@ -110,7 +107,8 @@ class AFIRBuilder {
 /// It can be used to insert operations at specific points in the IR.
 class ScopedAFIRBuilder : public AFIRBuilder {
  public:
-  ScopedAFIRBuilder(OpBuilder &builder, Location loc) : AFIRBuilder(builder, loc), insertionGuard(builder) {}
+  ScopedAFIRBuilder(OpBuilder &builder, Location loc)
+      : AFIRBuilder(builder, loc), insertionGuard(builder) {}
 
   /// Create a builder that inserts at the beginning of a block.
   static ScopedAFIRBuilder atBlockBegin(OpBuilder &builder, Block *block) {

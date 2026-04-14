@@ -22,36 +22,25 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 aclnnStatus aclnnNsaSelectedAttentionGetWorkspaceSize(
-    const aclTensor *query, 
-    const aclTensor *key, 
-    const aclTensor *value, 
-    const aclTensor *topkIndices, 
-    const aclTensor *attenMaskOptional,
+    const aclTensor *query, const aclTensor *key, const aclTensor *value,
+    const aclTensor *topkIndices, const aclTensor *attenMaskOptional,
     const aclIntArray *actualSeqQLenOptional,
-    const aclIntArray *actualSeqKvLenOptional, 
-    double scaleValue, 
-    int64_t headNum, 
-    char *inputLayout,
-    int64_t sparseMode, 
-    int64_t selectedBlockSize,
-    int64_t selectedBlockCount, 
-    const aclTensor *softmaxMaxOut,
-    const aclTensor *softmaxSumOut, 
-    const aclTensor *attentionOut,
-    uint64_t *workspaceSize, 
+    const aclIntArray *actualSeqKvLenOptional, double scaleValue,
+    int64_t headNum, char *inputLayout, int64_t sparseMode,
+    int64_t selectedBlockSize, int64_t selectedBlockCount,
+    const aclTensor *softmaxMaxOut, const aclTensor *softmaxSumOut,
+    const aclTensor *attentionOut, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
 /**
  * @brief aclnnNsaSelectedAttention的第二段接口，用于执行计算。
  */
-aclnnStatus aclnnNsaSelectedAttention(
-    void *workspace, 
-    uint64_t workspaceSize, 
-    aclOpExecutor *executor,
-    const aclrtStream stream);
+aclnnStatus aclnnNsaSelectedAttention(void *workspace, uint64_t workspaceSize,
+                                      aclOpExecutor *executor,
+                                      const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_NSA_SELECTED_ATTENTION_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_NSA_SELECTED_ATTENTION_H_

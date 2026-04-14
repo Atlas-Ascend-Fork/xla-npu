@@ -23,17 +23,19 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnBatchNormStatsGetWorkspaceSize(
-    const aclTensor* input, double eps, aclTensor* mean, aclTensor* invstd, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* input, double eps, aclTensor* mean, aclTensor* invstd,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBatchNormStats的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnBatchNormStats(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBatchNormStats(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
+                                          const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_BATCH_NORMAL_STATS_H_
+#endif  // OP_API_BATCH_NORMAL_STATS_H_

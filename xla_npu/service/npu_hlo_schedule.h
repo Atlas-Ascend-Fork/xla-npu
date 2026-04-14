@@ -30,17 +30,17 @@ limitations under the License.
 namespace xla {
 
 struct NpuScheduleMetadata {
-    uint64_t scheduler_mem_limit;
-    int64_t peak_memory_usage;
+  uint64_t scheduler_mem_limit;
+  int64_t peak_memory_usage;
 };
 
 // Determines the schedule of HLO instructions for a module run on NPU.
 // This is a simplified version of the GPU scheduler, adapted for NPU.
 // Uses generic ScheduleModule function from xla/hlo/transforms/simplifiers/hlo_memory_scheduler.h
-absl::StatusOr<NpuScheduleMetadata> NpuScheduleModule(HloModule* module, int64_t pointer_size,
-                                                      const se::DeviceDescription& npu_device_info,
-                                                      SymbolicExprContext* symbolic_expr_context,
-                                                      const NpuAliasInfo* alias_info);
+absl::StatusOr<NpuScheduleMetadata> NpuScheduleModule(
+    HloModule* module, int64_t pointer_size,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context, const NpuAliasInfo* alias_info);
 
 }  // namespace xla
 

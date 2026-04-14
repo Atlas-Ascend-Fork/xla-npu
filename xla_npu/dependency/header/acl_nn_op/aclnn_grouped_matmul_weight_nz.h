@@ -47,14 +47,21 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulWeightNzGetWorkspaceSize(
-    const aclTensorList *x, const aclTensorList *weight, const aclTensorList *biasOptional,
-    const aclTensorList *scaleOptional, const aclTensorList *offsetOptional,
-    const aclTensorList *antiquantScaleOptional, const aclTensorList *antiquantOffsetOptional,
-    const aclTensorList *perTokenScaleOptional, const aclTensor *groupListOptional,
-    const aclTensorList *activationInputOptional, const aclTensorList *activationQuantScaleOptional,
-    const aclTensorList *activationQuantOffsetOptional,  int64_t splitItem, int64_t groupType,
-    int64_t groupListType, int64_t actType, aclIntArray *tuningConfigOptional, int64_t quantGroupSize, aclTensorList *out, aclTensorList *activationFeatureOutOptional,
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulWeightNzGetWorkspaceSize(
+    const aclTensorList *x, const aclTensorList *weight,
+    const aclTensorList *biasOptional, const aclTensorList *scaleOptional,
+    const aclTensorList *offsetOptional,
+    const aclTensorList *antiquantScaleOptional,
+    const aclTensorList *antiquantOffsetOptional,
+    const aclTensorList *perTokenScaleOptional,
+    const aclTensor *groupListOptional,
+    const aclTensorList *activationInputOptional,
+    const aclTensorList *activationQuantScaleOptional,
+    const aclTensorList *activationQuantOffsetOptional, int64_t splitItem,
+    int64_t groupType, int64_t groupListType, int64_t actType,
+    aclIntArray *tuningConfigOptional, int64_t quantGroupSize,
+    aclTensorList *out, aclTensorList *activationFeatureOutOptional,
     aclTensorList *dynQuantScaleOutOptional, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
@@ -66,8 +73,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulWeightNzGet
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulWeightNz(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                            aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulWeightNz(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

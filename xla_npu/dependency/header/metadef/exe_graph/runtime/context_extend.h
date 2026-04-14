@@ -35,9 +35,7 @@ class KernelExtendInfo {
    * 获取kernel name
    * @return kernel name
    */
-  const ge::char_t *GetKernelName() const {
-    return kernel_name_;
-  }
+  const ge::char_t *GetKernelName() const { return kernel_name_; }
   /**
    * 设置kernel name
    * @param kernel_name kernel name
@@ -49,15 +47,13 @@ class KernelExtendInfo {
    * 获取kernel type
    * @return kernel type
    */
-  const ge::char_t *GetKernelType() const {
-    return kernel_type_;
-  }
+  const ge::char_t *GetKernelType() const { return kernel_type_; }
   /**
    * 设置kernel type
    * @param kernel_type kernel type
    */
   void SetKernelType(const ge::char_t *const kernel_type) {
-    (void) reserved_;
+    (void)reserved_;
     kernel_type_ = kernel_type;
   }
 
@@ -70,8 +66,10 @@ class KernelExtendInfo {
  private:
   const ge::char_t *kernel_name_;
   const ge::char_t *kernel_type_;
-  uint8_t reserved_[56]; // Reserved field, 32+8, do not directly use when only 8-byte left
+  uint8_t reserved_
+      [56];  // Reserved field, 32+8, do not directly use when only 8-byte left
 };
-static_assert(std::is_standard_layout<KernelExtendInfo>::value, "The class KernelExtendInfo must be a POD");
+static_assert(std::is_standard_layout<KernelExtendInfo>::value,
+              "The class KernelExtendInfo must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_CONTEXT_EXTEND_H_

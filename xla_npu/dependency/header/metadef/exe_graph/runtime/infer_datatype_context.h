@@ -67,8 +67,10 @@ class InferDataTypeContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return datatype，index或relative_index非法时，返回DT_UNDEFINED
    */
-  ge::DataType GetDynamicInputDataType(const size_t index, const size_t relative_index) const {
-    const auto in_datatype = GetDynamicInputPointer<ge::DataType>(index, relative_index);
+  ge::DataType GetDynamicInputDataType(const size_t index,
+                                       const size_t relative_index) const {
+    const auto in_datatype =
+        GetDynamicInputPointer<ge::DataType>(index, relative_index);
     if (in_datatype == nullptr) {
       return ge::DT_UNDEFINED;
     }
@@ -94,7 +96,8 @@ class InferDataTypeContext : public ExtendedKernelContext {
    * @param datatype 输出datatype
    * @return 设置结果，index非法时，返回失败
    */
-  ge::graphStatus SetOutputDataType(const size_t index, const ge::DataType datatype) {
+  ge::graphStatus SetOutputDataType(const size_t index,
+                                    const ge::DataType datatype) {
     const auto output_dtype = GetOutputPointer<ge::DataType>(index);
     if (output_dtype == nullptr) {
       return ge::DT_UNDEFINED;
@@ -103,6 +106,7 @@ class InferDataTypeContext : public ExtendedKernelContext {
     return ge::GRAPH_SUCCESS;
   }
 };
-static_assert(std::is_standard_layout<InferDataTypeContext>::value, "The class InferDataTypeContext must be a POD");
+static_assert(std::is_standard_layout<InferDataTypeContext>::value,
+              "The class InferDataTypeContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_INFER_SHAPE_CONTEXT_H_

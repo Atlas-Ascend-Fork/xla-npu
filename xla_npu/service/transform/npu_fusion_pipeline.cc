@@ -52,79 +52,85 @@ limitations under the License.
 
 namespace xla {
 
-HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
-                                  HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-                                  tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
-                                  SymbolicExprContext* symbolic_expr_context) {
-    HloPassFix<HloPassPipeline> fusion("npu-fusion");
+HloPassPipeline NpuFusionPipeline(
+    const DebugOptions& debug_options,
+    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+    tsl::thread::ThreadPool* thread_pool,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context) {
+  HloPassFix<HloPassPipeline> fusion("npu-fusion");
 
-    HloVerifierOpts opts = HloVerifierOpts().MakeLayoutSensitive().WithInstructionCanChangeLayout(
-        LayoutAssignment::InstructionCanChangeLayout);
-    fusion.AddInvariantCheckerDebug<HloVerifier>(std::make_unique<CpuGpuVerifierMetadata>(std::move(opts)),
-                                                 "hlo verifier (npufusion)");
+  HloVerifierOpts opts =
+      HloVerifierOpts().MakeLayoutSensitive().WithInstructionCanChangeLayout(
+          LayoutAssignment::InstructionCanChangeLayout);
+  fusion.AddInvariantCheckerDebug<HloVerifier>(
+      std::make_unique<CpuGpuVerifierMetadata>(std::move(opts)),
+      "hlo verifier (npufusion)");
 
-    // NPU cost analysis options - use base HloCostAnalysis::Options
-    HloCostAnalysis::Options cost_analysis_options{shape_size_bytes_function,
-                                                   /*per_second_rates=*/{},
-                                                   /*min_latencies_seconds=*/{},
-                                                   /*count_multiple_input_accesses=*/true};
+  // NPU cost analysis options - use base HloCostAnalysis::Options
+  HloCostAnalysis::Options cost_analysis_options{
+      shape_size_bytes_function,
+      /*per_second_rates=*/{},
+      /*min_latencies_seconds=*/{},
+      /*count_multiple_input_accesses=*/true};
 
-    // Print initial HLO
-    fusion.AddPass<NpuHloPrinterPass>("Npu fusion initial");
+  // Print initial HLO
+  fusion.AddPass<NpuHloPrinterPass>("Npu fusion initial");
 
-    // NpuGemmFusionSwapOperands - swap GEMM operands for better NPU layout
-    // Run BEFORE priority fusion to optimize GEMM operand order
-    fusion.AddPass<NpuGemmFusionSwapOperands>();
+  // NpuGemmFusionSwapOperands - swap GEMM operands for better NPU layout
+  // Run BEFORE priority fusion to optimize GEMM operand order
+  fusion.AddPass<NpuGemmFusionSwapOperands>();
 
-    // Priority fusion pass for NPU - independent implementation
-    fusion.AddPass<NpuPriorityFusion>(thread_pool, npu_device_info, std::move(cost_analysis_options),
-                                      symbolic_expr_context);
+  // Priority fusion pass for NPU - independent implementation
+  fusion.AddPass<NpuPriorityFusion>(thread_pool, npu_device_info,
+                                    std::move(cost_analysis_options),
+                                    symbolic_expr_context);
 
-    // Running CSE affects how many users an op has. This plays a role in what
-    // we detect as fusion patterns.
-    fusion.AddPass<HloCSE>(
-        /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
-        /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
-    fusion.AddPass<HloDCE>();
+  // Running CSE affects how many users an op has. This plays a role in what
+  // we detect as fusion patterns.
+  fusion.AddPass<HloCSE>(
+      /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
+      /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
+  fusion.AddPass<HloDCE>();
 
-    // Copy fusion for NPU
-    fusion.AddPass<NpuCopyFusion>(npu_device_info);
+  // Copy fusion for NPU
+  fusion.AddPass<NpuCopyFusion>(npu_device_info);
 
-    // Create MLIR context for passes that need it
-    mlir::MLIRContext mlir_context;
+  // Create MLIR context for passes that need it
+  mlir::MLIRContext mlir_context;
 
-    // NpuGemmFusion - create ACLNN GEMM fusions
-    // Run after basic fusions to convert suitable GEMM patterns
-    fusion.AddPass<NpuGemmFusion>(npu_device_info, &mlir_context);
+  // NpuGemmFusion - create ACLNN GEMM fusions
+  // Run after basic fusions to convert suitable GEMM patterns
+  fusion.AddPass<NpuGemmFusion>(npu_device_info, &mlir_context);
 
-    fusion.AddPass<HloCSE>(
-        /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
-        /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
-    fusion.AddPass<HloDCE>();
+  fusion.AddPass<HloCSE>(
+      /*is_layout_sensitive=*/true, /*ignore_control_dependencies=*/false,
+      /*should_eliminate_computation=*/&HloComputation::IsFusionComputation);
+  fusion.AddPass<HloDCE>();
 
-    // Dynamic slice fusion rewriter for NPU
-    fusion.AddPass<NpuDynamicSliceFusionRewriter>("NPU");
+  // Dynamic slice fusion rewriter for NPU
+  fusion.AddPass<NpuDynamicSliceFusionRewriter>("NPU");
 
-    // Fusion dynamic memcpy rewriter for NPU
-    fusion.AddPass<NpuFusionDynamicMemcpyRewriter>();
+  // Fusion dynamic memcpy rewriter for NPU
+  fusion.AddPass<NpuFusionDynamicMemcpyRewriter>();
 
-    // NpuCustomKernelFusionRewriter - match CANN custom kernel patterns
-    fusion.AddPass<NpuCustomKernelFusionRewriter>();
+  // NpuCustomKernelFusionRewriter - match CANN custom kernel patterns
+  fusion.AddPass<NpuCustomKernelFusionRewriter>();
 
-    // NpuFusionBlockLevelRewriter - convert loop/input fusions to block-level
-    fusion.AddPass<NpuFusionBlockLevelRewriter>(npu_device_info);
+  // NpuFusionBlockLevelRewriter - convert loop/input fusions to block-level
+  fusion.AddPass<NpuFusionBlockLevelRewriter>(npu_device_info);
 
-    // NpuNestGemmFusion - convert GEMM fusions to nested fusions
-    fusion.AddPass<NpuNestGemmFusion>(npu_device_info, symbolic_expr_context);
+  // NpuNestGemmFusion - convert GEMM fusions to nested fusions
+  fusion.AddPass<NpuNestGemmFusion>(npu_device_info, symbolic_expr_context);
 
-    // Rename fusions - use NPU implementation for completeness
-    fusion.AddPass<NpuRenameFusions>();
+  // Rename fusions - use NPU implementation for completeness
+  fusion.AddPass<NpuRenameFusions>();
 
-    // Final HloDCE pass
-    fusion.AddPass<HloDCE>();
-    fusion.AddPass<NpuHloPrinterPass>("Final HloDCE");
+  // Final HloDCE pass
+  fusion.AddPass<HloDCE>();
+  fusion.AddPass<NpuHloPrinterPass>("Final HloDCE");
 
-    return std::move(fusion);
+  return std::move(fusion);
 }
 
 }  // namespace xla

@@ -72,9 +72,11 @@ static LogicalResult verifyUnaryOp(Operation *op) {
     ArrayRef<int64_t> resultShape = resultType.getShape();
 
     for (size_t i = 0; i < inputShape.size(); ++i) {
-      if (inputShape[i] != ShapedType::kDynamic && resultShape[i] != ShapedType::kDynamic &&
+      if (inputShape[i] != ShapedType::kDynamic &&
+          resultShape[i] != ShapedType::kDynamic &&
           inputShape[i] != resultShape[i]) {
-        return op->emitOpError("operand and result must have compatible shapes");
+        return op->emitOpError(
+            "operand and result must have compatible shapes");
       }
     }
   }
@@ -88,15 +90,7 @@ static LogicalResult verifyUnaryOp(Operation *op) {
 // Data Operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult ScalarOp::verify() {
-  return verifyNullaryOp(getOperation());
-}
-LogicalResult IndexExprOp::verify() {
-  return verifyNullaryOp(getOperation());
-}
-LogicalResult LoadOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
-LogicalResult StoreOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
+LogicalResult ScalarOp::verify() { return verifyNullaryOp(getOperation()); }
+LogicalResult IndexExprOp::verify() { return verifyNullaryOp(getOperation()); }
+LogicalResult LoadOp::verify() { return verifyUnaryOp(getOperation()); }
+LogicalResult StoreOp::verify() { return verifyUnaryOp(getOperation()); }

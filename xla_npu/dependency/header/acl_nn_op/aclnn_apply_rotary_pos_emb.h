@@ -22,11 +22,14 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnApplyRotaryPosEmbGetWorkspaceSize(
-    aclTensor* queryRef, aclTensor* keyRef, const aclTensor* cos, const aclTensor* sin, int64_t layout,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    aclTensor* queryRef, aclTensor* keyRef, const aclTensor* cos,
+    const aclTensor* sin, int64_t layout, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 /* @brief aclnnApplyRotaryPosEmb的第二段接口，用于执行计算。 */
-ACLNN_API aclnnStatus
-aclnnApplyRotaryPosEmb(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnApplyRotaryPosEmb(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }

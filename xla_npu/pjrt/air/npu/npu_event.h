@@ -24,4 +24,4 @@ struct NpuEvent {
 };
 
 }  // namespace xla
-#endif //NPU_EVENT_H_
+#endif  //NPU_EVENT_H_

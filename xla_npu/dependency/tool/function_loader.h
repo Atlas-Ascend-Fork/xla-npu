@@ -105,15 +105,15 @@ class FunctionRegisterBuilder {
                           const std::string& funcName) noexcept;
 };  // class FunctionRegisterBuilder
 
-#define REGISTER_LIBRARY(soName, ...)                            \
+#define REGISTER_LIBRARY(soName, ...)                                   \
   auto library_##soName = std::unique_ptr<::xla::dep::FunctionLoader>(  \
       new ::xla::dep::FunctionLoader(#soName, ##__VA_ARGS__));          \
   static ::xla::dep::FunctionRegisterBuilder register_library_##soName( \
       #soName, library_##soName);
 
-#define REGISTER_FUNCTION(soName, funcName)                                 \
-  static ::xla::dep::FunctionRegisterBuilder register_function_##funcName(#soName, \
-                                                                   #funcName);
+#define REGISTER_FUNCTION(soName, funcName)                                \
+  static ::xla::dep::FunctionRegisterBuilder register_function_##funcName( \
+      #soName, #funcName);
 
 // 错误值获取模板：默认返回-1，可特化适配不同类型
 template <typename T>
@@ -143,19 +143,19 @@ inline void GetDefaultError<void>() {
 // name: 函数名（如AclnnExpandGetWorkspaceSize）
 // args_type: 类型+参数名列表（如const aclTensor* self, ...）
 // args_name: 仅参数名列表（如self, size, ...）
-#define DECLARE_ACL_FUNC(soName, ret, name, args_type, args_name)     \
-  inline ret name args_type {                                         \
-    using FuncPtr = ret(*) args_type;                                 \
-    static FuncPtr cached_func = nullptr;                             \
-    if (!cached_func) {                                               \
-      cached_func = reinterpret_cast<FuncPtr>(                        \
+#define DECLARE_ACL_FUNC(soName, ret, name, args_type, args_name)            \
+  inline ret name args_type {                                                \
+    using FuncPtr = ret(*) args_type;                                        \
+    static FuncPtr cached_func = nullptr;                                    \
+    if (!cached_func) {                                                      \
+      cached_func = reinterpret_cast<FuncPtr>(                               \
           ::xla::dep::FunctionRegister::GetInstance()->Get(#soName, #name)); \
-    }                                                                 \
-    if (cached_func) {                                                \
-      return cached_func(STRIP_PARENS(args_name));                    \
-    } else {                                                          \
+    }                                                                        \
+    if (cached_func) {                                                       \
+      return cached_func(STRIP_PARENS(args_name));                           \
+    } else {                                                                 \
       return ::xla::dep::GetDefaultError<ret>();                             \
-    }                                                                 \
+    }                                                                        \
   }
 
 }  // namespace dep

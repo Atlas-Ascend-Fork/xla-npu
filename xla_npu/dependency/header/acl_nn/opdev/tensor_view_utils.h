@@ -38,7 +38,8 @@ bool IsContiguous(const aclTensor *tensor);
  * @param tensorList The input tensors.
  * @return
  */
-bool CanPickViewAsContiguous(std::initializer_list<const aclTensor *> tensorList);
+bool CanPickViewAsContiguous(
+    std::initializer_list<const aclTensor *> tensorList);
 
 /**
  * @brief Check whether the input tensor can be regarded as a view of a contiguous tensor.
@@ -53,6 +54,6 @@ bool CanPickViewAsContiguous(const aclTensor *tensor);
  * @return bool True/false
  */
 bool Validate(const aclTensor *tensor);
-} // namespace op
+}  // namespace op
 
-#endif // OP_API_COMMON_INC_OP_DEV_TENSOR_VIEW_UTILS_H
+#endif  // OP_API_COMMON_INC_OP_DEV_TENSOR_VIEW_UTILS_H

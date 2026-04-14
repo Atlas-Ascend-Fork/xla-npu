@@ -52,8 +52,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnFmodScalarGetWorkspaceSize(const aclTensor* self, const aclScalar* other, aclTensor* out,
-                                                      uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnFmodScalarGetWorkspaceSize(const aclTensor* self,
+                                                      const aclScalar* other,
+                                                      aclTensor* out,
+                                                      uint64_t* workspaceSize,
+                                                      aclOpExecutor** executor);
 
 /**
  * @brief aclnnFmodScalar的第二段接口，用于执行计算。
@@ -63,7 +66,8 @@ ACLNN_API aclnnStatus aclnnFmodScalarGetWorkspaceSize(const aclTensor* self, con
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnFmodScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnFmodScalar(void* workspace, uint64_t workspaceSize,
+                                      aclOpExecutor* executor,
                                       aclrtStream stream);
 
 /**
@@ -97,8 +101,9 @@ ACLNN_API aclnnStatus aclnnFmodScalar(void* workspace, uint64_t workspaceSize, a
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnInplaceFmodScalarGetWorkspaceSize(aclTensor* selfRef, const aclScalar* other,
-                                                             uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceFmodScalarGetWorkspaceSize(
+    aclTensor* selfRef, const aclScalar* other, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceFmodScalar的第二段接口，用于执行计算。
@@ -110,7 +115,9 @@ ACLNN_API aclnnStatus aclnnInplaceFmodScalarGetWorkspaceSize(aclTensor* selfRef,
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceFmodScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceFmodScalar(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
 #ifdef __cplusplus

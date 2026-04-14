@@ -23,16 +23,20 @@ extern "C" {
 /**
  * @brief aclnnUpsampleBilinear2dBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnUpsampleBilinear2dBackward(
-    void *workspace, uint64_t workspace_size, aclOpExecutor *executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleBilinear2dBackward(void *workspace,
+                                                      uint64_t workspace_size,
+                                                      aclOpExecutor *executor,
+                                                      aclrtStream stream);
 
 /**
  * @brief aclnnUpsampleBilinear2dBackward的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_train
  */
-ACLNN_API aclnnStatus aclnnUpsampleBilinear2dBackwardGetWorkspaceSize(const aclTensor *gradOut,
-    const aclIntArray *outputSize, const aclIntArray *inputSize, bool alignCorners, double scalesH, double scalesW,
-    aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnUpsampleBilinear2dBackwardGetWorkspaceSize(
+    const aclTensor *gradOut, const aclIntArray *outputSize,
+    const aclIntArray *inputSize, bool alignCorners, double scalesH,
+    double scalesW, aclTensor *out, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 #ifdef __cplusplus
 }
 #endif

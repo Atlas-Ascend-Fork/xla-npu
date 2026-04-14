@@ -53,8 +53,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnInplaceMaskedFillTensorGetWorkspaceSize(
-    aclTensor* selfRef, const aclTensor* mask, const aclTensor* value, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    aclTensor* selfRef, const aclTensor* mask, const aclTensor* value,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnInplaceMaskedFillTensor的第二段接口，用于执行计算。
  *
@@ -87,11 +87,13 @@ ACLNN_API aclnnStatus aclnnInplaceMaskedFillTensorGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceMaskedFillTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceMaskedFillTensor(void* workspace,
+                                                   uint64_t workspaceSize,
+                                                   aclOpExecutor* executor,
+                                                   aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_MASKEF_FILL_TENSOR_H_
+#endif  // OP_API_INC_MASKEF_FILL_TENSOR_H_

@@ -82,44 +82,35 @@ class TilingData {
    * 获取本实例可容纳的最大tiling data长度
    * @return 最大tiling data长度
    */
-  size_t GetCapacity() const {
-    return capacity_;
-  }
+  size_t GetCapacity() const { return capacity_; }
   /**
    * 获取tiling data长度
    * @return tiling data长度
    */
-  size_t GetDataSize() const {
-    return data_size_;
-  }
+  size_t GetDataSize() const { return data_size_; }
   /**
    * 设置tiling data长度
    * @param size tiling data长度
    */
-  void SetDataSize(const size_t size) {
-    data_size_ = size;
-  }
+  void SetDataSize(const size_t size) { data_size_ = size; }
   /**
    * 获取data指针
    * @return data指针
    */
-  void *GetData() {
-    return data_;
-  }
+  void *GetData() { return data_; }
   /**
    * 获取data指针
    * @return data指针
    */
-  const void *GetData() const {
-    return data_;
-  }
+  const void *GetData() const { return data_; }
   /**
    * 向后添加tiling data，若添加超过可容纳的最大长度，则添加失败
    * @tparam T 添加的tiling data的类型
    * @param data 添加的tiling data实例
    * @return 成功返回ge::GRAPH_SUCCESS
    */
-  template<typename T, typename std::enable_if<std::is_standard_layout<T>::value, int>::type = 0>
+  template <typename T, typename std::enable_if<
+                            std::is_standard_layout<T>::value, int>::type = 0>
   ge::graphStatus Append(const T &data) {
     size_t after_size;
     if (ge::AddOverflow(data_size_, sizeof(data), after_size)) {
@@ -128,12 +119,14 @@ class TilingData {
     if (after_size > capacity_) {
       return ge::GRAPH_FAILED;
     }
-    *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(data_) + GetDataSize()) = data;
+    *reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(data_) + GetDataSize()) =
+        data;
     data_size_ = after_size;
     return ge::GRAPH_SUCCESS;
   }
 
-  template<typename T, typename std::enable_if<std::is_standard_layout<T>::value, int>::type = 0>
+  template <typename T, typename std::enable_if<
+                            std::is_standard_layout<T>::value, int>::type = 0>
   ge::graphStatus Append(const T *data, size_t append_num) {
     size_t append_size;
     if (ge::MulOverflow(sizeof(T), append_num, append_size)) {
@@ -143,8 +136,8 @@ class TilingData {
     if (ge::AddOverflow(data_size_, append_size, after_size)) {
       return ge::GRAPH_ADD_OVERFLOW;
     }
-    const auto ret =
-        memcpy_s(reinterpret_cast<uint8_t *>(data_) + data_size_, capacity_ - data_size_, data, append_size);
+    const auto ret = memcpy_s(reinterpret_cast<uint8_t *>(data_) + data_size_,
+                              capacity_ - data_size_, data, append_size);
     if (ret != EOK) {
       return ge::GRAPH_MEMCPY_FAILED;
     }
@@ -162,7 +155,8 @@ class TilingData {
     if (ge::AddOverflow(sizeof(TilingData), cap_size, total_size)) {
       return nullptr;
     }
-    auto td_buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[total_size]());
+    auto td_buf =
+        std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[total_size]());
     if (td_buf == nullptr) {
       return nullptr;
     }
@@ -176,7 +170,8 @@ class TilingData {
    * @param total_size 内存空间，单位为字节
    * @return 成功返回ge::GRAPH_SUCCESS
    */
-  static ge::graphStatus CalcTotalSize(const size_t cap_size, size_t &total_size) {
+  static ge::graphStatus CalcTotalSize(const size_t cap_size,
+                                       size_t &total_size) {
     if (ge::AddOverflow(sizeof(TilingData), cap_size, total_size)) {
       return ge::GRAPH_FAILED;
     }
@@ -194,8 +189,10 @@ class TilingData {
     (void)memset_s(reserved_, sizeof(reserved_), 0, sizeof(reserved_));
   }
 
-  ge::graphStatus AppendConvertedAttrVal(const RuntimeAttrs *attrs, const size_t attr_index,
-                                         const AttrDataType src_type, const AttrDataType dst_type);
+  ge::graphStatus AppendConvertedAttrVal(const RuntimeAttrs *attrs,
+                                         const size_t attr_index,
+                                         const AttrDataType src_type,
+                                         const AttrDataType dst_type);
   TilingData(const TilingData &) = delete;
   TilingData(TilingData &&) = delete;
   TilingData operator=(const TilingData &) = delete;
@@ -206,7 +203,8 @@ class TilingData {
   size_t capacity_;
   size_t data_size_;
   void *data_;
-  uint8_t reserved_[40]; // Reserved field, 32+8, do not directly use when only 8-byte left
+  uint8_t reserved_
+      [40];  // Reserved field, 32+8, do not directly use when only 8-byte left
 };
 
 /**
@@ -216,12 +214,14 @@ class TilingData {
  * @param data 添加的tiling data的实例
  * @return
  */
-template<typename T>
+template <typename T>
 TilingData &operator<<(TilingData &out, const T &data) {
-  out.Append(data);  // we can not throw exception, so callers can not get the error information
+  out.Append(
+      data);  // we can not throw exception, so callers can not get the error information
   return out;
 }
-static_assert(std::is_standard_layout<TilingData>::value, "The class TilingData must be a POD");
+static_assert(std::is_standard_layout<TilingData>::value,
+              "The class TilingData must be a POD");
 }  // namespace gert
 
 #endif  // METADEF_CXX_INC_EXE_GRAPH_TILING_DATA_H_

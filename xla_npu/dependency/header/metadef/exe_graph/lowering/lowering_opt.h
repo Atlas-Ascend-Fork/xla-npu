@@ -73,6 +73,6 @@ struct LoweringOption {
    */
   uint8_t reserved[4U + 8U] = {0U};
 };
-}  // namespace ge
+}  // namespace gert
 
 #endif  // INC_EXTERNAL_GRAPH_GRAPH_H_

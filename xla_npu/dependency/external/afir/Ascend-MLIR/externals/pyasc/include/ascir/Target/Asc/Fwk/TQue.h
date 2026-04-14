@@ -25,21 +25,27 @@ namespace ascendc {
 // TQueQind operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindAllocTensorOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindAllocTensorOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindAllocTensorInPlaceOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindAllocTensorInPlaceOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindDequeTensorOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindDequeTensorOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindDequeTensorInPlaceOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindDequeTensorInPlaceOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindDequeTensorPosOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindDequeTensorPosOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::TQueBindEnqueTensorPosOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::TQueBindEnqueTensorPosOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::ToQueBindOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_FWK_TQUE_H
+#endif  // ASCIR_TARGET_ASC_FWK_TQUE_H

@@ -36,11 +36,14 @@ extern "C" {
  * @param [out] executor : executor context(output).
  * @return aclnnStatus: 返回状态码
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttentionGetWorkspaceSize(
-    const aclTensor *query, const aclTensorList *key, const aclTensorList *value, const aclTensor *pseShift,
-    const aclTensor *attenMask, const aclIntArray *actualSeqLengths, int64_t numHeads, double scaleValue,
-    char *inputLayout, int64_t numKeyValueHeads, const aclTensor *attentionOut, uint64_t *workspaceSize,
-    aclOpExecutor **executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnIncreFlashAttentionGetWorkspaceSize(
+    const aclTensor *query, const aclTensorList *key,
+    const aclTensorList *value, const aclTensor *pseShift,
+    const aclTensor *attenMask, const aclIntArray *actualSeqLengths,
+    int64_t numHeads, double scaleValue, char *inputLayout,
+    int64_t numKeyValueHeads, const aclTensor *attentionOut,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * funtion: aclnnIncreFlashAttention
@@ -50,9 +53,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttentionGetWo
  * param [in] stream : acl stream.
  * @return aclnnStatus: 返回状态码
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttention(void *workspace, uint64_t workspaceSize,
-                                                                            aclOpExecutor *executor,
-                                                                            const aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttention(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    const aclrtStream stream);
 
 #ifdef __cplusplus
 }

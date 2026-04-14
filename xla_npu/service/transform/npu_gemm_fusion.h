@@ -42,25 +42,25 @@ constexpr char kNpuBlockFusionKind[] = "__npu_block";
 
 // Supported activation functions for ACLNN GEMM fusion
 enum class ActivationMode {
-    kNone = 0,
-    kRelu = 1,
-    kGelu = 2,
-    kSigmoid = 3,
-    kTanh = 4,
+  kNone = 0,
+  kRelu = 1,
+  kGelu = 2,
+  kSigmoid = 3,
+  kTanh = 4,
 };
 
 // NPU GEMM fusion configuration
 struct NpuGemmFusionConfig {
-    // Whether to fuse bias addition
-    bool has_bias = false;
-    // Activation mode after GEMM
-    ActivationMode activation = ActivationMode::kNone;
-    // Whether to use NPU native layout (FRACTAL_NZ)
-    bool use_nz_layout = true;
-    // Block size for NPU computation
-    int block_m = 128;
-    int block_n = 128;
-    int block_k = 32;
+  // Whether to fuse bias addition
+  bool has_bias = false;
+  // Activation mode after GEMM
+  ActivationMode activation = ActivationMode::kNone;
+  // Whether to use NPU native layout (FRACTAL_NZ)
+  bool use_nz_layout = true;
+  // Block size for NPU computation
+  int block_m = 128;
+  int block_n = 128;
+  int block_k = 32;
 };
 
 // 将 GEMM 操作重写为 NPU 优化的融合计算
@@ -73,50 +73,49 @@ struct NpuGemmFusionConfig {
 //  After: fusion(lhs, rhs, bias) with backend_config.kind="__npu_aclnn_gemm"
 class NpuGemmFusion : public HloModulePass {
  public:
-    explicit NpuGemmFusion(const se::DeviceDescription& device_description,
-                           mlir::MLIRContext* mlir_context);
-    ~NpuGemmFusion() override = default;
+  explicit NpuGemmFusion(const se::DeviceDescription& device_description,
+                         mlir::MLIRContext* mlir_context);
+  ~NpuGemmFusion() override = default;
 
-    absl::string_view name() const override { return "npu-gemm-fusion"; }
+  absl::string_view name() const override { return "npu-gemm-fusion"; }
 
-    // 检查 GEMM 是否应该由 NPU 处理
-    bool ShouldNpuHandleGEMM(const HloDotInstruction& dot);
+  // 检查 GEMM 是否应该由 NPU 处理
+  bool ShouldNpuHandleGEMM(const HloDotInstruction& dot);
 
-    // 分析 GEMM 融合模式并生成配置
-    absl::StatusOr<NpuGemmFusionConfig> AnalyzeGemmFusionPattern(
-            const HloDotInstruction& dot);
+  // 分析 GEMM 融合模式并生成配置
+  absl::StatusOr<NpuGemmFusionConfig> AnalyzeGemmFusionPattern(
+      const HloDotInstruction& dot);
 
-    // 创建 Dot 融合
-    absl::StatusOr<HloInstruction*> CreateDotFusion(
-            const HloDotInstruction& dot, HloModule* module,
-            const NpuGemmFusionConfig& config);
+  // 创建 Dot 融合
+  absl::StatusOr<HloInstruction*> CreateDotFusion(
+      const HloDotInstruction& dot, HloModule* module,
+      const NpuGemmFusionConfig& config);
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
+  // 检查操作是否可以融合到 GEMM 中
+  bool IsGemmSupportedElementwise(const HloInstruction* instr);
 
-    // 检查操作是否可以融合到 GEMM 中
-    bool IsGemmSupportedElementwise(const HloInstruction* instr);
+  // 向操作数方向融合
+  absl::StatusOr<bool> FuseDotOperand(
+      HloInstruction* dot, HloInstruction* operand,
+      HloComputation::Builder& builder,
+      std::vector<HloInstruction*>& fusion_params);
 
-    // 向操作数方向融合
-    absl::StatusOr<bool> FuseDotOperand(HloInstruction* dot,
-                                        HloInstruction* operand,
-                                        HloComputation::Builder& builder,
-                                        std::vector<HloInstruction*>& fusion_params);
+  // 向输出方向融合
+  absl::StatusOr<bool> FuseDotOutput(
+      HloInstruction* dot, HloComputation::Builder& builder,
+      std::vector<HloInstruction*>& fusion_params, NpuGemmFusionConfig& config);
 
-    // 向输出方向融合
-    absl::StatusOr<bool> FuseDotOutput(HloInstruction* dot, HloComputation::Builder& builder,
-                                      std::vector<HloInstruction*>& fusion_params,
-                                      NpuGemmFusionConfig& config);
+  // 检查是否为支持的激活函数
+  ActivationMode GetActivationMode(const HloInstruction* instr);
 
-    // 检查是否为支持的激活函数
-    ActivationMode GetActivationMode(const HloInstruction* instr);
-
-    const se::DeviceDescription& device_description_;
-    mlir::MLIRContext* mlir_context_;
+  const se::DeviceDescription& device_description_;
+  mlir::MLIRContext* mlir_context_;
 };
 
 }  // namespace xla

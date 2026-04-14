@@ -35,10 +35,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulV2GetWorkspaceSize(
-    const aclTensor* x, const aclTensor* weight, const aclTensor* antiquantScale,
-    const aclTensor* antiquantOffsetOptional, const aclTensor* quantScaleOptional, const aclTensor* quantOffsetOptional,
-    const aclTensor* biasOptional, int antiquantGroupSize, const aclTensor* y, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* x, const aclTensor* weight,
+    const aclTensor* antiquantScale, const aclTensor* antiquantOffsetOptional,
+    const aclTensor* quantScaleOptional, const aclTensor* quantOffsetOptional,
+    const aclTensor* biasOptional, int antiquantGroupSize, const aclTensor* y,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnWeightQuantBatchMatmulV2的第二段接口，用于执行计算。
@@ -48,11 +49,13 @@ ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulV2GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnWeightQuantBatchMatmulV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulV2(void* workspace,
+                                                    uint64_t workspaceSize,
+                                                    aclOpExecutor* executor,
+                                                    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_WEIGHT_QUANT_BATCH_MATMUL_V2_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_WEIGHT_QUANT_BATCH_MATMUL_V2_H_

@@ -57,15 +57,15 @@ extern "C" {
  * e表示单卡上的专家数量;
  * A = recvCounts的累加和;
  */
-ACLNN_API aclnnStatus aclnnAlltoAllvGroupedMatMulGetWorkspaceSize(const aclTensor* gmmX, const aclTensor* gmmWeight,
-                                                                  const aclTensor* sendCountsTensorOptional,
-                                                                  const aclTensor* recvCountsTensorOptional,
-                                                                  const aclTensor* mmXOptional, const aclTensor* mmWeightOptional,
-                                                                  const char* group, int64_t epWorldSize,
-                                                                  const aclIntArray* sendCounts, const aclIntArray* recvCounts,
-                                                                  bool transGmmWeight, bool transMmWeight, bool permuteOutFlag, 
-                                                                  aclTensor* gmmY, aclTensor* mmYOptional, aclTensor* permuteOutOptional,
-                                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAlltoAllvGroupedMatMulGetWorkspaceSize(
+    const aclTensor* gmmX, const aclTensor* gmmWeight,
+    const aclTensor* sendCountsTensorOptional,
+    const aclTensor* recvCountsTensorOptional, const aclTensor* mmXOptional,
+    const aclTensor* mmWeightOptional, const char* group, int64_t epWorldSize,
+    const aclIntArray* sendCounts, const aclIntArray* recvCounts,
+    bool transGmmWeight, bool transMmWeight, bool permuteOutFlag,
+    aclTensor* gmmY, aclTensor* mmYOptional, aclTensor* permuteOutOptional,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAlltoAllvGroupedMatMul的第二段接口，用于执行计算。
@@ -75,8 +75,10 @@ ACLNN_API aclnnStatus aclnnAlltoAllvGroupedMatMulGetWorkspaceSize(const aclTenso
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnAlltoAllvGroupedMatMul(void* workspace, uint64_t workspaceSize,
-                                                  aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAlltoAllvGroupedMatMul(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  aclrtStream stream);
 
 #ifdef __cplusplus
 }

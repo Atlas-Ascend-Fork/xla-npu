@@ -22,26 +22,31 @@ extern "C" {
  * @brief aclnnXLogYTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnXLogYTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* other, aclTensor* out,
-                                                       uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnXLogYTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* other, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnXLogYTensor的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnXLogYTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnXLogYTensor(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
                                        aclrtStream stream);
 
 /**
  * @brief aclnnInplaceXLogYTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnInplaceXLogYTensorGetWorkspaceSize(aclTensor* selfRef, const aclTensor* other,
-                                                              uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceXLogYTensorGetWorkspaceSize(
+    aclTensor* selfRef, const aclTensor* other, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceXLogYTensor的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnInplaceXLogYTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceXLogYTensor(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
                                               aclrtStream stream);
 
 #ifdef __cplusplus

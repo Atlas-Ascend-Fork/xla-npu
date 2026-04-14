@@ -42,47 +42,45 @@ namespace xla {
 //         - rhs nested fusion (for right operand processing)
 class NpuNestGemmFusion : public HloModulePass {
  public:
-    explicit NpuNestGemmFusion(const se::DeviceDescription& device_description,
-                               SymbolicExprContext* symbolic_expr_context)
-        : device_description_(device_description),
-          symbolic_expr_context_(symbolic_expr_context) {}
+  explicit NpuNestGemmFusion(const se::DeviceDescription& device_description,
+                             SymbolicExprContext* symbolic_expr_context)
+      : device_description_(device_description),
+        symbolic_expr_context_(symbolic_expr_context) {}
 
-    ~NpuNestGemmFusion() override = default;
+  ~NpuNestGemmFusion() override = default;
 
-    absl::string_view name() const override { return "npu-nest-gemm-fusion"; }
+  absl::string_view name() const override { return "npu-nest-gemm-fusion"; }
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
-    // Check if fusion is a NPU GEMM fusion that can be nested
-    bool IsNpuGemmFusion(const HloInstruction* fusion);
+  // Check if fusion is a NPU GEMM fusion that can be nested
+  bool IsNpuGemmFusion(const HloInstruction* fusion);
 
-    // Run on a single computation
-    absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
+  // Run on a single computation
+  absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
 
-    // Transform a GEMM fusion into nested fusion
-    absl::StatusOr<bool> TransformGemmFusionToNested(HloFusionInstruction* fusion);
+  // Transform a GEMM fusion into nested fusion
+  absl::StatusOr<bool> TransformGemmFusionToNested(
+      HloFusionInstruction* fusion);
 
-    // Find the dot instruction in a fusion
-    absl::StatusOr<HloInstruction*> FindDotInFusion(HloComputation* fusion);
+  // Find the dot instruction in a fusion
+  absl::StatusOr<HloInstruction*> FindDotInFusion(HloComputation* fusion);
 
-    // Create a nested fusion for the given operand fusion
-    absl::StatusOr<HloInstruction*> CreateNestedFusionForOperand(
-            HloInstruction* operand,
-            HloInstruction* consumer,
-            absl::string_view kind,
-            int64_t tile_size);
+  // Create a nested fusion for the given operand fusion
+  absl::StatusOr<HloInstruction*> CreateNestedFusionForOperand(
+      HloInstruction* operand, HloInstruction* consumer, absl::string_view kind,
+      int64_t tile_size);
 
-    // Update the nested fusion config
-    absl::Status UpdateNestedFusionConfig(HloFusionInstruction* nested_fusion,
-                                          int64_t tile_size,
-                                          int64_t num_blocks);
+  // Update the nested fusion config
+  absl::Status UpdateNestedFusionConfig(HloFusionInstruction* nested_fusion,
+                                        int64_t tile_size, int64_t num_blocks);
 
-    const se::DeviceDescription device_description_;
-    SymbolicExprContext* symbolic_expr_context_;
+  const se::DeviceDescription device_description_;
+  SymbolicExprContext* symbolic_expr_context_;
 };
 
 // NPU fusion kind constants

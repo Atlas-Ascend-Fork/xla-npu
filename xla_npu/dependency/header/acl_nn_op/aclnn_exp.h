@@ -51,7 +51,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnExpGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnExpGetWorkspaceSize(const aclTensor* self,
+                                               aclTensor* out,
+                                               uint64_t* workspaceSize,
                                                aclOpExecutor** executor);
 
 /**
@@ -62,7 +64,8 @@ ACLNN_API aclnnStatus aclnnExpGetWorkspaceSize(const aclTensor* self, aclTensor*
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnExp(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnExp(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceExp的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -74,7 +77,8 @@ ACLNN_API aclnnStatus aclnnExp(void* workspace, uint64_t workspaceSize, aclOpExe
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceExpGetWorkspaceSize(aclTensor* selfRef, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnInplaceExpGetWorkspaceSize(aclTensor* selfRef,
+                                                      uint64_t* workspaceSize,
                                                       aclOpExecutor** executor);
 
 /**
@@ -85,7 +89,8 @@ ACLNN_API aclnnStatus aclnnInplaceExpGetWorkspaceSize(aclTensor* selfRef, uint64
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceExp(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceExp(void* workspace, uint64_t workspaceSize,
+                                      aclOpExecutor* executor,
                                       aclrtStream stream);
 
 #ifdef __cplusplus

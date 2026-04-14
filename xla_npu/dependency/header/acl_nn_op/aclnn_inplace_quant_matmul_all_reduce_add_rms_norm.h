@@ -45,10 +45,14 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 
-ACLNN_API aclnnStatus aclnnInplaceQuantMatmulAllReduceAddRmsNormGetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* bias, const aclTensor* dequantScale,
-    const aclTensor* residual, const aclTensor* gamma, double epsilon, const char* group, const char* reduceOp,
-    int64_t commTurn, int64_t streamMode, const aclTensor* normOut, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus
+aclnnInplaceQuantMatmulAllReduceAddRmsNormGetWorkspaceSize(
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* bias,
+    const aclTensor* dequantScale, const aclTensor* residual,
+    const aclTensor* gamma, double epsilon, const char* group,
+    const char* reduceOp, int64_t commTurn, int64_t streamMode,
+    const aclTensor* normOut, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceQuantMatmulAllReduceAddRmsNorm的第二段接口，用于执行计算。
@@ -60,10 +64,11 @@ ACLNN_API aclnnStatus aclnnInplaceQuantMatmulAllReduceAddRmsNormGetWorkspaceSize
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnInplaceQuantMatmulAllReduceAddRmsNorm(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_INPLACE_QUANT_MATMUL_ALL_REDUCE_ADD_RMS_NORM_
+#endif  // OP_API_INC_INPLACE_QUANT_MATMUL_ALL_REDUCE_ADD_RMS_NORM_

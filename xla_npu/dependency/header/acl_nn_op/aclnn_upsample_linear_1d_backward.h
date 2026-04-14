@@ -24,16 +24,19 @@ extern "C" {
 /**
  * @brief aclnnUpsampleLinear1dBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnUpsampleLinear1dBackward(
-    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleLinear1dBackward(void *workspace,
+                                                    uint64_t workspaceSize,
+                                                    aclOpExecutor *executor,
+                                                    aclrtStream stream);
 
 /**
  * @brief aclnnUpsampleLinear1dBackward的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_train
  */
-ACLNN_API aclnnStatus aclnnUpsampleLinear1dBackwardGetWorkspaceSize(const aclTensor *gradOut,
-    const aclIntArray *outputSize, const aclIntArray *inputSize, bool alignCorners, double scales, aclTensor *out,
-    uint64_t *workspaceSize, aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnUpsampleLinear1dBackwardGetWorkspaceSize(
+    const aclTensor *gradOut, const aclIntArray *outputSize,
+    const aclIntArray *inputSize, bool alignCorners, double scales,
+    aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
 #ifdef __cplusplus
 }
 #endif

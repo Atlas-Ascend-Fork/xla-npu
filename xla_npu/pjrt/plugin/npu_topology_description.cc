@@ -40,39 +40,43 @@ limitations under the License.
 
 namespace xla {
 
-absl::StatusOr<Layout> NpuTopologyDescription::GetDefaultLayout(PrimitiveType element_type,
-                                                                absl::Span<const int64_t> dims) const {
-    Shape shape = ShapeUtil::MakeShape(element_type, dims);
-    return LayoutUtil::GetWithDefaultLayout(shape).layout();
+absl::StatusOr<Layout> NpuTopologyDescription::GetDefaultLayout(
+    PrimitiveType element_type, absl::Span<const int64_t> dims) const {
+  Shape shape = ShapeUtil::MakeShape(element_type, dims);
+  return LayoutUtil::GetWithDefaultLayout(shape).layout();
 }
 
 absl::StatusOr<std::string> NpuTopologyDescription::Serialize() const {
-    std::string result;
-    return result;
+  std::string result;
+  return result;
 }
 
-absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>> NpuTopologyDescription::LogicalDeviceOfDefaultTypeForId(
+absl::StatusOr<std::pair<PjRtDeviceDimensions, int32_t>>
+NpuTopologyDescription::LogicalDeviceOfDefaultTypeForId(
     xla::PjRtGlobalDeviceId device_id) const {
-    return std::make_pair(PjRtDeviceDimensions{0, 0, device_id.value()}, 0);
+  return std::make_pair(PjRtDeviceDimensions{0, 0, device_id.value()}, 0);
 }
 
-std::vector<std::unique_ptr<const PjRtDeviceDescription>> NpuTopologyDescription::DeviceDescriptions() const {
-    std::vector<std::unique_ptr<const PjRtDeviceDescription>> devices;
-    devices.reserve(npu_topology_.number_of_devices());
-    for (const NpuTopology::NpuDevice& device : npu_topology_.devices()) {
-        devices.push_back(std::make_unique<NpuDeviceDescription>(device.process_id, device.local_device_id));
-    }
-    return devices;
+std::vector<std::unique_ptr<const PjRtDeviceDescription>>
+NpuTopologyDescription::DeviceDescriptions() const {
+  std::vector<std::unique_ptr<const PjRtDeviceDescription>> devices;
+  devices.reserve(npu_topology_.number_of_devices());
+  for (const NpuTopology::NpuDevice& device : npu_topology_.devices()) {
+    devices.push_back(std::make_unique<NpuDeviceDescription>(
+        device.process_id, device.local_device_id));
+  }
+  return devices;
 }
 
-absl::StatusOr<xla::PjRtTopologyDescriptionProto> NpuTopologyDescription::ToProto() const {
-    PjRtTopologyDescriptionProto proto;
-    proto.set_platform_id(platform_id());
-    proto.set_platform_name(platform_name());
-    proto.set_platform_version(platform_version());
-    proto.set_is_subslice_topology(is_subslice_topology());
+absl::StatusOr<xla::PjRtTopologyDescriptionProto>
+NpuTopologyDescription::ToProto() const {
+  PjRtTopologyDescriptionProto proto;
+  proto.set_platform_id(platform_id());
+  proto.set_platform_name(platform_name());
+  proto.set_platform_version(platform_version());
+  proto.set_is_subslice_topology(is_subslice_topology());
 
-    return proto;
+  return proto;
 }
 
 }  // namespace xla

@@ -21,13 +21,16 @@
 extern "C" {
 #endif
 
-ACLNN_API aclnnStatus aclnnNonMaxSuppressionGetWorkspaceSize(const aclTensor* boxes, const aclTensor* scores,
-                                                             aclIntArray* maxOutputBoxesPerClass,
-                                                             aclFloatArray* iouThreshold, aclFloatArray* scoreThreshold,
-                                                             int32_t centerPointBox, aclTensor* selectedIndices,
-                                                             uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNonMaxSuppressionGetWorkspaceSize(
+    const aclTensor* boxes, const aclTensor* scores,
+    aclIntArray* maxOutputBoxesPerClass, aclFloatArray* iouThreshold,
+    aclFloatArray* scoreThreshold, int32_t centerPointBox,
+    aclTensor* selectedIndices, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnNonMaxSuppression(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNonMaxSuppression(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
 #ifdef __cplusplus

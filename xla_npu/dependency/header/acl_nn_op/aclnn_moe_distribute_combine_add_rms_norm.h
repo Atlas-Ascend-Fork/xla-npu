@@ -68,19 +68,23 @@ extern "C" {
  * @return aclnnStatus: 返回值，返回状态码
  *
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeCombineAddRmsNormGetWorkspaceSize(const aclTensor* expandX, const aclTensor* expertIds,
-                                                                          const aclTensor* assistInfoForCombine, const aclTensor* epSendCounts,
-                                                                          const aclTensor* expertScales, const aclTensor* residualX,
-                                                                          const aclTensor* gamma, const aclTensor* tpSendCountsOptional,
-                                                                          const aclTensor* xActiveMaskOptional, const aclTensor* activationScaleOptional,
-                                                                          const aclTensor* weightScaleOptional, const aclTensor* groupListOptional,
-                                                                          const aclTensor* expandScalesOptional,  const aclTensor* sharedExpertXOptional,                                                      
-                                                                          const char* groupEp, int64_t epWorldSize, int64_t epRankId, int64_t moeExpertNum,
-                                                                          const char* groupTp, int64_t tpWorldSize, int64_t tpRankId, int64_t expertShardType,
-                                                                          int64_t sharedExpertNum, int64_t sharedExpertRankNum, int64_t globalBs, int64_t outDtype,
-                                                                          int64_t commQuantMode, int64_t groupListType, const char* commAlg, float normEps, 
-                                                                          aclTensor* yOut, aclTensor* rstdOut, aclTensor* xOut, uint64_t* workspaceSize,
-                                                                          aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnMoeDistributeCombineAddRmsNormGetWorkspaceSize(
+    const aclTensor* expandX, const aclTensor* expertIds,
+    const aclTensor* assistInfoForCombine, const aclTensor* epSendCounts,
+    const aclTensor* expertScales, const aclTensor* residualX,
+    const aclTensor* gamma, const aclTensor* tpSendCountsOptional,
+    const aclTensor* xActiveMaskOptional,
+    const aclTensor* activationScaleOptional,
+    const aclTensor* weightScaleOptional, const aclTensor* groupListOptional,
+    const aclTensor* expandScalesOptional,
+    const aclTensor* sharedExpertXOptional, const char* groupEp,
+    int64_t epWorldSize, int64_t epRankId, int64_t moeExpertNum,
+    const char* groupTp, int64_t tpWorldSize, int64_t tpRankId,
+    int64_t expertShardType, int64_t sharedExpertNum,
+    int64_t sharedExpertRankNum, int64_t globalBs, int64_t outDtype,
+    int64_t commQuantMode, int64_t groupListType, const char* commAlg,
+    float normEps, aclTensor* yOut, aclTensor* rstdOut, aclTensor* xOut,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMoeDistributeCombineAddRmsNorm的第二段接口，用于执行计算。
@@ -90,8 +94,9 @@ ACLNN_API aclnnStatus aclnnMoeDistributeCombineAddRmsNormGetWorkspaceSize(const 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeCombineAddRmsNorm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                                          aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMoeDistributeCombineAddRmsNorm(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

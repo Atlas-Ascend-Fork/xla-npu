@@ -112,8 +112,7 @@ class HloToAfirConverter {
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertTransposeOp(
       const HloInstruction* instruction);
-  absl::StatusOr<mlir::Value> ConvertSliceOp(
-      const HloInstruction* instruction);
+  absl::StatusOr<mlir::Value> ConvertSliceOp(const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertFusionOp(
       const HloInstruction* instruction);
   absl::StatusOr<mlir::Value> ConvertCallOp(const HloInstruction* instruction);
@@ -568,8 +567,8 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertConstantOp(
         return scalar_op.getResult();
       } else {
         auto ele_attr = mlir::DenseElementsAttr::get(tensor_type, value);
-        auto op =
-            builder_.create<mlir::arith::ConstantOp>(loc, result_type, ele_attr);
+        auto op = builder_.create<mlir::arith::ConstantOp>(loc, result_type,
+                                                           ele_attr);
         return op.getResult();
       }
     }
@@ -1265,8 +1264,7 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSliceOp(
   if (!source_tensor_type) {
     return absl::InternalError("Slice source must be a ranked tensor");
   }
-  auto result_tensor_type =
-      llvm::dyn_cast<mlir::RankedTensorType>(result_type);
+  auto result_tensor_type = llvm::dyn_cast<mlir::RankedTensorType>(result_type);
   if (!result_tensor_type) {
     return absl::InternalError("Slice result must be a ranked tensor");
   }
@@ -1293,10 +1291,10 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSliceOp(
     source_shape_str += std::to_string(source_shape[i]);
   }
   auto ir_attr_def = builder_.getDictionaryAttr(
-      {builder_.getNamedAttr(
-           "offset", builder_.getStringAttr(std::to_string(offset))),
-       builder_.getNamedAttr(
-           "source_shape", builder_.getStringAttr(source_shape_str))});
+      {builder_.getNamedAttr("offset",
+                             builder_.getStringAttr(std::to_string(offset))),
+       builder_.getNamedAttr("source_shape",
+                             builder_.getStringAttr(source_shape_str))});
 
   // The slice-load operand must share the same type as the result (slice output shape).
   // operand is the result of the parameter LoadOp; we:
@@ -1315,8 +1313,8 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSliceOp(
   raw_arg.setType(result_type);
   if (auto block_arg = llvm::dyn_cast<mlir::BlockArgument>(raw_arg)) {
     mlir::Block* block = block_arg.getOwner();
-    if (auto func_op = llvm::dyn_cast<mlir::func::FuncOp>(
-            block->getParentOp())) {
+    if (auto func_op =
+            llvm::dyn_cast<mlir::func::FuncOp>(block->getParentOp())) {
       unsigned arg_idx = block_arg.getArgNumber();
       llvm::SmallVector<mlir::Type> new_input_types(
           func_op.getFunctionType().getInputs().begin(),
@@ -1338,13 +1336,12 @@ absl::StatusOr<mlir::Value> HloToAfirConverter::ConvertSliceOp(
   output_attrs.push_back(output_attr);
   auto outputs_array = builder_.getArrayAttr(output_attrs);
 
-  auto load_op = builder_.create<mlir::afir::LoadOp>(
-      loc, result_type, raw_arg,
-      indexing_maps_attr,
-      nullptr,      // loop_axis
-      ir_attr_def,
-      nullptr,      // tmp_buffers
-      outputs_array);
+  auto load_op = builder_.create<mlir::afir::LoadOp>(loc, result_type, raw_arg,
+                                                     indexing_maps_attr,
+                                                     nullptr,  // loop_axis
+                                                     ir_attr_def,
+                                                     nullptr,  // tmp_buffers
+                                                     outputs_array);
 
   return load_op.getResult();
 }

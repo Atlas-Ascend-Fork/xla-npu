@@ -23,7 +23,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::RmsNormOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_ADV_NORMALIZATION_H
+#endif  // ASCIR_TARGET_ASC_ADV_NORMALIZATION_H

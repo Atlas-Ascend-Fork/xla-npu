@@ -52,17 +52,16 @@ struct OpImplKernelRegistry {
   // OpExecuteContext：保存算子的Input，Output，Attr信息
   using OpExecuteFunc = UINT32 (*)(OpExecuteContext *);
   using OpType = ge::AscendString;
-  using PrivateAttrList = std::vector<std::pair<ge::AscendString, ge::AnyValue>>;
+  using PrivateAttrList =
+      std::vector<std::pair<ge::AscendString, ge::AnyValue>>;
   using PrivateAttrSet = std::unordered_set<ge::AscendString>;
-  using CompileInfoCreatorFunc = void *(*) ();
+  using CompileInfoCreatorFunc = void *(*)();
   using CompileInfoDeleterFunc = void (*)(void *);
   using KernelFunc = UINT32 (*)(KernelContext *context);
   using TilingParseFunc = UINT32 (*)(TilingParseContext *context);
 
   struct OpImplFunctions {
-    bool HasDataDependency() const {
-      return (inputs_dependency != 0U);
-    }
+    bool HasDataDependency() const { return (inputs_dependency != 0U); }
     /*
      * param index: must be ir index
      */
@@ -70,7 +69,8 @@ struct OpImplKernelRegistry {
       if (index >= sizeof(inputs_dependency) * kByteBitCount) {
         return false;
       }
-      return static_cast<bool>(inputs_dependency & static_cast<uint64_t>(1) << index);
+      return static_cast<bool>(inputs_dependency & static_cast<uint64_t>(1)
+                                                       << index);
     }
     ge::graphStatus SetInputDataDependency(const size_t index) {
       if (index >= sizeof(inputs_dependency) * kByteBitCount) {
@@ -80,9 +80,7 @@ struct OpImplKernelRegistry {
       return ge::GRAPH_SUCCESS;
     }
 
-    bool HasHostInput() const {
-      return (host_inputs != 0UL);
-    }
+    bool HasHostInput() const { return (host_inputs != 0UL); }
     /*
      * param index: must be ir index
      */
@@ -90,7 +88,8 @@ struct OpImplKernelRegistry {
       if (index >= (sizeof(host_inputs) * kByteBitCount)) {
         return false;
       }
-      return static_cast<bool>(host_inputs & (static_cast<uint64_t>(1) << index));
+      return static_cast<bool>(host_inputs &
+                               (static_cast<uint64_t>(1) << index));
     }
     ge::graphStatus SetHostInputs(const size_t index) {
       if (index >= (sizeof(host_inputs) * kByteBitCount)) {
@@ -110,7 +109,8 @@ struct OpImplKernelRegistry {
       if (index >= (sizeof(tiling_dependency) * kByteBitCount)) {
         return false;
       }
-      return static_cast<bool>(tiling_dependency & (static_cast<uint64_t>(1) << index));
+      return static_cast<bool>(tiling_dependency &
+                               (static_cast<uint64_t>(1) << index));
     }
     ge::graphStatus SetTilingInputDataDependency(const size_t index) {
       if (index >= (sizeof(tiling_dependency) * kByteBitCount)) {
@@ -121,15 +121,18 @@ struct OpImplKernelRegistry {
     }
 
     bool IsSupportTilingDependencyPlacement(const uint32_t placement) const {
-      if (static_cast<size_t>(placement) >= (sizeof(tiling_dependency_placements) * kByteBitCount)) {
+      if (static_cast<size_t>(placement) >=
+          (sizeof(tiling_dependency_placements) * kByteBitCount)) {
         return false;
       }
 
-      return static_cast<bool>(tiling_dependency_placements & (static_cast<uint8_t>(1U) << placement));
+      return static_cast<bool>(tiling_dependency_placements &
+                               (static_cast<uint8_t>(1U) << placement));
     }
 
     ge::graphStatus SetTilingDependencyPlacement(const uint32_t placement) {
-      if (static_cast<size_t>(placement) >= (sizeof(tiling_dependency_placements) * kByteBitCount)) {
+      if (static_cast<size_t>(placement) >=
+          (sizeof(tiling_dependency_placements) * kByteBitCount)) {
         return ge::GRAPH_FAILED;
       }
       tiling_dependency_placements |= (static_cast<uint8_t>(1U) << placement);
@@ -154,8 +157,10 @@ struct OpImplKernelRegistry {
     uint64_t tiling_dependency = 0UL;
     GenSimplifiedKeyKernelFunc gen_simplifiedkey;
     uint8_t tiling_dependency_placements = 0U;
-    uint8_t reserved_0_[6] = {0U};   // Reserved field, 8-byte aligned for unique_private_attrs
-    uint8_t reserved_1_[8] = {0U};  // Reserved field, 8, do not directly use when only 8-byte left
+    uint8_t reserved_0_[6] = {
+        0U};  // Reserved field, 8-byte aligned for unique_private_attrs
+    uint8_t reserved_1_[8] = {
+        0U};  // Reserved field, 8, do not directly use when only 8-byte left
   };
 };
 }  // namespace gert

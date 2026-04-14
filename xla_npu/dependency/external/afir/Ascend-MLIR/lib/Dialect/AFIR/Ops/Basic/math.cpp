@@ -36,7 +36,8 @@ static LogicalResult verifyUnaryElementwiseOp(Operation *op) {
   auto inputType = mlir::dyn_cast<ShapedType>(op->getOperand(0).getType());
   auto resultType = mlir::dyn_cast<ShapedType>(op->getResult(0).getType());
 
-  if (!inputType || !resultType) return op->emitOpError("expected tensor operand and result");
+  if (!inputType || !resultType)
+    return op->emitOpError("expected tensor operand and result");
 
   if (inputType.hasRank() && resultType.hasRank()) {
     if (inputType.getRank() != resultType.getRank())
@@ -46,9 +47,11 @@ static LogicalResult verifyUnaryElementwiseOp(Operation *op) {
     ArrayRef<int64_t> resultShape = resultType.getShape();
 
     for (size_t i = 0; i < inputShape.size(); ++i) {
-      if (inputShape[i] != ShapedType::kDynamic && resultShape[i] != ShapedType::kDynamic &&
+      if (inputShape[i] != ShapedType::kDynamic &&
+          resultShape[i] != ShapedType::kDynamic &&
           inputShape[i] != resultShape[i]) {
-        return op->emitOpError("operand and result must have compatible shapes");
+        return op->emitOpError(
+            "operand and result must have compatible shapes");
       }
     }
   }
@@ -61,7 +64,8 @@ static LogicalResult verifyBinaryElementwiseOp(Operation *op) {
   auto rhsType = mlir::dyn_cast<ShapedType>(op->getOperand(1).getType());
   auto resultType = mlir::dyn_cast<ShapedType>(op->getResult(0).getType());
 
-  if (!lhsType || !rhsType || !resultType) return op->emitOpError("expected tensor operands and results");
+  if (!lhsType || !rhsType || !resultType)
+    return op->emitOpError("expected tensor operands and results");
 
   if (lhsType.hasRank() && rhsType.hasRank()) {
     /*
@@ -95,8 +99,10 @@ static LogicalResult verifyBinaryElementwiseOp(Operation *op) {
       }
     }
     for (int i = rankOffset; i < largeShape.size(); i++) {
-      if (largeShape[i] != ShapedType::kDynamic && smallShape[i - rankOffset] != ShapedType::kDynamic &&
-          largeShape[i] != 1 && smallShape[i - rankOffset] != 1 && largeShape[i] != smallShape[i - rankOffset] &&
+      if (largeShape[i] != ShapedType::kDynamic &&
+          smallShape[i - rankOffset] != ShapedType::kDynamic &&
+          largeShape[i] != 1 && smallShape[i - rankOffset] != 1 &&
+          largeShape[i] != smallShape[i - rankOffset] &&
           largeShape[i] != resultType.getShape()[i]) {
         return op->emitOpError("operands must have compatible shapes");
       }
@@ -248,8 +254,9 @@ LogicalResult ClipByValue::verify() {
     ArrayRef<int64_t> inputShape = inputType.getShape();
     ArrayRef<int64_t> minShape = minType.getShape();
     for (size_t i = 0; i < inputShape.size(); ++i) {
-      if (inputShape[i] != ShapedType::kDynamic && minShape[i] != ShapedType::kDynamic &&
-          inputShape[i] != minShape[i] && inputShape[i] != 1 && minShape[i] != 1) {
+      if (inputShape[i] != ShapedType::kDynamic &&
+          minShape[i] != ShapedType::kDynamic && inputShape[i] != minShape[i] &&
+          inputShape[i] != 1 && minShape[i] != 1) {
         return emitOpError("input and min must have compatible shapes");
       }
     }
@@ -262,8 +269,9 @@ LogicalResult ClipByValue::verify() {
     ArrayRef<int64_t> inputShape = inputType.getShape();
     ArrayRef<int64_t> maxShape = maxType.getShape();
     for (size_t i = 0; i < inputShape.size(); ++i) {
-      if (inputShape[i] != ShapedType::kDynamic && maxShape[i] != ShapedType::kDynamic &&
-          inputShape[i] != maxShape[i] && inputShape[i] != 1 && maxShape[i] != 1) {
+      if (inputShape[i] != ShapedType::kDynamic &&
+          maxShape[i] != ShapedType::kDynamic && inputShape[i] != maxShape[i] &&
+          inputShape[i] != 1 && maxShape[i] != 1) {
         return emitOpError("input and max must have compatible shapes");
       }
     }
@@ -276,8 +284,10 @@ LogicalResult ClipByValue::verify() {
     ArrayRef<int64_t> inputShape = inputType.getShape();
     ArrayRef<int64_t> resultShape = resultType.getShape();
     for (size_t i = 0; i < inputShape.size(); ++i) {
-      if (inputShape[i] != ShapedType::kDynamic && resultShape[i] != ShapedType::kDynamic &&
-          inputShape[i] != resultShape[i] && inputShape[i] != 1 && resultShape[i] != 1) {
+      if (inputShape[i] != ShapedType::kDynamic &&
+          resultShape[i] != ShapedType::kDynamic &&
+          inputShape[i] != resultShape[i] && inputShape[i] != 1 &&
+          resultShape[i] != 1) {
         return emitOpError("input and result must have compatible shapes");
       }
     }
@@ -288,8 +298,10 @@ LogicalResult ClipByValue::verify() {
 
 template <typename OPAdaptor>
 
-LogicalResult inferBroadCastReturnTypes(MLIRContext *context, std::optional<mlir::Location> location, OPAdaptor adaptor,
-                                        Type elementType, SmallVectorImpl<ShapedTypeComponents> &inferredReturnTypes) {
+LogicalResult inferBroadCastReturnTypes(
+    MLIRContext *context, std::optional<mlir::Location> location,
+    OPAdaptor adaptor, Type elementType,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnTypes) {
   int64_t newShapeRank = 0;
   for (auto oper : adaptor.getOperands()) {
     if (auto opType = llvm::dyn_cast<RankedTensorType>(oper.getType())) {
@@ -302,7 +314,9 @@ LogicalResult inferBroadCastReturnTypes(MLIRContext *context, std::optional<mlir
   SmallVector<int64_t> newShape(newShapeRank, 1);
   SmallVector<int64_t> operOffset(adaptor.getOperands().size());
   for (size_t i = 0; i < adaptor.getOperands().size(); i++) {
-    operOffset[i] = newShapeRank - llvm::dyn_cast<RankedTensorType>(adaptor.getOperands()[i].getType()).getRank();
+    operOffset[i] = newShapeRank - llvm::dyn_cast<RankedTensorType>(
+                                       adaptor.getOperands()[i].getType())
+                                       .getRank();
   }
   for (size_t i = newShapeRank; i != 0; i--) {
     int index = i - 1;
@@ -310,7 +324,9 @@ LogicalResult inferBroadCastReturnTypes(MLIRContext *context, std::optional<mlir
       if (index < operOffset[j]) {
         continue;
       }
-      auto shape = llvm::dyn_cast<RankedTensorType>(adaptor.getOperands()[j].getType()).getShape();
+      auto shape =
+          llvm::dyn_cast<RankedTensorType>(adaptor.getOperands()[j].getType())
+              .getShape();
       if (shape[index - operOffset[j]] == 1) {
         continue;
       }
@@ -369,16 +385,19 @@ LogicalResult inferBroadCastReturnTypes(MLIRContext *context, std::optional<mlir
 //   return success();
 // }
 
-#define REGISTERBROADCASTINFER(OP)                                                                           \
-  LogicalResult OP::inferReturnTypeComponents(MLIRContext *context, ::std::optional<Location> location,      \
-                                              OP##Adaptor adaptor,                                           \
-                                              SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) { \
-    TensorType tensorType = llvm::dyn_cast<TensorType>(adaptor.getOperands()[0].getType());                  \
-    if (!tensorType) {                                                                                       \
-      return failure();                                                                                      \
-    }                                                                                                        \
-    return inferBroadCastReturnTypes<OP##Adaptor>(context, location, adaptor, tensorType.getElementType(),   \
-                                                  inferredReturnShapes);                                     \
+#define REGISTERBROADCASTINFER(OP)                                             \
+  LogicalResult OP::inferReturnTypeComponents(                                 \
+      MLIRContext *context, ::std::optional<Location> location,                \
+      OP##Adaptor adaptor,                                                     \
+      SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {           \
+    TensorType tensorType =                                                    \
+        llvm::dyn_cast<TensorType>(adaptor.getOperands()[0].getType());        \
+    if (!tensorType) {                                                         \
+      return failure();                                                        \
+    }                                                                          \
+    return inferBroadCastReturnTypes<OP##Adaptor>(context, location, adaptor,  \
+                                                  tensorType.getElementType(), \
+                                                  inferredReturnShapes);       \
   }
 
 REGISTERBROADCASTINFER(afir::AddOp)
@@ -397,12 +416,15 @@ REGISTERBROADCASTINFER(afir::ClipByValue)
 
 // REGISTERBROADCASTINFER(afir::StoreOp)
 
-#define REGISTERBROADCASTLOGICALINFER(OP)                                                                       \
-  LogicalResult OP::inferReturnTypeComponents(MLIRContext *context, ::std::optional<Location> location,         \
-                                              OP##Adaptor adaptor,                                              \
-                                              SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {    \
-    return inferBroadCastReturnTypes<OP##Adaptor>(                                                              \
-        context, location, adaptor, IntegerType::get(context, 8, IntegerType::Unsigned), inferredReturnShapes); \
+#define REGISTERBROADCASTLOGICALINFER(OP)                            \
+  LogicalResult OP::inferReturnTypeComponents(                       \
+      MLIRContext *context, ::std::optional<Location> location,      \
+      OP##Adaptor adaptor,                                           \
+      SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) { \
+    return inferBroadCastReturnTypes<OP##Adaptor>(                   \
+        context, location, adaptor,                                  \
+        IntegerType::get(context, 8, IntegerType::Unsigned),         \
+        inferredReturnShapes);                                       \
   }
 
 REGISTERBROADCASTLOGICALINFER(afir::LogicalAndOp)

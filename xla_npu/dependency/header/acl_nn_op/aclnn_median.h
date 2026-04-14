@@ -28,7 +28,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMedianGetWorkspaceSize(const aclTensor* self, aclTensor* valuesOut, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnMedianGetWorkspaceSize(const aclTensor* self,
+                                                  aclTensor* valuesOut,
+                                                  uint64_t* workspaceSize,
                                                   aclOpExecutor** executor);
 
 /**
@@ -39,7 +41,8 @@ ACLNN_API aclnnStatus aclnnMedianGetWorkspaceSize(const aclTensor* self, aclTens
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMedian(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMedian(void* workspace, uint64_t workspaceSize,
+                                  aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnMedianDim的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -56,9 +59,9 @@ ACLNN_API aclnnStatus aclnnMedian(void* workspace, uint64_t workspaceSize, aclOp
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMedianDimGetWorkspaceSize(const aclTensor* self, int64_t dim, bool keepDim,
-                                                     aclTensor* valuesOut, aclTensor* indicesOut,
-                                                     uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnMedianDimGetWorkspaceSize(
+    const aclTensor* self, int64_t dim, bool keepDim, aclTensor* valuesOut,
+    aclTensor* indicesOut, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMedianDim的第二段接口，用于执行计算。
@@ -68,7 +71,8 @@ ACLNN_API aclnnStatus aclnnMedianDimGetWorkspaceSize(const aclTensor* self, int6
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMedianDim(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnMedianDim(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
                                      aclrtStream stream);
 
 /**
@@ -82,7 +86,9 @@ ACLNN_API aclnnStatus aclnnMedianDim(void* workspace, uint64_t workspaceSize, ac
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNanMedianGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnNanMedianGetWorkspaceSize(const aclTensor* self,
+                                                     aclTensor* out,
+                                                     uint64_t* workspaceSize,
                                                      aclOpExecutor** executor);
 
 /**
@@ -93,7 +99,8 @@ ACLNN_API aclnnStatus aclnnNanMedianGetWorkspaceSize(const aclTensor* self, aclT
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNanMedian(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNanMedian(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
                                      aclrtStream stream);
 
 /**
@@ -111,9 +118,9 @@ ACLNN_API aclnnStatus aclnnNanMedian(void* workspace, uint64_t workspaceSize, ac
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNanMedianDimGetWorkspaceSize(const aclTensor* self, int64_t dim, bool keepDim,
-                                                        aclTensor* valuesOut, aclTensor* indicesOut,
-                                                        uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNanMedianDimGetWorkspaceSize(
+    const aclTensor* self, int64_t dim, bool keepDim, aclTensor* valuesOut,
+    aclTensor* indicesOut, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnNanMedianDim的第二段接口，用于执行计算。
@@ -123,7 +130,8 @@ ACLNN_API aclnnStatus aclnnNanMedianDimGetWorkspaceSize(const aclTensor* self, i
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNanMedianDim(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNanMedianDim(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
                                         aclrtStream stream);
 
 #ifdef __cplusplus

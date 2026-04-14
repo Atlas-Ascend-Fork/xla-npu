@@ -41,44 +41,53 @@ namespace se = ::stream_executor;  // NOLINT
 // implement generic interfaces, e.g. command buffer implementation for CUDA
 // can automatically add a kernel node to a graph for arbitrary custom kernel.
 class NpuCustomKernel {
-   public:
-    NpuCustomKernel(std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr, std::string name, se::BlockDim block_dims,
-                    size_t shared_memory_bytes);
+ public:
+  NpuCustomKernel(std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr,
+                  std::string name, se::BlockDim block_dims,
+                  size_t shared_memory_bytes);
 
-    // 显式禁用复制操作，因为kernel_spec_中的指针指向npu_kernel_config_
-    NpuCustomKernel(const NpuCustomKernel&) = delete;
-    NpuCustomKernel& operator=(const NpuCustomKernel&) = delete;
+  // 显式禁用复制操作，因为kernel_spec_中的指针指向npu_kernel_config_
+  NpuCustomKernel(const NpuCustomKernel&) = delete;
+  NpuCustomKernel& operator=(const NpuCustomKernel&) = delete;
 
-    // 自定义移动操作，确保移动后kernel_spec_中的指向npu_kernel_config_的指针保持正确
-    NpuCustomKernel(NpuCustomKernel&&) noexcept;
-    NpuCustomKernel& operator=(NpuCustomKernel&&) noexcept;
+  // 自定义移动操作，确保移动后kernel_spec_中的指向npu_kernel_config_的指针保持正确
+  NpuCustomKernel(NpuCustomKernel&&) noexcept;
+  NpuCustomKernel& operator=(NpuCustomKernel&&) noexcept;
 
-    absl::string_view name() const { return name_; }
+  absl::string_view name() const { return name_; }
 
-    const se::KernelLoaderSpec& kernel_spec() const { return kernel_spec_; }
+  const se::KernelLoaderSpec& kernel_spec() const { return kernel_spec_; }
 
-    se::BlockDim block_dims() const { return block_dims_; }  // npu仅使用第一维,即x轴
+  se::BlockDim block_dims() const {
+    return block_dims_;
+  }  // npu仅使用第一维,即x轴
 
-    se::ThreadDim thread_dims() const { return thread_dims_; }  // npu不使用,仅作适配xla框架的占位符
+  se::ThreadDim thread_dims() const {
+    return thread_dims_;
+  }  // npu不使用,仅作适配xla框架的占位符
 
-    std::optional<se::ClusterDim> cluster_dims() const { return cluster_dims_; }  // npu不使用,仅作适配xla框架的占位符
+  std::optional<se::ClusterDim> cluster_dims() const {
+    return cluster_dims_;
+  }  // npu不使用,仅作适配xla框架的占位符
 
-    size_t shared_memory_bytes() const { return shared_memory_bytes_; }
+  size_t shared_memory_bytes() const { return shared_memory_bytes_; }
 
-    std::string ToString() const;
+  std::string ToString() const;
 
-    NpuKernelConfig* npu_kernel_config_ptr() const { return npu_kernel_config_ptr_.get(); }
+  NpuKernelConfig* npu_kernel_config_ptr() const {
+    return npu_kernel_config_ptr_.get();
+  }
 
-   private:
-    // 注意：npu_kernel_config_ptr_ 必须在 kernel_spec_ 之前声明，
-    // 因为 kernel_spec_ 的初始化依赖 npu_kernel_config_ptr_
-    std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr_;
-    std::string name_;
-    se::KernelLoaderSpec kernel_spec_;
-    se::BlockDim block_dims_;
-    se::ThreadDim thread_dims_;
-    std::optional<se::ClusterDim> cluster_dims_ = std::nullopt;
-    size_t shared_memory_bytes_;
+ private:
+  // 注意：npu_kernel_config_ptr_ 必须在 kernel_spec_ 之前声明，
+  // 因为 kernel_spec_ 的初始化依赖 npu_kernel_config_ptr_
+  std::unique_ptr<NpuKernelConfig> npu_kernel_config_ptr_;
+  std::string name_;
+  se::KernelLoaderSpec kernel_spec_;
+  se::BlockDim block_dims_;
+  se::ThreadDim thread_dims_;
+  std::optional<se::ClusterDim> cluster_dims_ = std::nullopt;
+  size_t shared_memory_bytes_;
 };
 
 }  // namespace xla

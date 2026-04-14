@@ -40,9 +40,12 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedDynamicMxQuantGetWorkspaceSize(
-    const aclTensor* x, const aclTensor* groupIndex, const char* roundMode, int64_t dstType, int64_t blocksize, const aclTensor* y, const aclTensor* mxscale,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedDynamicMxQuantGetWorkspaceSize(
+    const aclTensor* x, const aclTensor* groupIndex, const char* roundMode,
+    int64_t dstType, int64_t blocksize, const aclTensor* y,
+    const aclTensor* mxscale, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupedDynamicMxQuant的第二段接口，用于执行计算。
@@ -52,8 +55,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnGroupedDynamicMxQuantGet
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedDynamicMxQuant(void* workspace, uint64_t workspaceSize,
-                                                                       aclOpExecutor* executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnGroupedDynamicMxQuant(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

@@ -29,7 +29,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnSignbitGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnSignbitGetWorkspaceSize(const aclTensor* self,
+                                                   aclTensor* out,
+                                                   uint64_t* workspaceSize,
                                                    aclOpExecutor** executor);
 
 /**
@@ -40,8 +42,8 @@ ACLNN_API aclnnStatus aclnnSignbitGetWorkspaceSize(const aclTensor* self, aclTen
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSignbit(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                   aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSignbit(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

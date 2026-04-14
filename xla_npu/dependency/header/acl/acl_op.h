@@ -26,9 +26,9 @@ typedef void (*aclDataDeallocator)(void *data, size_t length);
 static const int ACL_COMPILE_FLAG_BIN_SELECTOR = 1;
 
 typedef enum aclEngineType {
-    ACL_ENGINE_SYS,
-    ACL_ENGINE_AICORE,
-    ACL_ENGINE_VECTOR,
+  ACL_ENGINE_SYS,
+  ACL_ENGINE_AICORE,
+  ACL_ENGINE_VECTOR,
 } aclopEngineType;
 
 /**
@@ -87,7 +87,9 @@ ACL_FUNC_VISIBILITY void aclopDestroyAttr(const aclopAttr *attr);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrBool(aclopAttr *attr, const char *attrName, uint8_t attrValue);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrBool(aclopAttr *attr,
+                                              const char *attrName,
+                                              uint8_t attrValue);
 
 /**
  * @ingroup AscendCL
@@ -100,7 +102,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrBool(aclopAttr *attr, const char *attrN
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrInt(aclopAttr *attr, const char *attrName, int64_t attrValue);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrInt(aclopAttr *attr,
+                                             const char *attrName,
+                                             int64_t attrValue);
 
 /**
  * @ingroup AscendCL
@@ -113,7 +117,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrInt(aclopAttr *attr, const char *attrNa
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrFloat(aclopAttr *attr, const char *attrName, float attrValue);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrFloat(aclopAttr *attr,
+                                               const char *attrName,
+                                               float attrValue);
 
 /**
  * @ingroup AscendCL
@@ -126,7 +132,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrFloat(aclopAttr *attr, const char *attr
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrString(aclopAttr *attr, const char *attrName, const char *attrValue);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrString(aclopAttr *attr,
+                                                const char *attrName,
+                                                const char *attrValue);
 
 /**
  * @ingroup AscendCL
@@ -139,7 +147,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrString(aclopAttr *attr, const char *att
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrDataType(aclopAttr *attr, const char *attrName, aclDataType attrValue);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrDataType(aclopAttr *attr,
+                                                  const char *attrName,
+                                                  aclDataType attrValue);
 
 /**
  * @ingroup AscendCL
@@ -153,8 +163,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrDataType(aclopAttr *attr, const char *a
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListDataType(aclopAttr *attr, const char *attrName, int numValues,
-    const aclDataType values[]);
+ACL_FUNC_VISIBILITY aclError
+aclopSetAttrListDataType(aclopAttr *attr, const char *attrName, int numValues,
+                         const aclDataType values[]);
 
 /**
  * @ingroup AscendCL
@@ -168,8 +179,10 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListDataType(aclopAttr *attr, const cha
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListBool(aclopAttr *attr, const char *attrName, int numValues,
-    const uint8_t *values);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrListBool(aclopAttr *attr,
+                                                  const char *attrName,
+                                                  int numValues,
+                                                  const uint8_t *values);
 
 /**
  * @ingroup AscendCL
@@ -183,8 +196,10 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListBool(aclopAttr *attr, const char *a
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListInt(aclopAttr *attr, const char *attrName, int numValues,
-    const int64_t *values);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrListInt(aclopAttr *attr,
+                                                 const char *attrName,
+                                                 int numValues,
+                                                 const int64_t *values);
 
 /**
  * @ingroup AscendCL
@@ -198,8 +213,10 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListInt(aclopAttr *attr, const char *at
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListFloat(aclopAttr *attr, const char *attrName, int numValues,
-    const float *values);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrListFloat(aclopAttr *attr,
+                                                   const char *attrName,
+                                                   int numValues,
+                                                   const float *values);
 
 /**
  * @ingroup AscendCL
@@ -213,8 +230,10 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListFloat(aclopAttr *attr, const char *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListString(aclopAttr *attr, const char *attrName, int numValues,
-    const char **values);
+ACL_FUNC_VISIBILITY aclError aclopSetAttrListString(aclopAttr *attr,
+                                                    const char *attrName,
+                                                    int numValues,
+                                                    const char **values);
 
 /**
  * @ingroup AscendCL
@@ -229,11 +248,9 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListString(aclopAttr *attr, const char 
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetAttrListListInt(aclopAttr *attr,
-                                                     const char *attrName,
-                                                     int numLists,
-                                                     const int *numValues,
-                                                     const int64_t *const values[]);
+ACL_FUNC_VISIBILITY aclError
+aclopSetAttrListListInt(aclopAttr *attr, const char *attrName, int numLists,
+                        const int *numValues, const int64_t *const values[]);
 
 /**
  * @ingroup AscendCL
@@ -263,15 +280,11 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrListListInt(aclopAttr *attr,
  * @retval OtherValues Failure
  */
 ACL_DEPRECATED_MESSAGE("aclopExecute is deprecated, use aclopExecuteV2 instead")
-ACL_FUNC_VISIBILITY aclError aclopExecute(const char *opType,
-                                          int numInputs,
-                                          const aclTensorDesc *const inputDesc[],
-                                          const aclDataBuffer *const inputs[],
-                                          int numOutputs,
-                                          const aclTensorDesc *const outputDesc[],
-                                          aclDataBuffer *const outputs[],
-                                          const aclopAttr *attr,
-                                          aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclopExecute(
+    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[],
+    const aclDataBuffer *const inputs[], int numOutputs,
+    const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[],
+    const aclopAttr *attr, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -301,15 +314,10 @@ ACL_FUNC_VISIBILITY aclError aclopExecute(const char *opType,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopExecuteV2(const char *opType,
-                                            int numInputs,
-                                            aclTensorDesc *inputDesc[],
-                                            aclDataBuffer *inputs[],
-                                            int numOutputs,
-                                            aclTensorDesc *outputDesc[],
-                                            aclDataBuffer *outputs[],
-                                            aclopAttr *attr,
-                                            aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclopExecuteV2(
+    const char *opType, int numInputs, aclTensorDesc *inputDesc[],
+    aclDataBuffer *inputs[], int numOutputs, aclTensorDesc *outputDesc[],
+    aclDataBuffer *outputs[], aclopAttr *attr, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -327,13 +335,10 @@ ACL_FUNC_VISIBILITY aclError aclopExecuteV2(const char *opType,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopCreateHandle(const char *opType,
-                                               int numInputs,
-                                               const aclTensorDesc *const inputDesc[],
-                                               int numOutputs,
-                                               const aclTensorDesc *const outputDesc[],
-                                               const aclopAttr *opAttr,
-                                               aclopHandle **handle);
+ACL_FUNC_VISIBILITY aclError aclopCreateHandle(
+    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[],
+    int numOutputs, const aclTensorDesc *const outputDesc[],
+    const aclopAttr *opAttr, aclopHandle **handle);
 
 /**
  * @ingroup AscendCL
@@ -364,12 +369,9 @@ ACL_FUNC_VISIBILITY void aclopDestroyHandle(aclopHandle *handle);
  *
  * @see aclopCreateHandle | aclCreateDataBuffer
  */
-ACL_FUNC_VISIBILITY aclError aclopExecWithHandle(aclopHandle *handle,
-                                                 int numInputs,
-                                                 const aclDataBuffer *const inputs[],
-                                                 int numOutputs,
-                                                 aclDataBuffer *const outputs[],
-                                                 aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclopExecWithHandle(
+    aclopHandle *handle, int numInputs, const aclDataBuffer *const inputs[],
+    int numOutputs, aclDataBuffer *const outputs[], aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -389,8 +391,7 @@ ACL_FUNC_VISIBILITY aclError aclopCast(const aclTensorDesc *srcDesc,
                                        const aclDataBuffer *srcBuffer,
                                        const aclTensorDesc *dstDesc,
                                        aclDataBuffer *dstBuffer,
-                                       uint8_t truncate,
-                                       aclrtStream stream);
+                                       uint8_t truncate, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -408,7 +409,6 @@ ACL_FUNC_VISIBILITY aclError aclopCreateHandleForCast(aclTensorDesc *srcDesc,
                                                       aclTensorDesc *dstDesc,
                                                       uint8_t truncate,
                                                       aclopHandle **handle);
-
 
 /**
  * @ingroup AscendCL
@@ -431,11 +431,9 @@ ACL_FUNC_VISIBILITY aclError aclopCreateHandleForCast(aclTensorDesc *srcDesc,
 ACL_FUNC_VISIBILITY aclError aclopCreateKernel(const char *opType,
                                                const char *kernelId,
                                                const char *kernelName,
-                                               void *binData,
-                                               int binSize,
+                                               void *binData, int binSize,
                                                aclopEngineType enginetype,
                                                aclDataDeallocator deallocator);
-
 
 /**
  * @ingroup AscendCL
@@ -470,7 +468,8 @@ typedef aclError (*aclopCompileFunc)(int numInputs,
  *
  * @see aclopUnregisterCompileFunc
  */
-ACL_FUNC_VISIBILITY aclError aclopRegisterCompileFunc(const char *opType, aclopCompileFunc func);
+ACL_FUNC_VISIBILITY aclError aclopRegisterCompileFunc(const char *opType,
+                                                      aclopCompileFunc func);
 
 /**
  * @ingroup AscendCL
@@ -513,8 +512,8 @@ ACL_FUNC_VISIBILITY aclError aclopSetKernelArgs(aclopKernelDesc *kernelDesc,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopSetKernelWorkspaceSizes(aclopKernelDesc *kernelDesc, int numWorkspaces,
-                                                          size_t *workspaceSizes);
+ACL_FUNC_VISIBILITY aclError aclopSetKernelWorkspaceSizes(
+    aclopKernelDesc *kernelDesc, int numWorkspaces, size_t *workspaceSizes);
 
 /**
  * @ingroup AscendCL
@@ -531,12 +530,10 @@ ACL_FUNC_VISIBILITY aclError aclopSetKernelWorkspaceSizes(aclopKernelDesc *kerne
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopUpdateParams(const char *opType,
-                                               int numInputs,
-                                               const aclTensorDesc *const inputDesc[],
-                                               int numOutputs,
-                                               const aclTensorDesc *const outputDesc[],
-                                               const aclopAttr *attr);
+ACL_FUNC_VISIBILITY aclError aclopUpdateParams(
+    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[],
+    int numOutputs, const aclTensorDesc *const outputDesc[],
+    const aclopAttr *attr);
 
 /**
  * @ingroup AscendCL
@@ -565,8 +562,7 @@ ACL_FUNC_VISIBILITY aclError aclopSetMaxOpQueueNum(uint64_t maxOpNum);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopInferShape(const char *opType,
-                                             int numInputs,
+ACL_FUNC_VISIBILITY aclError aclopInferShape(const char *opType, int numInputs,
                                              aclTensorDesc *inputDesc[],
                                              aclDataBuffer *inputs[],
                                              int numOutputs,
@@ -585,7 +581,8 @@ ACL_FUNC_VISIBILITY aclError aclopInferShape(const char *opType,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopStartDumpArgs(uint32_t dumpType, const char *path);
+ACL_FUNC_VISIBILITY aclError aclopStartDumpArgs(uint32_t dumpType,
+                                                const char *path);
 
 /**
  * @ingroup AscendCL
@@ -602,4 +599,4 @@ ACL_FUNC_VISIBILITY aclError aclopStopDumpArgs(uint32_t dumpType);
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_ACL_OP_H_
+#endif  // INC_EXTERNAL_ACL_ACL_OP_H_

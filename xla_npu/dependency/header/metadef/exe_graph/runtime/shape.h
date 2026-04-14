@@ -37,14 +37,15 @@ namespace gert {
 struct Shape {
  public:
   static constexpr size_t kMaxDimNum = 25;
-  static constexpr int64_t kInvalidDimValue = std::numeric_limits<int64_t>::min();
+  static constexpr int64_t kInvalidDimValue =
+      std::numeric_limits<int64_t>::min();
 
  public:
   /**
    * 默认构造一个shape，默认构造的shape实例中，dim_num长度为0
    */
   Shape() : dim_num_(0), dims_{0} {
-    (void)memset(reserved_, 0, sizeof(reserved_)); // memset函数misra告警屏蔽
+    (void)memset(reserved_, 0, sizeof(reserved_));  // memset函数misra告警屏蔽
   }
 
   /**
@@ -72,7 +73,7 @@ struct Shape {
     for (size_t i = 0U; i < dim_num_; ++i) {
       dims_[i] = other.dims_[i];
     }
-    (void)memset(reserved_, 0, sizeof(reserved_)); // memset函数misra告警屏蔽
+    (void)memset(reserved_, 0, sizeof(reserved_));  // memset函数misra告警屏蔽
   }
 
   /**
@@ -88,7 +89,7 @@ struct Shape {
         dims_[i] = other.dims_[i];
       }
     }
-    (void)memset(reserved_, 0, sizeof(reserved_)); // memset函数misra告警屏蔽
+    (void)memset(reserved_, 0, sizeof(reserved_));  // memset函数misra告警屏蔽
     return *this;
   }
 
@@ -114,9 +115,7 @@ struct Shape {
    * @param rht 另一个Shape对象
    * @return true/false
    */
-  bool operator!=(const Shape &rht) const {
-    return !(*this == rht);
-  }
+  bool operator!=(const Shape &rht) const { return !(*this == rht); }
 
   /**
    * 获取shape size，所谓shape size，是指shape中有多少个元素
@@ -136,33 +135,25 @@ struct Shape {
    * 判断本shape是否为标量，所谓标量，是指GetDimNum()为0
    * @return true/false
    */
-  bool IsScalar() const {
-    return dim_num_ == 0L;
-  }
+  bool IsScalar() const { return dim_num_ == 0L; }
 
   /**
    * 设置shape为标量
    * @param none
    */
-  void SetScalar() {
-    dim_num_ = 0;
-  }
+  void SetScalar() { dim_num_ = 0; }
 
   /**
    * 获取dim num
    * @return
    */
-  size_t GetDimNum() const {
-    return dim_num_;
-  }
+  size_t GetDimNum() const { return dim_num_; }
 
   /**
    * 设置dim num
    * @param dim_num
    */
-  void SetDimNum(const size_t dim_num) {
-    this->dim_num_ = dim_num;
-  }
+  void SetDimNum(const size_t dim_num) { this->dim_num_ = dim_num; }
 
   /**
    * 获取dim值
@@ -181,18 +172,14 @@ struct Shape {
    * @param idx dim的index，调用者需要保证index合法
    * @return dim值，行为未定义
    */
-  const int64_t &operator[](const size_t idx) const {
-    return dims_[idx];
-  }
+  const int64_t &operator[](const size_t idx) const { return dims_[idx]; }
 
   /**
    * 获取dim值
    * @param idx dim的index，调用者需要保证index合法
    * @return dim值，在idx超出MaxDimNum时，行为未定义
    */
-  int64_t &operator[](const size_t idx) {
-    return dims_[idx];
-  }
+  int64_t &operator[](const size_t idx) { return dims_[idx]; }
 
   /**
    * 设置dim值
@@ -212,7 +199,7 @@ struct Shape {
    * @param 扩展的dim值
    * @return this引用
    */
-  Shape& AppendDim(const int64_t value) {
+  Shape &AppendDim(const int64_t value) {
     if (this->dim_num_ >= kMaxDimNum) {
       return *this;
     }
@@ -223,9 +210,11 @@ struct Shape {
  private:
   size_t dim_num_;
   int64_t dims_[kMaxDimNum];
-  uint8_t reserved_[40];  // Reserved field, 32+8, do not directly use when only 8-byte left
+  uint8_t reserved_
+      [40];  // Reserved field, 32+8, do not directly use when only 8-byte left
 };
-static_assert(std::is_standard_layout<Shape>::value, "The class Shape must be a POD");
+static_assert(std::is_standard_layout<Shape>::value,
+              "The class Shape must be a POD");
 }  // namespace gert
 
 #endif  // METADEF_CXX_INC_EXE_GRAPH_SHAPE_H_

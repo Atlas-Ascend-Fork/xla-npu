@@ -30,26 +30,30 @@ limitations under the License.
 #include <limits>
 
 namespace ge {
-template<typename T>
+template <typename T>
 class IntegerChecker {
  public:
-  template<typename T1>
+  template <typename T1>
   static bool Compat(const T1 v) {
-    static_assert(((sizeof(T) <= sizeof(uint64_t)) && (sizeof(T1) <= sizeof(uint64_t))),
-                  "IntegerChecker can only check integers less than 64 bits");
+    static_assert(
+        ((sizeof(T) <= sizeof(uint64_t)) && (sizeof(T1) <= sizeof(uint64_t))),
+        "IntegerChecker can only check integers less than 64 bits");
     if (v >= static_cast<T1>(0)) {
-      return static_cast<uint64_t>(v) <= static_cast<uint64_t>(std::numeric_limits<T>::max());
+      return static_cast<uint64_t>(v) <=
+             static_cast<uint64_t>(std::numeric_limits<T>::max());
     }
-    return static_cast<int64_t>(v) >= static_cast<int64_t>(std::numeric_limits<T>::min());
+    return static_cast<int64_t>(v) >=
+           static_cast<int64_t>(std::numeric_limits<T>::min());
   }
 };
 
-template<typename TLhs, typename TRhs, typename TRet>
+template <typename TLhs, typename TRhs, typename TRet>
 bool MulOverflow(TLhs lhs, TRhs rhs, TRet &ret) {
 #if __GNUC__ >= 5
   return __builtin_mul_overflow(lhs, rhs, &ret);
 #else
-  if ((!IntegerChecker<TRet>::Compat(lhs)) || (!IntegerChecker<TRet>::Compat(rhs))) {
+  if ((!IntegerChecker<TRet>::Compat(lhs)) ||
+      (!IntegerChecker<TRet>::Compat(rhs))) {
     return true;
   }
   if ((lhs == 0) || (rhs == 0)) {
@@ -78,20 +82,23 @@ bool MulOverflow(TLhs lhs, TRhs rhs, TRet &ret) {
 #endif
 }
 
-template<typename TLhs, typename TRhs, typename TRet>
+template <typename TLhs, typename TRhs, typename TRet>
 bool AddOverflow(TLhs lhs, TRhs rhs, TRet &ret) {
 #if __GNUC__ >= 5
   return __builtin_add_overflow(lhs, rhs, &ret);
 #else
-  if ((!IntegerChecker<TRet>::Compat(lhs)) || (!IntegerChecker<TRet>::Compat(rhs))) {
+  if ((!IntegerChecker<TRet>::Compat(lhs)) ||
+      (!IntegerChecker<TRet>::Compat(rhs))) {
     return true;
   }
   if (rhs >= 0) {
-    if (static_cast<TRet>(lhs) > std::numeric_limits<TRet>::max() - static_cast<TRet>(rhs)) {
+    if (static_cast<TRet>(lhs) >
+        std::numeric_limits<TRet>::max() - static_cast<TRet>(rhs)) {
       return true;
     }
   } else {
-    if (static_cast<TRet>(lhs) < std::numeric_limits<TRet>::min() - static_cast<TRet>(rhs)) {
+    if (static_cast<TRet>(lhs) <
+        std::numeric_limits<TRet>::min() - static_cast<TRet>(rhs)) {
       return true;
     }
   }
@@ -99,7 +106,6 @@ bool AddOverflow(TLhs lhs, TRhs rhs, TRet &ret) {
   return false;
 #endif
 }
-} // namespace ge
-
+}  // namespace ge
 
 #endif  // METADEF_CXX_INC_EXTERNAL_UTILS_EXTERN_MATH_UTIL_H

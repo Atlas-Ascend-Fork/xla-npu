@@ -22,22 +22,22 @@ limitations under the License.
 namespace xla {
 
 class NpuBufferAssignment {
-public:
-    // Returns the vector containing all buffer allocations in this assignment.
-    const std::vector<BufferAllocation>& Allocations() const {
-        return allocations_;
-    }
+ public:
+  // Returns the vector containing all buffer allocations in this assignment.
+  const std::vector<BufferAllocation>& Allocations() const {
+    return allocations_;
+  }
 
-    const BufferAllocation& GetAllocation(BufferAllocation::Index index) const;
+  const BufferAllocation& GetAllocation(BufferAllocation::Index index) const;
 
-    BufferAllocation* NewEmptyAllocation(
-        int64_t size, LogicalBuffer::Color color);
+  BufferAllocation* NewEmptyAllocation(int64_t size,
+                                       LogicalBuffer::Color color);
 
-    void Finalize();
+  void Finalize();
 
-private:
-    // The vector of buffer allocations. Indexed by BufferAllocation::Index.
-    std::vector<BufferAllocation> allocations_;
+ private:
+  // The vector of buffer allocations. Indexed by BufferAllocation::Index.
+  std::vector<BufferAllocation> allocations_;
 };
 
 }  // namespace xla

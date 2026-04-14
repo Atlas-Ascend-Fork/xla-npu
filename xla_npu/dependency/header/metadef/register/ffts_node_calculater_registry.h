@@ -33,9 +33,9 @@ limitations under the License.
 
 namespace gert {
 struct NodeMemPara {
-    size_t size {0};
-    void *dev_addr {nullptr};
-    void *host_addr {nullptr};
+  size_t size{0};
+  void *dev_addr{nullptr};
+  void *host_addr{nullptr};
 };
 
 class FFTSNodeCalculaterRegistry {
@@ -47,8 +47,10 @@ class FFTSNodeCalculaterRegistry {
    *   3.std::unique_ptr<uint8_t[]> pre_data_ptr -- node pre proc data memory with size(pre_data_size), framework will
    *   copy pre_data to new alloc memory
    */
-  using NodeCalculater = ge::graphStatus (*)(const ge::NodePtr &node, const LoweringGlobalData *global_data,
-      size_t &total_size, size_t &pre_data_size, std::unique_ptr<uint8_t[]> &pre_data_ptr);
+  using NodeCalculater = ge::graphStatus (*)(
+      const ge::NodePtr &node, const LoweringGlobalData *global_data,
+      size_t &total_size, size_t &pre_data_size,
+      std::unique_ptr<uint8_t[]> &pre_data_ptr);
   static FFTSNodeCalculaterRegistry &GetInstance();
   NodeCalculater FindNodeCalculater(const std::string &func_name);
   void Register(const std::string &func_name, const NodeCalculater func);
@@ -59,7 +61,9 @@ class FFTSNodeCalculaterRegistry {
 
 class FFTSNodeCalculaterRegister {
  public:
-    FFTSNodeCalculaterRegister(const string &func_name, FFTSNodeCalculaterRegistry::NodeCalculater func) noexcept;
+  FFTSNodeCalculaterRegister(
+      const string &func_name,
+      FFTSNodeCalculaterRegistry::NodeCalculater func) noexcept;
 };
 }  // namespace gert
 
@@ -69,12 +73,13 @@ class FFTSNodeCalculaterRegister {
 #define ATTRIBUTE_USED
 #endif
 
-#define GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER2(type, func, counter)                  \
-  static const gert::FFTSNodeCalculaterRegister g_register_node_calculater_##counter ATTRIBUTE_USED =  \
-      gert::FFTSNodeCalculaterRegister(type, func)
-#define GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER(type, func, counter)                    \
+#define GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER2(type, func, counter) \
+  static const gert::FFTSNodeCalculaterRegister                          \
+      g_register_node_calculater_##counter ATTRIBUTE_USED =              \
+          gert::FFTSNodeCalculaterRegister(type, func)
+#define GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER(type, func, counter) \
   GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER2(type, func, counter)
-#define FFTS_REGISTER_NODE_CALCULATER(type, func)                                \
+#define FFTS_REGISTER_NODE_CALCULATER(type, func) \
   GERT_REGISTER_FFTS_NODE_CALCULATER_COUNTER(type, func, __COUNTER__)
 
 #endif  // AIR_CXX_RUNTIME_V2_LOWERING_FFTS_NODE_CALCULATER_REGISTRY_H_

@@ -33,7 +33,7 @@ limitations under the License.
 #include "exe_graph/runtime/extended_kernel_context.h"
 namespace gert {
 enum class ExecuteMode {
-  kStaticOffloadExecute, // static sink
+  kStaticOffloadExecute,  // static sink
   kDynamicExecute,
   kEnd
 };
@@ -57,11 +57,7 @@ struct StreamInfo {
   int64_t stream_id{-1};
 };
 
-enum class SyncResType {
-  SYNC_RES_EVENT,
-  SYNC_RES_NOTIFY,
-  END
-};
+enum class SyncResType { SYNC_RES_EVENT, SYNC_RES_NOTIFY, END };
 
 /*
  * input:
@@ -90,16 +86,18 @@ class ExeResGenerationContext : public ExtendedKernelContext {
   bool IsConstInput(int64_t index) const;
 
   // get input/output shape by index in graph
-  const gert::StorageShape* GetInputShape(int64_t index) const;
-  const gert::StorageShape* GetOutputShape(int64_t index) const;
+  const gert::StorageShape *GetInputShape(int64_t index) const;
+  const gert::StorageShape *GetOutputShape(int64_t index) const;
 
   // set/get stream resource
-  ge::graphStatus SetAttachedStreamInfos(std::vector<StreamInfo> &stream_info_vec) const;
+  ge::graphStatus SetAttachedStreamInfos(
+      std::vector<StreamInfo> &stream_info_vec) const;
   std::vector<StreamInfo> GetAttachedStreamInfos() const;
   int64_t GetStreamId() const;
 
   // set/get sync resource
-  ge::graphStatus SetSyncResInfos(std::vector<SyncResInfo> &sync_info_vec) const;
+  ge::graphStatus SetSyncResInfos(
+      std::vector<SyncResInfo> &sync_info_vec) const;
   std::vector<SyncResInfo> GetSyncResInfos() const;
 
   // workspace size adjust
@@ -113,8 +111,9 @@ class ExeResGenerationContext : public ExtendedKernelContext {
   // need check valid after construct
   bool CheckContextValid() const;
 };
-static_assert(std::is_standard_layout<ExeResGenerationContext>::value && std::is_trivial<ExeResGenerationContext>::value,
+static_assert(std::is_standard_layout<ExeResGenerationContext>::value &&
+                  std::is_trivial<ExeResGenerationContext>::value,
               "The class ExeResGenerationContext must be a POD");
-} // namespace gert
+}  // namespace gert
 
 #endif

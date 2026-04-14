@@ -55,12 +55,12 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvolutionGetWorkspaceSize(const aclTensor* input, const aclTensor* weight,
-                                                       const aclTensor* bias, const aclIntArray* stride,
-                                                       const aclIntArray* padding, const aclIntArray* dilation,
-                                                       bool transposed, const aclIntArray* outputPadding,
-                                                       const int64_t groups, aclTensor* output, int8_t cubeMathType,
-                                                       uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnConvolutionGetWorkspaceSize(
+    const aclTensor* input, const aclTensor* weight, const aclTensor* bias,
+    const aclIntArray* stride, const aclIntArray* padding,
+    const aclIntArray* dilation, bool transposed,
+    const aclIntArray* outputPadding, const int64_t groups, aclTensor* output,
+    int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnConvTbc的第一段接口，计算并获取workspace大小
@@ -85,10 +85,10 @@ ACLNN_API aclnnStatus aclnnConvolutionGetWorkspaceSize(const aclTensor* input, c
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvTbcGetWorkspaceSize(const aclTensor* self, const aclTensor* weight,
-                                                   const aclTensor* bias, const int64_t pad, aclTensor* output,
-                                                   int8_t cubeMathType, uint64_t* workspaceSize,
-                                                   aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnConvTbcGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* weight, const aclTensor* bias,
+    const int64_t pad, aclTensor* output, int8_t cubeMathType,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnConvDepthwise2d的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -118,12 +118,12 @@ ACLNN_API aclnnStatus aclnnConvTbcGetWorkspaceSize(const aclTensor* self, const 
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvDepthwise2dGetWorkspaceSize(const aclTensor* self, const aclTensor* weight,
-                                                           const aclIntArray* kernelSize, const aclTensor* bias,
-                                                           const aclIntArray* stride, const aclIntArray* padding,
-                                                           const aclIntArray* dilation, aclTensor* out,
-                                                           int8_t cubeMathType, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnConvDepthwise2dGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* weight,
+    const aclIntArray* kernelSize, const aclTensor* bias,
+    const aclIntArray* stride, const aclIntArray* padding,
+    const aclIntArray* dilation, aclTensor* out, int8_t cubeMathType,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnConvolution的第二段接口，用于执行计算。
@@ -134,7 +134,9 @@ ACLNN_API aclnnStatus aclnnConvDepthwise2dGetWorkspaceSize(const aclTensor* self
  * @param [in] executor: op执行器，包含了算子计算流程。调用该接口后，executor不再可用
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvolution(void* workspace, const uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnConvolution(void* workspace,
+                                       const uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
                                        aclrtStream stream);
 
 /**
@@ -146,8 +148,9 @@ ACLNN_API aclnnStatus aclnnConvolution(void* workspace, const uint64_t workspace
  * @param [in] executor: op执行器，包含了算子计算流程。调用该接口后，executor不再可用
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvTbc(void* workspace, const uint64_t workspaceSize, aclOpExecutor* executor,
-                                   aclrtStream stream);
+ACLNN_API aclnnStatus aclnnConvTbc(void* workspace,
+                                   const uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnConvDepthwise2d的第二段接口，用于执行计算。
@@ -158,7 +161,9 @@ ACLNN_API aclnnStatus aclnnConvTbc(void* workspace, const uint64_t workspaceSize
  * @param [in] executor: op执行器，包含了算子计算流程。调用该接口后，executor不再可用
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvDepthwise2d(void* workspace, const uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnConvDepthwise2d(void* workspace,
+                                           const uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 #ifdef __cplusplus

@@ -27,7 +27,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, SetAippFunctionsOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_AIPP_H
+#endif  // ASCIR_TARGET_ASC_BASIC_AIPP_H

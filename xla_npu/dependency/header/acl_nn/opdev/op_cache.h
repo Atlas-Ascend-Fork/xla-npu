@@ -55,17 +55,17 @@ bool CheckCacheable();
 void AddSeperator();
 
 template <typename T>
-void AddParamToBuf(const T *addr, uint64_t size)
-{
-    uint64_t &hashOffset = g_hashOffset;
-    if (hashOffset + size * sizeof(T) > K_HASH_BUF_SIZE) {
-        hashOffset = K_INVALID_HASH_OFFSET;
-        return;
-    }
-    OP_CHECK(memcpy_s(g_hashBuf + hashOffset, K_HASH_BUF_SIZE - hashOffset, addr, size * sizeof(T)) == EOK,
-             OP_LOGW("Failed to memcpy in op cahce."),
-             ;);
-    hashOffset += size * sizeof(T);
+void AddParamToBuf(const T *addr, uint64_t size) {
+  uint64_t &hashOffset = g_hashOffset;
+  if (hashOffset + size * sizeof(T) > K_HASH_BUF_SIZE) {
+    hashOffset = K_INVALID_HASH_OFFSET;
+    return;
+  }
+  OP_CHECK(memcpy_s(g_hashBuf + hashOffset, K_HASH_BUF_SIZE - hashOffset, addr,
+                    size * sizeof(T)) == EOK,
+           OP_LOGW("Failed to memcpy in op cahce."),
+           ;);
+  hashOffset += size * sizeof(T);
 };
 
 void AddParamToBuf(const aclTensor *tensor);
@@ -86,17 +86,17 @@ void AddParamToBuf(char *c);
 void AddParamToBuf();
 
 template <typename T>
-void AddParamToBuf(const T &value)
-{
-    uint64_t &hashOffset = g_hashOffset;
-    if (hashOffset + sizeof(T) > K_HASH_BUF_SIZE) {
-        hashOffset = K_INVALID_HASH_OFFSET;
-        return;
-    }
-    OP_CHECK(memcpy_s(g_hashBuf + hashOffset, K_HASH_BUF_SIZE - hashOffset, &value, sizeof(T)) == EOK,
-             OP_LOGW("Failed to memcpy in op cahce."),
-             ;);
-    hashOffset += sizeof(T);
+void AddParamToBuf(const T &value) {
+  uint64_t &hashOffset = g_hashOffset;
+  if (hashOffset + sizeof(T) > K_HASH_BUF_SIZE) {
+    hashOffset = K_INVALID_HASH_OFFSET;
+    return;
+  }
+  OP_CHECK(memcpy_s(g_hashBuf + hashOffset, K_HASH_BUF_SIZE - hashOffset,
+                    &value, sizeof(T)) == EOK,
+           OP_LOGW("Failed to memcpy in op cahce."),
+           ;);
+  hashOffset += sizeof(T);
 };
 
 void InitExecutorCacheThreadLocal();
@@ -104,165 +104,167 @@ void AddOpConfigInfoToBuf();
 bool GetFromCache(aclOpExecutor **executor, uint64_t *workspaceSize);
 
 template <typename... Args>
-void CaculateHashKey(const std::tuple<Args...> &t)
-{
-    auto lambda = [](auto &&...args) {
-        [[maybe_unused]] int dummy[] = {(AddParamToBuf(std::forward<decltype(args)>(args)), 0)...};
-    };
-    std::apply(lambda, t);
+void CaculateHashKey(const std::tuple<Args...> &t) {
+  auto lambda = [](auto &&...args) {
+    [[maybe_unused]] int dummy[] = {
+        (AddParamToBuf(std::forward<decltype(args)>(args)), 0)...};
+  };
+  std::apply(lambda, t);
 };
 
 template <typename INPUT_TUPLE = void *, typename OUTPUT_TUPLE = void *>
 bool GetFromCache(aclOpExecutor **executor, uint64_t *workspaceSize,
-                  const char *api, const INPUT_TUPLE &in, const OUTPUT_TUPLE &out)
-{
-    // Collecting Cache Data
-    InitExecutorCacheThreadLocal();
-    AddParamToBuf(api);
-    AddOpConfigInfoToBuf();
-    CaculateHashKey(in);
-    CaculateHashKey(out);
-    if (!CheckCacheable()) {
-        return false;
-    }
-    // Get executor ande workspaceSize from Cache
-    return GetFromCache(executor, workspaceSize);
+                  const char *api, const INPUT_TUPLE &in,
+                  const OUTPUT_TUPLE &out) {
+  // Collecting Cache Data
+  InitExecutorCacheThreadLocal();
+  AddParamToBuf(api);
+  AddOpConfigInfoToBuf();
+  CaculateHashKey(in);
+  CaculateHashKey(out);
+  if (!CheckCacheable()) {
+    return false;
+  }
+  // Get executor ande workspaceSize from Cache
+  return GetFromCache(executor, workspaceSize);
 }
 
 struct OpCacheKey {
-    uint8_t *buf;
-    size_t len;
+  uint8_t *buf;
+  size_t len;
 
-    OpCacheKey() : buf(nullptr), len(0)
-    {}
+  OpCacheKey() : buf(nullptr), len(0) {}
 
-    OpCacheKey(uint8_t *buf_, size_t len_) : buf(buf_), len(len_)
-    {}
+  OpCacheKey(uint8_t *buf_, size_t len_) : buf(buf_), len(len_) {}
 
-    OpCacheKey(const OpCacheKey &key);
+  OpCacheKey(const OpCacheKey &key);
 
-    friend bool operator==(const OpCacheKey &lhs, const OpCacheKey &rhs);
-    ge::AscendString ToString();
+  friend bool operator==(const OpCacheKey &lhs, const OpCacheKey &rhs);
+  ge::AscendString ToString();
 };
 
 struct OpCacheKeyHash {
-    std::size_t operator()(const OpCacheKey &key) const;
+  std::size_t operator()(const OpCacheKey &key) const;
 };
 
 struct OpCacheKeyEqual {
-    bool operator()(const OpCacheKey &lhs, const OpCacheKey &rhs) const;
+  bool operator()(const OpCacheKey &lhs, const OpCacheKey &rhs) const;
 };
 
 void SetOpCacheKey(OpCacheKey &key);
 
 struct AddrRule {
-    bool isWorkspace{false};
-    uint64_t workspaceOffset{0};
-    int l2TensorInx{0};
-    int64_t l2TensorOffset{0};
-    AddrRule(){};
-    AddrRule(bool w, uint64_t offset, int inx, int64_t l2Offset)
-        : isWorkspace(w), workspaceOffset(offset), l2TensorInx(inx), l2TensorOffset(l2Offset){};
+  bool isWorkspace{false};
+  uint64_t workspaceOffset{0};
+  int l2TensorInx{0};
+  int64_t l2TensorOffset{0};
+  AddrRule(){};
+  AddrRule(bool w, uint64_t offset, int inx, int64_t l2Offset)
+      : isWorkspace(w),
+        workspaceOffset(offset),
+        l2TensorInx(inx),
+        l2TensorOffset(l2Offset){};
 };
 
 class OpExecCache {
-public:
-    OpExecCache();
-    ~OpExecCache();
+ public:
+  OpExecCache();
+  ~OpExecCache();
 
-    using R = aclnnStatus (*)(aclrtStream, void *cache);
-    using Task = std::tuple<size_t, R>;
+  using R = aclnnStatus (*)(aclrtStream, void *cache);
+  using Task = std::tuple<size_t, R>;
 
-    void InitOpCacheKey();
-    void InitCacheData();
+  void InitOpCacheKey();
+  void InitCacheData();
 
-    aclnnStatus RecordAddrRule(const aclTensor *t, AddrRule &rule);
+  aclnnStatus RecordAddrRule(const aclTensor *t, AddrRule &rule);
 
-    void *AddLaunchTensor(const aclTensor *t, size_t dataLen);
-    void *AddLaunchData(size_t dataLen);
+  void *AddLaunchTensor(const aclTensor *t, size_t dataLen);
+  void *AddLaunchData(size_t dataLen);
 
-    void SetCacheBuf(void *buf);
+  void SetCacheBuf(void *buf);
 
-    void UpdateTensorAddr(void *workspaceAddr, const std::vector<void *> &tensors);
+  void UpdateTensorAddr(void *workspaceAddr,
+                        const std::vector<void *> &tensors);
 
-    void SetBlockDim(uint32_t blockDim);
+  void SetBlockDim(uint32_t blockDim);
 
-    void SetCacheTensorInfo(void *infoLists);
-    void *GetCacheTensorInfo(int index);
-    void AddTensorRelation(const aclTensor *tensorOut, const aclTensor *tensorMiddle);
+  void SetCacheTensorInfo(void *infoLists);
+  void *GetCacheTensorInfo(int index);
+  void AddTensorRelation(const aclTensor *tensorOut,
+                         const aclTensor *tensorMiddle);
 
-    void NewLaunchCache(size_t *offset, size_t *cap, R runner);
+  void NewLaunchCache(size_t *offset, size_t *cap, R runner);
 
-    void OldCacheClear();
+  void OldCacheClear();
 
-    void Finalize();
+  void Finalize();
 
-    void SetWorkspaceSize(uint64_t val);
-    uint64_t GetWorkspaceSize() const;
+  void SetWorkspaceSize(uint64_t val);
+  uint64_t GetWorkspaceSize() const;
 
-    uint64_t GetHash() const;
+  uint64_t GetHash() const;
 
-    OpCacheKey GetOpCacheKey() const;
-    void MarkOpCacheInvalid();
-    bool IsOpCacheValid();
+  OpCacheKey GetOpCacheKey() const;
+  void MarkOpCacheInvalid();
+  bool IsOpCacheValid();
 
-    aclnnStatus DoSummaryProfiling(int index);
+  aclnnStatus DoSummaryProfiling(int index);
 
-    void RestoreThreadLocal(int index);
+  void RestoreThreadLocal(int index);
 
-    aclnnStatus Run(void *workspaceAddr, const aclrtStream stream, const std::vector<void *> &tensors);
+  aclnnStatus Run(void *workspaceAddr, const aclrtStream stream,
+                  const std::vector<void *> &tensors);
 
-    bool CanUse();
-    void SetUse();
+  bool CanUse();
+  void SetUse();
 
-    inline ListHead *GetShrinkList()
-    {
-        return &shrinkList_;
-    }
-    std::unordered_map<const aclStorage *, const aclStorage *> GetStorageRelation();
-    OpExecCacheDfx *opExecCacheDfx_{nullptr};
+  inline ListHead *GetShrinkList() { return &shrinkList_; }
+  std::unordered_map<const aclStorage *, const aclStorage *>
+  GetStorageRelation();
+  OpExecCacheDfx *opExecCacheDfx_{nullptr};
 
-private:
-    // cache meta data
-    void *cacheBuf_{nullptr};
-    size_t cacheOffset_{0};
-    size_t cacheCap_{K_CACHE_BUF_SIZE};
-    std::atomic<bool> canUse_{false};
-    // cache to use meta data
-    std::unordered_map<size_t, AddrRule> addrUpdateRelation_;
-    std::vector<Task> taskQueue_;
-    uint64_t hashKey_{0};
-    OpCacheKey key_;
-    uint64_t workspaceSize_{0};
-    bool hasExclusiveMem_{false};
-    const char *l2Name_{nullptr};
-    // temporary data
-    std::vector<const aclStorage *> cachedStorageList_;
-    std::unordered_map<const aclStorage *, const aclStorage *> storageRelation_;
-    // dfx data
-    std::vector<void *> cacheTensorInfoLists_;
-    std::vector<uint32_t> blockDim_;
-    ListHead shrinkList_;
-    uint8_t reserved_field_[8]; // Reserved field
+ private:
+  // cache meta data
+  void *cacheBuf_{nullptr};
+  size_t cacheOffset_{0};
+  size_t cacheCap_{K_CACHE_BUF_SIZE};
+  std::atomic<bool> canUse_{false};
+  // cache to use meta data
+  std::unordered_map<size_t, AddrRule> addrUpdateRelation_;
+  std::vector<Task> taskQueue_;
+  uint64_t hashKey_{0};
+  OpCacheKey key_;
+  uint64_t workspaceSize_{0};
+  bool hasExclusiveMem_{false};
+  const char *l2Name_{nullptr};
+  // temporary data
+  std::vector<const aclStorage *> cachedStorageList_;
+  std::unordered_map<const aclStorage *, const aclStorage *> storageRelation_;
+  // dfx data
+  std::vector<void *> cacheTensorInfoLists_;
+  std::vector<uint32_t> blockDim_;
+  ListHead shrinkList_;
+  uint8_t reserved_field_[8];  // Reserved field
 };
 
 struct OpCacheValue : public ListHead, public HlistNode, public OpCacheKey {
-    OpCacheValue() = default;
+  OpCacheValue() = default;
 
-    ~OpCacheValue();
+  ~OpCacheValue();
 
-    OpCacheValue(OpExecCache *cache, OpCacheKey &key)
-        : OpCacheKey(key.buf, key.len), cache_(cache) {}
+  OpCacheValue(OpExecCache *cache, OpCacheKey &key)
+      : OpCacheKey(key.buf, key.len), cache_(cache) {}
 
-    OpCacheValue(const OpCacheValue &value);
+  OpCacheValue(const OpCacheValue &value);
 
-    OpCacheValue(OpCacheValue &&value);
+  OpCacheValue(OpCacheValue &&value);
 
-    OpCacheValue &operator=(const OpCacheValue &value);
+  OpCacheValue &operator=(const OpCacheValue &value);
 
-    OpCacheValue &operator=(OpCacheValue &&value);
+  OpCacheValue &operator=(OpCacheValue &&value);
 
-    OpExecCache *cache_ = nullptr;
+  OpExecCache *cache_ = nullptr;
 };
 
 OpExecCache *GetOpExecCache(uint64_t hash);

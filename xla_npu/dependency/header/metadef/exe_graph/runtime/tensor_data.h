@@ -35,11 +35,11 @@ using TensorAddress = void *;
 using ConstTensorAddressPtr = const void *;
 
 enum TensorPlacement : int32_t {
-    kOnDeviceHbm,  ///< Tensor位于Device上的HBM内存
-    kOnHost,       ///< Tensor位于Host
-    kFollowing,    ///< Tensor位于Host，且数据紧跟在结构体后面
-    kOnDeviceP2p,  ///< Tensor位于Device上的P2p内存
-    kTensorPlacementEnd
+  kOnDeviceHbm,  ///< Tensor位于Device上的HBM内存
+  kOnHost,       ///< Tensor位于Host
+  kFollowing,    ///< Tensor位于Host，且数据紧跟在结构体后面
+  kOnDeviceP2p,  ///< Tensor位于Device上的P2p内存
+  kTensorPlacementEnd
 };
 
 class TensorPlacementUtils {
@@ -74,7 +74,9 @@ enum TensorOperateType : int32_t {
 /**
  * Tensor的管理函数
  */
-using TensorAddrManager = ge::graphStatus (*)(TensorAddress addr, TensorOperateType operate_type, void **out);
+using TensorAddrManager = ge::graphStatus (*)(TensorAddress addr,
+                                              TensorOperateType operate_type,
+                                              void **out);
 
 class TensorData {
  public:
@@ -84,17 +86,30 @@ class TensorData {
    * @param manager tensor data的管理函数，若manager为空，则认为addr就是tensor的数据地址，且此数据不需要被释放
    */
   // memse函数misra告警屏蔽
-  explicit TensorData(TensorAddress addr = nullptr, const TensorAddrManager manager = nullptr)
-      : addr_(addr), manager_(manager), size_(0U), placement_(kTensorPlacementEnd), reserved_0_(0U) {
+  explicit TensorData(TensorAddress addr = nullptr,
+                      const TensorAddrManager manager = nullptr)
+      : addr_(addr),
+        manager_(manager),
+        size_(0U),
+        placement_(kTensorPlacementEnd),
+        reserved_0_(0U) {
     (void)memset(reserved_1_, 0, sizeof(reserved_1_));
   }
-  explicit TensorData(TensorAddress addr, const TensorAddrManager manager, size_t size, TensorPlacement placement)
-      : addr_(addr), manager_(manager), size_(size), placement_(placement), reserved_0_(0U) {
+  explicit TensorData(TensorAddress addr, const TensorAddrManager manager,
+                      size_t size, TensorPlacement placement)
+      : addr_(addr),
+        manager_(manager),
+        size_(size),
+        placement_(placement),
+        reserved_0_(0U) {
     (void)memset(reserved_1_, 0, sizeof(reserved_1_));
   }
   TensorData(const TensorData &) = delete;
-  TensorData(TensorData &&other) noexcept : addr_(other.addr_), manager_(other.manager_),
-    size_(other.size_), placement_(other.placement_) {
+  TensorData(TensorData &&other) noexcept
+      : addr_(other.addr_),
+        manager_(other.manager_),
+        size_(other.size_),
+        placement_(other.placement_) {
     other.addr_ = nullptr;
     other.manager_ = nullptr;
     other.size_ = 0U;
@@ -119,9 +134,7 @@ class TensorData {
     }
     return *this;
   }
-  ~TensorData() noexcept {
-    static_cast<void>(Free());
-  }
+  ~TensorData() noexcept { static_cast<void>(Free()); }
 
   /**
    * 获取tensor地址
@@ -143,31 +156,23 @@ class TensorData {
   * 获取tensor的内存大小
   * @return tensor所占内存大小
   */
-  size_t GetSize() const {
-    return size_;
-  }
+  size_t GetSize() const { return size_; }
   /**
    * 设置tensor的内存大小
    * @param tensor的内存大小
    */
-  void SetSize(const size_t size) {
-    size_ = size;
-  }
+  void SetSize(const size_t size) { size_ = size; }
 
   /**
   * 获取tensor的placement
   * @return tensor的placement
   */
-  TensorPlacement GetPlacement() const {
-    return placement_;
-  }
+  TensorPlacement GetPlacement() const { return placement_; }
   /**
    * 设置tensor的placement
    * @param tensor的placement
    */
-  void SetPlacement(const TensorPlacement placement) {
-    placement_ = placement;
-  }
+  void SetPlacement(const TensorPlacement placement) { placement_ = placement; }
   /**
    * 释放tensor
    * @return 成功时返回ge::GRAPH_SUCCESS
@@ -188,7 +193,8 @@ class TensorData {
    * @param addr tensor地址
    * @param manager tensor的管理函数
    */
-  ge::graphStatus SetAddr(const ConstTensorAddressPtr addr, TensorAddrManager manager) {
+  ge::graphStatus SetAddr(const ConstTensorAddressPtr addr,
+                          TensorAddrManager manager) {
     const auto ret = Free();
     if (ret != ge::GRAPH_SUCCESS) {
       return ret;
@@ -199,8 +205,8 @@ class TensorData {
   }
 
   bool IsSharedWith(const TensorData &other) const {
-    return (addr_ == other.addr_ && manager_ == other.manager_ && size_ == other.size_ &&
-            placement_ == other.placement_);
+    return (addr_ == other.addr_ && manager_ == other.manager_ &&
+            size_ == other.size_ && placement_ == other.placement_);
   }
 
   ge::graphStatus ShareFrom(const TensorData &other) {
@@ -247,7 +253,8 @@ class TensorData {
   size_t size_;
   TensorPlacement placement_;
   uint32_t reserved_0_;  // Reserved field, 8-byte aligned for TensorPlacement
-  uint8_t reserved_1_[40]; // Reserved field, 32+8, do not directly use when only 8-byte left
+  uint8_t reserved_1_
+      [40];  // Reserved field, 32+8, do not directly use when only 8-byte left
 
   friend class TensorUtils;
 };

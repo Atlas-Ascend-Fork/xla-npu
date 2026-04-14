@@ -17,8 +17,8 @@
 #ifndef OP_API_INC_SWI_GLU_QUANT_V2_H_
 #define OP_API_INC_SWI_GLU_QUANT_V2_H_
 
- #include "aclnn_base.h"
- #include "aclnn_util.h"
+#include "aclnn_base.h"
+#include "aclnn_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,18 +65,11 @@ extern "C" {
  */
 
 ACLNN_API aclnnStatus aclnnSwiGluQuantV2GetWorkspaceSize(
-    const aclTensor *x,
-    const aclTensor *smoothScalesOptional,
-    const aclTensor *offsetsOptional,
-    const aclTensor *groupIndexOptional,
-    bool activateLeft,
-    char *quantModeOptional,
-    int64_t groupListTypeOptional,
-    int64_t dstType,
-    const aclTensor *yOut,
-    const aclTensor *scaleOut,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
+    const aclTensor *x, const aclTensor *smoothScalesOptional,
+    const aclTensor *offsetsOptional, const aclTensor *groupIndexOptional,
+    bool activateLeft, char *quantModeOptional, int64_t groupListTypeOptional,
+    int64_t dstType, const aclTensor *yOut, const aclTensor *scaleOut,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnSwiGluQuantV2的第二段接口，用于执行计算。
@@ -100,14 +93,13 @@ ACLNN_API aclnnStatus aclnnSwiGluQuantV2GetWorkspaceSize(
  * return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnSwiGluQuantV2(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSwiGluQuantV2(void *workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor *executor,
+                                         aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_SWI_GLU_QUANT_V2_H_
+#endif  // OP_API_INC_SWI_GLU_QUANT_V2_H_

@@ -23,18 +23,21 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnGridSampler3DBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* input, const aclTensor* grid, int64_t interpolationMode,
-    int64_t paddingMode, bool alignCorners, const aclBoolArray* outputMask, aclTensor* inputGrad, aclTensor* gridGrad,
+    const aclTensor* gradOutput, const aclTensor* input, const aclTensor* grid,
+    int64_t interpolationMode, int64_t paddingMode, bool alignCorners,
+    const aclBoolArray* outputMask, aclTensor* inputGrad, aclTensor* gridGrad,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGridSampler3DBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnGridSampler3DBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGridSampler3DBackward(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
+                                                 aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_GRID_SAMPLER3D_BACKWARD_H_
+#endif  // OP_API_INC_GRID_SAMPLER3D_BACKWARD_H_

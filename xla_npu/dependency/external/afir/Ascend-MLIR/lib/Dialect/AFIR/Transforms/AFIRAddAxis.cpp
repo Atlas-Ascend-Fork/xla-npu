@@ -37,10 +37,12 @@ namespace {
 // Structure to hold axis addition information
 struct AxisAddInfo {
   int64_t target_rank;
-  int64_t insert_position;  // Where to insert the new dimension (-1 means append at front)
+  int64_t
+      insert_position;  // Where to insert the new dimension (-1 means append at front)
 };
 
-void getNeedToAddAxis(Operation *op, llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis) {
+void getNeedToAddAxis(Operation *op,
+                      llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis) {
   auto resultType = cast<RankedTensorType>(op->getResult(0).getType());
 
   // For concat operations, we need to add dimension at the concat_axis position
@@ -53,19 +55,23 @@ void getNeedToAddAxis(Operation *op, llvm::DenseMap<Value, AxisAddInfo> &needToA
     if (auto opType = dyn_cast<RankedTensorType>(operand.getType())) {
       Value addOperand = operand;
       if (opType.getRank() != resultType.getRank()) {
-        while (addOperand.getDefiningOp() && isa<afir::LoadOp>(addOperand.getDefiningOp())) {
-          addOperand = dyn_cast<afir::LoadOp>(addOperand.getDefiningOp()).getInput();
+        while (addOperand.getDefiningOp() &&
+               isa<afir::LoadOp>(addOperand.getDefiningOp())) {
+          addOperand =
+              dyn_cast<afir::LoadOp>(addOperand.getDefiningOp()).getInput();
         }
         AxisAddInfo info;
         info.target_rank = resultType.getRank();
-        info.insert_position = concat_axis;  // For concat, insert at concat_axis; for others, -1 (front)
+        info.insert_position =
+            concat_axis;  // For concat, insert at concat_axis; for others, -1 (front)
         needToAddAxis[addOperand] = info;
       }
     }
   }
 }
 
-void addAxis(llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis, IRRewriter &rewriter) {
+void addAxis(llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis,
+             IRRewriter &rewriter) {
   for (auto &[val, info] : needToAddAxis) {
     auto originType = dyn_cast<RankedTensorType>(val.getType());
     SmallVector<int64_t> newDims;
@@ -75,13 +81,15 @@ void addAxis(llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis, IRRewriter &rewr
       for (int64_t i = 0; i < info.target_rank - originType.getRank(); ++i) {
         newDims.push_back(1);
       }
-      newDims.append(originType.getShape().begin(), originType.getShape().end());
+      newDims.append(originType.getShape().begin(),
+                     originType.getShape().end());
     } else {
       // Add dimension at specific position (for concat)
       int64_t num_dims_to_add = info.target_rank - originType.getRank();
       int64_t current_idx = 0;
       for (int64_t i = 0; i < info.target_rank; ++i) {
-        if (i >= info.insert_position && i < info.insert_position + num_dims_to_add) {
+        if (i >= info.insert_position &&
+            i < info.insert_position + num_dims_to_add) {
           // Insert dimension of size 1 at the concat_axis position
           newDims.push_back(1);
         } else {
@@ -91,19 +99,23 @@ void addAxis(llvm::DenseMap<Value, AxisAddInfo> &needToAddAxis, IRRewriter &rewr
       }
     }
 
-    auto newType = RankedTensorType::get(newDims, originType.getElementType(), originType.getEncoding());
+    auto newType = RankedTensorType::get(newDims, originType.getElementType(),
+                                         originType.getEncoding());
     val.setType(newType);
     if (auto blockArg = dyn_cast<BlockArgument>(val)) {
-      if (auto func = dyn_cast<func::FuncOp>(blockArg.getOwner()->getParentOp())) {
+      if (auto func =
+              dyn_cast<func::FuncOp>(blockArg.getOwner()->getParentOp())) {
         auto originFuncType = func.getFunctionType();
         SmallVector<Type> inputs(originFuncType.getInputs());
         inputs[blockArg.getArgNumber()] = newType;
-        func.setFunctionType(FunctionType::get(func.getContext(), inputs, func.getResultTypes()));
+        func.setFunctionType(FunctionType::get(func.getContext(), inputs,
+                                               func.getResultTypes()));
       }
     }
     for (auto user : val.getUsers()) {
       if (auto loadOp = dyn_cast<afir::LoadOp>(user)) {
-        loadOp.setIndexingMapsAttr(rewriter.getAffineMapArrayAttr({rewriter.getMultiDimIdentityMap(info.target_rank)}));
+        loadOp.setIndexingMapsAttr(rewriter.getAffineMapArrayAttr(
+            {rewriter.getMultiDimIdentityMap(info.target_rank)}));
         loadOp.getResult().setType(newType);
       }
     }
@@ -116,7 +128,8 @@ void addBroadcast(Operation *op, IRRewriter &rewriter) {
   bool needToAdd = false;
   auto resultType = dyn_cast<RankedTensorType>(op->getResult(0).getType());
   SmallVector<AffineMap> newIndexingMaps(
-      dyn_cast<ArrayAttr>(op->getAttr("indexing_maps")).getAsValueRange<AffineMapAttr>());
+      dyn_cast<ArrayAttr>(op->getAttr("indexing_maps"))
+          .getAsValueRange<AffineMapAttr>());
 
   // For concat operations, get the concat axis to skip shape checking on that axis
   int64_t concatAxis = -1;
@@ -131,7 +144,8 @@ void addBroadcast(Operation *op, IRRewriter &rewriter) {
       auto opType = cast<RankedTensorType>(operand.getType());
       Value addOperand = operand;
       if (newIndexingMaps[idx].getNumResults() < resultType.getRank()) {
-        newIndexingMaps[idx] = rewriter.getMultiDimIdentityMap(resultType.getRank());
+        newIndexingMaps[idx] =
+            rewriter.getMultiDimIdentityMap(resultType.getRank());
       }
       if (addOperand.getType() != resultType) {
         needToAdd = true;
@@ -140,16 +154,19 @@ void addBroadcast(Operation *op, IRRewriter &rewriter) {
         for (int pos = 0; pos < resultType.getRank(); pos++) {
           // For concat operations, skip shape checking on the concat axis
           // because concat inputs are allowed to have different sizes on that axis
-          if (pos != concatAxis && opType.getShape()[pos] != resultType.getShape()[pos]) {
-            originMap = originMap.replace(rewriter.getAffineDimExpr(pos), rewriter.getAffineConstantExpr(0),
+          if (pos != concatAxis &&
+              opType.getShape()[pos] != resultType.getShape()[pos]) {
+            originMap = originMap.replace(rewriter.getAffineDimExpr(pos),
+                                          rewriter.getAffineConstantExpr(0),
                                           resultType.getRank(), 0);
           }
         }
         SmallVector<AffineMap> broadcastMap{originMap, newMap};
         ArrayAttr broadAttr = rewriter.getAffineMapArrayAttr(broadcastMap);
-        addOperand = rewriter.create<afir::BroadcastOp>(op->getLoc(), resultType, addOperand, broadAttr, 0,
-                                                        rewriter.getDictionaryAttr({}), rewriter.getArrayAttr({}),
-                                                        rewriter.getArrayAttr({}));
+        addOperand = rewriter.create<afir::BroadcastOp>(
+            op->getLoc(), resultType, addOperand, broadAttr, 0,
+            rewriter.getDictionaryAttr({}), rewriter.getArrayAttr({}),
+            rewriter.getArrayAttr({}));
       }
       newOperands.push_back(addOperand);
     }
@@ -159,8 +176,10 @@ void addBroadcast(Operation *op, IRRewriter &rewriter) {
     mapper.map(op->getOperands(), newOperands);
     auto newOp = rewriter.clone(*op, mapper);
     rewriter.replaceOp(op, newOp);
-    newIndexingMaps.back() = rewriter.getMultiDimIdentityMap(resultType.getRank());
-    newOp->setAttr("indexing_maps", rewriter.getAffineMapArrayAttr(newIndexingMaps));
+    newIndexingMaps.back() =
+        rewriter.getMultiDimIdentityMap(resultType.getRank());
+    newOp->setAttr("indexing_maps",
+                   rewriter.getAffineMapArrayAttr(newIndexingMaps));
   }
 }
 
@@ -169,8 +188,9 @@ struct AFIRAddAxisPass : public impl::AFIRAddAxisPassBase<AFIRAddAxisPass> {
     SmallVector<Operation *> opList;
     llvm::DenseMap<Value, AxisAddInfo> needToAddAxis;
     getOperation().walk([&](Operation *op) {
-      if (op->getDialect()->getNamespace() == AFIRDialect::getDialectNamespace() && op->getOperands().size() > 1 &&
-          !isa<afir::MaxOp>(op)) {
+      if (op->getDialect()->getNamespace() ==
+              AFIRDialect::getDialectNamespace() &&
+          op->getOperands().size() > 1 && !isa<afir::MaxOp>(op)) {
         opList.push_back(op);
       }
     });

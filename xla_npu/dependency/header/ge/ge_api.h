@@ -40,17 +40,22 @@ limitations under the License.
 #include "xla/xla_npu/dependency/header/metadef/ge/ge_allocator.h"
 #include "xla/xla_npu/dependency/header/metadef/exe_graph/runtime/tensor.h"
 namespace ge {
-typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
+typedef uint32_t (*pCallBackFunc)(
+    uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
 
 namespace session {
-typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<AscendString, ge::Tensor> &params_list);
+typedef uint32_t (*pCallBackFunc)(
+    uint32_t graph_id, const std::map<AscendString, ge::Tensor> &params_list);
 }
 
 // Initialize GE
-ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY Status GEInitialize(const std::map<AscendString, AscendString> &))
-GE_FUNC_VISIBILITY Status GEInitialize(const std::map<std::string, std::string> &options);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY Status GEInitialize(
+    const std::map<AscendString, AscendString> &))
+GE_FUNC_VISIBILITY Status
+GEInitialize(const std::map<std::string, std::string> &options);
 
-GE_FUNC_VISIBILITY Status GEInitialize(const std::map<AscendString, AscendString> &options);
+GE_FUNC_VISIBILITY Status
+GEInitialize(const std::map<AscendString, AscendString> &options);
 
 // Finalize GE, release all resources
 GE_FUNC_VISIBILITY Status GEFinalize();
@@ -63,8 +68,9 @@ GE_FUNC_VISIBILITY std::string GEGetWarningMsg();
 
 GE_FUNC_VISIBILITY ge::AscendString GEGetWarningMsgV2();
 
-GE_FUNC_VISIBILITY Status GetModelDistributeDesc(const void *data, const uint64_t length,
-                                                 ModelDistibuteDesc &model_dist_desc);
+GE_FUNC_VISIBILITY Status
+GetModelDistributeDesc(const void *data, const uint64_t length,
+                       ModelDistibuteDesc &model_dist_desc);
 
 class GE_FUNC_VISIBILITY Session {
  public:
@@ -91,8 +97,10 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] options graph options
   /// @return Status result of function
   ///
-  ATTRIBUTED_DEPRECATED(Status AddGraph(uint32_t, const Graph &, const std::map<AscendString, AscendString> &))
-  Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
+  ATTRIBUTED_DEPRECATED(Status AddGraph(
+      uint32_t, const Graph &, const std::map<AscendString, AscendString> &))
+  Status AddGraph(uint32_t graph_id, const Graph &graph,
+                  const std::map<std::string, std::string> &options);
 
   ///
   /// @ingroup client
@@ -102,7 +110,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] options graph options
   /// @return Status result of function
   ///
-  Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<AscendString, AscendString> &options);
+  Status AddGraph(uint32_t graph_id, const Graph &graph,
+                  const std::map<AscendString, AscendString> &options);
 
   ///
   /// @ingroup client
@@ -121,7 +130,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] options graph options
   /// @return Status result of function
   ///
-  Status AddGraphWithCopy(uint32_t graph_id, const Graph &graph, const std::map<AscendString, AscendString> &options);
+  Status AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
+                          const std::map<AscendString, AscendString> &options);
 
   ///
   /// @ingroup ge_graph
@@ -139,7 +149,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
+  Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs,
+                  std::vector<Tensor> &outputs);
 
   ///
   /// @ingroup ge_graph
@@ -149,7 +160,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraph(uint32_t graph_id, const ContinuousTensorList &inputs, std::vector<Tensor> &outputs);
+  Status RunGraph(uint32_t graph_id, const ContinuousTensorList &inputs,
+                  std::vector<Tensor> &outputs);
 
   ///
   /// @ingroup ge_graph
@@ -159,8 +171,10 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] device id respond to outputs output data
   /// @return Status result of function
   ///
-  Status RunGraphDistribute(uint32_t graph_id, const std::map<int32_t, std::vector<Tensor>> &device_to_inputs,
-                            std::map<int32_t, std::vector<Tensor>> &device_to_outputs);
+  Status RunGraphDistribute(
+      uint32_t graph_id,
+      const std::map<int32_t, std::vector<Tensor>> &device_to_inputs,
+      std::map<int32_t, std::vector<Tensor>> &device_to_outputs);
 
   ///
   /// @ingroup ge_graph
@@ -180,12 +194,13 @@ class GE_FUNC_VISIBILITY Session {
      方案约束：只用于加载异构离线模型，即存储格式为flowmodel下包含一个或多个submodel和modelrelation的离线模型;
               不支持包含variable的离线模型，variable的值在device侧目前还没有保存到om中的方案
   */
-  Status LoadGraph(const uint32_t graph_id, const std::map<std::string, std::string> &options,
+  Status LoadGraph(const uint32_t graph_id,
+                   const std::map<std::string, std::string> &options,
                    const std::string &om_file_path) const;
 
   ///
   /// @ingroup ge_graph
-  /// @brief load a graph of the session with specific session id and specific stream, 
+  /// @brief load a graph of the session with specific session id and specific stream,
   /// @param [in] graph_id graph id
   /// @param [in] stream specific stream
   /// @param [in] options graph options
@@ -195,7 +210,8 @@ class GE_FUNC_VISIBILITY Session {
      方案约束：只用于加载已经完成CompileGraph的图，不支持重复加载图，
      使用方法：CompileGraph + LoadGraph + ExecuteGraphWithStreamAsync
   */
-  Status LoadGraph(const uint32_t graph_id, const std::map<AscendString, AscendString> &options,
+  Status LoadGraph(const uint32_t graph_id,
+                   const std::map<AscendString, AscendString> &options,
                    void *stream) const;
 
   ///
@@ -207,11 +223,13 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<Tensor> &inputs,
+  Status RunGraphWithStreamAsync(uint32_t graph_id, void *stream,
+                                 const std::vector<Tensor> &inputs,
                                  std::vector<Tensor> &outputs);
-  
-  Status ExecuteGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<gert::Tensor> &inputs,
-                                 std::vector<gert::Tensor> &outputs);
+
+  Status ExecuteGraphWithStreamAsync(uint32_t graph_id, void *stream,
+                                     const std::vector<gert::Tensor> &inputs,
+                                     std::vector<gert::Tensor> &outputs);
 
   ///
   /// @ingroup ge_graph
@@ -220,9 +238,11 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] inputs: input data
   /// @return Status result of function
   ///
-  Status BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
+  Status BuildGraph(uint32_t graph_id,
+                    const std::vector<InputTensorInfo> &inputs);
 
-  Status BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
+  Status BuildGraph(uint32_t graph_id,
+                    const std::vector<ge::Tensor> &inputs); /*lint !e148*/
 
   ///
   /// @ingroup ge_graph
@@ -234,7 +254,8 @@ class GE_FUNC_VISIBILITY Session {
   ///                        Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  Status RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
+  Status RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
+                       RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph
@@ -246,7 +267,8 @@ class GE_FUNC_VISIBILITY Session {
   ///                        Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  Status RunGraphAsync(uint32_t graph_id, const ContinuousTensorList &inputs, RunAsyncCallback callback);
+  Status RunGraphAsync(uint32_t graph_id, const ContinuousTensorList &inputs,
+                       RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph
@@ -255,8 +277,10 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] var_values: variable values
   /// @return Status result of function
   ///
-  ATTRIBUTED_DEPRECATED(Status GetVariables(const std::vector<std::string> &, std::vector<Tensor> &))
-  Status GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values);
+  ATTRIBUTED_DEPRECATED(Status GetVariables(const std::vector<std::string> &,
+                                            std::vector<Tensor> &))
+  Status GetVariables(const std::vector<std::string> &var_names,
+                      std::vector<Tensor> &var_values);
 
   ///
   /// @ingroup ge_graph
@@ -265,7 +289,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] var_values: variable values
   /// @return Status result of function
   ///
-  Status GetVariables(const std::vector<AscendString> &var_names, std::vector<Tensor> &var_values);
+  Status GetVariables(const std::vector<AscendString> &var_names,
+                      std::vector<Tensor> &var_values);
 
   ///
   /// @ingroup ge_graph
@@ -276,10 +301,13 @@ class GE_FUNC_VISIBILITY Session {
   ///                       Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  ATTRIBUTED_DEPRECATED(Status RegisterCallBackFunc(const char *, const session::pCallBackFunc &))
-  Status RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback);
+  ATTRIBUTED_DEPRECATED(
+      Status RegisterCallBackFunc(const char *, const session::pCallBackFunc &))
+  Status RegisterCallBackFunc(const std::string &key,
+                              const pCallBackFunc &callback);
 
-  Status RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback);
+  Status RegisterCallBackFunc(const char *key,
+                              const session::pCallBackFunc &callback);
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
 
@@ -292,8 +320,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] info intput data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
-  Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, const DataFlowInfo &info,
-                           int32_t timeout);
+  Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<Tensor> &inputs,
+                           const DataFlowInfo &info, int32_t timeout);
 
   /// @ingroup ge_graph
   /// @brief Feed input data to graph.
@@ -303,7 +331,9 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] info intput data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
-  Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<uint32_t> &indexes, const std::vector<Tensor> &inputs,
+  Status FeedDataFlowGraph(uint32_t graph_id,
+                           const std::vector<uint32_t> &indexes,
+                           const std::vector<Tensor> &inputs,
                            const DataFlowInfo &info, int32_t timeout);
 
   /// @ingroup ge_graph
@@ -314,8 +344,10 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] info intput data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
-  Status FeedRawData(uint32_t graph_id, const std::vector<RawData> &raw_data_list, const uint32_t index,
-                     const DataFlowInfo &info, int32_t timeout);
+  Status FeedRawData(uint32_t graph_id,
+                     const std::vector<RawData> &raw_data_list,
+                     const uint32_t index, const DataFlowInfo &info,
+                     int32_t timeout);
 
   /// @ingroup ge_graph
   /// @brief Fetch graph output data in order.
@@ -324,7 +356,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] info output data flow flag
   /// @param [in] timeout data fetch timeout(ms), -1 means never timeout
   /// @return Status result of function
-  Status FetchDataFlowGraph(uint32_t graph_id, std::vector<Tensor> &outputs, DataFlowInfo &info, int32_t timeout);
+  Status FetchDataFlowGraph(uint32_t graph_id, std::vector<Tensor> &outputs,
+                            DataFlowInfo &info, int32_t timeout);
 
   /// @ingroup ge_graph
   /// @brief Fetch graph output data in order.
@@ -334,8 +367,10 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] info output data flow flag
   /// @param [in] timeout data ftech timeout(ms), -1 means never timeout
   /// @return Status result of function
-  Status FetchDataFlowGraph(uint32_t graph_id, const std::vector<uint32_t> &indexes, std::vector<Tensor> &outputs,
-                            DataFlowInfo &info, int32_t timeout);
+  Status FetchDataFlowGraph(uint32_t graph_id,
+                            const std::vector<uint32_t> &indexes,
+                            std::vector<Tensor> &outputs, DataFlowInfo &info,
+                            int32_t timeout);
 
   /// @ingroup ge_graph
   /// @brief compile graph in the session with specific session id
@@ -359,7 +394,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] size const memory size
   /// @return Status result of function
   ///
-  Status SetGraphConstMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+  Status SetGraphConstMemoryBase(uint32_t graph_id, const void *const memory,
+                                 size_t size);
 
   ///
   /// @ingroup ge_graph
@@ -369,7 +405,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] size feature map memory size
   /// @return Status result of function
   ///
-  Status UpdateGraphFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+  Status UpdateGraphFeatureMemoryBase(uint32_t graph_id,
+                                      const void *const memory, size_t size);
 
   ///
   /// @ingroup ge_graph
@@ -379,7 +416,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] size const memory size
   /// @return Status result of function
   ///
-  Status SetGraphFixedFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+  Status SetGraphFixedFeatureMemoryBase(uint32_t graph_id,
+                                        const void *const memory, size_t size);
 
   ///
   /// @ingroup ge_graph
@@ -390,7 +428,9 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] size const memory size
   /// @return Status result of function
   ///
-  Status SetGraphFixedFeatureMemoryBaseWithType(uint32_t graph_id, MemoryType type, const void *const memory,
+  Status SetGraphFixedFeatureMemoryBaseWithType(uint32_t graph_id,
+                                                MemoryType type,
+                                                const void *const memory,
                                                 size_t size);
 
   ///
@@ -401,14 +441,17 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [out] size feature map memory size
   /// @return Status result of function
   ///
-  Status UpdateGraphRefreshableFeatureMemoryBase(uint32_t graph_id, const void *const memory, size_t size);
+  Status UpdateGraphRefreshableFeatureMemoryBase(uint32_t graph_id,
+                                                 const void *const memory,
+                                                 size_t size);
 
   /// @ingroup ge_graph
   /// @brief register external allocator to GE.
   /// @param [in] stream stream handle
   /// @param [in] allocator_obj allocator object handle
   /// @return Status result of function
-  Status RegisterExternalAllocator(const void *const stream, AllocatorPtr allocator) const;
+  Status RegisterExternalAllocator(const void *const stream,
+                                   AllocatorPtr allocator) const;
 
   /// @ingroup ge_graph
   /// @brief unregister external allocator to GE.
@@ -437,7 +480,8 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] new_pa new physical memory
   /// @param [in] len the lens of va to remap
   /// @return Status result of function
-  Status PaRemapped(const uint64_t va, const uint64_t new_pa, const uint64_t len) const;
+  Status PaRemapped(const uint64_t va, const uint64_t new_pa,
+                    const uint64_t len) const;
 
  private:
   uint64_t sessionId_{0};
@@ -445,17 +489,20 @@ class GE_FUNC_VISIBILITY Session {
 }  // namespace ge
 
 extern "C" {
-ge::Status GeSessionLoadGraph(ge::Session &session, uint32_t graph_id,
-                              const std::map<ge::AscendString, ge::AscendString> &options,
-                              void *stream);
+ge::Status GeSessionLoadGraph(
+    ge::Session &session, uint32_t graph_id,
+    const std::map<ge::AscendString, ge::AscendString> &options, void *stream);
 
-ge::Status GeSessionExecuteGraphWithStreamAsync(ge::Session &session, uint32_t graph_id, void *stream,
-                                                const std::vector<gert::Tensor> &inputs,
-                                                std::vector<gert::Tensor> &outputs);
+ge::Status GeSessionExecuteGraphWithStreamAsync(
+    ge::Session &session, uint32_t graph_id, void *stream,
+    const std::vector<gert::Tensor> &inputs,
+    std::vector<gert::Tensor> &outputs);
 
-ge::Status GetRegisteredIrDef(const char *op_type, std::vector<std::pair<ge::AscendString, ge::AscendString>> &inputs,
-                              std::vector<std::pair<ge::AscendString, ge::AscendString>> &outputs,
-                              std::vector<std::pair<ge::AscendString, ge::AscendString>> &attrs);
-} // extern "C"
+ge::Status GetRegisteredIrDef(
+    const char *op_type,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>> &inputs,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>> &outputs,
+    std::vector<std::pair<ge::AscendString, ge::AscendString>> &attrs);
+}  // extern "C"
 
 #endif  // INC_EXTERNAL_GE_GE_API_H_

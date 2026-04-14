@@ -47,7 +47,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnScatterGetWorkspaceSize(
-    const aclTensor* self, int64_t dim, const aclTensor* index, const aclTensor* src, int64_t reduce, aclTensor* out,
+    const aclTensor* self, int64_t dim, const aclTensor* index,
+    const aclTensor* src, int64_t reduce, aclTensor* out,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
@@ -60,8 +61,9 @@ ACLNN_API aclnnStatus aclnnScatterGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnScatter(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnScatter(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor,
+                                   const aclrtStream stream);
 
 /**
  * @brief aclnnScatterValue的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -91,7 +93,8 @@ aclnnScatter(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, c
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnScatterValueGetWorkspaceSize(
-    const aclTensor* self, int64_t dim, const aclTensor* index, const aclScalar* value, int64_t reduce, aclTensor* out,
+    const aclTensor* self, int64_t dim, const aclTensor* index,
+    const aclScalar* value, int64_t reduce, aclTensor* out,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
@@ -104,8 +107,9 @@ ACLNN_API aclnnStatus aclnnScatterValueGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnScatterValue(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnScatterValue(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
+                                        const aclrtStream stream);
 
 /**
  * @brief aclnnInplaceScatter的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -133,8 +137,9 @@ aclnnScatterValue(void* workspace, uint64_t workspaceSize, aclOpExecutor* execut
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnInplaceScatterGetWorkspaceSize(
-    aclTensor* selfRef, int64_t dim, const aclTensor* index, const aclTensor* src, int64_t reduce,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    aclTensor* selfRef, int64_t dim, const aclTensor* index,
+    const aclTensor* src, int64_t reduce, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief: aclnnInplaceScatter的第二段接口，用于执行计算
@@ -146,8 +151,10 @@ ACLNN_API aclnnStatus aclnnInplaceScatterGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceScatter(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceScatter(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
+                                          aclrtStream stream);
 
 /**
  * @brief aclnnInplaceScatterValue的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -176,8 +183,9 @@ aclnnInplaceScatter(void* workspace, uint64_t workspaceSize, aclOpExecutor* exec
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnInplaceScatterValueGetWorkspaceSize(
-    aclTensor* selfRef, int64_t dim, const aclTensor* index, const aclScalar* value, int64_t reduce,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    aclTensor* selfRef, int64_t dim, const aclTensor* index,
+    const aclScalar* value, int64_t reduce, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief: aclnnInplaceScatterValue的第二段接口，用于执行计算
@@ -190,8 +198,10 @@ ACLNN_API aclnnStatus aclnnInplaceScatterValueGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceScatterValue(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceScatterValue(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }

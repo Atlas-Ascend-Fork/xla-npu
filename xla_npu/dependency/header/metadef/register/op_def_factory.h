@@ -30,10 +30,10 @@ limitations under the License.
 namespace ops {
 using OpDefCreator = std::function<OpDef(const char *)>;
 class OpDefFactory {
-public:
+ public:
   static int OpDefRegister(const char *name, OpDefCreator creator);
 
-private:
+ private:
   friend class AclnnOpGenerator;
   friend class Generator;
   friend class OpProtoGenerator;

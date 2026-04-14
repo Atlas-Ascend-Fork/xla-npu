@@ -56,8 +56,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnEmbeddingDenseBackwardGetWorkspaceSize(
-    const aclTensor* grad, const aclTensor* indices, uint64_t numWeights, uint64_t paddingIdx, bool scaleGradByFreq,
-    const aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* grad, const aclTensor* indices, uint64_t numWeights,
+    uint64_t paddingIdx, bool scaleGradByFreq, const aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnEmbeddingDenseBackward的第二段接口，用于执行计算。
@@ -88,11 +89,13 @@ ACLNN_API aclnnStatus aclnnEmbeddingDenseBackwardGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnEmbeddingDenseBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnEmbeddingDenseBackward(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_EMBEDDING_DENSE_BACKWARD_H_
+#endif  // OP_API_INC_EMBEDDING_DENSE_BACKWARD_H_

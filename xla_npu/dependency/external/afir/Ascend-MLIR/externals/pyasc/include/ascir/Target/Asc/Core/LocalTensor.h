@@ -27,13 +27,16 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::LocalTensorV2Op op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::LocalTensorReinterpretCastOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::LocalTensorReinterpretCastOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::LocalTensorSubIndexOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::LocalTensorSubIndexOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::LocalTensorBracketOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::LocalTensorBracketOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_CORE_LOCAL_TENSOR_H
+#endif  // ASCIR_TARGET_ASC_CORE_LOCAL_TENSOR_H

@@ -35,12 +35,8 @@ namespace {
 // Verify broadcast compatibility using indexing_maps attribute.
 // This supports HLO-style broadcasts with explicit dimension mapping.
 static LogicalResult verifyBroadcastViaIndexingMaps(
-    Operation *op,
-    ArrayRef<int64_t> inputShape,
-    ArrayRef<int64_t> resultShape,
-    size_t inputRank,
-    size_t resultRank) {
-
+    Operation *op, ArrayRef<int64_t> inputShape, ArrayRef<int64_t> resultShape,
+    size_t inputRank, size_t resultRank) {
   auto broadcastOp = mlir::dyn_cast<mlir::afir::BroadcastOp>(op);
   if (!broadcastOp) return failure();
 
@@ -78,10 +74,12 @@ static LogicalResult verifyBroadcastViaIndexingMaps(
       size_t resultDimIdx = dimExpr.getPosition();
       if (resultDimIdx < resultShape.size()) {
         int64_t resultDim = resultShape[resultDimIdx];
-        if (resultDim != ShapedType::kDynamic && inputDim != 1 && inputDim != resultDim) {
+        if (resultDim != ShapedType::kDynamic && inputDim != 1 &&
+            inputDim != resultDim) {
           return op->emitOpError("input dimension ")
                  << i << " (size " << inputDim << ") is not broadcastable to "
-                 << "result dimension " << resultDimIdx << " (size " << resultDim << ")";
+                 << "result dimension " << resultDimIdx << " (size "
+                 << resultDim << ")";
         }
       }
     } else if (mlir::dyn_cast<mlir::AffineConstantExpr>(expr)) {
@@ -123,7 +121,7 @@ static LogicalResult verifyUnaryOp(Operation *op) {
 
     // Try to verify using indexing_maps attribute (HLO-style broadcast)
     if (succeeded(verifyBroadcastViaIndexingMaps(op, inputShape, resultShape,
-                                                  inputRank, resultRank))) {
+                                                 inputRank, resultRank))) {
       return success();
     }
 
@@ -133,9 +131,11 @@ static LogicalResult verifyUnaryOp(Operation *op) {
       int64_t inputDim = inputShape[i];
       int64_t resultDim = resultShape[i + offset];
 
-      if (inputDim != ShapedType::kDynamic && resultDim != ShapedType::kDynamic && inputDim != 1 &&
+      if (inputDim != ShapedType::kDynamic &&
+          resultDim != ShapedType::kDynamic && inputDim != 1 &&
           inputDim != resultDim) {
-        return op->emitOpError("input shape must be broadcastable to result shape");
+        return op->emitOpError(
+            "input shape must be broadcastable to result shape");
       }
     }
   }
@@ -149,6 +149,4 @@ static LogicalResult verifyUnaryOp(Operation *op) {
 // Broadcast Operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult BroadcastOp::verify() {
-  return verifyUnaryOp(getOperation());
-}
+LogicalResult BroadcastOp::verify() { return verifyUnaryOp(getOperation()); }

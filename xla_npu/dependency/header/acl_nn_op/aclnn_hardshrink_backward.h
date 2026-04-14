@@ -32,8 +32,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码， 成功返回ACLNN_SUCCESS, 失败返回对应错误码。
  */
 ACLNN_API aclnnStatus aclnnHardshrinkBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclScalar* lambd, aclTensor* gradInput,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, const aclScalar* lambd,
+    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnHardshrinkBackward的第二段接口，用于执行计算
@@ -46,11 +46,13 @@ ACLNN_API aclnnStatus aclnnHardshrinkBackwardGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码,成功返回ACLNN_SUCCESS, 失败返回对应错误码。
  */
-ACLNN_API aclnnStatus
-aclnnHardshrinkBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnHardshrinkBackward(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
+                                              const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_HARDSHRINK_BACKWARD_H_
+#endif  // OP_API_INC_HARDSHRINK_BACKWARD_H_

@@ -48,8 +48,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程.
  * @return aclnnStatus: 返回状态码， 成功返回ACLNN_SUCCESS, 失败返回对应错误码.
  */
-ACLNN_API aclnnStatus aclnnSlogdetGetWorkspaceSize(const aclTensor* self, aclTensor* signOut, aclTensor* logOut,
-                                                   uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSlogdetGetWorkspaceSize(const aclTensor* self,
+                                                   aclTensor* signOut,
+                                                   aclTensor* logOut,
+                                                   uint64_t* workspaceSize,
+                                                   aclOpExecutor** executor);
 
 /**
  * @brief aclnnSlogdet的第二段接口，用于执行计算.
@@ -61,8 +64,8 @@ ACLNN_API aclnnStatus aclnnSlogdetGetWorkspaceSize(const aclTensor* self, aclTen
  * @param [in] stream: acl stream流.
  * @return aclnnStatus: 返回状态码.
  */
-ACLNN_API aclnnStatus aclnnSlogdet(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                   aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSlogdet(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

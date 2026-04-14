@@ -45,11 +45,11 @@ limitations under the License.
 namespace xla {
 
 NpuFusionDispatchPipeline::NpuFusionDispatchPipeline(
-        const se::DeviceDescription& device_description,
-        SymbolicExprContext* symbolic_expr_context,
-        const DebugOptions& debug_options,
-        HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-        tsl::thread::ThreadPool* thread_pool)
+    const se::DeviceDescription& device_description,
+    SymbolicExprContext* symbolic_expr_context,
+    const DebugOptions& debug_options,
+    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+    tsl::thread::ThreadPool* thread_pool)
     : device_description_(device_description),
       symbolic_expr_context_(symbolic_expr_context),
       debug_options_(debug_options),
@@ -57,89 +57,97 @@ NpuFusionDispatchPipeline::NpuFusionDispatchPipeline(
       thread_pool_(thread_pool) {}
 
 absl::StatusOr<bool> NpuFusionDispatchPipeline::RunImpl(
-        HloModule* module,
-        const absl::flat_hash_set<absl::string_view>& execution_threads) {
-    bool changed = false;
-    bool pass_changed;
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
+  bool changed = false;
+  bool pass_changed;
 
-    // Phase 1: Preliminary optimizations
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 1: Preliminary";
+  // Phase 1: Preliminary optimizations
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 1: Preliminary";
 
-    // Run DCE to clean up
-    HloDCE dce_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  // Run DCE to clean up
+  HloDCE dce_pass;
+  TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Run CSE to eliminate common subexpressions
-    HloCSE cse_pass(/*is_layout_sensitive=*/true,
-                     /*ignore_control_dependencies=*/false,
-                     /*should_eliminate_computation=*/nullptr);
-    TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  // Run CSE to eliminate common subexpressions
+  HloCSE cse_pass(/*is_layout_sensitive=*/true,
+                  /*ignore_control_dependencies=*/false,
+                  /*should_eliminate_computation=*/nullptr);
+  TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    mlir::MLIRContext mlir_context;
+  mlir::MLIRContext mlir_context;
 
-    // Phase 2: GEMM-specific optimizations
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 2: GEMM optimizations";
+  // Phase 2: GEMM-specific optimizations
+  VLOG(2)
+      << "Running NPU Fusion Dispatch Pipeline - Phase 2: GEMM optimizations";
 
-    // Swap GEMM operands for better layout
-    NpuGemmFusionSwapOperands swap_operands_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed, swap_operands_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  // Swap GEMM operands for better layout
+  NpuGemmFusionSwapOperands swap_operands_pass;
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      swap_operands_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Create GEMM fusions (this creates NPU ACLNN GEMM fusions)
-    NpuGemmFusion gemm_fusion_pass(device_description_, &mlir_context);
-    TF_ASSIGN_OR_RETURN(pass_changed, gemm_fusion_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  // Create GEMM fusions (this creates NPU ACLNN GEMM fusions)
+  NpuGemmFusion gemm_fusion_pass(device_description_, &mlir_context);
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      gemm_fusion_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 3: Clean up after GEMM fusion
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 3: GEMM cleanup";
+  // Phase 3: Clean up after GEMM fusion
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 3: GEMM cleanup";
 
-    TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 4: Custom kernel fusion
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 4: Custom kernels";
+  // Phase 4: Custom kernel fusion
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 4: Custom kernels";
 
-    NpuCustomKernelFusionRewriter custom_kernel_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed,  custom_kernel_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  NpuCustomKernelFusionRewriter custom_kernel_pass;
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      custom_kernel_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 5: Block-level fusion conversion
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 5: Block-level fusion";
+  // Phase 5: Block-level fusion conversion
+  VLOG(2)
+      << "Running NPU Fusion Dispatch Pipeline - Phase 5: Block-level fusion";
 
-    NpuFusionBlockLevelRewriter block_level_pass(device_description_);
-    TF_ASSIGN_OR_RETURN(pass_changed, block_level_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  NpuFusionBlockLevelRewriter block_level_pass(device_description_);
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      block_level_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 6: Nested GEMM fusion
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 6: Nested GEMM";
+  // Phase 6: Nested GEMM fusion
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 6: Nested GEMM";
 
-    NpuNestGemmFusion nest_gemm_pass(device_description_, symbolic_expr_context_);
-    TF_ASSIGN_OR_RETURN(pass_changed, nest_gemm_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  NpuNestGemmFusion nest_gemm_pass(device_description_, symbolic_expr_context_);
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      nest_gemm_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 7: Dynamic memcpy rewriter
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 7: Dynamic memcpy";
+  // Phase 7: Dynamic memcpy rewriter
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 7: Dynamic memcpy";
 
-    NpuFusionDynamicMemcpyRewriter dynamic_memcpy_pass;
-    TF_ASSIGN_OR_RETURN(pass_changed, dynamic_memcpy_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  NpuFusionDynamicMemcpyRewriter dynamic_memcpy_pass;
+  TF_ASSIGN_OR_RETURN(pass_changed,
+                      dynamic_memcpy_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    // Phase 8: Final cleanup
-    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 8: Final cleanup";
+  // Phase 8: Final cleanup
+  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 8: Final cleanup";
 
-    TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
-    changed |= pass_changed;
+  TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
+  changed |= pass_changed;
 
-    VLOG(1) << "NPU Fusion Dispatch Pipeline completed. Changed: " << changed;
-    return changed;
+  VLOG(1) << "NPU Fusion Dispatch Pipeline completed. Changed: " << changed;
+  return changed;
 }
 
 }  // namespace xla

@@ -80,8 +80,7 @@ absl::StatusOr<std::unique_ptr<NpuExecutable>> NpuExecutable::Create(
     const GraphData& graph_data) {
   std::unique_ptr<NpuExecutable> executable(new NpuExecutable(
       std::move(hlo_module), std::move(hlo_profile_printer_data),
-      std::move(hlo_profile_index_map), std::move(assignment),
-      graph_data));
+      std::move(hlo_profile_index_map), std::move(assignment), graph_data));
   return executable;
 }
 
@@ -107,31 +106,32 @@ NpuExecutable::NpuExecutable(
   }
 }
 
-NpuExecutable::~NpuExecutable() {
-}
+NpuExecutable::~NpuExecutable() {}
 
 static absl::StatusOr<MaybeOwningDeviceMemory> MemoryForAllocation(
     const BufferAllocation& allocation,
     se::DeviceMemoryAllocator* memory_allocator, int device_ordinal) {
-    VLOG(3) << allocation.ToString();
-    int64_t buffer_size = allocation.size();
-    TF_ASSIGN_OR_RETURN(se::OwningDeviceMemory out, // 普通内存分配,其生命周期由XLA管理
-                        memory_allocator->Allocate(device_ordinal, buffer_size));
-    VLOG(3) << "buffer allocated " << buffer_size << " bytes [" << out->opaque() << "]";
+  VLOG(3) << allocation.ToString();
+  int64_t buffer_size = allocation.size();
+  TF_ASSIGN_OR_RETURN(
+      se::OwningDeviceMemory out,  // 普通内存分配,其生命周期由XLA管理
+      memory_allocator->Allocate(device_ordinal, buffer_size));
+  VLOG(3) << "buffer allocated " << buffer_size << " bytes [" << out->opaque()
+          << "]";
 
-    ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(out->opaque(), buffer_size);
-    return MaybeOwningDeviceMemory{std::move(out)};
+  ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(out->opaque(), buffer_size);
+  return MaybeOwningDeviceMemory{std::move(out)};
 }
 
-absl::StatusOr<std::vector<MaybeOwningDeviceMemory>> NpuExecutable::CreateBufferTable(
-    se::DeviceMemoryAllocator* memory_allocator,
-    int device_ordinal,
-    absl::Span<ExecutionInput const> arguments)
-{
-    std::vector<MaybeOwningDeviceMemory> buffers(assignment_->Allocations().size());
-    VLOG(3) << "Allocating " << assignment_->Allocations().size()
-            << " allocations for module " << module().name();
-    return std::move(buffers);
+absl::StatusOr<std::vector<MaybeOwningDeviceMemory>>
+NpuExecutable::CreateBufferTable(se::DeviceMemoryAllocator* memory_allocator,
+                                 int device_ordinal,
+                                 absl::Span<ExecutionInput const> arguments) {
+  std::vector<MaybeOwningDeviceMemory> buffers(
+      assignment_->Allocations().size());
+  VLOG(3) << "Allocating " << assignment_->Allocations().size()
+          << " allocations for module " << module().name();
+  return std::move(buffers);
 }
 
 static int32_t GetDeviceOrdinal(const ExecutableRunOptions* run_options) {
@@ -147,13 +147,13 @@ static int32_t GetDeviceOrdinal(const ExecutableRunOptions* run_options) {
 absl::StatusOr<ExecutionOutput> NpuExecutable::CreateResultShapedBuffer(
     const ServiceExecutableRunOptions* run_options,
     absl::Span<MaybeOwningDeviceMemory> buffers,
-    absl::Span<ExecutionInput> arguments) {
-}
+    absl::Span<ExecutionInput> arguments) {}
 
 absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStream(
     const ServiceExecutableRunOptions* run_options,
     std::vector<ExecutionInput> arguments) {
-      return absl::UnimplementedError("NpuExecutable::ExecuteAsyncOnStream is not supported.");
+  return absl::UnimplementedError(
+      "NpuExecutable::ExecuteAsyncOnStream is not supported.");
 }
 
 int64_t NpuExecutable::ShapeSizeBytes(const Shape& shape) {
@@ -167,9 +167,7 @@ int64_t NpuExecutable::ShapeSizeBytes(const Shape& shape) {
   return ShapeUtil::ByteSizeOf(shape, sizeof(void*)) + metadata_size;
 }
 
-int64_t NpuExecutable::SizeOfGeneratedCodeInBytes() const {
-  return 0;
-}
+int64_t NpuExecutable::SizeOfGeneratedCodeInBytes() const { return 0; }
 
 void NpuExecutable::Finalize() {
   if (has_module()) {

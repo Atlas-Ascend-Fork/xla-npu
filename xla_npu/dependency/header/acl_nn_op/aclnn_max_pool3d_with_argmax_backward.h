@@ -48,9 +48,11 @@ extern "C" {
  */
 
 ACLNN_API aclnnStatus aclnnMaxPool3dWithArgmaxBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* indices, const aclIntArray* kernelSize,
-    const aclIntArray* stride, const aclIntArray* padding, const aclIntArray* dilation, bool ceilMode,
-    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self,
+    const aclTensor* indices, const aclIntArray* kernelSize,
+    const aclIntArray* stride, const aclIntArray* padding,
+    const aclIntArray* dilation, bool ceilMode, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief A second interface of aclnnMaxPool3dWithArgmaxBackward, used to perform calculation.
  * @param [in] workspace: start address of the workspace memory allocated on the NPU device.
@@ -61,11 +63,13 @@ ACLNN_API aclnnStatus aclnnMaxPool3dWithArgmaxBackwardGetWorkspaceSize(
  * @return aclnnStatus: returned status code
  */
 
-ACLNN_API aclnnStatus
-aclnnMaxPool3dWithArgmaxBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMaxPool3dWithArgmaxBackward(void* workspace,
+                                                       uint64_t workspaceSize,
+                                                       aclOpExecutor* executor,
+                                                       aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_MAX_POOL3D_GRAD_WITH_ARGMAX_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_MAX_POOL3D_GRAD_WITH_ARGMAX_H_

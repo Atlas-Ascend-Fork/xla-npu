@@ -27,19 +27,24 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 aclnnStatus aclnnLightningIndexerGradGetWorkspaceSize(
-    const aclTensor *query, const aclTensor *key, const aclTensor *dy, const aclTensor *sparseIndices,
-    const aclTensor *weights, const aclTensor *actualSeqQLenOptional, const aclTensor *actualSeqKvLenOptional,
-    int64_t headNum, char *inputLayout, int64_t sparseMode, int64_t preTokens, int64_t nextTokens, bool determinstic, 
-    const aclTensor *dqOut, const aclTensor *dkOut, const aclTensor *dweightsOut, uint64_t *workspaceSize, aclOpExecutor **executor);
+    const aclTensor *query, const aclTensor *key, const aclTensor *dy,
+    const aclTensor *sparseIndices, const aclTensor *weights,
+    const aclTensor *actualSeqQLenOptional,
+    const aclTensor *actualSeqKvLenOptional, int64_t headNum, char *inputLayout,
+    int64_t sparseMode, int64_t preTokens, int64_t nextTokens,
+    bool determinstic, const aclTensor *dqOut, const aclTensor *dkOut,
+    const aclTensor *dweightsOut, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 
 /**
  * @brief aclnnLightningIndexerGrad的第二段接口，用于执行计算。
  */
-aclnnStatus aclnnLightningIndexerGrad(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-                                          aclrtStream stream);
+aclnnStatus aclnnLightningIndexerGrad(void *workspace, uint64_t workspaceSize,
+                                      aclOpExecutor *executor,
+                                      aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LIGHTNING_INDEXER_GRAD_H_
+#endif  // OP_API_INC_LIGHTNING_INDEXER_GRAD_H_

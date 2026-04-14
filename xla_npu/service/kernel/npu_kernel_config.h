@@ -24,16 +24,16 @@ limitations under the License.
 namespace xla {
 
 class NpuKernelConfig {
-   public:
-    enum class NpuKernelType {
-        FUSION = 0,
-    };
+ public:
+  enum class NpuKernelType {
+    FUSION = 0,
+  };
 
-    NpuKernelType npu_kernel_type;
-    NpuArtifactInfo npu_artifact_info;
-    
-    // 存储所有相关的 computation HLO 文本，key 是 computation 名称
-    std::unordered_map<std::string, std::string> computation_hlo_map;
+  NpuKernelType npu_kernel_type;
+  NpuArtifactInfo npu_artifact_info;
+
+  // 存储所有相关的 computation HLO 文本，key 是 computation 名称
+  std::unordered_map<std::string, std::string> computation_hlo_map;
 };
 
 }  // namespace xla

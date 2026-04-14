@@ -30,9 +30,7 @@ limitations under the License.
 #define EXTERNAL_OP_COMMON_ERROR_CODE_H_
 
 namespace opcommon {
-enum ViewErrorCode {
-  VECTOR_INNER_ERROR = 89999
-};
-} // namespace opcommon
+enum ViewErrorCode { VECTOR_INNER_ERROR = 89999 };
+}  // namespace opcommon
 
-#endif // EXTERNAL_OP_COMMON_ERROR_CODE_H_
+#endif  // EXTERNAL_OP_COMMON_ERROR_CODE_H_

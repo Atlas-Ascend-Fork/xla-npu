@@ -43,58 +43,67 @@ enum class ProcessPointType {
 
 class ProcessPointImpl;
 class ProcessPoint {
-public:
+ public:
   virtual ~ProcessPoint();
   ProcessPointType GetProcessPointType() const;
   const char_t *GetProcessPointName() const;
   const char_t *GetCompileConfig() const;
   virtual void Serialize(ge::AscendString &str) const = 0;
 
-protected:
+ protected:
   ProcessPoint(const char_t *pp_name, ProcessPointType pp_type);
   void SetCompileConfigFile(const char_t *json_file_path);
 
-private:
+ private:
   std::shared_ptr<ProcessPointImpl> impl_;
 };
 
 class GraphPpImpl;
 class GraphPp : public ProcessPoint {
-public:
+ public:
   GraphPp(const char_t *pp_name, const GraphBuilder &builder);
   ~GraphPp() override;
   GraphPp &SetCompileConfig(const char_t *json_file_path);
   GraphBuilder GetGraphBuilder() const;
   void Serialize(ge::AscendString &str) const override;
-private:
+
+ private:
   std::shared_ptr<GraphPpImpl> impl_;
 };
 
 class FunctionPpImpl;
 class FunctionPp : public ProcessPoint {
-public:
+ public:
   explicit FunctionPp(const char_t *pp_name);
   ~FunctionPp() override;
   FunctionPp &SetCompileConfig(const char_t *json_file_path);
-  FunctionPp &SetInitParam(const char_t *attr_name, const ge::AscendString &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const ge::AscendString &value);
   FunctionPp &SetInitParam(const char_t *attr_name, const char_t *value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<ge::AscendString> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<ge::AscendString> &value);
   FunctionPp &SetInitParam(const char_t *attr_name, const int64_t &value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<int64_t> &value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<std::vector<int64_t>> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<int64_t> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<std::vector<int64_t>> &value);
   FunctionPp &SetInitParam(const char_t *attr_name, const float &value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<float> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<float> &value);
   FunctionPp &SetInitParam(const char_t *attr_name, const bool &value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<bool> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<bool> &value);
   FunctionPp &SetInitParam(const char_t *attr_name, const ge::DataType &value);
-  FunctionPp &SetInitParam(const char_t *attr_name, const std::vector<ge::DataType> &value);
+  FunctionPp &SetInitParam(const char_t *attr_name,
+                           const std::vector<ge::DataType> &value);
   FunctionPp &AddInvokedClosure(const char_t *name, const GraphPp &graph_pp);
   FunctionPp &AddInvokedClosure(const char_t *name, const ProcessPoint &pp);
   const std::map<const std::string, const GraphPp> &GetInvokedClosures() const;
   void Serialize(ge::AscendString &str) const override;
-private:
+
+ private:
   std::shared_ptr<FunctionPpImpl> impl_;
 };
-} // namespace dflow
-} // namespace ge
-#endif // INC_EXTERNAL_FLOW_GRAPH_PROCESS_POINT_H_
+}  // namespace dflow
+}  // namespace ge
+#endif  // INC_EXTERNAL_FLOW_GRAPH_PROCESS_POINT_H_

@@ -26,28 +26,29 @@ namespace ascendc {
 //===----------------------------------------------------------------------===//
 
 template <typename UnaryMathOp>
-auto printOperation(CodeEmitter &emitter, UnaryMathOp op)
-    -> LogicalResultForT<UnaryMathOp, ascendc::AcoshOp, ascendc::AcosOp, ascendc::AsinhOp, ascendc::AsinOp,
-                         ascendc::AtanhOp, ascendc::AtanOp, ascendc::CeilOp, ascendc::CoshOp, ascendc::CosOp,
-                         ascendc::DigammaOp, ascendc::ErfcOp, ascendc::ErfOp, ascendc::FloorOp, ascendc::FracOp,
-                         ascendc::LgammaOp, ascendc::LogOp, ascendc::RoundOp, ascendc::SignOp, ascendc::SinhOp,
-                         ascendc::SinOp, ascendc::TanhOp, ascendc::TanOp, ascendc::TruncOp>
-{
-    auto &os = emitter.ostream();
-    os << ascNamespace << "::" << op.getAPIName();
-    os << "<";
-    auto dstType = op.getDst().getType().getElementType();
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc());
-    if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
-        os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
-    }
-    if (auto calCount = op.getCalCount()) {
-        os << ", " << emitter.getOrCreateName(calCount);
-    }
-    os << ")";
-    return success();
+auto printOperation(CodeEmitter &emitter, UnaryMathOp op) -> LogicalResultForT<
+    UnaryMathOp, ascendc::AcoshOp, ascendc::AcosOp, ascendc::AsinhOp,
+    ascendc::AsinOp, ascendc::AtanhOp, ascendc::AtanOp, ascendc::CeilOp,
+    ascendc::CoshOp, ascendc::CosOp, ascendc::DigammaOp, ascendc::ErfcOp,
+    ascendc::ErfOp, ascendc::FloorOp, ascendc::FracOp, ascendc::LgammaOp,
+    ascendc::LogOp, ascendc::RoundOp, ascendc::SignOp, ascendc::SinhOp,
+    ascendc::SinOp, ascendc::TanhOp, ascendc::TanOp, ascendc::TruncOp> {
+  auto &os = emitter.ostream();
+  os << ascNamespace << "::" << op.getAPIName();
+  os << "<";
+  auto dstType = op.getDst().getType().getElementType();
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc());
+  if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
+    os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
+  }
+  if (auto calCount = op.getCalCount()) {
+    os << ", " << emitter.getOrCreateName(calCount);
+  }
+  os << ")";
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
@@ -55,24 +56,25 @@ auto printOperation(CodeEmitter &emitter, UnaryMathOp op)
 //===----------------------------------------------------------------------===//
 
 template <typename BinaryMathOp>
-LogicalResultForT<BinaryMathOp, ascendc::PowerOp, ascendc::XorOp> printOperation(CodeEmitter &emitter, BinaryMathOp op)
-{
-    auto &os = emitter.ostream();
-    os << ascNamespace << "::" << op.getAPIName();
-    os << "<";
-    auto dstType = op.getDst().getType().getElementType();
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc0()) << ", "
-       << emitter.getOrCreateName(op.getSrc1());
-    if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
-        os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
-    }
-    if (auto calCount = op.getCalCount()) {
-        os << ", " << emitter.getOrCreateName(calCount);
-    }
-    os << ")";
-    return success();
+LogicalResultForT<BinaryMathOp, ascendc::PowerOp, ascendc::XorOp>
+printOperation(CodeEmitter &emitter, BinaryMathOp op) {
+  auto &os = emitter.ostream();
+  os << ascNamespace << "::" << op.getAPIName();
+  os << "<";
+  auto dstType = op.getDst().getType().getElementType();
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc0()) << ", "
+     << emitter.getOrCreateName(op.getSrc1());
+  if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
+    os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
+  }
+  if (auto calCount = op.getCalCount()) {
+    os << ", " << emitter.getOrCreateName(calCount);
+  }
+  os << ")";
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
@@ -80,21 +82,23 @@ LogicalResultForT<BinaryMathOp, ascendc::PowerOp, ascendc::XorOp> printOperation
 //===----------------------------------------------------------------------===//
 
 template <typename Clamp>
-LogicalResultForT<Clamp, ascendc::ClampMaxOp, ascendc::ClampMinOp> printOperation(CodeEmitter &emitter, Clamp op)
-{
-    auto &os = emitter.ostream();
-    os << ascNamespace << "::" << op.getAPIName();
-    os << "<";
-    auto dstType = op.getDst().getType().getElementType();
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc());
-    if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
-        os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
-    }
-    os << ", " << emitter.getOrCreateName(op.getScalar()) << ", " << emitter.getOrCreateName(op.getCalCount()) << ")";
+LogicalResultForT<Clamp, ascendc::ClampMaxOp, ascendc::ClampMinOp>
+printOperation(CodeEmitter &emitter, Clamp op) {
+  auto &os = emitter.ostream();
+  os << ascNamespace << "::" << op.getAPIName();
+  os << "<";
+  auto dstType = op.getDst().getType().getElementType();
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", " << emitter.getOrCreateName(op.getIsReuseSource()) << ">";
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc());
+  if (auto sharedTmpBuffer = op.getSharedTmpBuffer()) {
+    os << ", " << emitter.getOrCreateName(sharedTmpBuffer);
+  }
+  os << ", " << emitter.getOrCreateName(op.getScalar()) << ", "
+     << emitter.getOrCreateName(op.getCalCount()) << ")";
 
-    return success();
+  return success();
 }
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::ExpOp op);
@@ -103,7 +107,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::AxpyOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::CumSumOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_ADV_MATH_LIBS_H
+#endif  // ASCIR_TARGET_ASC_ADV_MATH_LIBS_H

@@ -89,7 +89,7 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
   /// @param [out] v refreshable or not
   /// @return Status result of function
   ///
-  Status GetFeatureMemoryBaseRefreshable (bool &v) const;
+  Status GetFeatureMemoryBaseRefreshable(bool &v) const;
 
   ///
   /// @brief get the used stream number of the whole compiled graph
@@ -114,17 +114,21 @@ class GE_FUNC_VISIBILITY CompiledGraphSummary {
 
   Status GetOutputDtypes(std::vector<ge::DataType> &dtypes) const;
 
-  Status GetIOIndexesWithSameAddr(std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const;
+  Status GetIOIndexesWithSameAddr(
+      std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const;
 
-  Status GetInputShardMethod(std::map<std::string, std::map<int32_t, std::vector<std::pair<int64_t, int64_t>>>>
-                             &device_id_to_tensor_deployment) const;
-  
+  Status GetInputShardMethod(
+      std::map<std::string,
+               std::map<int32_t, std::vector<std::pair<int64_t, int64_t>>>>
+          &device_id_to_tensor_deployment) const;
+
   ///
   /// @brief get StreamAllocationSummary which has stream infos
   /// @param [out] StreamAllocationSummary
   /// @return Status result of function
   ///
-  Status GetStreamAllocationSummary(std::shared_ptr<StreamAllocationSummary> &stream_allocation) const;
+  Status GetStreamAllocationSummary(
+      std::shared_ptr<StreamAllocationSummary> &stream_allocation) const;
 
  private:
   CompiledGraphSummary() = default;
@@ -135,7 +139,7 @@ using CompiledGraphSummaryPtr = std::shared_ptr<CompiledGraphSummary>;
 
 class LogicalStreamAllocationInfo;
 class GE_FUNC_VISIBILITY StreamAllocationSummary {
-public:
+ public:
   class StreamAllocationSummaryImpl;
   StreamAllocationSummary();
   ~StreamAllocationSummary();
@@ -150,21 +154,23 @@ public:
    * @brief get root path and subgraph's logical stream infos
    * @return map, key is graph name, value is LogicalStreamAllocationInfo
    */
-  const std::map<AscendString, std::vector<LogicalStreamAllocationInfo>> &GetAllLogicalStreamInfos() const;
+  const std::map<AscendString, std::vector<LogicalStreamAllocationInfo>> &
+  GetAllLogicalStreamInfos() const;
 
-private:
+ private:
   friend class CompiledGraphSummary::Builder;
   std::unique_ptr<StreamAllocationSummaryImpl> impl_;
 };
 
 class GE_FUNC_VISIBILITY LogicalStreamAllocationInfo {
-public:
+ public:
   class LogicalStreamAllocationInfoImpl;
 
   LogicalStreamAllocationInfo();
   ~LogicalStreamAllocationInfo();
   LogicalStreamAllocationInfo(const LogicalStreamAllocationInfo &stream_info);
-  LogicalStreamAllocationInfo &operator=(const LogicalStreamAllocationInfo &stream_info);
+  LogicalStreamAllocationInfo &operator=(
+      const LogicalStreamAllocationInfo &stream_info);
 
   /**
    * @brief get info of current logical stream
@@ -215,9 +221,9 @@ public:
    */
   const std::vector<GNode> &GetAllGNodes() const;
 
-  private:
-    friend class StreamAllocationSummary::StreamAllocationSummaryImpl;
-    std::unique_ptr<LogicalStreamAllocationInfoImpl> impl_;
+ private:
+  friend class StreamAllocationSummary::StreamAllocationSummaryImpl;
+  std::unique_ptr<LogicalStreamAllocationInfoImpl> impl_;
 };
 
 #ifdef __cplusplus
@@ -229,7 +235,8 @@ extern "C" {
  * @param [out] map, key is graph name, value is vector of logical stream info's string which index is logical stream id
  * @return result of function
  */
-ge::Status GEStreamAllocationSummaryGetStringInfos(const ge::CompiledGraphSummary &compiled_graph_summary,
+ge::Status GEStreamAllocationSummaryGetStringInfos(
+    const ge::CompiledGraphSummary &compiled_graph_summary,
     std::map<AscendString, std::vector<AscendString>> &graph_to_string_infos);
 
 /**
@@ -250,7 +257,8 @@ ge::Status GEStreamAllocationSummaryGetLogicalStreamIds(
  */
 ge::Status GEStreamAllocationSummaryGetUsrStreamLabels(
     const ge::CompiledGraphSummary &compiled_graph_summary,
-    std::map<AscendString, std::vector<AscendString>> &graph_to_user_stream_labels);
+    std::map<AscendString, std::vector<AscendString>>
+        &graph_to_user_stream_labels);
 
 /**
  * @brief get root path and subgraph's is assigned by stream pass
@@ -260,7 +268,8 @@ ge::Status GEStreamAllocationSummaryGetUsrStreamLabels(
  */
 ge::Status GEStreamAllocationSummaryGetIsAssignedByStreampass(
     const ge::CompiledGraphSummary &compiled_graph_summary,
-    std::map<AscendString, std::vector<bool>> &graph_to_is_assigned_by_stream_pass);
+    std::map<AscendString, std::vector<bool>>
+        &graph_to_is_assigned_by_stream_pass);
 
 /**
  * @brief get root path and subgraph's attached stream ids
@@ -270,7 +279,8 @@ ge::Status GEStreamAllocationSummaryGetIsAssignedByStreampass(
  */
 ge::Status GEStreamAllocationSummaryGetAttachedStreamIds(
     const ge::CompiledGraphSummary &compiled_graph_summary,
-    std::map<AscendString, std::vector<std::vector<int64_t>>> &graph_to_attached_stream_ids);
+    std::map<AscendString, std::vector<std::vector<int64_t>>>
+        &graph_to_attached_stream_ids);
 
 /**
  * @brief get root path and subgraph's physical stream nums
@@ -290,7 +300,8 @@ ge::Status GEStreamAllocationSummaryGetPhysicalStreamNums(
  */
 ge::Status GEStreamAllocationSummaryGetHcclFollowedStreamNums(
     const ge::CompiledGraphSummary &compiled_graph_summary,
-    std::map<AscendString, std::vector<int64_t>> &graph_to_hccl_followed_stream_nums);
+    std::map<AscendString, std::vector<int64_t>>
+        &graph_to_hccl_followed_stream_nums);
 
 /**
  * @brief get root path and subgraph's all nodes
@@ -300,7 +311,8 @@ ge::Status GEStreamAllocationSummaryGetHcclFollowedStreamNums(
  */
 ge::Status GEStreamAllocationSummaryGetAllGNodes(
     const ge::CompiledGraphSummary &compiled_graph_summary,
-    std::map<AscendString, std::vector<std::vector<GNode>>> &graph_to_all_nodes);
+    std::map<AscendString, std::vector<std::vector<GNode>>>
+        &graph_to_all_nodes);
 
 /**
  * @brief get root path and subgraph's stream graph

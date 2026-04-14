@@ -41,8 +41,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnSubGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* other, const aclScalar* alpha, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* other, const aclScalar* alpha,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnSub的第二段接口，用于执行计算。
@@ -57,16 +57,18 @@ ACLNN_API aclnnStatus aclnnSubGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSub(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSub(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnSubs的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
 ACLNN_API aclnnStatus aclnnSubsGetWorkspaceSize(
-    const aclTensor* self, const aclScalar* other, const aclScalar* alpha, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
-ACLNN_API aclnnStatus aclnnSubs(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+    const aclTensor* self, const aclScalar* other, const aclScalar* alpha,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSubs(void* workspace, uint64_t workspaceSize,
+                                aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceSub的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -87,9 +89,11 @@ ACLNN_API aclnnStatus aclnnSubs(void* workspace, uint64_t workspaceSize, aclOpEx
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceSubGetWorkspaceSize(
-    aclTensor* selfRef, const aclTensor* other, const aclScalar* alpha, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceSubGetWorkspaceSize(aclTensor* selfRef,
+                                                      const aclTensor* other,
+                                                      const aclScalar* alpha,
+                                                      uint64_t* workspaceSize,
+                                                      aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceSub的第二段接口，用于执行计算。
@@ -104,22 +108,24 @@ ACLNN_API aclnnStatus aclnnInplaceSubGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceSub(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceSub(void* workspace, uint64_t workspaceSize,
+                                      aclOpExecutor* executor,
+                                      aclrtStream stream);
 
 /**
  * @brief aclnnInplaceSubs的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
 ACLNN_API aclnnStatus aclnnInplaceSubsGetWorkspaceSize(
-    aclTensor* selfRef, const aclScalar* other, const aclScalar* alpha, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    aclTensor* selfRef, const aclScalar* other, const aclScalar* alpha,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus
-aclnnInplaceSubs(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceSubs(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
+                                       aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_SUB_H_
+#endif  // OP_API_INC_SUB_H_

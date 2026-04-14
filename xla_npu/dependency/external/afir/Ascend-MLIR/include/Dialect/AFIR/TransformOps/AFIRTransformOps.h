@@ -35,7 +35,7 @@ namespace afir {
 
 void registerTransformDialectExtension(DialectRegistry &registry);
 
-} // namespace afir
-} // namespace mlir
+}  // namespace afir
+}  // namespace mlir
 
-#endif // MLIR_DIALECT_AFIR_TRANSFORMOPS_AFIRTRANSFORMOPS_H
+#endif  // MLIR_DIALECT_AFIR_TRANSFORMOPS_AFIRTRANSFORMOPS_H

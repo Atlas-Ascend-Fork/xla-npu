@@ -28,8 +28,8 @@ extern "C" {
  */
 
 ACLNN_API aclnnStatus aclnnTransQuantParamV2GetWorkspaceSize(
-    const aclTensor* scale, const aclTensor* offset, const aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* scale, const aclTensor* offset, const aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnTransQuantParamV2的第二段接口，用于执行计算。
@@ -39,11 +39,13 @@ ACLNN_API aclnnStatus aclnnTransQuantParamV2GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnTransQuantParamV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnTransQuantParamV2(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_TRANS_QUANT_PARAM_V2_H
+#endif  // OP_API_INC_TRANS_QUANT_PARAM_V2_H

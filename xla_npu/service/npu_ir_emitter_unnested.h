@@ -42,67 +42,73 @@ limitations under the License.
 
 namespace xla {
 class NpuIrEmitterUnnested : public NpuIrEmitter {
-   public:
-    absl::string_view platform_name() const { return ir_emitter_context_->platform_name(); }
+ public:
+  absl::string_view platform_name() const {
+    return ir_emitter_context_->platform_name();
+  }
 
-    using ValueVector3 = std::array<llvm::Value*, 3>;
-    using ValueVector2 = std::array<llvm::Value*, 2>;
+  using ValueVector3 = std::array<llvm::Value*, 3>;
+  using ValueVector2 = std::array<llvm::Value*, 2>;
 
-    using ConstantGenerator = std::function<llvm::Value*(int64_t)>;
+  using ConstantGenerator = std::function<llvm::Value*(int64_t)>;
 
-    NpuIrEmitterUnnested(const NpuIrEmitterUnnested&) = delete;
-    NpuIrEmitterUnnested& operator=(const NpuIrEmitterUnnested&) = delete;
+  NpuIrEmitterUnnested(const NpuIrEmitterUnnested&) = delete;
+  NpuIrEmitterUnnested& operator=(const NpuIrEmitterUnnested&) = delete;
 
-    static std::unique_ptr<NpuIrEmitterUnnested> Create(NpuIrEmitterContext* ir_emitter_context);
+  static std::unique_ptr<NpuIrEmitterUnnested> Create(
+      NpuIrEmitterContext* ir_emitter_context);
 
-    // Transfers the ownership of thunk_sequence_ out.
-    std::unique_ptr<NpuSequentialThunk> ConsumeThunkSequence(NpuThunk::ThunkInfo thunk_info = NpuThunk::ThunkInfo{}) {
-        return std::make_unique<NpuSequentialThunk>(thunk_info, std::move(thunk_sequence_));
+  // Transfers the ownership of thunk_sequence_ out.
+  std::unique_ptr<NpuSequentialThunk> ConsumeThunkSequence(
+      NpuThunk::ThunkInfo thunk_info = NpuThunk::ThunkInfo{}) {
+    return std::make_unique<NpuSequentialThunk>(thunk_info,
+                                                std::move(thunk_sequence_));
+  }
+
+  // Emits code for the given HLO computation.
+  // Also populates related information to 'ir_emitter_context_' for
+  // large-constant initializations. Large constants don't get initializers in
+  // the generated code and so must be initialized by XLA. The value of these
+  // constants will be stored in 'content'. Constants with initializers in the
+  // generated code will have empty 'content'.
+  absl::Status EmitHloComputation(const HloComputation* computation);
+
+ private:
+  explicit NpuIrEmitterUnnested(NpuIrEmitterContext* ir_emitter_context);
+
+  // NpuIrEmitterUnnested handles the following instructions differently from
+  // NpuIrEmitter. It also mixes in some special handling for custom kernels
+  // via the ThunkEmitter.
+  absl::Status EmitCall(const HloInstruction* instr);
+
+  absl::Status EmitConstant(const HloConstantInstruction* instr);
+
+  absl::Status EmitNpuAclnnThunk(const HloInstruction* instr);
+
+  absl::Status EmitFusion(const HloFusionInstruction* instr);
+
+  absl::Status EmitHloInstruction(const HloInstruction* instr);
+
+  absl::Status EmitTargetElementLoop(
+      const HloInstruction& hlo,
+      const llvm_ir::ElementGenerator& body_emitter) override;
+
+  // Add a owning NpuThunk object to the thunk sequence.
+  void AddThunkToThunkSequence(std::unique_ptr<NpuThunk> thunk) {
+    if (emit_group_thunks_) {
+      scoped_thunk_sequence_.emplace_back(std::move(thunk));
+      return;
     }
+    thunk_sequence_.emplace_back(std::move(thunk));
+  }
 
-    // Emits code for the given HLO computation.
-    // Also populates related information to 'ir_emitter_context_' for
-    // large-constant initializations. Large constants don't get initializers in
-    // the generated code and so must be initialized by XLA. The value of these
-    // constants will be stored in 'content'. Constants with initializers in the
-    // generated code will have empty 'content'.
-    absl::Status EmitHloComputation(const HloComputation* computation);
+  absl::StatusOr<BufferAllocation::Slice> GetAllocationSliceForHlo(
+      const HloInstruction* instr, const ShapeIndex& index = {}) const;
+  NpuThunkSequence thunk_sequence_;
+  NpuThunkSequence scoped_thunk_sequence_;
+  bool emit_group_thunks_ = false;
 
-   private:
-    explicit NpuIrEmitterUnnested(NpuIrEmitterContext* ir_emitter_context);
-
-    // NpuIrEmitterUnnested handles the following instructions differently from
-    // NpuIrEmitter. It also mixes in some special handling for custom kernels
-    // via the ThunkEmitter.
-    absl::Status EmitCall(const HloInstruction* instr);
-
-    absl::Status EmitConstant(const HloConstantInstruction* instr);
-
-    absl::Status EmitNpuAclnnThunk(const HloInstruction* instr);
-
-    absl::Status EmitFusion(const HloFusionInstruction* instr);
-
-    absl::Status EmitHloInstruction(const HloInstruction* instr);
-
-    absl::Status EmitTargetElementLoop(const HloInstruction& hlo,
-                                       const llvm_ir::ElementGenerator& body_emitter) override;
-
-    // Add a owning NpuThunk object to the thunk sequence.
-    void AddThunkToThunkSequence(std::unique_ptr<NpuThunk> thunk) {
-        if (emit_group_thunks_) {
-            scoped_thunk_sequence_.emplace_back(std::move(thunk));
-            return;
-        }
-        thunk_sequence_.emplace_back(std::move(thunk));
-    }
-
-    absl::StatusOr<BufferAllocation::Slice> GetAllocationSliceForHlo(const HloInstruction* instr,
-                                                                     const ShapeIndex& index = {}) const;
-    NpuThunkSequence thunk_sequence_;
-    NpuThunkSequence scoped_thunk_sequence_;
-    bool emit_group_thunks_ = false;
-
-    std::unique_ptr<CallGraph> call_graph_;
+  std::unique_ptr<CallGraph> call_graph_;
 };
 
 }  // namespace xla

@@ -43,76 +43,90 @@ namespace xla {
 using absl::StrAppend;
 using absl::StrCat;
 
-void NpuHloToIrBindings::EmitBasePointersForHlos(absl::Span<const HloInstruction* const> io_hlos,
-                                                 absl::Span<const HloInstruction* const> non_io_hlos) {
-    CHECK(is_nested_);
+void NpuHloToIrBindings::EmitBasePointersForHlos(
+    absl::Span<const HloInstruction* const> io_hlos,
+    absl::Span<const HloInstruction* const> non_io_hlos) {
+  CHECK(is_nested_);
 
-    llvm::Function* function = b_->GetInsertBlock()->getParent();
-    CHECK_EQ(io_hlos.size() + 1, function->arg_size());
+  llvm::Function* function = b_->GetInsertBlock()->getParent();
+  CHECK_EQ(io_hlos.size() + 1, function->arg_size());
 
-    absl::flat_hash_set<const HloInstruction*> already_bound_for_this_function;
-    auto arg_iter = function->arg_begin();
-    for (const HloInstruction* io_hlo : io_hlos) {
-        CHECK(io_hlo == io_hlo->parent()->root_instruction() || !absl::c_count(non_io_hlos, io_hlo))
-            << "IO/non-IO HLOs should be disjoint";
-        if (!already_bound_for_this_function.contains(io_hlo)) {
-            BindHloToIrValue(*io_hlo, &*arg_iter);
-            already_bound_for_this_function.insert(io_hlo);
-        }
-        ++arg_iter;
+  absl::flat_hash_set<const HloInstruction*> already_bound_for_this_function;
+  auto arg_iter = function->arg_begin();
+  for (const HloInstruction* io_hlo : io_hlos) {
+    CHECK(io_hlo == io_hlo->parent()->root_instruction() ||
+          !absl::c_count(non_io_hlos, io_hlo))
+        << "IO/non-IO HLOs should be disjoint";
+    if (!already_bound_for_this_function.contains(io_hlo)) {
+      BindHloToIrValue(*io_hlo, &*arg_iter);
+      already_bound_for_this_function.insert(io_hlo);
     }
-
-    arg_iter->setName("output_arg");
     ++arg_iter;
+  }
 
-    for (const HloInstruction* non_io_hlo : non_io_hlos) {
-        if (already_bound_for_this_function.contains(non_io_hlo)) {
-            continue;
-        }
-        already_bound_for_this_function.insert(non_io_hlo);
+  arg_iter->setName("output_arg");
+  ++arg_iter;
 
-        if (HloOpcode::kGetTupleElement == non_io_hlo->opcode()) {
-            continue;
-        }
+  for (const HloInstruction* non_io_hlo : non_io_hlos) {
+    if (already_bound_for_this_function.contains(non_io_hlo)) {
+      continue;
+    }
+    already_bound_for_this_function.insert(non_io_hlo);
 
-        ShapeUtil::ForEachSubshape(non_io_hlo->shape(), [&](const Shape& /*subshape*/, const ShapeIndex& index) {
-            if (non_io_hlo->opcode() == HloOpcode::kConstant) {
-                llvm::Value* global_for_constant =
-                    module_->getGlobalVariable(llvm_ir::ConstantHloToGlobalName(*non_io_hlo));
-                CHECK(global_for_constant) << llvm_ir::ConstantHloToGlobalName(*non_io_hlo);
-                BindHloToIrValue(*non_io_hlo, global_for_constant);
-            } else {
-                llvm::Type* pointee_type = llvm_ir::ShapeToIrType(non_io_hlo->shape(), module_->getContext());
-                BindHloToIrValue(*non_io_hlo, llvm_ir::EmitAllocaAtFunctionEntry(pointee_type, /*name=*/"", b_), index);
-            }
+    if (HloOpcode::kGetTupleElement == non_io_hlo->opcode()) {
+      continue;
+    }
+
+    ShapeUtil::ForEachSubshape(
+        non_io_hlo->shape(),
+        [&](const Shape& /*subshape*/, const ShapeIndex& index) {
+          if (non_io_hlo->opcode() == HloOpcode::kConstant) {
+            llvm::Value* global_for_constant = module_->getGlobalVariable(
+                llvm_ir::ConstantHloToGlobalName(*non_io_hlo));
+            CHECK(global_for_constant)
+                << llvm_ir::ConstantHloToGlobalName(*non_io_hlo);
+            BindHloToIrValue(*non_io_hlo, global_for_constant);
+          } else {
+            llvm::Type* pointee_type = llvm_ir::ShapeToIrType(
+                non_io_hlo->shape(), module_->getContext());
+            BindHloToIrValue(*non_io_hlo,
+                             llvm_ir::EmitAllocaAtFunctionEntry(
+                                 pointee_type, /*name=*/"", b_),
+                             index);
+          }
         });
-    }
+  }
 }
 
-void NpuHloToIrBindings::BindHloToIrValue(const HloInstruction& hlo, llvm::Value* ir_value,
+void NpuHloToIrBindings::BindHloToIrValue(const HloInstruction& hlo,
+                                          llvm::Value* ir_value,
                                           ShapeIndexView shape_index) {
-    VLOG(2) << "Binding " << hlo.ToString();
+  VLOG(2) << "Binding " << hlo.ToString();
 
-    const Shape& hlo_shape = hlo.shape();
-    if (!BoundToIrValue(hlo)) {
-        // Set the root of ShapeTree first before assigning the element ir value.
-        InsertOrDie(&base_ptrs_, &hlo, ShapeTree<llvm::Value*>(hlo_shape, nullptr));
-    }
-    *(base_ptrs_[&hlo].mutable_element(shape_index)) = ir_value;
+  const Shape& hlo_shape = hlo.shape();
+  if (!BoundToIrValue(hlo)) {
+    // Set the root of ShapeTree first before assigning the element ir value.
+    InsertOrDie(&base_ptrs_, &hlo, ShapeTree<llvm::Value*>(hlo_shape, nullptr));
+  }
+  *(base_ptrs_[&hlo].mutable_element(shape_index)) = ir_value;
 }
 
-llvm_ir::IrArray NpuHloToIrBindings::GetIrArray(const HloInstruction& hlo, const HloInstruction& consumer,
+llvm_ir::IrArray NpuHloToIrBindings::GetIrArray(const HloInstruction& hlo,
+                                                const HloInstruction& consumer,
                                                 const ShapeIndex& shape_index) {
-    CHECK(is_nested_) << "IrEmitterUnnested should instead use LMHLO to get the IrArray";
+  CHECK(is_nested_)
+      << "IrEmitterUnnested should instead use LMHLO to get the IrArray";
 
-    llvm::Value* base_ptr = GetBasePointer(hlo, shape_index);
-    Shape new_shape = ShapeUtil::GetSubshape(hlo.shape(), shape_index);
-    llvm::Type* pointee_type = llvm_ir::ShapeToIrType(new_shape, module_->getContext());
-    CHECK_NE(base_ptr, nullptr) << "Buffer not assigned for shape_index " << shape_index.ToString() << " of "
-                                << hlo.ToString();
-    llvm_ir::IrArray ir_array(base_ptr, pointee_type, new_shape);
+  llvm::Value* base_ptr = GetBasePointer(hlo, shape_index);
+  Shape new_shape = ShapeUtil::GetSubshape(hlo.shape(), shape_index);
+  llvm::Type* pointee_type =
+      llvm_ir::ShapeToIrType(new_shape, module_->getContext());
+  CHECK_NE(base_ptr, nullptr)
+      << "Buffer not assigned for shape_index " << shape_index.ToString()
+      << " of " << hlo.ToString();
+  llvm_ir::IrArray ir_array(base_ptr, pointee_type, new_shape);
 
-    return ir_array;
+  return ir_array;
 }
 
 }  // namespace xla

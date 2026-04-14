@@ -11,10 +11,10 @@
 #define OP_API_INC_SHRINK_H_
 
 #include "aclnn_base.h"
-#include"aclnn_util.h"
+#include "aclnn_util.h"
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
 /**
@@ -43,7 +43,9 @@ extern "C"{
  * @param [out]  executor         返回op执行器，包含了算子计算流程。
  * @return       aclnnStatus      返回状态码
  */
-ACLNN_API aclnnStatus aclnnShrinkGetWorkspaceSize(const aclTensor* self, const aclScalar* lambd, const aclScalar* bias, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnShrinkGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* lambd, const aclScalar* bias,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnShrink的第二段接口，用于执行计算。
@@ -54,10 +56,11 @@ ACLNN_API aclnnStatus aclnnShrinkGetWorkspaceSize(const aclTensor* self, const a
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnShrink(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnShrink(void* workspace, uint64_t workspaceSize,
+                                  aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //OP_API_INC_SHRINK_H_
+#endif  //OP_API_INC_SHRINK_H_

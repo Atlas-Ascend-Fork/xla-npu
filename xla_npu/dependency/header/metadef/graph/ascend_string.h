@@ -67,11 +67,9 @@ class AscendString {
 }  // namespace ge
 
 namespace std {
-template<>
+template <>
 struct hash<ge::AscendString> {
-  size_t operator()(const ge::AscendString &name) const {
-    return name.Hash();
-  }
+  size_t operator()(const ge::AscendString &name) const { return name.Hash(); }
 };
 }  // namespace std
 #endif  // INC_EXTERNAL_GRAPH_ASCEND_STRING_H_

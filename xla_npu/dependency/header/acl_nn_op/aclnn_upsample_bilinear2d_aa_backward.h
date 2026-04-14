@@ -40,9 +40,12 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnUpsampleBilinear2dAABackwardGetWorkspaceSize(
-    const aclTensor *gradOutput, const aclIntArray *outputSize, const aclIntArray *inputSize, bool alignCorners,
-    double scalesH, double scalesW, aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnUpsampleBilinear2dAABackwardGetWorkspaceSize(
+    const aclTensor *gradOutput, const aclIntArray *outputSize,
+    const aclIntArray *inputSize, bool alignCorners, double scalesH,
+    double scalesW, aclTensor *out, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 
 /**
  * @brief aclnnUpsampleBilinear2dAABackward的第二段接口，用于执行计算。
@@ -56,8 +59,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnUpsampleBilinear2dAABack
  * @param [in] stream: 指定执行任务的AscendCL Stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnUpsampleBilinear2dAABackward(
-    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnUpsampleBilinear2dAABackward(void *workspace, uint64_t workspaceSize,
+                                  aclOpExecutor *executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

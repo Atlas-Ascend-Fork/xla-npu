@@ -169,9 +169,8 @@ void GraphGenTester::buildAddModule(mlir::ModuleOp& module,
   // 创建函数： 接受tensor输入， 返回tensor
   auto f32Type = mlir::Float32Type::get(&context);
   auto tensorType = mlir::RankedTensorType::get({10, 20}, f32Type);
-  auto funcType = mlir::FunctionType::get(
-      &context, {tensorType, tensorType},
-      {tensorType});
+  auto funcType =
+      mlir::FunctionType::get(&context, {tensorType, tensorType}, {tensorType});
   auto func = mlir::func::FuncOp::create(mlir::UnknownLoc::get(&context),
                                          "main", funcType);
 

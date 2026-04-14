@@ -22,17 +22,19 @@ extern "C" {
  * @domain aclnn_math
  */
 ACLNN_API aclnnStatus aclnnReduceNansumGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* dim, bool keepDim, aclDataType dtype, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* dim, bool keepDim,
+    aclDataType dtype, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnReduceNansum的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnReduceNansum(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnReduceNansum(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
+                                        aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_REDUCE_SUM_H_
+#endif  // OP_API_INC_REDUCE_SUM_H_

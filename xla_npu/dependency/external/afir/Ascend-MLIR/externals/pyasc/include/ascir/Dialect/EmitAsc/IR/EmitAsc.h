@@ -41,7 +41,7 @@ namespace emitasc {
 
 void registerExternalModels(DialectRegistry &registry);
 
-} // namespace emitasc
-} // namespace mlir
+}  // namespace emitasc
+}  // namespace mlir
 
-#endif // ASCIR_DIALECT_EMITASC_IR_EMITASC_H
+#endif  // ASCIR_DIALECT_EMITASC_IR_EMITASC_H

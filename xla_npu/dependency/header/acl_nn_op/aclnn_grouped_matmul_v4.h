@@ -16,12 +16,12 @@ extern "C" {
 #endif
 
 typedef enum {
-    GMM_ACT_TYPE_NONE = 0L,
-    GMM_ACT_TYPE_RELU = 1L,
-    GMM_ACT_TYPE_GELU_TANH = 2L,
-    GMM_ACT_TYPE_GELU_ERR_FUNC = 3L,
-    GMM_ACT_TYPE_FAST_GELU = 4L,
-    GMM_ACT_TYPE_SILU = 5L,
+  GMM_ACT_TYPE_NONE = 0L,
+  GMM_ACT_TYPE_RELU = 1L,
+  GMM_ACT_TYPE_GELU_TANH = 2L,
+  GMM_ACT_TYPE_GELU_ERR_FUNC = 3L,
+  GMM_ACT_TYPE_FAST_GELU = 4L,
+  GMM_ACT_TYPE_SILU = 5L,
 } GMMActType;
 
 /**
@@ -63,14 +63,20 @@ typedef enum {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV4GetWorkspaceSize(
-    const aclTensorList *x, const aclTensorList *weight, const aclTensorList *biasOptional,
-    const aclTensorList *scaleOptional, const aclTensorList *offsetOptional,
-    const aclTensorList *antiquantScaleOptional, const aclTensorList *antiquantOffsetOptional,
-    const aclTensorList *perTokenScaleOptional, const aclTensor *groupListOptional,
-    const aclTensorList *activationInputOptional, const aclTensorList *activationQuantScaleOptional,
-    const aclTensorList *activationQuantOffsetOptional,  int64_t splitItem, int64_t groupType,
-    int64_t groupListType, int64_t actType, aclTensorList *out, aclTensorList *activationFeatureOutOptional,
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulV4GetWorkspaceSize(
+    const aclTensorList *x, const aclTensorList *weight,
+    const aclTensorList *biasOptional, const aclTensorList *scaleOptional,
+    const aclTensorList *offsetOptional,
+    const aclTensorList *antiquantScaleOptional,
+    const aclTensorList *antiquantOffsetOptional,
+    const aclTensorList *perTokenScaleOptional,
+    const aclTensor *groupListOptional,
+    const aclTensorList *activationInputOptional,
+    const aclTensorList *activationQuantScaleOptional,
+    const aclTensorList *activationQuantOffsetOptional, int64_t splitItem,
+    int64_t groupType, int64_t groupListType, int64_t actType,
+    aclTensorList *out, aclTensorList *activationFeatureOutOptional,
     aclTensorList *dynQuantScaleOutOptional, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
@@ -82,8 +88,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV4GetWorksp
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV4(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                           aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV4(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

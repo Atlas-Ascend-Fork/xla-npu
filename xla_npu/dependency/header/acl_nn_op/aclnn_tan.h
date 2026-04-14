@@ -43,7 +43,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTanGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnTanGetWorkspaceSize(const aclTensor* self,
+                                               aclTensor* out,
+                                               uint64_t* workspaceSize,
                                                aclOpExecutor** executor);
 
 /**
@@ -69,7 +71,8 @@ ACLNN_API aclnnStatus aclnnTanGetWorkspaceSize(const aclTensor* self, aclTensor*
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceTanGetWorkspaceSize(const aclTensor* selfRef, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnInplaceTanGetWorkspaceSize(const aclTensor* selfRef,
+                                                      uint64_t* workspaceSize,
                                                       aclOpExecutor** executor);
 
 /**
@@ -94,7 +97,8 @@ ACLNN_API aclnnStatus aclnnInplaceTanGetWorkspaceSize(const aclTensor* selfRef, 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTan(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnTan(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor,
                                const aclrtStream stream);
 
 /**
@@ -119,7 +123,8 @@ ACLNN_API aclnnStatus aclnnTan(void* workspace, uint64_t workspaceSize, aclOpExe
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceTan(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceTan(void* workspace, uint64_t workspaceSize,
+                                      aclOpExecutor* executor,
                                       const aclrtStream stream);
 
 #ifdef __cplusplus

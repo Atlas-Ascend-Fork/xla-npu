@@ -44,27 +44,29 @@ limitations under the License.
 namespace xla {
 
 struct NpuCompileModuleResults {
-    std::unique_ptr<llvm::Module> llvm_module;
-    std::unique_ptr<llvm::Module> llvm_module_constants;
-    std::unique_ptr<BufferAssignment> buffer_assignment;
-    std::unique_ptr<NpuExecutionStreamAssignment> execution_stream_assignment;
-    std::vector<BufferAllocation> allocations;
-    std::unique_ptr<NpuSequentialThunk> executable;
-    std::vector<NpuExecutable::ConstantInfo> constants;
-    absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo> output_info;
-    Shape output_shape;
-    std::string module_name;
+  std::unique_ptr<llvm::Module> llvm_module;
+  std::unique_ptr<llvm::Module> llvm_module_constants;
+  std::unique_ptr<BufferAssignment> buffer_assignment;
+  std::unique_ptr<NpuExecutionStreamAssignment> execution_stream_assignment;
+  std::vector<BufferAllocation> allocations;
+  std::unique_ptr<NpuSequentialThunk> executable;
+  std::vector<NpuExecutable::ConstantInfo> constants;
+  absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo> output_info;
+  Shape output_shape;
+  std::string module_name;
 
-    // If true, the compiled module uses buffer allocations owned by
-    // buffer_assignment. Otherwise the compiled module uses buffer allocations
-    // stored in allocations.
-    bool use_original_allocations;
+  // If true, the compiled module uses buffer allocations owned by
+  // buffer_assignment. Otherwise the compiled module uses buffer allocations
+  // stored in allocations.
+  bool use_original_allocations;
 };
 
 absl::StatusOr<NpuCompileModuleResults> NpuCompileModuleToLlvmIr(
-    const HloModule* hlo_module, llvm::LLVMContext* llvm_context, const std::string& target_triple,
-    const std::string& data_layout, const se::Platform* platform, const se::DeviceDescription& device_desc,
-    const NpuAliasInfo* alias_info, BufferValue::SizeFunction buffer_size_bytes_function,
+    const HloModule* hlo_module, llvm::LLVMContext* llvm_context,
+    const std::string& target_triple, const std::string& data_layout,
+    const se::Platform* platform, const se::DeviceDescription& device_desc,
+    const NpuAliasInfo* alias_info,
+    BufferValue::SizeFunction buffer_size_bytes_function,
     bool split_constants_module = false);
 
 }  // namespace xla

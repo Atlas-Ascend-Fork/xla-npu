@@ -75,9 +75,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBitwiseOrScalarGetWorkspaceSize(const aclTensor* self, const aclScalar* other,
-                                                           aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnBitwiseOrScalarGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* other, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBitwiseOrScalar的第二段接口，用于执行计算。
@@ -87,7 +87,9 @@ ACLNN_API aclnnStatus aclnnBitwiseOrScalarGetWorkspaceSize(const aclTensor* self
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBitwiseOrScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnBitwiseOrScalar(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 /**
@@ -102,8 +104,9 @@ ACLNN_API aclnnStatus aclnnBitwiseOrScalar(void* workspace, uint64_t workspaceSi
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBitwiseOrScalarGetWorkspaceSize(aclTensor* selfRef, const aclScalar* other,
-                                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceBitwiseOrScalarGetWorkspaceSize(
+    aclTensor* selfRef, const aclScalar* other, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceBitwiseOrScalar的第二段接口，用于执行计算。
@@ -114,7 +117,9 @@ ACLNN_API aclnnStatus aclnnInplaceBitwiseOrScalarGetWorkspaceSize(aclTensor* sel
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBitwiseOrScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceBitwiseOrScalar(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 #ifdef __cplusplus

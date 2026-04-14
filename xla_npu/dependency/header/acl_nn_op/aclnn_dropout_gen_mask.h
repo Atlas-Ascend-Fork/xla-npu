@@ -32,22 +32,27 @@ extern "C" {
  * @brief aclnnDropoutGenMask的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnDropoutGenMaskGetWorkspaceSize(const aclIntArray* shape, double prob, int64_t seed,
-                                                          int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                          aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnDropoutGenMaskGetWorkspaceSize(
+    const aclIntArray* shape, double prob, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnDropoutGenMask(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnDropoutGenMask(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           aclrtStream stream);
 
 /**
  * @brief aclnnDropoutGenMaskV2的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnDropoutGenMaskV2GetWorkspaceSize(const aclIntArray* shape, double prob, int64_t seed,
-                                                            int64_t offset, aclDataType probDataType, aclTensor* out,
-                                                            uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnDropoutGenMaskV2GetWorkspaceSize(
+    const aclIntArray* shape, double prob, int64_t seed, int64_t offset,
+    aclDataType probDataType, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnDropoutGenMaskV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnDropoutGenMaskV2(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 /**
@@ -70,9 +75,10 @@ ACLNN_API aclnnStatus aclnnDropoutGenMaskV2(void* workspace, uint64_t workspaceS
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnDropoutGenMaskV2TensorGetWorkspaceSize(const aclIntArray* shape, double prob, const aclTensor *seedTensor,
-                                                            const aclTensor *offsetTensor, int64_t offset, aclDataType probDataType, aclTensor* out,
-                                                            uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnDropoutGenMaskV2TensorGetWorkspaceSize(
+    const aclIntArray* shape, double prob, const aclTensor* seedTensor,
+    const aclTensor* offsetTensor, int64_t offset, aclDataType probDataType,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnDropoutGenMaskV2Tensor的第二段接口，用于执行计算。
@@ -82,8 +88,10 @@ ACLNN_API aclnnStatus aclnnDropoutGenMaskV2TensorGetWorkspaceSize(const aclIntAr
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnDropoutGenMaskV2Tensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                            aclrtStream stream);
+ACLNN_API aclnnStatus aclnnDropoutGenMaskV2Tensor(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  aclrtStream stream);
 
 #ifdef __cplusplus
 }

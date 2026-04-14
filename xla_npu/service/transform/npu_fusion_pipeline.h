@@ -27,10 +27,12 @@ namespace xla {
 
 // Function wrapper around the (non-horizontal) XLA NPU fusion pipeline.
 // Thread pool may be nullptr.
-HloPassPipeline NpuFusionPipeline(const DebugOptions& debug_options,
-                                  HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-                                  tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
-                                  SymbolicExprContext* symbolic_expr_context);
+HloPassPipeline NpuFusionPipeline(
+    const DebugOptions& debug_options,
+    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+    tsl::thread::ThreadPool* thread_pool,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context);
 
 }  // namespace xla
 

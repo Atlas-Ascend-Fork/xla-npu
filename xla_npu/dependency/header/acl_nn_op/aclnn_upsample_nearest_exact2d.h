@@ -43,8 +43,9 @@ extern "C" {
  * @return       aclnnStatus      返回状态码
  */
 ACLNN_API aclnnStatus aclnnUpsampleNearestExact2dGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* outputSize, double scalesH, double scalesW, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* outputSize, double scalesH,
+    double scalesW, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnUpsampleNearestExact2d的第二段接口，用于执行计算。
@@ -59,11 +60,13 @@ ACLNN_API aclnnStatus aclnnUpsampleNearestExact2dGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnUpsampleNearestExact2d(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleNearestExact2d(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_UNAMPLE_NEAREST_EXACT1D_H_
+#endif  // OP_API_INC_UNAMPLE_NEAREST_EXACT1D_H_

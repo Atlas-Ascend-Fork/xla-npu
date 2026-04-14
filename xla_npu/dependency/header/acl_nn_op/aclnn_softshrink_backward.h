@@ -30,9 +30,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSoftshrinkBackwardGetWorkspaceSize(const aclTensor* gradOutput, const aclTensor* self,
-                                                              const aclScalar* lambda, aclTensor* gradInput,
-                                                              uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSoftshrinkBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* self, const aclScalar* lambda,
+    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnSoftshrinkBackward的第二段接口，用于执行计算。
@@ -44,7 +44,9 @@ ACLNN_API aclnnStatus aclnnSoftshrinkBackwardGetWorkspaceSize(const aclTensor* g
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSoftshrinkBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnSoftshrinkBackward(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
                                               const aclrtStream stream);
 
 #ifdef __cplusplus

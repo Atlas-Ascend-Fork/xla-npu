@@ -60,14 +60,15 @@ class HcomTopoInfo {
   Status GetGroupNotifyHandle(const char_t *group, void *&notify_handle);
   void UnsetGroupTopoInfo(const char_t *group) {
     const std::lock_guard<std::mutex> lock(mutex_);
-    (void) rank_info_.erase(group);
+    (void)rank_info_.erase(group);
   }
+
  private:
   HcomTopoInfo() = default;
   ~HcomTopoInfo() = default;
   std::unordered_map<std::string, TopoInfo> rank_info_;
   std::mutex mutex_;
 };
-}
+}  // namespace ge
 
-#endif // METADEF_CXX_INC_EXTERNAL_HCOM_HCOM_TOPO_INFO_H_
+#endif  // METADEF_CXX_INC_EXTERNAL_HCOM_HCOM_TOPO_INFO_H_

@@ -43,16 +43,17 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNzV2GetWorkspaceSize(const aclTensor *x,
-        const aclTensorList *weight, const aclTensorList *weightScale,
-        [[maybe_unused]] const aclTensorList *weightAssistMatrix, [[maybe_unused]] const aclTensor *bias,
-        [[maybe_unused]] const aclTensor *xScale, [[maybe_unused]] const aclTensor *smoothScale,
-        const aclTensor *groupList,  [[maybe_unused]] int64_t dequantMode, 
-        [[maybe_unused]] int64_t dequantDtype, [[maybe_unused]] int64_t quantMode,
-        int64_t groupListType,
-        const aclIntArray *tuningConfigOptional, 
-        aclTensor *output, aclTensor *outputScale,
-        uint64_t *workspaceSize, aclOpExecutor **executor);
+aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNzV2GetWorkspaceSize(
+    const aclTensor *x, const aclTensorList *weight,
+    const aclTensorList *weightScale,
+    [[maybe_unused]] const aclTensorList *weightAssistMatrix,
+    [[maybe_unused]] const aclTensor *bias,
+    [[maybe_unused]] const aclTensor *xScale,
+    [[maybe_unused]] const aclTensor *smoothScale, const aclTensor *groupList,
+    [[maybe_unused]] int64_t dequantMode, [[maybe_unused]] int64_t dequantDtype,
+    [[maybe_unused]] int64_t quantMode, int64_t groupListType,
+    const aclIntArray *tuningConfigOptional, aclTensor *output,
+    aclTensor *outputScale, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnGroupedMatmulSwigluQuantV2的第二段接口，用于执行计算。
@@ -63,8 +64,10 @@ aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNzV2GetWorkspaceSize(const aclTen
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNzV2(void *workspace, uint64_t workspaceSize,
-    aclOpExecutor *executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulSwigluQuantWeightNzV2(void *workspace, uint64_t workspaceSize,
+                                        aclOpExecutor *executor,
+                                        aclrtStream stream);
 
 #ifdef __cplusplus
 }

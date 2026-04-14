@@ -43,10 +43,12 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnFusedLinearOnlineMaxSumGetWorkspaceSize(
-    const aclTensor* input, const aclTensor* weight, const aclTensor* target, int64_t vocabStartIndex,
-    int64_t vocabEndIndex, aclTensor* logitsMaxLocalOut, aclTensor* sumExpLogitsLocalOut,
-    aclTensor* predictedLogitsLocalOut, aclTensor* targetMaskOut, aclTensor* maskedTargetOut,
-    aclTensor* vocabParallelLogitsOutOptional, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* input, const aclTensor* weight, const aclTensor* target,
+    int64_t vocabStartIndex, int64_t vocabEndIndex,
+    aclTensor* logitsMaxLocalOut, aclTensor* sumExpLogitsLocalOut,
+    aclTensor* predictedLogitsLocalOut, aclTensor* targetMaskOut,
+    aclTensor* maskedTargetOut, aclTensor* vocabParallelLogitsOutOptional,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnFusedLinearOnlineMaxSum的第二段接口，用于执行计算。
@@ -56,7 +58,9 @@ ACLNN_API aclnnStatus aclnnFusedLinearOnlineMaxSumGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnFusedLinearOnlineMaxSum(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnFusedLinearOnlineMaxSum(void* workspace,
+                                                   uint64_t workspaceSize,
+                                                   aclOpExecutor* executor,
                                                    aclrtStream stream);
 
 #ifdef __cplusplus

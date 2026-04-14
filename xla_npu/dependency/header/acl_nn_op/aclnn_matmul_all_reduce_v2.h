@@ -39,9 +39,10 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnMatmulAllReduceV2GetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* bias, const aclTensor* x3, const char* group,
-    const char* reduceOp, int64_t commTurn, int64_t streamMode, const aclTensor* output, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* bias,
+    const aclTensor* x3, const char* group, const char* reduceOp,
+    int64_t commTurn, int64_t streamMode, const aclTensor* output,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMatmulAllReduceV2的第二段接口，用于执行计算。
@@ -52,11 +53,13 @@ ACLNN_API aclnnStatus aclnnMatmulAllReduceV2GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnMatmulAllReduceV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMatmulAllReduceV2(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_MATMUL_ALL_REDUCE_V2_
+#endif  // OP_API_INC_MATMUL_ALL_REDUCE_V2_

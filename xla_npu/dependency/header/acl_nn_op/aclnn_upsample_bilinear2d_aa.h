@@ -38,8 +38,9 @@ extern "C" {
  * @Param [out] workspaceSize 返回用户需要在npu device侧申请的workspace大小。
  * @Param [out] executor 返回op执行器，包含了算子计算流程。
  */
-ACLNN_API aclnnStatus aclnnUpsampleBilinear2dAAGetWorkspaceSize(const aclTensor *input, const aclIntArray *outputSize,
-    bool alignCorners, double scalesH, double scalesW, aclTensor *out, uint64_t *workspaceSize,
+ACLNN_API aclnnStatus aclnnUpsampleBilinear2dAAGetWorkspaceSize(
+    const aclTensor *input, const aclIntArray *outputSize, bool alignCorners,
+    double scalesH, double scalesW, aclTensor *out, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
 /**
@@ -47,8 +48,10 @@ ACLNN_API aclnnStatus aclnnUpsampleBilinear2dAAGetWorkspaceSize(const aclTensor 
  * 功能描述：对由多个输入通道组成的输入信号应用2D双线性抗锯齿采样。
  * @domain aclnn_ops_infer
  */
-ACLNN_API aclnnStatus aclnnUpsampleBilinear2dAA(
-    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleBilinear2dAA(void *workspace,
+                                                uint64_t workspaceSize,
+                                                aclOpExecutor *executor,
+                                                aclrtStream stream);
 
 #ifdef __cplusplus
 }

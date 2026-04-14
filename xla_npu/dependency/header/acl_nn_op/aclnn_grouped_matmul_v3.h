@@ -40,12 +40,15 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV3GetWorkspaceSize(
-    const aclTensorList* x, const aclTensorList* weight, const aclTensorList* biasOptional,
-    const aclTensorList* scaleOptional, const aclTensorList* offsetOptional,
-    const aclTensorList* antiquantScaleOptional, const aclTensorList* antiquantOffsetOptional,
-    const aclTensor* groupListOptional, int64_t splitItem, int64_t groupType, const aclTensorList* y,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulV3GetWorkspaceSize(
+    const aclTensorList* x, const aclTensorList* weight,
+    const aclTensorList* biasOptional, const aclTensorList* scaleOptional,
+    const aclTensorList* offsetOptional,
+    const aclTensorList* antiquantScaleOptional,
+    const aclTensorList* antiquantOffsetOptional,
+    const aclTensor* groupListOptional, int64_t splitItem, int64_t groupType,
+    const aclTensorList* y, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupedMatmulV3的第二段接口，用于执行计算。
@@ -55,8 +58,9 @@ __attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV3GetWorksp
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV3(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                           aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulV3(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

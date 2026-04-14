@@ -37,6 +37,6 @@ namespace opcommon {
 ge::graphStatus InferShape4BroadcastOp(gert::InferShapeContext* context);
 ge::graphStatus InferShape4ReduceOp(gert::InferShapeContext* context);
 ge::graphStatus InferShape4ElewiseOp(gert::InferShapeContext* context);
-} // namespace opcommon
+}  // namespace opcommon
 
-#endif // EXTERNAL_OP_COMMON_INFERSHAPE_FNS_H_
+#endif  // EXTERNAL_OP_COMMON_INFERSHAPE_FNS_H_

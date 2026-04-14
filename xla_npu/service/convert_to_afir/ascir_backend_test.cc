@@ -200,7 +200,8 @@ absl::Status RunTest(absl::string_view hlo_text,
   options.preserve_intermediates = true;
   // Read soc_version from environment variable SOC_VERSION, default to "Ascend910B1" if not set
   const char* env_soc_version = std::getenv("SOC_VERSION");
-  options.soc_version = env_soc_version ? std::string(env_soc_version) : "Ascend910B1";
+  options.soc_version =
+      env_soc_version ? std::string(env_soc_version) : "Ascend910B1";
 
   std::cout << "  Output directory: " << options.output_dir << std::endl;
   std::cout << "  SOC version: " << options.soc_version << std::endl;

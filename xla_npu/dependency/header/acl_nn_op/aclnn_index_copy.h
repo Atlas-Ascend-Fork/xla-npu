@@ -39,9 +39,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnIndexCopyGetWorkspaceSize(aclTensor* selfRef, int64_t dim, const aclTensor* index,
-                                                     const aclTensor* source, aclTensor* outRef,
-                                                     uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnIndexCopyGetWorkspaceSize(
+    aclTensor* selfRef, int64_t dim, const aclTensor* index,
+    const aclTensor* source, aclTensor* outRef, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnIndexCopy的第二段接口，用于执行计算。
@@ -54,7 +55,8 @@ ACLNN_API aclnnStatus aclnnIndexCopyGetWorkspaceSize(aclTensor* selfRef, int64_t
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnIndexCopy(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnIndexCopy(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
                                      aclrtStream stream);
 
 /**
@@ -76,9 +78,9 @@ ACLNN_API aclnnStatus aclnnIndexCopy(void* workspace, uint64_t workspaceSize, ac
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceIndexCopyGetWorkspaceSize(aclTensor* selfRef, int64_t dim, const aclTensor* index,
-                                                            const aclTensor* source, uint64_t* workspaceSize,
-                                                            aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceIndexCopyGetWorkspaceSize(
+    aclTensor* selfRef, int64_t dim, const aclTensor* index,
+    const aclTensor* source, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplacePut的第二段接口，用于执行计算。
@@ -91,7 +93,9 @@ ACLNN_API aclnnStatus aclnnInplaceIndexCopyGetWorkspaceSize(aclTensor* selfRef, 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceIndexCopy(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceIndexCopy(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 #ifdef __cplusplus

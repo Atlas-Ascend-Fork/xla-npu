@@ -35,37 +35,42 @@ namespace xla {
 // Determines the schedule of HLO instructions for a module run on NPU.
 // This is a simplified version of GPU scheduler, adapted for NPU.
 // Uses generic ScheduleModule function from xla/hlo/transforms/simplifiers/hlo_memory_scheduler.h
-absl::StatusOr<NpuScheduleMetadata> NpuScheduleModule(HloModule* module, int64_t pointer_size,
-                                                      const se::DeviceDescription& npu_device_info,
-                                                      SymbolicExprContext* symbolic_expr_context,
-                                                      const NpuAliasInfo* alias_info) {
-    tsl::profiler::TraceMe traceme("NpuScheduleModule");
+absl::StatusOr<NpuScheduleMetadata> NpuScheduleModule(
+    HloModule* module, int64_t pointer_size,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context,
+    const NpuAliasInfo* alias_info) {
+  tsl::profiler::TraceMe traceme("NpuScheduleModule");
 
-    // Module already has a schedule, do nothing.
-    if (module->has_schedule()) {
-        VLOG(1) << "Module already has a schedule, do nothing.";
-        return NpuScheduleMetadata{0, 0};
+  // Module already has a schedule, do nothing.
+  if (module->has_schedule()) {
+    VLOG(1) << "Module already has a schedule, do nothing.";
+    return NpuScheduleMetadata{0, 0};
+  }
+
+  // Create a size function that calculates buffer sizes.
+  BufferValue::SizeFunction size_func =
+      [pointer_size](const BufferValue& buffer) -> int64_t {
+    const Shape& shape = buffer.shape();
+    if (shape.has_layout() &&
+        shape.layout().memory_space() == Layout::kHostMemorySpace) {
+      return static_cast<int64_t>(0);
     }
+    return ShapeUtil::ByteSizeOf(shape, pointer_size);
+  };
 
-    // Create a size function that calculates buffer sizes.
-    BufferValue::SizeFunction size_func = [pointer_size](const BufferValue& buffer) -> int64_t {
-        const Shape& shape = buffer.shape();
-        if (shape.has_layout() && shape.layout().memory_space() == Layout::kHostMemorySpace) {
-            return static_cast<int64_t>(0);
-        }
-        return ShapeUtil::ByteSizeOf(shape, pointer_size);
-    };
+  // Run the memory scheduler using the generic ScheduleModule function.
+  int64_t peak_memory_bytes = 0;
+  TF_ASSIGN_OR_RETURN(
+      HloSchedule schedule,
+      ScheduleModule(
+          module, alias_info, std::move(size_func),
+          /*execution_threads=*/{HloInstruction::kMainExecutionThread},
+          &peak_memory_bytes));
 
-    // Run the memory scheduler using the generic ScheduleModule function.
-    int64_t peak_memory_bytes = 0;
-    TF_ASSIGN_OR_RETURN(
-        HloSchedule schedule,
-        ScheduleModule(module, alias_info, std::move(size_func),
-                       /*execution_threads=*/{HloInstruction::kMainExecutionThread}, &peak_memory_bytes));
+  TF_RETURN_IF_ERROR(module->set_schedule(std::move(schedule)));
 
-    TF_RETURN_IF_ERROR(module->set_schedule(std::move(schedule)));
-
-    return NpuScheduleMetadata{0, peak_memory_bytes};
+  return NpuScheduleMetadata{0, peak_memory_bytes};
 }
 
 }  // namespace xla

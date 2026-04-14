@@ -43,30 +43,30 @@ namespace xla {
 // - 包含NPU特定的内存布局优化
 class NpuFusionDispatchPipeline : public HloModulePass {
  public:
-    NpuFusionDispatchPipeline(
-            const se::DeviceDescription& device_description,
-            SymbolicExprContext* symbolic_expr_context,
-            const DebugOptions& debug_options,
-            HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-            tsl::thread::ThreadPool* thread_pool);
+  NpuFusionDispatchPipeline(
+      const se::DeviceDescription& device_description,
+      SymbolicExprContext* symbolic_expr_context,
+      const DebugOptions& debug_options,
+      HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+      tsl::thread::ThreadPool* thread_pool);
 
-    ~NpuFusionDispatchPipeline() override = default;
+  ~NpuFusionDispatchPipeline() override = default;
 
-    absl::string_view name() const override {
-        return "npu-fusion-dispatch-pipeline";
-    }
+  absl::string_view name() const override {
+    return "npu-fusion-dispatch-pipeline";
+  }
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
-    const se::DeviceDescription device_description_;
-    SymbolicExprContext* symbolic_expr_context_;
-    const DebugOptions debug_options_;
-    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function_;
-    tsl::thread::ThreadPool* thread_pool_;
+  const se::DeviceDescription device_description_;
+  SymbolicExprContext* symbolic_expr_context_;
+  const DebugOptions debug_options_;
+  HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function_;
+  tsl::thread::ThreadPool* thread_pool_;
 };
 
 }  // namespace xla

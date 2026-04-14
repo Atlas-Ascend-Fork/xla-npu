@@ -37,46 +37,56 @@ limitations under the License.
 
 namespace xla {
 
-void NpuIrEmitterContext::emit_constant(int64_t num_elements, int64_t bytes_per_element, absl::string_view symbol_name,
-                                        int allocation_idx, NpuDenseDataIntermediate content, llvm::IRBuilderBase* b) {
-    bool should_emit_initializer = false;
+void NpuIrEmitterContext::emit_constant(int64_t num_elements,
+                                        int64_t bytes_per_element,
+                                        absl::string_view symbol_name,
+                                        int allocation_idx,
+                                        NpuDenseDataIntermediate content,
+                                        llvm::IRBuilderBase* b) {
+  bool should_emit_initializer = false;
 
-    // Ptxas has issues if the constant allocation is smaller than 64 bytes.
-    constexpr int64_t kMinConstAllocationInBytes = 64;
-    bool needs_padding = num_elements * bytes_per_element < kMinConstAllocationInBytes;
+  // Ptxas has issues if the constant allocation is smaller than 64 bytes.
+  constexpr int64_t kMinConstAllocationInBytes = 64;
+  bool needs_padding =
+      num_elements * bytes_per_element < kMinConstAllocationInBytes;
 
-    llvm::ArrayType* global_type =
-        llvm::ArrayType::get(b->getInt8Ty(), std::max(num_elements * bytes_per_element, kMinConstAllocationInBytes));
+  llvm::ArrayType* global_type = llvm::ArrayType::get(
+      b->getInt8Ty(),
+      std::max(num_elements * bytes_per_element, kMinConstAllocationInBytes));
 
-    NpuExecutable::ConstantInfo info;
-    llvm::Constant* initializer = [&]() -> llvm::Constant* {
-        if (!should_emit_initializer) {
-            info.content = std::move(content);
-            return llvm::ConstantAggregateZero::get(global_type);
-        }
+  NpuExecutable::ConstantInfo info;
+  llvm::Constant* initializer = [&]() -> llvm::Constant* {
+    if (!should_emit_initializer) {
+      info.content = std::move(content);
+      return llvm::ConstantAggregateZero::get(global_type);
+    }
 
-        std::vector<uint8_t> padded(kMinConstAllocationInBytes, 0);
-        absl::c_copy(content.span(), padded.begin());
-        return llvm::ConstantDataArray::get<uint8_t>(
-            llvm_module_constants()->getContext(),
-            needs_padding ? llvm::ArrayRef<uint8_t>(padded)
-                          : llvm::ArrayRef<uint8_t>(content.span().data(), content.span().size()));
-    }();
+    std::vector<uint8_t> padded(kMinConstAllocationInBytes, 0);
+    absl::c_copy(content.span(), padded.begin());
+    return llvm::ConstantDataArray::get<uint8_t>(
+        llvm_module_constants()->getContext(),
+        needs_padding ? llvm::ArrayRef<uint8_t>(padded)
+                      : llvm::ArrayRef<uint8_t>(content.span().data(),
+                                                content.span().size()));
+  }();
 
-    // Explicitly set global addrspace for SPIR backend.
-    int addrspace = llvm::Triple(llvm_module_constants()->getTargetTriple()).isSPIR() ? 1 : 0;
-    llvm::GlobalVariable* global_for_const = new llvm::GlobalVariable(
-        global_type, /*isConstant=*/should_emit_initializer, llvm::GlobalValue::ExternalLinkage,
-        /*Initializer=*/initializer, symbol_name,
-        /*TLMode=*/llvm::GlobalValue::NotThreadLocal,
-        /*AddressSpace=*/addrspace,
-        /*isExternallyInitialized=*/false);
-    global_for_const->setAlignment(llvm::Align(NpuConstant::kConstantBufferAlignBytes));
-    llvm_module_constants()->insertGlobalVariable(global_for_const);
+  // Explicitly set global addrspace for SPIR backend.
+  int addrspace =
+      llvm::Triple(llvm_module_constants()->getTargetTriple()).isSPIR() ? 1 : 0;
+  llvm::GlobalVariable* global_for_const = new llvm::GlobalVariable(
+      global_type, /*isConstant=*/should_emit_initializer,
+      llvm::GlobalValue::ExternalLinkage,
+      /*Initializer=*/initializer, symbol_name,
+      /*TLMode=*/llvm::GlobalValue::NotThreadLocal,
+      /*AddressSpace=*/addrspace,
+      /*isExternallyInitialized=*/false);
+  global_for_const->setAlignment(
+      llvm::Align(NpuConstant::kConstantBufferAlignBytes));
+  llvm_module_constants()->insertGlobalVariable(global_for_const);
 
-    info.symbol_name.assign(symbol_name);
-    info.allocation_index = allocation_idx;
-    constants_.push_back(std::move(info));
+  info.symbol_name.assign(symbol_name);
+  info.allocation_index = allocation_idx;
+  constants_.push_back(std::move(info));
 }
 
 }  // namespace xla

@@ -21,11 +21,13 @@ limitations under the License.
 namespace mlir {
 namespace ascendc {
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::BilinearInterpolationL0Op op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::BilinearInterpolationL0Op op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::BilinearInterpolationL1Op op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::BilinearInterpolationL1Op op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_BILINEAR_INTERPOLATION_H
+#endif  // ASCIR_TARGET_ASC_BASIC_BILINEAR_INTERPOLATION_H

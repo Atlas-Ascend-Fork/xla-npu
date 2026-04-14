@@ -52,9 +52,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBernoulliGetWorkspaceSize(const aclTensor* self, const aclScalar* prob, int64_t seed,
-                                                     int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                     aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnBernoulliGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* prob, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBernoulli的第二段接口，用于执行计算。
@@ -79,7 +79,8 @@ ACLNN_API aclnnStatus aclnnBernoulliGetWorkspaceSize(const aclTensor* self, cons
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBernoulli(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnBernoulli(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
                                      aclrtStream stream);
 
 /**
@@ -112,9 +113,9 @@ ACLNN_API aclnnStatus aclnnBernoulli(void* workspace, uint64_t workspaceSize, ac
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBernoulliTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* prob, int64_t seed,
-                                                           int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnBernoulliTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* prob, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBernoulliTensor的第二段接口，用于执行计算。
@@ -139,7 +140,9 @@ ACLNN_API aclnnStatus aclnnBernoulliTensorGetWorkspaceSize(const aclTensor* self
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnBernoulliTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnBernoulliTensor(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 /**
@@ -169,9 +172,9 @@ ACLNN_API aclnnStatus aclnnBernoulliTensor(void* workspace, uint64_t workspaceSi
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBernoulliGetWorkspaceSize(const aclTensor* selfRef, const aclScalar* prob, int64_t seed,
-                                                            int64_t offset, uint64_t* workspaceSize,
-                                                            aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceBernoulliGetWorkspaceSize(
+    const aclTensor* selfRef, const aclScalar* prob, int64_t seed,
+    int64_t offset, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceBernoulli的第二段接口，用于执行计算。
@@ -196,7 +199,9 @@ ACLNN_API aclnnStatus aclnnInplaceBernoulliGetWorkspaceSize(const aclTensor* sel
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBernoulli(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceBernoulli(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 /**
@@ -227,9 +232,9 @@ ACLNN_API aclnnStatus aclnnInplaceBernoulli(void* workspace, uint64_t workspaceS
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBernoulliTensorGetWorkspaceSize(const aclTensor* selfRef, const aclTensor* prob,
-                                                                  int64_t seed, int64_t offset, uint64_t* workspaceSize,
-                                                                  aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceBernoulliTensorGetWorkspaceSize(
+    const aclTensor* selfRef, const aclTensor* prob, int64_t seed,
+    int64_t offset, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceBernoulliTensor的第二段接口，用于执行计算。
@@ -254,7 +259,9 @@ ACLNN_API aclnnStatus aclnnInplaceBernoulliTensorGetWorkspaceSize(const aclTenso
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceBernoulliTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceBernoulliTensor(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 #ifdef __cplusplus

@@ -32,12 +32,12 @@ namespace xla {
 // underscore-separated and alphabetically sorted.
 
 class NpuRenameFusions : public HloModulePass {
-    absl::string_view name() const override { return "npu-rename-fusions"; }
+  absl::string_view name() const override { return "npu-rename-fusions"; }
 
-protected:
-    absl::StatusOr<bool> RunImpl(
-        HloModule* module,
-        const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+ protected:
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 };
 
 }  // namespace xla

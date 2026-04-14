@@ -25,11 +25,13 @@ namespace ascendc {
 // GlobalTensor operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::GlobalTensorSubIndexOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::GlobalTensorSubIndexOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::GlobalTensorBracketOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::GlobalTensorBracketOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_CORE_GLOBAL_TENSOR_H
+#endif  // ASCIR_TARGET_ASC_CORE_GLOBAL_TENSOR_H

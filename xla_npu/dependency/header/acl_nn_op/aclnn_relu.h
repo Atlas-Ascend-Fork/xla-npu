@@ -46,7 +46,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnReluGetWorkspaceSize(const aclTensor* self, const aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnReluGetWorkspaceSize(const aclTensor* self,
+                                                const aclTensor* out,
+                                                uint64_t* workspaceSize,
                                                 aclOpExecutor** executor);
 
 /**
@@ -70,7 +72,8 @@ ACLNN_API aclnnStatus aclnnReluGetWorkspaceSize(const aclTensor* self, const acl
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRelu(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRelu(void* workspace, uint64_t workspaceSize,
+                                aclOpExecutor* executor,
                                 const aclrtStream stream);
 
 /**
@@ -98,8 +101,8 @@ FLOAT、FLOAT16、INT8、INT32、UINT8、BFLOAT16（在Ascend910及之前芯片�
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceReluGetWorkspaceSize(aclTensor* selfRef, uint64_t* workspaceSize,
-                                                       aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceReluGetWorkspaceSize(
+    aclTensor* selfRef, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceRelu的第二段接口，用于执行计算。
@@ -122,7 +125,8 @@ ACLNN_API aclnnStatus aclnnInplaceReluGetWorkspaceSize(aclTensor* selfRef, uint6
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceRelu(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceRelu(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
                                        const aclrtStream stream);
 
 #ifdef __cplusplus

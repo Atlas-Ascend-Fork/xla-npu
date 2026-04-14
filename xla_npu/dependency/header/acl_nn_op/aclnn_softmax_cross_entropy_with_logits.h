@@ -36,8 +36,9 @@ extern "C" {
  * @param [in] loss: 输出Tensor，数据类型支持FLOAT，FLOAT16，BFLOAT16。支持非连续Tensor，数据格式支持ND。
  * @param [in] backprop: 输出Tensor，数据类型支持FLOAT，FLOAT16，BFLOAT16。支持非连续Tensor，数据格式支持ND。
  */
-ACLNN_API aclnnStatus aclnnSoftmaxCrossEntropyWithLogitsGetWorkspaceSize(const aclTensor* features, aclTensor* labels, aclTensor* loss, aclTensor* backprop, uint64_t* workspaceSize,
-                                                aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSoftmaxCrossEntropyWithLogitsGetWorkspaceSize(
+    const aclTensor* features, aclTensor* labels, aclTensor* loss,
+    aclTensor* backprop, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnSoftmaxCrossEntropyWithLogits的第二段接口，用于执行计算。
@@ -47,8 +48,9 @@ ACLNN_API aclnnStatus aclnnSoftmaxCrossEntropyWithLogitsGetWorkspaceSize(const a
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSoftmaxCrossEntropyWithLogits(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSoftmaxCrossEntropyWithLogits(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    const aclrtStream stream);
 
 #ifdef __cplusplus
 }

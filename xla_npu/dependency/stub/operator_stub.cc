@@ -19,7 +19,7 @@ namespace ge {
 
 Operator op;
 
-Operator::Operator(const char* type) {};
+Operator::Operator(const char* type){};
 
 Operator::Operator(const char* name, const char* type) {}
 

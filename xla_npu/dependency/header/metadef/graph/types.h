@@ -47,12 +47,12 @@ static constexpr int32_t kDataTypeSizeBitOffset = 1000;
 static constexpr uint32_t kBitNumOfOneByte = 8U;
 static constexpr uint32_t kBitThreeBytes = 24U;
 
-#if(defined(HOST_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(HOST_VISIBILITY)) && (defined(__GNUC__))
 #define GE_FUNC_HOST_VISIBILITY __attribute__((visibility("default")))
 #else
 #define GE_FUNC_HOST_VISIBILITY
 #endif
-#if(defined(DEV_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(DEV_VISIBILITY)) && (defined(__GNUC__))
 #define GE_FUNC_DEV_VISIBILITY __attribute__((visibility("default")))
 #else
 #define GE_FUNC_DEV_VISIBILITY
@@ -87,21 +87,21 @@ enum DataType {
   DT_DUAL = 25,            // dual output type
   DT_VARIANT = 26,         // dt_variant type
   DT_BF16 = 27,            // bf16 type
-  DT_UNDEFINED = 28,       // Used to indicate a DataType field has not been set.
-  DT_INT4 = 29,            // int4 type
-  DT_UINT1 = 30,           // uint1 type
-  DT_INT2 = 31,            // int2 type
-  DT_UINT2 = 32,           // uint2 type
-  DT_COMPLEX32 = 33,       // complex32 type
-  DT_HIFLOAT8 = 34,        // hifloat8 type
-  DT_FLOAT8_E5M2 = 35,     // float8_e5m2 type
-  DT_FLOAT8_E4M3FN = 36,   // float8_e4m3fn type
-  DT_FLOAT8_E8M0 = 37,     // float8_e8m0 type
-  DT_FLOAT6_E3M2 = 38,     // float6_e3m2 type
-  DT_FLOAT6_E2M3 = 39,     // float6_e2m3 type
-  DT_FLOAT4_E2M1 = 40,     // float4_e2m1 type
-  DT_FLOAT4_E1M2 = 41,     // float4_e1m2 type
-  DT_MAX                   // Mark the boundaries of data types
+  DT_UNDEFINED = 28,      // Used to indicate a DataType field has not been set.
+  DT_INT4 = 29,           // int4 type
+  DT_UINT1 = 30,          // uint1 type
+  DT_INT2 = 31,           // int2 type
+  DT_UINT2 = 32,          // uint2 type
+  DT_COMPLEX32 = 33,      // complex32 type
+  DT_HIFLOAT8 = 34,       // hifloat8 type
+  DT_FLOAT8_E5M2 = 35,    // float8_e5m2 type
+  DT_FLOAT8_E4M3FN = 36,  // float8_e4m3fn type
+  DT_FLOAT8_E8M0 = 37,    // float8_e8m0 type
+  DT_FLOAT6_E3M2 = 38,    // float6_e3m2 type
+  DT_FLOAT6_E2M3 = 39,    // float6_e2m3 type
+  DT_FLOAT4_E2M1 = 40,    // float4_e2m1 type
+  DT_FLOAT4_E1M2 = 41,    // float4_e1m2 type
+  DT_MAX                  // Mark the boundaries of data types
 };
 
 // used for data type of DT_STRING
@@ -112,35 +112,35 @@ struct StringHead {
 
 inline int GetSizeByDataType(DataType data_type) {
   static int data_type_size[DT_MAX] = {
-      4,                           // DT_FLOAT = 0,             float type
-      2,                           // DT_FLOAT16 = 1,           fp16 type
-      1,                           // DT_INT8 = 2,              int8 type
-      4,                           // DT_INT32 = 3,             int32 type
-      1,                           // DT_UINT8 = 4,             uint8 type
-      -1,                          // reserved
-      2,                           // DT_INT16 = 6,             int16 type
-      2,                           // DT_UINT16 = 7,            uint16 type
-      4,                           // DT_UINT32 = 8,            unsigned int32
-      8,                           // DT_INT64 = 9,             int64 type
-      8,                           // DT_UINT64 = 10,           unsigned int64
-      8,                           // DT_DOUBLE = 11,           double type
-      1,                           // DT_BOOL = 12,             bool type
-      -1,                          // DT_STRING = 13,           string type
-      1,                           // DT_DUAL_SUB_INT8 = 14,    dual output int8 type
-      1,                           // DT_DUAL_SUB_UINT8 = 15,   dual output uint8 type
-      8,                           // DT_COMPLEX64 = 16,        complex64 type
-      16,                          // DT_COMPLEX128 = 17,       complex128 type
-      1,                           // DT_QINT8 = 18,            qint8 type
-      2,                           // DT_QINT16 = 19,           qint16 type
-      4,                           // DT_QINT32 = 20,           qint32 type
-      1,                           // DT_QUINT8 = 21,           quint8 type
-      2,                           // DT_QUINT16 = 22,          quint16 type
-      8,                           // DT_RESOURCE = 23,         resource type
-      -1,                          // DT_STRING_REF = 24,       string ref type
-      5,                           // DT_DUAL = 25,             dual output type (float + int8)
-      8,                           // DT_VARIANT                variant type
-      2,                           // DT_BF16 = 27,             bf16 type
-      -1,                          // DT_UNDEFINED = 28         Used to indicate a DataType field has not been set.
+      4,   // DT_FLOAT = 0,             float type
+      2,   // DT_FLOAT16 = 1,           fp16 type
+      1,   // DT_INT8 = 2,              int8 type
+      4,   // DT_INT32 = 3,             int32 type
+      1,   // DT_UINT8 = 4,             uint8 type
+      -1,  // reserved
+      2,   // DT_INT16 = 6,             int16 type
+      2,   // DT_UINT16 = 7,            uint16 type
+      4,   // DT_UINT32 = 8,            unsigned int32
+      8,   // DT_INT64 = 9,             int64 type
+      8,   // DT_UINT64 = 10,           unsigned int64
+      8,   // DT_DOUBLE = 11,           double type
+      1,   // DT_BOOL = 12,             bool type
+      -1,  // DT_STRING = 13,           string type
+      1,   // DT_DUAL_SUB_INT8 = 14,    dual output int8 type
+      1,   // DT_DUAL_SUB_UINT8 = 15,   dual output uint8 type
+      8,   // DT_COMPLEX64 = 16,        complex64 type
+      16,  // DT_COMPLEX128 = 17,       complex128 type
+      1,   // DT_QINT8 = 18,            qint8 type
+      2,   // DT_QINT16 = 19,           qint16 type
+      4,   // DT_QINT32 = 20,           qint32 type
+      1,   // DT_QUINT8 = 21,           quint8 type
+      2,   // DT_QUINT16 = 22,          quint16 type
+      8,   // DT_RESOURCE = 23,         resource type
+      -1,  // DT_STRING_REF = 24,       string ref type
+      5,   // DT_DUAL = 25,             dual output type (float + int8)
+      8,   // DT_VARIANT                variant type
+      2,   // DT_BF16 = 27,             bf16 type
+      -1,  // DT_UNDEFINED = 28         Used to indicate a DataType field has not been set.
       kDataTypeSizeBitOffset + 4,  // DT_INT4 = 29,             int4 type
       kDataTypeSizeBitOffset + 1,  // DT_UINT1 = 30,            uint1 type
       kDataTypeSizeBitOffset + 2,  // DT_INT2 = 31,             int2 type
@@ -198,7 +198,7 @@ enum Format {
   FORMAT_CN,
   FORMAT_NC = 35,
   FORMAT_DHWNC,
-  FORMAT_FRACTAL_Z_3D_TRANSPOSE, // 3D filter(transpose) input tensor format
+  FORMAT_FRACTAL_Z_3D_TRANSPOSE,  // 3D filter(transpose) input tensor format
   FORMAT_FRACTAL_ZN_LSTM,
   FORMAT_FRACTAL_Z_G,
   FORMAT_RESERVED = 40,
@@ -232,19 +232,23 @@ enum Format {
 /// @param c0_format
 /// @return
 inline int32_t GetFormatFromSub(int32_t primary_format, int32_t sub_format) {
-  return static_cast<int32_t>((static_cast<uint32_t>(primary_format) & 0xffU) |
-                              ((static_cast<uint32_t>(sub_format) & 0xffffU) << kBitNumOfOneByte));
+  return static_cast<int32_t>(
+      (static_cast<uint32_t>(primary_format) & 0xffU) |
+      ((static_cast<uint32_t>(sub_format) & 0xffffU) << kBitNumOfOneByte));
 }
 
 inline int32_t GetFormatFromC0(int32_t format, int32_t c0_format) {
-  return static_cast<int32_t>((static_cast<uint32_t>(format) & 0xffffffU) |
-                              ((static_cast<uint32_t>(c0_format) & 0xfU) << kBitThreeBytes));
+  return static_cast<int32_t>(
+      (static_cast<uint32_t>(format) & 0xffffffU) |
+      ((static_cast<uint32_t>(c0_format) & 0xfU) << kBitThreeBytes));
 }
 
-inline int32_t GetFormatFromSubAndC0(int32_t primary_format, int32_t sub_format, int32_t c0_format) {
-  return static_cast<int32_t>((static_cast<uint32_t>(primary_format) & 0xffU) |
-                              ((static_cast<uint32_t>(sub_format) & 0xffffU) << kBitNumOfOneByte) |
-                              ((static_cast<uint32_t>(c0_format) & 0xfU) << kBitThreeBytes));
+inline int32_t GetFormatFromSubAndC0(int32_t primary_format, int32_t sub_format,
+                                     int32_t c0_format) {
+  return static_cast<int32_t>(
+      (static_cast<uint32_t>(primary_format) & 0xffU) |
+      ((static_cast<uint32_t>(sub_format) & 0xffffU) << kBitNumOfOneByte) |
+      ((static_cast<uint32_t>(c0_format) & 0xfU) << kBitThreeBytes));
 }
 
 inline int32_t GetPrimaryFormat(int32_t format) {
@@ -252,40 +256,42 @@ inline int32_t GetPrimaryFormat(int32_t format) {
 }
 
 inline int32_t GetSubFormat(int32_t format) {
-  return static_cast<int32_t>((static_cast<uint32_t>(format) & 0xffff00U) >> kBitNumOfOneByte);
+  return static_cast<int32_t>((static_cast<uint32_t>(format) & 0xffff00U) >>
+                              kBitNumOfOneByte);
 }
 
-inline bool HasSubFormat(int32_t format) {
-  return GetSubFormat(format) > 0;
-}
+inline bool HasSubFormat(int32_t format) { return GetSubFormat(format) > 0; }
 
 inline bool HasC0Format(int32_t format) {
   return ((static_cast<uint32_t>(format) & 0xf000000U) >> kBitThreeBytes) > 0;
 }
 
 inline int32_t GetC0Format(int32_t format) {
-  return static_cast<int32_t>((static_cast<uint32_t>(format) & 0xf000000U) >> kBitThreeBytes);
+  return static_cast<int32_t>((static_cast<uint32_t>(format) & 0xf000000U) >>
+                              kBitThreeBytes);
 }
 
 inline int64_t GetC0Value(int32_t format) {
   if (!HasC0Format(format)) {
     return -1;
   }
-  return static_cast<int64_t>(1 <<
-      (static_cast<int32_t>((static_cast<uint32_t>(format) & 0xf000000U) >> kBitThreeBytes) - 1));
+  return static_cast<int64_t>(
+      1 << (static_cast<int32_t>((static_cast<uint32_t>(format) & 0xf000000U) >>
+                                 kBitThreeBytes) -
+            1));
 }
 
 // for unknown shape op type
 enum UnknowShapeOpType {
-  DEPEND_IN_SHAPE    = 1,  // op out shape get by input shape
+  DEPEND_IN_SHAPE = 1,     // op out shape get by input shape
   DEPEND_CONST_VALUE = 2,  // op out shape get by const op value
   DEPEND_SHAPE_RANGE = 3,  // op out shape get by range
-  DEPEND_COMPUTE     = 4   // op out shape get by totally computing
+  DEPEND_COMPUTE = 4       // op out shape get by totally computing
 };
 
 struct TensorDescInfo {
-  Format format_ = FORMAT_RESERVED;  // tbe op register support format
-  DataType dataType_ = DT_UNDEFINED; // tbe op register support datatype
+  Format format_ = FORMAT_RESERVED;   // tbe op register support format
+  DataType dataType_ = DT_UNDEFINED;  // tbe op register support datatype
 };
 
 enum DeviceType {
@@ -294,8 +300,8 @@ enum DeviceType {
 };
 
 enum Placement {
-  kPlacementHost = 0,     // host data addr
-  kPlacementDevice = 1,   // device data addr
+  kPlacementHost = 0,    // host data addr
+  kPlacementDevice = 1,  // device data addr
   kPlacementEnd,
 };
 
@@ -304,8 +310,8 @@ enum Placement {
 /// @param format
 /// @return
 ///
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY
-const char_t *GetFormatName(Format format);
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const char_t *GetFormatName(
+    Format format);
 
 class TensorTypeImpl;
 struct TensorType {
@@ -314,63 +320,84 @@ struct TensorType {
   TensorType(const std::initializer_list<DataType> &initial_types);
 
   static TensorType ALL() {
-    return TensorType{DT_BOOL,   DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
-                      DT_INT32,  DT_INT64,      DT_INT8,      DT_QINT16, DT_QINT32, DT_QINT8,   DT_QUINT16,
-                      DT_QUINT8, DT_RESOURCE,   DT_STRING,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
-                      DT_BF16, DT_COMPLEX32};
+    return TensorType{DT_BOOL,   DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE,
+                      DT_FLOAT,  DT_FLOAT16,    DT_INT16,     DT_INT32,
+                      DT_INT64,  DT_INT8,       DT_QINT16,    DT_QINT32,
+                      DT_QINT8,  DT_QUINT16,    DT_QUINT8,    DT_RESOURCE,
+                      DT_STRING, DT_UINT16,     DT_UINT32,    DT_UINT64,
+                      DT_UINT8,  DT_BF16,       DT_COMPLEX32};
   }
 
-  static TensorType QuantifiedType() { return TensorType{DT_QINT16, DT_QINT32, DT_QINT8, DT_QUINT16, DT_QUINT8}; }
+  static TensorType QuantifiedType() {
+    return TensorType{DT_QINT16, DT_QINT32, DT_QINT8, DT_QUINT16, DT_QUINT8};
+  }
 
   static TensorType OrdinaryType() {
-    return TensorType{DT_BOOL,  DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
-                      DT_INT32, DT_INT64,      DT_INT8,      DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
-                      DT_BF16, DT_COMPLEX32};
+    return TensorType{DT_BOOL,   DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE,
+                      DT_FLOAT,  DT_FLOAT16,    DT_INT16,     DT_INT32,
+                      DT_INT64,  DT_INT8,       DT_UINT16,    DT_UINT32,
+                      DT_UINT64, DT_UINT8,      DT_BF16,      DT_COMPLEX32};
   }
 
   static TensorType BasicType() {
-    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
-                      DT_INT32,      DT_INT64,     DT_INT8,   DT_QINT16, DT_QINT32,  DT_QINT8,
-                      DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32, DT_UINT64,  DT_UINT8,
-                      DT_BF16, DT_COMPLEX32};
+    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,
+                      DT_FLOAT16,    DT_INT16,     DT_INT32,  DT_INT64,
+                      DT_INT8,       DT_QINT16,    DT_QINT32, DT_QINT8,
+                      DT_QUINT16,    DT_QUINT8,    DT_UINT16, DT_UINT32,
+                      DT_UINT64,     DT_UINT8,     DT_BF16,   DT_COMPLEX32};
   }
 
   static TensorType NumberType() {
-    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,  DT_INT32,  DT_INT64,
-                      DT_INT8,       DT_QINT32,    DT_QINT8,  DT_QUINT8, DT_UINT16,  DT_UINT32, DT_UINT64, DT_UINT8,
-                      DT_BF16, DT_COMPLEX32};
+    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT,
+                      DT_FLOAT16,    DT_INT16,     DT_INT32,  DT_INT64,
+                      DT_INT8,       DT_QINT32,    DT_QINT8,  DT_QUINT8,
+                      DT_UINT16,     DT_UINT32,    DT_UINT64, DT_UINT8,
+                      DT_BF16,       DT_COMPLEX32};
   }
 
   static TensorType RealNumberType() {
-    return TensorType{DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,  DT_INT32, DT_INT64,
-                      DT_INT8,   DT_UINT16, DT_UINT32,  DT_UINT64, DT_UINT8, DT_BF16};
+    return TensorType{DT_DOUBLE, DT_FLOAT,  DT_FLOAT16, DT_INT16,
+                      DT_INT32,  DT_INT64,  DT_INT8,    DT_UINT16,
+                      DT_UINT32, DT_UINT64, DT_UINT8,   DT_BF16};
   }
 
-  static TensorType ComplexDataType() { return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32}; }
+  static TensorType ComplexDataType() {
+    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_COMPLEX32};
+  }
 
   static TensorType IntegerDataType() {
-    return TensorType{DT_INT16, DT_INT32, DT_INT64, DT_INT8, DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8};
+    return TensorType{DT_INT16,  DT_INT32,  DT_INT64,  DT_INT8,
+                      DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8};
   }
 
-  static TensorType SignedDataType() { return TensorType{DT_INT16, DT_INT32, DT_INT64, DT_INT8}; }
+  static TensorType SignedDataType() {
+    return TensorType{DT_INT16, DT_INT32, DT_INT64, DT_INT8};
+  }
 
-  static TensorType UnsignedDataType() { return TensorType{DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8}; }
+  static TensorType UnsignedDataType() {
+    return TensorType{DT_UINT16, DT_UINT32, DT_UINT64, DT_UINT8};
+  }
 
-  static TensorType FloatingDataType() { return TensorType{DT_DOUBLE, DT_FLOAT, DT_FLOAT16}; }
+  static TensorType FloatingDataType() {
+    return TensorType{DT_DOUBLE, DT_FLOAT, DT_FLOAT16};
+  }
 
   static TensorType IndexNumberType() { return TensorType{DT_INT32, DT_INT64}; }
 
   static TensorType UnaryDataType() {
-    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_BF16, DT_COMPLEX32};
+    return TensorType{DT_COMPLEX128, DT_COMPLEX64, DT_DOUBLE,   DT_FLOAT,
+                      DT_FLOAT16,    DT_BF16,      DT_COMPLEX32};
   }
 
-  static TensorType FLOAT() { return TensorType{DT_FLOAT, DT_FLOAT16, DT_BF16}; }
+  static TensorType FLOAT() {
+    return TensorType{DT_FLOAT, DT_FLOAT16, DT_BF16};
+  }
 
   std::shared_ptr<TensorTypeImpl> tensor_type_impl_;
 };
 
 struct ListTensorType {
-  explicit ListTensorType(const TensorType &type) : tensor_type(type) {};
+  explicit ListTensorType(const TensorType &type) : tensor_type(type){};
   TensorType tensor_type;
 };
 

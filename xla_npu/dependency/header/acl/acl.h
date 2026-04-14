@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#define ACL_PKG_VERSION_MAX_SIZE       128
+#define ACL_PKG_VERSION_MAX_SIZE 128
 #define ACL_PKG_VERSION_PARTS_MAX_SIZE 64
 
 /**
@@ -82,14 +82,14 @@ ACL_FUNC_VISIBILITY const char *aclGetRecentErrMsg();
  * @brief enum for CANN package name
  */
 typedef enum aclCANNPackageName {
-    ACL_PKG_NAME_CANN,
-    ACL_PKG_NAME_RUNTIME,
-    ACL_PKG_NAME_COMPILER,
-    ACL_PKG_NAME_HCCL,
-    ACL_PKG_NAME_TOOLKIT,
-    ACL_PKG_NAME_OPP,
-    ACL_PKG_NAME_OPP_KERNEL,
-    ACL_PKG_NAME_DRIVER
+  ACL_PKG_NAME_CANN,
+  ACL_PKG_NAME_RUNTIME,
+  ACL_PKG_NAME_COMPILER,
+  ACL_PKG_NAME_HCCL,
+  ACL_PKG_NAME_TOOLKIT,
+  ACL_PKG_NAME_OPP,
+  ACL_PKG_NAME_OPP_KERNEL,
+  ACL_PKG_NAME_DRIVER
 } aclCANNPackageName;
 
 /**
@@ -97,12 +97,12 @@ typedef enum aclCANNPackageName {
  * @brief struct for storaging CANN package version
  */
 typedef struct aclCANNPackageVersion {
-    char version[ACL_PKG_VERSION_MAX_SIZE];
-    char majorVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
-    char minorVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
-    char releaseVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
-    char patchVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
-    char reserved[ACL_PKG_VERSION_MAX_SIZE];
+  char version[ACL_PKG_VERSION_MAX_SIZE];
+  char majorVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
+  char minorVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
+  char releaseVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
+  char patchVersion[ACL_PKG_VERSION_PARTS_MAX_SIZE];
+  char reserved[ACL_PKG_VERSION_MAX_SIZE];
 } aclCANNPackageVersion;
 
 /**
@@ -114,10 +114,11 @@ typedef struct aclCANNPackageVersion {
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval ACL_ERROR_INVALID_FILE Failure
  */
-ACL_FUNC_VISIBILITY aclError aclsysGetCANNVersion(aclCANNPackageName name, aclCANNPackageVersion *version);
+ACL_FUNC_VISIBILITY aclError
+aclsysGetCANNVersion(aclCANNPackageName name, aclCANNPackageVersion *version);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_ACL_H_
+#endif  // INC_EXTERNAL_ACL_ACL_H_

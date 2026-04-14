@@ -36,10 +36,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码， 成功返回ACLNN_SUCCESS, 失败返回对应错误码。
  */
-ACLNN_API aclnnStatus aclnnSmoothL1LossBackwardGetWorkspaceSize(const aclTensor* gradOut, const aclTensor* self,
-                                                                const aclTensor* target, int64_t reduction, float beta,
-                                                                aclTensor* gradInput, uint64_t* workspaceSize,
-                                                                aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSmoothL1LossBackwardGetWorkspaceSize(
+    const aclTensor* gradOut, const aclTensor* self, const aclTensor* target,
+    int64_t reduction, float beta, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnSmoothL1LossBackward的第二段接口，用于执行计算
@@ -51,7 +51,9 @@ ACLNN_API aclnnStatus aclnnSmoothL1LossBackwardGetWorkspaceSize(const aclTensor*
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码,成功返回ACLNN_SUCCESS, 失败返回对应错误码。
  */
-ACLNN_API aclnnStatus aclnnSmoothL1LossBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnSmoothL1LossBackward(void* workspace,
+                                                uint64_t workspaceSize,
+                                                aclOpExecutor* executor,
                                                 aclrtStream stream);
 
 #ifdef __cplusplus

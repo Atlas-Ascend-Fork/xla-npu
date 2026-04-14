@@ -37,9 +37,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnUpsampleBicubic2dAAGetWorkspaceSize(const aclTensor *x, const aclIntArray *outputSize,
-    const bool alignCorners, const double scalesH, const double scalesW, aclTensor *out, uint64_t *workspaceSize,
-    aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnUpsampleBicubic2dAAGetWorkspaceSize(
+    const aclTensor *x, const aclIntArray *outputSize, const bool alignCorners,
+    const double scalesH, const double scalesW, aclTensor *out,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnUpsampleBicubic2dAA的第二段接口，用于执行计算。
@@ -53,8 +54,10 @@ ACLNN_API aclnnStatus aclnnUpsampleBicubic2dAAGetWorkspaceSize(const aclTensor *
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnUpsampleBicubic2dAA(
-    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleBicubic2dAA(void *workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor *executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }

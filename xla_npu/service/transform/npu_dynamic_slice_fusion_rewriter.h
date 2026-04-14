@@ -49,24 +49,29 @@ namespace xla {
 //    ROOT %fusion %p0, %p1
 //  }
 class NpuDynamicSliceFusionRewriter : public HloModulePass {
-   public:
-    absl::string_view name() const override { return "npu-dynamic-slice-fusion-rewriter"; }
+ public:
+  absl::string_view name() const override {
+    return "npu-dynamic-slice-fusion-rewriter";
+  }
 
-    explicit NpuDynamicSliceFusionRewriter(std::string platform_name) : platform_name_(std::move(platform_name)) {}
+  explicit NpuDynamicSliceFusionRewriter(std::string platform_name)
+      : platform_name_(std::move(platform_name)) {}
 
-   protected:
-    absl::StatusOr<bool> RunImpl(HloModule* module,
-                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
-
-   private:
-    absl::Status ProcessFusionMatch(
-      HloInstruction* hero,
+ protected:
+  absl::StatusOr<bool> RunImpl(
       HloModule* module,
-      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_operand_paths,
-      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>& sliced_user_paths,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+
+ private:
+  absl::Status ProcessFusionMatch(
+      HloInstruction* hero, HloModule* module,
+      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>&
+          sliced_operand_paths,
+      absl::InlinedVector<absl::InlinedVector<HloInstruction*, 4>, 4>&
+          sliced_user_paths,
       bool& changed);
 
-    std::string platform_name_;
+  std::string platform_name_;
 };
 
 }  // namespace xla

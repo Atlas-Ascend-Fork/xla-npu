@@ -44,9 +44,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnEmbeddingBagGetWorkspaceSize(
-    const aclTensor* weight, const aclTensor* indices, const aclTensor* offsets, bool scaleGradByFreq, int64_t mode,
-    bool sparse, const aclTensor* perSampleWeights, bool includeLastOffset, int64_t paddingIdx, aclTensor* output,
-    aclTensor* offset2bag, aclTensor* bagSize, aclTensor* maxIndices, uint64_t* workspaceSize,
+    const aclTensor* weight, const aclTensor* indices, const aclTensor* offsets,
+    bool scaleGradByFreq, int64_t mode, bool sparse,
+    const aclTensor* perSampleWeights, bool includeLastOffset,
+    int64_t paddingIdx, aclTensor* output, aclTensor* offset2bag,
+    aclTensor* bagSize, aclTensor* maxIndices, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /**
@@ -58,11 +60,12 @@ ACLNN_API aclnnStatus aclnnEmbeddingBagGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnEmbeddingBag(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnEmbeddingBag(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
+                                        aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_INDEX_COPY_H_
+#endif  // OP_API_INC_INDEX_COPY_H_

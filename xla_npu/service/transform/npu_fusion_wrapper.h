@@ -27,18 +27,18 @@ namespace xla {
 // Wraps leftover unfused instructions in the entry computation that have no NPU-specific
 // equivalent by containing just that instruction in a fusion.
 class NpuFusionWrapper : public emitters::FusionWrapperBase {
-public:
-    explicit NpuFusionWrapper(const se::DeviceDescription& device_description)
-        : device_description_(device_description) {}
+ public:
+  explicit NpuFusionWrapper(const se::DeviceDescription& device_description)
+      : device_description_(device_description) {}
 
-    absl::string_view name() const override { return "npu-fusion-wrapper"; }
+  absl::string_view name() const override { return "npu-fusion-wrapper"; }
 
-    bool MustWrapInstruction(HloOpcode opcode) override;
-    HloInstruction::FusionKind ChooseFusionKind(
-        const HloInstruction& producer, const HloInstruction& consumer) override;
+  bool MustWrapInstruction(HloOpcode opcode) override;
+  HloInstruction::FusionKind ChooseFusionKind(
+      const HloInstruction& producer, const HloInstruction& consumer) override;
 
-private:
-    const se::DeviceDescription& device_description_;
+ private:
+  const se::DeviceDescription& device_description_;
 };
 
 }  // namespace xla

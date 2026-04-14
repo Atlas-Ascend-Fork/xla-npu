@@ -55,9 +55,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAddcmulGetWorkspaceSize(const aclTensor* self, const aclTensor* tensor1,
-                                                   const aclTensor* tensor2, const aclScalar* value, aclTensor* out,
-                                                   uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAddcmulGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* tensor1, const aclTensor* tensor2,
+    const aclScalar* value, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnAddcmul的第二段接口，用于执行计算。
@@ -83,8 +84,8 @@ ACLNN_API aclnnStatus aclnnAddcmulGetWorkspaceSize(const aclTensor* self, const 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAddcmul(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                   aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAddcmul(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceAddcmul的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -119,9 +120,10 @@ ACLNN_API aclnnStatus aclnnAddcmul(void* workspace, uint64_t workspaceSize, aclO
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceAddcmulGetWorkspaceSize(const aclTensor* selfRef, const aclTensor* tensor1,
-                                                          const aclTensor* tensor2, const aclScalar* value,
-                                                          uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceAddcmulGetWorkspaceSize(
+    const aclTensor* selfRef, const aclTensor* tensor1,
+    const aclTensor* tensor2, const aclScalar* value, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceAddcmul的第二段接口，用于执行计算。
@@ -147,7 +149,9 @@ ACLNN_API aclnnStatus aclnnInplaceAddcmulGetWorkspaceSize(const aclTensor* selfR
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceAddcmul(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceAddcmul(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           aclrtStream stream);
 
 #ifdef __cplusplus

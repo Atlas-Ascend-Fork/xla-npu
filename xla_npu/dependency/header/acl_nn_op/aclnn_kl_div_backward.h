@@ -22,17 +22,20 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnKlDivBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target, int64_t reduction, bool logTarget,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target,
+    int64_t reduction, bool logTarget, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnKlDivBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnKlDivBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnKlDivBackward(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
+                                         aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_KL_DIV_DBACKWARD_H_
+#endif  // OP_API_INC_KL_DIV_DBACKWARD_H_

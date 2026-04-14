@@ -74,42 +74,42 @@ void UnpackIntNToLiteral(PrimitiveType input_element_type,
                          const NpuDeviceMemory& input,
                          MutableLiteralBase* literal,
                          const ShapeIndex& shape_index) {
-    absl::Span<const char> input_span{
-        static_cast<const char*>(input.untyped_data()), input.size_bytes()};
-    size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(
-        ShapeUtil::GetSubshape(literal->shape(), shape_index)));
-    absl::Span<char> output_span{
-        static_cast<char*>(literal->untyped_data(shape_index)), output_size};
-    primitive_util::UnpackIntN(input_element_type, input_span, output_span);
+  absl::Span<const char> input_span{
+      static_cast<const char*>(input.untyped_data()), input.size_bytes()};
+  size_t output_size = static_cast<size_t>(ShapeUtil::ByteSizeOf(
+      ShapeUtil::GetSubshape(literal->shape(), shape_index)));
+  absl::Span<char> output_span{
+      static_cast<char*>(literal->untyped_data(shape_index)), output_size};
+  primitive_util::UnpackIntN(input_element_type, input_span, output_span);
 }
 
 }  //  namespace
 
 void PackOrCopy(PrimitiveType element_type, const LiteralSlice& literal,
                 void* data, int64_t size) {
-    if (primitive_util::IsSubByteNonPredType(element_type)) {
-      const int bit_width = primitive_util::BitWidth(element_type);
-      absl::Span<const char> src_data_span(
-          static_cast<const char*>(literal.untyped_data()), literal.size_bytes());
-      absl::Span<char> dst_data_span(static_cast<char*>(data), size);
-      PackIntN(bit_width, src_data_span, dst_data_span);
-    } else {
-      CHECK_EQ(literal.size_bytes(), size);
-      std::memcpy(data, literal.untyped_data(), size);
-    }
+  if (primitive_util::IsSubByteNonPredType(element_type)) {
+    const int bit_width = primitive_util::BitWidth(element_type);
+    absl::Span<const char> src_data_span(
+        static_cast<const char*>(literal.untyped_data()), literal.size_bytes());
+    absl::Span<char> dst_data_span(static_cast<char*>(data), size);
+    PackIntN(bit_width, src_data_span, dst_data_span);
+  } else {
+    CHECK_EQ(literal.size_bytes(), size);
+    std::memcpy(data, literal.untyped_data(), size);
+  }
 }
 
 /*static*/ bool AbstractNpuBuffer::BufferFromHostBufferSupportsZeroCopy(
     const void* data, PrimitiveType type, absl::Span<int64_t const> dims,
     std::optional<absl::Span<int64_t const>> byte_strides, const Shape& shape) {
-    if (byte_strides && !HasMajorToMinorLayout(type, dims, *byte_strides)) {
-      return false;
-    }
-    // Packed arrays are unpacked on host and packed on device.
-    if (primitive_util::IsSubByteNonPredType(type)) {
-      return false;
-    }
-    return true;
+  if (byte_strides && !HasMajorToMinorLayout(type, dims, *byte_strides)) {
+    return false;
+  }
+  // Packed arrays are unpacked on host and packed on device.
+  if (primitive_util::IsSubByteNonPredType(type)) {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace xla

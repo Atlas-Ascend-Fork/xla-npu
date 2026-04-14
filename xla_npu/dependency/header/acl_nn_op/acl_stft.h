@@ -55,9 +55,13 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包括算子计算流程
  * @return aclnnStatus: 返回状态码
  */
-aclnnStatus aclStftGetWorkspaceSize(const aclTensor* self, const aclTensor* windowOptional, aclTensor* out, int64_t nFft,
-                                    int64_t hopLength, int64_t winLength, bool normalized, bool onesided,
-                                    bool returnComplex, uint64_t* workspaceSize, aclOpExecutor** executor);
+aclnnStatus aclStftGetWorkspaceSize(const aclTensor* self,
+                                    const aclTensor* windowOptional,
+                                    aclTensor* out, int64_t nFft,
+                                    int64_t hopLength, int64_t winLength,
+                                    bool normalized, bool onesided,
+                                    bool returnComplex, uint64_t* workspaceSize,
+                                    aclOpExecutor** executor);
 
 /**
  * @brief aclStft的第二段接口，用于执行计算。
@@ -67,7 +71,8 @@ aclnnStatus aclStftGetWorkspaceSize(const aclTensor* self, const aclTensor* wind
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-aclnnStatus aclStft(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+aclnnStatus aclStft(void* workspace, uint64_t workspaceSize,
+                    aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

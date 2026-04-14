@@ -35,8 +35,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnCircularPad3dBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclIntArray* padding, aclTensor* gradInput,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self,
+    const aclIntArray* padding, aclTensor* gradInput, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief: aclnnCircularPad3dBackward的第二段接口，用于执行计算
@@ -49,10 +50,12 @@ ACLNN_API aclnnStatus aclnnCircularPad3dBackwardGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnCircularPad3dBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnCircularPad3dBackward(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
+                                                 aclrtStream stream);
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_CIRCULAR_PAD3D_BACKWARD_H_
+#endif  // OP_API_INC_CIRCULAR_PAD3D_BACKWARD_H_

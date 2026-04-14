@@ -72,8 +72,9 @@ inline constexpr int64_t kNpuNumShmemBanks = 32;
 // The bitwidth of a shared memory bank.
 inline constexpr int64_t kNpuBankBitwidth = 32;
 
-absl::StatusOr<BufferAllocation::Slice> NpuGetAllocationSlice(const BufferAssignment& buffer_assignment,
-                                                              const HloInstruction* instr, const ShapeIndex& index);
+absl::StatusOr<BufferAllocation::Slice> NpuGetAllocationSlice(
+    const BufferAssignment& buffer_assignment, const HloInstruction* instr,
+    const ShapeIndex& index);
 
 // Returns the first hero instruction reachable from `instr` as root. Hero
 // instruction can be in a different computation if the parent HloFusionAdaptor
@@ -83,7 +84,8 @@ HloInstructionAdaptor NpuFindNonTrivialHero(const HloInstructionAdaptor& instr);
 // Same as above, but fusion is the parent computation of the hlo instruction.
 const HloInstruction& NpuFindNonTrivialHero(const HloInstruction& instr);
 
-std::optional<TransposeDescription> NpuGetDescriptionForTiledTransposeEmitter(const HloInstruction& hero);
+std::optional<TransposeDescription> NpuGetDescriptionForTiledTransposeEmitter(
+    const HloInstruction& hero);
 
 // Canonical transpose permutes the input shape
 // <D_0 x ... x D_n x T2 x D_{n+1} x ... x D_m x A x T1 x B> into
@@ -94,75 +96,82 @@ std::optional<TransposeDescription> NpuGetDescriptionForTiledTransposeEmitter(co
 // 2. <8x2x32> -> <32x2x8> will be canonicalized to <8x2x32x1> -> <32x2x8x1>.
 // 3. <8x2x32x7x6> -> <6x32x2x7x8> becomes <8x2x32x7x6x1> -> <6x32x2x7x8x1>.
 struct NpuTransposeSpec {
-    PrimitiveType elem_type() const { return input_shape().element_type(); }
+  PrimitiveType elem_type() const { return input_shape().element_type(); }
 
-    const Shape& input_shape() const { return transpose->operand(0)->shape(); }
-    const Shape& output_shape() const { return transpose->shape(); }
+  const Shape& input_shape() const { return transpose->operand(0)->shape(); }
+  const Shape& output_shape() const { return transpose->shape(); }
 
-    int64_t rank() const { return input_shape().dimensions().size(); }
-    int64_t canonical_rank() const { return canonical_input_shape.size(); }
+  int64_t rank() const { return input_shape().dimensions().size(); }
+  int64_t canonical_rank() const { return canonical_input_shape.size(); }
 
-    int64_t dim_A() const { return canonical_input_shape[dim_A_id()]; }
-    int64_t dim_A_id() const { return canonical_rank() - 3; }
+  int64_t dim_A() const { return canonical_input_shape[dim_A_id()]; }
+  int64_t dim_A_id() const { return canonical_rank() - 3; }
 
-    int64_t dim_B() const { return canonical_input_shape.back(); }
-    int64_t dim_B_id() const { return canonical_rank() - 1; }
+  int64_t dim_B() const { return canonical_input_shape.back(); }
+  int64_t dim_B_id() const { return canonical_rank() - 1; }
 
-    int64_t dim_T1() const { return canonical_input_shape[dim_T1_input_id()]; }
-    int64_t dim_T1_input_id() const { return canonical_rank() - 2; }
-    int64_t dim_T1_output_id() const { return canonical_inv_permutation[canonical_rank() - 2]; }
+  int64_t dim_T1() const { return canonical_input_shape[dim_T1_input_id()]; }
+  int64_t dim_T1_input_id() const { return canonical_rank() - 2; }
+  int64_t dim_T1_output_id() const {
+    return canonical_inv_permutation[canonical_rank() - 2];
+  }
 
-    int64_t dim_T2() const { return canonical_input_shape[dim_T2_input_id()]; }
-    int64_t dim_T2_input_id() const { return canonical_permutation[canonical_rank() - 2]; }
-    int64_t dim_T2_output_id() const { return canonical_rank() - 2; }
+  int64_t dim_T2() const { return canonical_input_shape[dim_T2_input_id()]; }
+  int64_t dim_T2_input_id() const {
+    return canonical_permutation[canonical_rank() - 2];
+  }
+  int64_t dim_T2_output_id() const { return canonical_rank() - 2; }
 
-    std::string ToString() const;
+  std::string ToString() const;
 
-    const HloTransposeInstruction* transpose;
+  const HloTransposeInstruction* transpose;
 
-    llvm::SmallVector<int64_t, 3> permutation;
-    llvm::SmallVector<int64_t, 3> inv_permutation;
+  llvm::SmallVector<int64_t, 3> permutation;
+  llvm::SmallVector<int64_t, 3> inv_permutation;
 
-    llvm::SmallVector<int64_t, 3> canonical_output_shape;
-    llvm::SmallVector<int64_t, 3> canonical_permutation;
-    llvm::SmallVector<int64_t, 3> canonical_inv_permutation;
-    llvm::SmallVector<int64_t, 3> canonical_input_shape;
+  llvm::SmallVector<int64_t, 3> canonical_output_shape;
+  llvm::SmallVector<int64_t, 3> canonical_permutation;
+  llvm::SmallVector<int64_t, 3> canonical_inv_permutation;
+  llvm::SmallVector<int64_t, 3> canonical_input_shape;
 };
 
 NpuTransposeSpec NpuGetTransposeSpec(const HloTransposeInstruction* transpose);
 
 // Returns the default tile sizes for the packed transpose emitter.
-absl::StatusOr<absl::InlinedVector<int64_t, 3>> NpuGetPackedTransposeTileSizes(const NpuTransposeSpec& spec);
+absl::StatusOr<absl::InlinedVector<int64_t, 3>> NpuGetPackedTransposeTileSizes(
+    const NpuTransposeSpec& spec);
 
 // This class stores either a non-owning reference or owns data that represents
 // a dense array in XLA format. It is used for intermediate storage during IR
 // constant emission.
 class NpuDenseDataIntermediate {
-   public:
-    // Creates an instance of NpuDenseDataIntermediate that owns the provided vector.
-    static NpuDenseDataIntermediate Own(std::vector<uint8_t> owned) {
-        NpuDenseDataIntermediate di;
-        di.data_ = std::move(owned);
-        return di;
-    }
+ public:
+  // Creates an instance of NpuDenseDataIntermediate that owns the provided vector.
+  static NpuDenseDataIntermediate Own(std::vector<uint8_t> owned) {
+    NpuDenseDataIntermediate di;
+    di.data_ = std::move(owned);
+    return di;
+  }
 
-    // Creates an instance of NpuDenseDataIntermediate that aliases the input.
-    static NpuDenseDataIntermediate Alias(absl::Span<const uint8_t> aliased) {
-        NpuDenseDataIntermediate di;
-        di.data_ = aliased;
-        return di;
-    }
+  // Creates an instance of NpuDenseDataIntermediate that aliases the input.
+  static NpuDenseDataIntermediate Alias(absl::Span<const uint8_t> aliased) {
+    NpuDenseDataIntermediate di;
+    di.data_ = aliased;
+    return di;
+  }
 
-    // Returns a reference to the data this object represents.
-    absl::Span<const uint8_t> span() const {
-        return data_.index() == 0 ? absl::Span<const uint8_t>(std::get<0>(data_)) : std::get<1>(data_);
-    }
+  // Returns a reference to the data this object represents.
+  absl::Span<const uint8_t> span() const {
+    return data_.index() == 0 ? absl::Span<const uint8_t>(std::get<0>(data_))
+                              : std::get<1>(data_);
+  }
 
-   private:
-    std::variant<std::vector<uint8_t>, absl::Span<const uint8_t>> data_;
+ private:
+  std::variant<std::vector<uint8_t>, absl::Span<const uint8_t>> data_;
 };
 
-absl::StatusOr<NpuDenseDataIntermediate> NpuLiteralToXlaFormat(const Literal& literal);
+absl::StatusOr<NpuDenseDataIntermediate> NpuLiteralToXlaFormat(
+    const Literal& literal);
 
 }  // namespace xla
 

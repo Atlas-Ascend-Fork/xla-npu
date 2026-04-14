@@ -31,8 +31,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnIsInTensorScalarGetWorkspaceSize(
-    const aclTensor* element, const aclScalar* testElement, bool assumeUnique, bool invert, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* element, const aclScalar* testElement, bool assumeUnique,
+    bool invert, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnIsInTensorScalar的第二段接口，用于执行计算。
@@ -42,11 +43,13 @@ ACLNN_API aclnnStatus aclnnIsInTensorScalarGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnIsInTensorScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnIsInTensorScalar(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
+                                            aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ISIN__TENSOR_SCALAR_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ISIN__TENSOR_SCALAR_H_

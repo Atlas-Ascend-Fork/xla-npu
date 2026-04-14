@@ -54,10 +54,13 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnConvolutionBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* input, const aclTensor* weight, const aclIntArray* biasSizes,
-    const aclIntArray* stride, const aclIntArray* padding, const aclIntArray* dilation, bool transposed,
-    const aclIntArray* outputPadding, int groups, const aclBoolArray* outputMask, int8_t cubeMathType,
-    aclTensor* gradInput, aclTensor* gradWeight, aclTensor* gradBias, uint64_t* workspaceSize,
+    const aclTensor* gradOutput, const aclTensor* input,
+    const aclTensor* weight, const aclIntArray* biasSizes,
+    const aclIntArray* stride, const aclIntArray* padding,
+    const aclIntArray* dilation, bool transposed,
+    const aclIntArray* outputPadding, int groups,
+    const aclBoolArray* outputMask, int8_t cubeMathType, aclTensor* gradInput,
+    aclTensor* gradWeight, aclTensor* gradBias, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /**
@@ -86,12 +89,11 @@ ACLNN_API aclnnStatus aclnnConvolutionBackwardGetWorkspaceSize(
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvTbcBackwardGetWorkspaceSize(const aclTensor* self, const aclTensor* input,
-                                                           const aclTensor* weight, const aclTensor* bias,
-                                                           int64_t pad, int8_t cubeMathType,
-                                                           aclTensor* gradInput, aclTensor* gradWeight,
-                                                           aclTensor* gradBias, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnConvTbcBackwardGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* input, const aclTensor* weight,
+    const aclTensor* bias, int64_t pad, int8_t cubeMathType,
+    aclTensor* gradInput, aclTensor* gradWeight, aclTensor* gradBias,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnConvolutionBackward的第二段接口，用于执行计算。
@@ -103,7 +105,9 @@ ACLNN_API aclnnStatus aclnnConvTbcBackwardGetWorkspaceSize(const aclTensor* self
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvolutionBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnConvolutionBackward(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
                                                const aclrtStream stream);
 
 /**
@@ -116,7 +120,9 @@ ACLNN_API aclnnStatus aclnnConvolutionBackward(void* workspace, uint64_t workspa
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnConvTbcBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnConvTbcBackward(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            const aclrtStream stream);
 
 #ifdef __cplusplus

@@ -41,7 +41,8 @@ class OpCtImplRegistry : public OpCtImplKernelRegistry {
 
  private:
   std::map<OpType, OpCtImplFunctions> types_to_impl_;
-  uint8_t reserved_[40] = {0U};  // Reserved field, 32+8, do not directly use when only 8-byte left
+  uint8_t reserved_[40] = {
+      0U};  // Reserved field, 32+8, do not directly use when only 8-byte left
 };
 
 class OpCtImplRegisterV2Impl {
@@ -60,16 +61,22 @@ class OpCtImplRegisterV2 {
   ~OpCtImplRegisterV2();
 
  public:
-  OpCtImplRegisterV2 &CalcOpParam(OpCtImplKernelRegistry::OpCalcParamKernelFunc calc_op_param_func);
-  OpCtImplRegisterV2 &GenerateTask(OpCtImplKernelRegistry::OpGenTaskKernelFunc gen_task_func);
+  OpCtImplRegisterV2 &CalcOpParam(
+      OpCtImplKernelRegistry::OpCalcParamKernelFunc calc_op_param_func);
+  OpCtImplRegisterV2 &GenerateTask(
+      OpCtImplKernelRegistry::OpGenTaskKernelFunc gen_task_func);
+
  private:
   std::unique_ptr<OpCtImplRegisterV2Impl> impl_;
 };
 }  // namespace gert
 
-#define IMPL_OP_CT_COUNTER(op_type, name, counter) \
-  static gert::OpCtImplRegisterV2 VAR_UNUSED name##counter = gert::OpCtImplRegisterV2(#op_type)
-#define IMPL_OP_CT_COUNTER_NUMBER(op_type, name, counter) IMPL_OP_CT_COUNTER(op_type, name, counter)
-#define IMPL_OP_CT(op_type) IMPL_OP_CT_COUNTER_NUMBER(op_type, op_impl_register_##op_type, __COUNTER__)
+#define IMPL_OP_CT_COUNTER(op_type, name, counter)           \
+  static gert::OpCtImplRegisterV2 VAR_UNUSED name##counter = \
+      gert::OpCtImplRegisterV2(#op_type)
+#define IMPL_OP_CT_COUNTER_NUMBER(op_type, name, counter) \
+  IMPL_OP_CT_COUNTER(op_type, name, counter)
+#define IMPL_OP_CT(op_type) \
+  IMPL_OP_CT_COUNTER_NUMBER(op_type, op_impl_register_##op_type, __COUNTER__)
 
 #endif  // INC_EXTERNAL_REGISTER_OP_CT_IMPL_REGISTRY_H_

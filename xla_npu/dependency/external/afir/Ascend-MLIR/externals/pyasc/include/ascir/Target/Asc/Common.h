@@ -46,83 +46,85 @@ limitations under the License.
 
 #define DEBUG_TYPE "translate-to-ascendc"
 
-#define FAIL_OR(expr)                                                                                                  \
-    if (failed(expr))                                                                                                  \
-    return failure()
+#define FAIL_OR(expr) \
+  if (failed(expr)) return failure()
 
-#define EXEC_IF_TRUE(condition, expr)                                                                                  \
-    if (condition) {                                                                                                   \
-        expr                                                                                                           \
-    }
+#define EXEC_IF_TRUE(condition, expr) \
+  if (condition) {                    \
+    expr                              \
+  }
 namespace mlir {
 
 template <bool condition>
 using LogicalResultIf = typename std::enable_if_t<condition, LogicalResult>;
 
 template <typename T, typename... AllowedTypes>
-using LogicalResultForT = LogicalResultIf<llvm::is_one_of<T, AllowedTypes...>::value>;
+using LogicalResultForT =
+    LogicalResultIf<llvm::is_one_of<T, AllowedTypes...>::value>;
 
 // When generating code for an `scf.if` or `cf.cond_br` op no semicolon needs
 // to be printed after the closing brace.
 // When generating code for an `scf.for op`, printing a trailing semicolon is
 // handled within the `printOperation` function.
 template <typename OpType>
-bool needsSemicolon(const OpType &op)
-{
-    return !isa<scf::IfOp, scf::ForOp, scf::IndexSwitchOp, scf::YieldOp>(op);
+bool needsSemicolon(const OpType &op) {
+  return !isa<scf::IfOp, scf::ForOp, scf::IndexSwitchOp, scf::YieldOp>(op);
 }
 
 template <typename OpType>
-LogicalResult isScalarOperation(OpType op)
-{
-    if (isa<VectorType>(op.getResult().getType())) {
-        return op.emitOpError() << "Vector type is not supported.";
-    }
-    if (isa<TensorType>(op.getResult().getType())) {
-        return op.emitOpError() << "Tensor type is not supported.";
-    }
-    return success();
+LogicalResult isScalarOperation(OpType op) {
+  if (isa<VectorType>(op.getResult().getType())) {
+    return op.emitOpError() << "Vector type is not supported.";
+  }
+  if (isa<TensorType>(op.getResult().getType())) {
+    return op.emitOpError() << "Tensor type is not supported.";
+  }
+  return success();
 }
 
-LogicalResult printConstantOp(CodeEmitter &emitter, Operation *operation, Attribute value);
+LogicalResult printConstantOp(CodeEmitter &emitter, Operation *operation,
+                              Attribute value);
 
 template <typename OpType>
-LogicalResult printIsSetMaskCastTemplate(CodeEmitter &emitter, OpType op)
-{
-    auto &os = emitter.ostream();
-    auto dstType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    auto srcType = cast<ascendc::LocalTensorType>(op.getSrc1().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", ";
-    FAIL_OR(emitter.emitType(op.getLoc(), srcType));
-    os << ", " << op.getIsSetMask() << ">";
-    return success();
-}
-
-template <typename OpType>
-LogicalResult printIsSetMaskTemplate(CodeEmitter &emitter, OpType op)
-{
-    auto &os = emitter.ostream();
-    auto tensorType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), tensorType));
-    os << ", " << op.getIsSetMask() << ">";
-    return success();
+LogicalResult printIsSetMaskCastTemplate(CodeEmitter &emitter, OpType op) {
+  auto &os = emitter.ostream();
+  auto dstType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  auto srcType =
+      cast<ascendc::LocalTensorType>(op.getSrc1().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", ";
+  FAIL_OR(emitter.emitType(op.getLoc(), srcType));
+  os << ", " << op.getIsSetMask() << ">";
+  return success();
 }
 
 template <typename OpType>
-auto printMask(CodeEmitter &emitter, OpType op)
-{
-    static int maskCounter = 0;
-    auto uniqueId = std::to_string(maskCounter++);
-    auto &os = emitter.ostream();
-    auto maskName = (emitter.getOrCreateName(op.getDst()) + "_mask_list" + uniqueId).str();
-    os << "uint64_t " << maskName << "[] = {";
-    llvm::interleaveComma(op.getMask(), os, [&](Value operand) { os << emitter.getOrCreateName(operand); });
-    os << "};\n";
+LogicalResult printIsSetMaskTemplate(CodeEmitter &emitter, OpType op) {
+  auto &os = emitter.ostream();
+  auto tensorType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), tensorType));
+  os << ", " << op.getIsSetMask() << ">";
+  return success();
+}
 
-    return maskName;
+template <typename OpType>
+auto printMask(CodeEmitter &emitter, OpType op) {
+  static int maskCounter = 0;
+  auto uniqueId = std::to_string(maskCounter++);
+  auto &os = emitter.ostream();
+  auto maskName =
+      (emitter.getOrCreateName(op.getDst()) + "_mask_list" + uniqueId).str();
+  os << "uint64_t " << maskName << "[] = {";
+  llvm::interleaveComma(op.getMask(), os, [&](Value operand) {
+    os << emitter.getOrCreateName(operand);
+  });
+  os << "};\n";
+
+  return maskName;
 }
 
 namespace ascendc {
@@ -131,13 +133,16 @@ namespace ascendc {
 // Mask operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::SetVectorMaskL0Op op);
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::SetVectorMaskL1Op op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::SetVectorMaskL0Op op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::SetVectorMaskL1Op op);
 
-} // namespace ascendc
+}  // namespace ascendc
 
-} // namespace mlir
+}  // namespace mlir
 
-mlir::LogicalResult emitOperation(mlir::CodeEmitter &emitter, mlir::Operation &op, bool trailingSemicolon);
+mlir::LogicalResult emitOperation(mlir::CodeEmitter &emitter,
+                                  mlir::Operation &op, bool trailingSemicolon);
 
-#endif // ASCIR_TARGET_ASC_COMMON_H
+#endif  // ASCIR_TARGET_ASC_COMMON_H

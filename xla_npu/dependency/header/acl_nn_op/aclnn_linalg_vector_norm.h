@@ -32,8 +32,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  * */
 ACLNN_API aclnnStatus aclnnLinalgVectorNormGetWorkspaceSize(
-    const aclTensor* self, const aclScalar* ord, const aclIntArray* dims, bool keepDims, const aclDataType dtype,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclScalar* ord, const aclIntArray* dims,
+    bool keepDims, const aclDataType dtype, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * aclnnLinalgVectorNorm的第二段接口，用于执行计算
@@ -44,11 +45,13 @@ ACLNN_API aclnnStatus aclnnLinalgVectorNormGetWorkspaceSize(
  * @param [in] stream: acl stream流
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnLinalgVectorNorm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLinalgVectorNorm(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
+                                            aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LINALG_VECTOR_NORM_H_
+#endif  // OP_API_INC_LINALG_VECTOR_NORM_H_

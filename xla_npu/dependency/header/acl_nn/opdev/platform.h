@@ -25,36 +25,36 @@
 namespace op {
 
 enum class SocVersion {
-    ASCEND910 = 0,
-    ASCEND910B,
-    ASCEND910_93,
-    ASCEND910_95,
-    ASCEND910E,
-    ASCEND310,
-    ASCEND310P,
-    ASCEND310B,
-    ASCEND310C,
-    ASCEND610LITE,
-    RESERVED_VERSION = 99999
+  ASCEND910 = 0,
+  ASCEND910B,
+  ASCEND910_93,
+  ASCEND910_95,
+  ASCEND910E,
+  ASCEND310,
+  ASCEND310P,
+  ASCEND310B,
+  ASCEND310C,
+  ASCEND610LITE,
+  RESERVED_VERSION = 99999
 };
 
 enum class SocSpec { INST_MMAD = 0, RESERVED_SPEC = 99999 };
 
 enum class SocSpecAbility {
-    INST_MMAD_F162F16 = 0,
-    INST_MMAD_F162F32,
-    INST_MMAD_H322F32,
-    INST_MMAD_F322F32,
-    INST_MMAD_U32U8U8,
-    INST_MMAD_S32S8S8,
-    INST_MMAD_S32U8S8,
-    INST_MMAD_F16F16F16,
-    INST_MMAD_F32F16F16,
-    INST_MMAD_F16F16U2,
-    INST_MMAD_U8,
-    INST_MMAD_S8,
-    INST_MMAD_U8S8,
-    INST_MMAD_F16U2,
+  INST_MMAD_F162F16 = 0,
+  INST_MMAD_F162F32,
+  INST_MMAD_H322F32,
+  INST_MMAD_F322F32,
+  INST_MMAD_U32U8U8,
+  INST_MMAD_S32S8S8,
+  INST_MMAD_S32U8S8,
+  INST_MMAD_F16F16F16,
+  INST_MMAD_F32F16F16,
+  INST_MMAD_F16F16U2,
+  INST_MMAD_U8,
+  INST_MMAD_S8,
+  INST_MMAD_U8S8,
+  INST_MMAD_F16U2,
 };
 
 class PlatformInfoImpl;
@@ -62,51 +62,51 @@ class PlatformInfoImpl;
 class PlatformThreadLocalCtx;
 
 class PlatformInfo {
-    friend const PlatformInfo &GetCurrentPlatformInfo();
+  friend const PlatformInfo &GetCurrentPlatformInfo();
 
-    friend class PlatformThreadLocalCtx;
+  friend class PlatformThreadLocalCtx;
 
-public:
-    PlatformInfo() {};
+ public:
+  PlatformInfo(){};
 
-    PlatformInfo(int32_t deviceId) : deviceId_(deviceId){};
+  PlatformInfo(int32_t deviceId) : deviceId_(deviceId){};
 
-    SocVersion GetSocVersion() const;
+  SocVersion GetSocVersion() const;
 
-    const std::string &GetSocLongVersion() const;
+  const std::string &GetSocLongVersion() const;
 
-    int32_t GetDeviceId() const;
+  int32_t GetDeviceId() const;
 
-    bool CheckSupport(SocSpec socSpec, SocSpecAbility ability) const;
+  bool CheckSupport(SocSpec socSpec, SocSpecAbility ability) const;
 
-    int64_t GetBlockSize() const;
+  int64_t GetBlockSize() const;
 
-    uint32_t GetCubeCoreNum() const;
- 
-    uint32_t GetVectorCoreNum() const;
+  uint32_t GetCubeCoreNum() const;
 
-    bool Valid() const;
+  uint32_t GetVectorCoreNum() const;
 
-    bool GetFftsPlusMode() const;
+  bool Valid() const;
 
-    fe::PlatFormInfos *GetPlatformInfos() const;
+  bool GetFftsPlusMode() const;
 
-private:
-    PlatformInfo &operator=(const PlatformInfo &other) = delete;
+  fe::PlatFormInfos *GetPlatformInfos() const;
 
-    PlatformInfo &operator=(const PlatformInfo &&other) = delete;
+ private:
+  PlatformInfo &operator=(const PlatformInfo &other) = delete;
 
-    PlatformInfo(const PlatformInfo &other) = delete;
+  PlatformInfo &operator=(const PlatformInfo &&other) = delete;
 
-    PlatformInfo(const PlatformInfo &&other) = delete;
+  PlatformInfo(const PlatformInfo &other) = delete;
 
-    void SetPlatformImpl(PlatformInfoImpl *impl);
+  PlatformInfo(const PlatformInfo &&other) = delete;
 
-    bool valid_ = false;
-    int32_t deviceId_{-1};
-    PlatformInfoImpl *impl_ = nullptr;
+  void SetPlatformImpl(PlatformInfoImpl *impl);
 
-    ~PlatformInfo();
+  bool valid_ = false;
+  int32_t deviceId_{-1};
+  PlatformInfoImpl *impl_ = nullptr;
+
+  ~PlatformInfo();
 };
 
 const PlatformInfo &GetCurrentPlatformInfo();

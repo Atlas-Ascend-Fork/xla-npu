@@ -24,14 +24,16 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnAdaptiveAvgPool3dGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* outputSize, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* outputSize, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAdaptiveAvgPool3d的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnAdaptiveAvgPool3d(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAdaptiveAvgPool3d(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 #ifdef __cplusplus
 }
 #endif

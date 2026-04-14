@@ -35,28 +35,31 @@ limitations under the License.
 namespace ge {
 namespace dflow {
 class FlowOperator : public ge::Operator {
-public:
+ public:
   ~FlowOperator() override;
 
-protected:
+ protected:
   FlowOperator(const char *name, const char *type);
 };
 
 class FlowData : public FlowOperator {
-public:
+ public:
   FlowData(const char *name, int64_t index);
   ~FlowData() override;
 };
 
 class FlowNodeImpl;
 class FlowNode : public FlowOperator {
-public:
+ public:
   FlowNode(const char *name, uint32_t input_num, uint32_t output_num);
   ~FlowNode() override;
-  FlowNode &SetInput(uint32_t dst_index, const FlowOperator &src_op, uint32_t src_index = 0);
-  FlowNode &MapInput(uint32_t node_input_index, const ProcessPoint &pp, uint32_t pp_input_index,
+  FlowNode &SetInput(uint32_t dst_index, const FlowOperator &src_op,
+                     uint32_t src_index = 0);
+  FlowNode &MapInput(uint32_t node_input_index, const ProcessPoint &pp,
+                     uint32_t pp_input_index,
                      const std::vector<DataFlowInputAttr> &attrs = {});
-  FlowNode &MapOutput(uint32_t node_output_index, const ProcessPoint &pp, uint32_t pp_output_index);
+  FlowNode &MapOutput(uint32_t node_output_index, const ProcessPoint &pp,
+                      uint32_t pp_output_index);
   FlowNode &AddPp(const ProcessPoint &pp);
   FlowNode &SetBalanceScatter();
   FlowNode &SetBalanceGather();
@@ -68,13 +71,15 @@ public:
 class FlowGraphImpl;
 using FlowGraphImplPtr = std::shared_ptr<FlowGraphImpl>;
 class FlowGraph {
-public:
+ public:
   explicit FlowGraph(const char *name);
   ~FlowGraph();
   const ge::Graph &ToGeGraph() const;
   FlowGraph &SetInputs(const std::vector<FlowOperator> &inputs);
   FlowGraph &SetOutputs(const std::vector<FlowOperator> &outputs);
-  FlowGraph &SetOutputs(const std::vector<std::pair<FlowOperator, std::vector<size_t>>> &output_indexes);
+  FlowGraph &SetOutputs(
+      const std::vector<std::pair<FlowOperator, std::vector<size_t>>>
+          &output_indexes);
   void SetGraphPpBuilderAsync(bool graphpp_builder_async);
   const char *GetName() const;
 
@@ -97,7 +102,8 @@ public:
    * @param dropout_when_not_align whether dropout data when over max buf num or timeout, default value=false.
    * @return FlowGraph& return current object
    */
-  FlowGraph &SetInputsAlignAttrs(uint32_t align_max_cache_num, int32_t align_timeout,
+  FlowGraph &SetInputsAlignAttrs(uint32_t align_max_cache_num,
+                                 int32_t align_timeout,
                                  bool dropout_when_not_align = false);
 
  private:

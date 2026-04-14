@@ -34,11 +34,12 @@ limitations under the License.
 #include "exe_graph/runtime/tiling_context.h"
 
 namespace optiling {
-using SinkTilingFunc = std::function<ge::graphStatus(gert::TilingContext *context)>;
+using SinkTilingFunc =
+    std::function<ge::graphStatus(gert::TilingContext *context)>;
 
 class DeviceOpImplRegisterImpl;
 class DeviceOpImplRegister {
-public:
+ public:
   DeviceOpImplRegister(const char *opType);
   ~DeviceOpImplRegister();
   DeviceOpImplRegister(DeviceOpImplRegister &&other) noexcept;
@@ -47,12 +48,12 @@ public:
   DeviceOpImplRegister &operator=(DeviceOpImplRegister &&) = delete;
   DeviceOpImplRegister &Tiling(SinkTilingFunc func);
 
-private:
+ private:
   std::unique_ptr<DeviceOpImplRegisterImpl> impl_;
 };
 }  // namespace optiling
 
-#define DEVICE_IMPL_OP_OPTILING(optype)                                                                                \
-  static optiling::DeviceOpImplRegister VAR_UNUSED g_deviceOpImplRegister##optype =                                    \
-      optiling::DeviceOpImplRegister(#optype)
+#define DEVICE_IMPL_OP_OPTILING(optype)            \
+  static optiling::DeviceOpImplRegister VAR_UNUSED \
+      g_deviceOpImplRegister##optype = optiling::DeviceOpImplRegister(#optype)
 #endif

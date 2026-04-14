@@ -34,11 +34,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnQuantMatmulV4GetWorkspaceSize(const aclTensor* x1, const aclTensor* x2,
-                                                         const aclTensor* scale, const aclTensor* offset,
-                                                         const aclTensor* pertokenScaleOptional, const aclTensor* bias,
-                                                         bool transposeX1, bool transposeX2, const aclTensor* out,
-                                                         uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnQuantMatmulV4GetWorkspaceSize(
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* scale,
+    const aclTensor* offset, const aclTensor* pertokenScaleOptional,
+    const aclTensor* bias, bool transposeX1, bool transposeX2,
+    const aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnQuantMatmulV4的第二段接口，用于执行计算。
@@ -48,7 +48,9 @@ ACLNN_API aclnnStatus aclnnQuantMatmulV4GetWorkspaceSize(const aclTensor* x1, co
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnQuantMatmulV4(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnQuantMatmulV4(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
                                          aclrtStream stream);
 
 #ifdef __cplusplus

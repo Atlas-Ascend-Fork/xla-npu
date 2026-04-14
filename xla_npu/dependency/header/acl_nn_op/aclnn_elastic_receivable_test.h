@@ -32,8 +32,9 @@ extern "C" {
  * @return aclnnStatus: 返回值，返回状态码。
  *
  */
-ACLNN_API aclnnStatus aclnnElasticReceivableTestGetWorkspaceSize(aclTensor* dstRank, const char* group, int64_t worldSize, int64_t rank_num,
-                                                             uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnElasticReceivableTestGetWorkspaceSize(
+    aclTensor* dstRank, const char* group, int64_t worldSize, int64_t rank_num,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnElasticReceivableTest的第二段接口，用于执行计算。
@@ -43,7 +44,10 @@ ACLNN_API aclnnStatus aclnnElasticReceivableTestGetWorkspaceSize(aclTensor* dstR
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnElasticReceivableTest(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnElasticReceivableTest(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
+                                                 aclrtStream stream);
 
 #ifdef __cplusplus
 }

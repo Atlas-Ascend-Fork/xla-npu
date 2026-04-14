@@ -23,19 +23,23 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnLayerNormBackwardGetWorkspaceSize(
-    const aclTensor* gradOut, const aclTensor* input, const aclIntArray* normalizedShape, const aclTensor* mean,
-    const aclTensor* rstd, const aclTensor* weightOptional, const aclTensor* biasOptional,
-    const aclBoolArray* outputMask, aclTensor* gradInputOut, aclTensor* gradWeightOut, aclTensor* gradBiasOut,
+    const aclTensor* gradOut, const aclTensor* input,
+    const aclIntArray* normalizedShape, const aclTensor* mean,
+    const aclTensor* rstd, const aclTensor* weightOptional,
+    const aclTensor* biasOptional, const aclBoolArray* outputMask,
+    aclTensor* gradInputOut, aclTensor* gradWeightOut, aclTensor* gradBiasOut,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnLayerNormBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnLayerNormBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLayerNormBackward(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_LAYER_NORM_BACKWARD_H_
+#endif  // OP_API_INC_LEVEL2_LAYER_NORM_BACKWARD_H_

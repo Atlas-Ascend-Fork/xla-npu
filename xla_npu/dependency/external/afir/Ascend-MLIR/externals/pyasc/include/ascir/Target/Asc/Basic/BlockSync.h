@@ -29,7 +29,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::PipeBarrierOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::WaitFlagOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_BLOCK_SYNC_H
+#endif  // ASCIR_TARGET_ASC_BASIC_BLOCK_SYNC_H

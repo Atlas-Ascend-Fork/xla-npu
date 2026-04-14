@@ -22,14 +22,14 @@ limitations under the License.
 namespace xla {
 
 struct NpuArtifactInfo {
-    std::string name;  // 编译产物以此命名
-    std::string dir;   // 包含所有对应类型kernel编译产物的完整根路径
+  std::string name;  // 编译产物以此命名
+  std::string dir;  // 包含所有对应类型kernel编译产物的完整根路径
 };
 
 class NpuCompileResult {
-   public:
-    // key为编译产物名称(afir的编译产物以hlo computation的name命名)
-    std::unordered_map<std::string, NpuArtifactInfo> artifact_infos;
+ public:
+  // key为编译产物名称(afir的编译产物以hlo computation的name命名)
+  std::unordered_map<std::string, NpuArtifactInfo> artifact_infos;
 };
 
 }  // namespace xla

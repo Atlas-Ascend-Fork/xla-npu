@@ -30,7 +30,8 @@ void ToShape(const op::ShapeVector &shapeVector, op::Shape &shape);
 ShapeVector ToShapeVector(const op::Shape &shape);
 void ToContiguousStrides(const op::Shape &shape, op::Strides &strides);
 bool CheckBroadcastShape(const op::Shape &self, const op::Shape &other);
-bool BroadcastInferShape(const op::Shape &self, const op::Shape &other, op::Shape &broadcastShape);
-} // namespace op
+bool BroadcastInferShape(const op::Shape &self, const op::Shape &other,
+                         op::Shape &broadcastShape);
+}  // namespace op
 
-#endif //OP_API_OP_API_COMMON_INC_OPDEV_SHAPE_UTILS_H_
+#endif  //OP_API_OP_API_COMMON_INC_OPDEV_SHAPE_UTILS_H_

@@ -36,9 +36,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveGetWorkspaceSize(const aclTensor* self, const aclTensor* repeats,
-                                                            int64_t outputSize, aclTensor* out, uint64_t* workspaceSize,
-                                                            aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRepeatInterleaveGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* repeats, int64_t outputSize,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnRepeatInterleave的第二段接口，用于执行计算
@@ -50,7 +50,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveGetWorkspaceSize(const aclTensor* sel
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleave(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRepeatInterleave(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 // 有dim, tensor repeats
@@ -74,9 +76,10 @@ ACLNN_API aclnnStatus aclnnRepeatInterleave(void* workspace, uint64_t workspaceS
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDimGetWorkspaceSize(const aclTensor* self, const aclTensor* repeats,
-                                                                   int64_t dim, int64_t outputSize, aclTensor* out,
-                                                                   uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDimGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* repeats, int64_t dim,
+    int64_t outputSize, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief: aclnnRepeatInterleaveWithDim的第二段接口，用于执行计算
@@ -89,7 +92,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDimGetWorkspaceSize(const aclTens
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDim(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDim(void* workspace,
+                                                   uint64_t workspaceSize,
+                                                   aclOpExecutor* executor,
                                                    aclrtStream stream);
 
 // 无dim, int repeats
@@ -108,9 +113,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveWithDim(void* workspace, uint64_t wor
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveIntGetWorkspaceSize(const aclTensor* self, int64_t repeats,
-                                                               int64_t outputSize, aclTensor* out,
-                                                               uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRepeatInterleaveIntGetWorkspaceSize(
+    const aclTensor* self, int64_t repeats, int64_t outputSize, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnRepeatInterleaveInt的第二段接口，用于执行计算
@@ -123,7 +128,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveIntGetWorkspaceSize(const aclTensor* 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveInt(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRepeatInterleaveInt(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
                                                aclrtStream stream);
 
 // 有dim, int repeats
@@ -144,10 +151,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveInt(void* workspace, uint64_t workspa
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDimGetWorkspaceSize(const aclTensor* self, int64_t repeats,
-                                                                      int64_t dim, int64_t outputSize, aclTensor* out,
-                                                                      uint64_t* workspaceSize,
-                                                                      aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDimGetWorkspaceSize(
+    const aclTensor* self, int64_t repeats, int64_t dim, int64_t outputSize,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnRepeatInterleaveIntWithDim的第二段接口，用于执行计算
@@ -160,7 +166,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDimGetWorkspaceSize(const aclT
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDim(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDim(void* workspace,
+                                                      uint64_t workspaceSize,
+                                                      aclOpExecutor* executor,
                                                       aclrtStream stream);
 
 // repeat_interleave.Tensor
@@ -177,9 +185,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveIntWithDim(void* workspace, uint64_t 
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveTensorGetWorkspaceSize(const aclTensor* repeats, int64_t outputSize,
-                                                                  aclTensor* out, uint64_t* workspaceSize,
-                                                                  aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRepeatInterleaveTensorGetWorkspaceSize(
+    const aclTensor* repeats, int64_t outputSize, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief: aclnnRepeatInterleaveTensor的第二段接口，用于执行计算
@@ -192,7 +200,9 @@ ACLNN_API aclnnStatus aclnnRepeatInterleaveTensorGetWorkspaceSize(const aclTenso
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnRepeatInterleaveTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRepeatInterleaveTensor(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 #ifdef __cplusplus

@@ -26,17 +26,20 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnUpsampleTrilinear3dGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* outputSize, bool alignCorners, double scalesD, double scalesH,
-    double scalesW, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* outputSize, bool alignCorners,
+    double scalesD, double scalesH, double scalesW, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnUpsampleTrilinear3d的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnUpsampleTrilinear3d(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnUpsampleTrilinear3d(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_UPSAMPLE_TRILINEAR_3D_H_
+#endif  // OP_API_INC_UPSAMPLE_TRILINEAR_3D_H_

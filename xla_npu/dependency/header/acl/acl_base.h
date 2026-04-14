@@ -143,89 +143,89 @@ static const int ACL_ERROR_PROFILING_FAILURE = 500005;
 #define ACL_UNKNOWN_RANK 0xFFFFFFFFFFFFFFFE
 
 typedef enum {
-    ACL_DT_UNDEFINED = -1,
-    ACL_FLOAT = 0,
-    ACL_FLOAT16 = 1,
-    ACL_INT8 = 2,
-    ACL_INT32 = 3,
-    ACL_UINT8 = 4,
-    ACL_INT16 = 6,
-    ACL_UINT16 = 7,
-    ACL_UINT32 = 8,
-    ACL_INT64 = 9,
-    ACL_UINT64 = 10,
-    ACL_DOUBLE = 11,
-    ACL_BOOL = 12,
-    ACL_STRING = 13,
-    ACL_COMPLEX64 = 16,
-    ACL_COMPLEX128 = 17,
-    ACL_BF16 = 27,
-    ACL_INT4 = 29,
-    ACL_UINT1 = 30,
-    ACL_COMPLEX32 = 33,
-    ACL_HIFLOAT8 = 34,
-    ACL_FLOAT8_E5M2 = 35,
-    ACL_FLOAT8_E4M3FN = 36,
-    ACL_FLOAT8_E8M0 = 37,
-    ACL_FLOAT6_E3M2 = 38,
-    ACL_FLOAT6_E2M3 = 39,
-    ACL_FLOAT4_E2M1 = 40,
-    ACL_FLOAT4_E1M2 = 41,
+  ACL_DT_UNDEFINED = -1,
+  ACL_FLOAT = 0,
+  ACL_FLOAT16 = 1,
+  ACL_INT8 = 2,
+  ACL_INT32 = 3,
+  ACL_UINT8 = 4,
+  ACL_INT16 = 6,
+  ACL_UINT16 = 7,
+  ACL_UINT32 = 8,
+  ACL_INT64 = 9,
+  ACL_UINT64 = 10,
+  ACL_DOUBLE = 11,
+  ACL_BOOL = 12,
+  ACL_STRING = 13,
+  ACL_COMPLEX64 = 16,
+  ACL_COMPLEX128 = 17,
+  ACL_BF16 = 27,
+  ACL_INT4 = 29,
+  ACL_UINT1 = 30,
+  ACL_COMPLEX32 = 33,
+  ACL_HIFLOAT8 = 34,
+  ACL_FLOAT8_E5M2 = 35,
+  ACL_FLOAT8_E4M3FN = 36,
+  ACL_FLOAT8_E8M0 = 37,
+  ACL_FLOAT6_E3M2 = 38,
+  ACL_FLOAT6_E2M3 = 39,
+  ACL_FLOAT4_E2M1 = 40,
+  ACL_FLOAT4_E1M2 = 41,
 } aclDataType;
 
 typedef enum {
-    ACL_FORMAT_UNDEFINED = -1,
-    ACL_FORMAT_NCHW = 0,
-    ACL_FORMAT_NHWC = 1,
-    ACL_FORMAT_ND = 2,
-    ACL_FORMAT_NC1HWC0 = 3,
-    ACL_FORMAT_FRACTAL_Z = 4,
-    ACL_FORMAT_NC1HWC0_C04 = 12,
-    ACL_FORMAT_HWCN = 16,
-    ACL_FORMAT_NDHWC = 27,
-    ACL_FORMAT_FRACTAL_NZ = 29,
-    ACL_FORMAT_NCDHW = 30,
-    ACL_FORMAT_NDC1HWC0 = 32,
-    ACL_FRACTAL_Z_3D = 33,
-    ACL_FORMAT_NC = 35,
-    ACL_FORMAT_NCL = 47,
-    ACL_FORMAT_FRACTAL_NZ_C0_16 = 50,
-    ACL_FORMAT_FRACTAL_NZ_C0_32 = 51,
-    ACL_FORMAT_FRACTAL_NZ_C0_2 = 52,
-    ACL_FORMAT_FRACTAL_NZ_C0_4 = 53,
-    ACL_FORMAT_FRACTAL_NZ_C0_8 = 54,
+  ACL_FORMAT_UNDEFINED = -1,
+  ACL_FORMAT_NCHW = 0,
+  ACL_FORMAT_NHWC = 1,
+  ACL_FORMAT_ND = 2,
+  ACL_FORMAT_NC1HWC0 = 3,
+  ACL_FORMAT_FRACTAL_Z = 4,
+  ACL_FORMAT_NC1HWC0_C04 = 12,
+  ACL_FORMAT_HWCN = 16,
+  ACL_FORMAT_NDHWC = 27,
+  ACL_FORMAT_FRACTAL_NZ = 29,
+  ACL_FORMAT_NCDHW = 30,
+  ACL_FORMAT_NDC1HWC0 = 32,
+  ACL_FRACTAL_Z_3D = 33,
+  ACL_FORMAT_NC = 35,
+  ACL_FORMAT_NCL = 47,
+  ACL_FORMAT_FRACTAL_NZ_C0_16 = 50,
+  ACL_FORMAT_FRACTAL_NZ_C0_32 = 51,
+  ACL_FORMAT_FRACTAL_NZ_C0_2 = 52,
+  ACL_FORMAT_FRACTAL_NZ_C0_4 = 53,
+  ACL_FORMAT_FRACTAL_NZ_C0_8 = 54,
 } aclFormat;
 
 typedef enum {
-    ACL_DEBUG = 0,
-    ACL_INFO = 1,
-    ACL_WARNING = 2,
-    ACL_ERROR = 3,
+  ACL_DEBUG = 0,
+  ACL_INFO = 1,
+  ACL_WARNING = 2,
+  ACL_ERROR = 3,
 } aclLogLevel;
 
 typedef enum {
-    ACL_MEMTYPE_DEVICE = 0,
-    ACL_MEMTYPE_HOST = 1,
-    ACL_MEMTYPE_HOST_COMPILE_INDEPENDENT = 2
+  ACL_MEMTYPE_DEVICE = 0,
+  ACL_MEMTYPE_HOST = 1,
+  ACL_MEMTYPE_HOST_COMPILE_INDEPENDENT = 2
 } aclMemType;
 
 typedef enum {
-    ACL_OPT_DETERMINISTIC = 0,
-    ACL_OPT_ENABLE_DEBUG_KERNEL = 1
+  ACL_OPT_DETERMINISTIC = 0,
+  ACL_OPT_ENABLE_DEBUG_KERNEL = 1
 } aclSysParamOpt;
 
 typedef enum {
-    ACL_CANN_ATTR_UNDEFINED = -1,
-    ACL_CANN_ATTR_INF_NAN = 0,
-    ACL_CANN_ATTR_BF16 = 1,
-    ACL_CANN_ATTR_JIT_COMPILE = 2
+  ACL_CANN_ATTR_UNDEFINED = -1,
+  ACL_CANN_ATTR_INF_NAN = 0,
+  ACL_CANN_ATTR_BF16 = 1,
+  ACL_CANN_ATTR_JIT_COMPILE = 2
 } aclCannAttr;
 
 typedef enum {
-    ACL_DEVICE_INFO_UNDEFINED = -1,
-    ACL_DEVICE_INFO_AI_CORE_NUM = 0,
-    ACL_DEVICE_INFO_VECTOR_CORE_NUM = 1,
-    ACL_DEVICE_INFO_L2_SIZE = 2
+  ACL_DEVICE_INFO_UNDEFINED = -1,
+  ACL_DEVICE_INFO_AI_CORE_NUM = 0,
+  ACL_DEVICE_INFO_VECTOR_CORE_NUM = 1,
+  ACL_DEVICE_INFO_L2_SIZE = 2
 } aclDeviceInfo;
 
 /**
@@ -281,7 +281,8 @@ ACL_FUNC_VISIBILITY aclDataBuffer *aclCreateDataBuffer(void *data, size_t size);
  *
  * @see aclCreateDataBuffer
  */
-ACL_FUNC_VISIBILITY aclError aclDestroyDataBuffer(const aclDataBuffer *dataBuffer);
+ACL_FUNC_VISIBILITY aclError
+aclDestroyDataBuffer(const aclDataBuffer *dataBuffer);
 
 /**
  * @ingroup AscendCL
@@ -304,7 +305,8 @@ ACL_FUNC_VISIBILITY aclError aclDestroyDataBuffer(const aclDataBuffer *dataBuffe
  *
  * @see aclrtMalloc | aclrtFree | aclGetDataBufferAddr
  */
-ACL_FUNC_VISIBILITY aclError aclUpdateDataBuffer(aclDataBuffer *dataBuffer, void *data, size_t size);
+ACL_FUNC_VISIBILITY aclError aclUpdateDataBuffer(aclDataBuffer *dataBuffer,
+                                                 void *data, size_t size);
 
 /**
  * @ingroup AscendCL
@@ -324,8 +326,10 @@ ACL_FUNC_VISIBILITY void *aclGetDataBufferAddr(const aclDataBuffer *dataBuffer);
  *
  * @retval data size
  */
-ACL_DEPRECATED_MESSAGE("aclGetDataBufferSize is deprecated, use aclGetDataBufferSizeV2 instead")
-ACL_FUNC_VISIBILITY uint32_t aclGetDataBufferSize(const aclDataBuffer *dataBuffer);
+ACL_DEPRECATED_MESSAGE(
+    "aclGetDataBufferSize is deprecated, use aclGetDataBufferSizeV2 instead")
+ACL_FUNC_VISIBILITY uint32_t
+aclGetDataBufferSize(const aclDataBuffer *dataBuffer);
 
 /**
  * @ingroup AscendCL
@@ -335,7 +339,8 @@ ACL_FUNC_VISIBILITY uint32_t aclGetDataBufferSize(const aclDataBuffer *dataBuffe
  *
  * @retval data size
  */
-ACL_FUNC_VISIBILITY size_t aclGetDataBufferSizeV2(const aclDataBuffer *dataBuffer);
+ACL_FUNC_VISIBILITY size_t
+aclGetDataBufferSizeV2(const aclDataBuffer *dataBuffer);
 
 /**
  * @ingroup AscendCL
@@ -384,9 +389,9 @@ ACL_FUNC_VISIBILITY void aclDestroyTensorDesc(const aclTensorDesc *desc);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorShapeRange(aclTensorDesc* desc,
-                                                    size_t dimsCount,
-                                                    int64_t dimsRange[][ACL_TENSOR_SHAPE_RANGE_NUM]);
+ACL_FUNC_VISIBILITY aclError
+aclSetTensorShapeRange(aclTensorDesc *desc, size_t dimsCount,
+                       int64_t dimsRange[][ACL_TENSOR_SHAPE_RANGE_NUM]);
 
 /**
  * @ingroup AscendCL
@@ -399,9 +404,9 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorShapeRange(aclTensorDesc* desc,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorValueRange(aclTensorDesc* desc,
-                                                    size_t valueCount,
-                                                    int64_t valueRange[][ACL_TENSOR_VALUE_RANGE_NUM]);
+ACL_FUNC_VISIBILITY aclError
+aclSetTensorValueRange(aclTensorDesc *desc, size_t valueCount,
+                       int64_t valueRange[][ACL_TENSOR_VALUE_RANGE_NUM]);
 /**
  * @ingroup AscendCL
  * @brief get data type specified by the tensor description
@@ -444,7 +449,8 @@ ACL_FUNC_VISIBILITY size_t aclGetTensorDescSize(const aclTensorDesc *desc);
  * @retval element count specified by the tensor description.
  * @retval 0 if description is null
  */
-ACL_FUNC_VISIBILITY size_t aclGetTensorDescElementCount(const aclTensorDesc *desc);
+ACL_FUNC_VISIBILITY size_t
+aclGetTensorDescElementCount(const aclTensorDesc *desc);
 
 /**
  * @ingroup AscendCL
@@ -468,8 +474,10 @@ ACL_FUNC_VISIBILITY size_t aclGetTensorDescNumDims(const aclTensorDesc *desc);
  * @retval dim specified by the tensor description and index.
  * @retval -1 if description or index is invalid
  */
-ACL_DEPRECATED_MESSAGE("aclGetTensorDescDim is deprecated, use aclGetTensorDescDimV2 instead")
-ACL_FUNC_VISIBILITY int64_t aclGetTensorDescDim(const aclTensorDesc *desc, size_t index);
+ACL_DEPRECATED_MESSAGE(
+    "aclGetTensorDescDim is deprecated, use aclGetTensorDescDimV2 instead")
+ACL_FUNC_VISIBILITY int64_t aclGetTensorDescDim(const aclTensorDesc *desc,
+                                                size_t index);
 
 /**
  * @ingroup AscendCL
@@ -482,7 +490,9 @@ ACL_FUNC_VISIBILITY int64_t aclGetTensorDescDim(const aclTensorDesc *desc, size_
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclGetTensorDescDimV2(const aclTensorDesc *desc, size_t index, int64_t *dimSize);
+ACL_FUNC_VISIBILITY aclError aclGetTensorDescDimV2(const aclTensorDesc *desc,
+                                                   size_t index,
+                                                   int64_t *dimSize);
 
 /**
  * @ingroup AscendCL
@@ -508,7 +518,8 @@ ACL_FUNC_VISIBILITY aclError aclGetTensorDescDimRange(const aclTensorDesc *desc,
  * @param desc [OUT]       pointer to the instance of aclTensorDesc
  * @param name [IN]        tensor description name
  */
-ACL_FUNC_VISIBILITY void aclSetTensorDescName(aclTensorDesc *desc, const char *name);
+ACL_FUNC_VISIBILITY void aclSetTensorDescName(aclTensorDesc *desc,
+                                              const char *name);
 
 /**
  * @ingroup AscendCL
@@ -534,8 +545,8 @@ ACL_FUNC_VISIBILITY const char *aclGetTensorDescName(aclTensorDesc *desc);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclTransTensorDescFormat(const aclTensorDesc *srcDesc, aclFormat dstFormat,
-    aclTensorDesc **dstDesc);
+ACL_FUNC_VISIBILITY aclError aclTransTensorDescFormat(
+    const aclTensorDesc *srcDesc, aclFormat dstFormat, aclTensorDesc **dstDesc);
 
 /**
  * @ingroup AscendCL
@@ -547,8 +558,10 @@ ACL_FUNC_VISIBILITY aclError aclTransTensorDescFormat(const aclTensorDesc *srcDe
  * @retval ACL_SUCCESS    The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_DEPRECATED_MESSAGE("aclSetTensorStorageFormat is deprecated, use aclSetTensorFormat instead")
-ACL_FUNC_VISIBILITY aclError aclSetTensorStorageFormat(aclTensorDesc *desc, aclFormat format);
+ACL_DEPRECATED_MESSAGE(
+    "aclSetTensorStorageFormat is deprecated, use aclSetTensorFormat instead")
+ACL_FUNC_VISIBILITY aclError aclSetTensorStorageFormat(aclTensorDesc *desc,
+                                                       aclFormat format);
 
 /**
  * @ingroup AscendCL
@@ -561,8 +574,11 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorStorageFormat(aclTensorDesc *desc, aclF
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_DEPRECATED_MESSAGE("aclSetTensorStorageShape is deprecated, use aclSetTensorShape instead")
-ACL_FUNC_VISIBILITY aclError aclSetTensorStorageShape(aclTensorDesc *desc, int numDims, const int64_t *dims);
+ACL_DEPRECATED_MESSAGE(
+    "aclSetTensorStorageShape is deprecated, use aclSetTensorShape instead")
+ACL_FUNC_VISIBILITY aclError aclSetTensorStorageShape(aclTensorDesc *desc,
+                                                      int numDims,
+                                                      const int64_t *dims);
 
 /**
  * @ingroup AscendCL
@@ -574,7 +590,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorStorageShape(aclTensorDesc *desc, int n
  * @retval ACL_SUCCESS    The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorFormat(aclTensorDesc *desc, aclFormat format);
+ACL_FUNC_VISIBILITY aclError aclSetTensorFormat(aclTensorDesc *desc,
+                                                aclFormat format);
 
 /**
  * @ingroup AscendCL
@@ -587,7 +604,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorFormat(aclTensorDesc *desc, aclFormat f
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorShape(aclTensorDesc *desc, int numDims, const int64_t *dims);
+ACL_FUNC_VISIBILITY aclError aclSetTensorShape(aclTensorDesc *desc, int numDims,
+                                               const int64_t *dims);
 
 /**
  * @ingroup AscendCL
@@ -599,7 +617,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorShape(aclTensorDesc *desc, int numDims,
  * @retval ACL_SUCCESS    The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorOriginFormat(aclTensorDesc *desc, aclFormat format);
+ACL_FUNC_VISIBILITY aclError aclSetTensorOriginFormat(aclTensorDesc *desc,
+                                                      aclFormat format);
 
 /**
  * @ingroup AscendCL
@@ -612,7 +631,9 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorOriginFormat(aclTensorDesc *desc, aclFo
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorOriginShape(aclTensorDesc *desc, int numDims, const int64_t *dims);
+ACL_FUNC_VISIBILITY aclError aclSetTensorOriginShape(aclTensorDesc *desc,
+                                                     int numDims,
+                                                     const int64_t *dims);
 
 /**
  * @ingroup AscendCL
@@ -624,7 +645,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorOriginShape(aclTensorDesc *desc, int nu
  * @retval null for failed.
  * @retval OtherValues success.
 */
-ACL_FUNC_VISIBILITY aclTensorDesc *aclGetTensorDescByIndex(aclTensorDesc *desc, size_t index);
+ACL_FUNC_VISIBILITY aclTensorDesc *aclGetTensorDescByIndex(aclTensorDesc *desc,
+                                                           size_t index);
 
 /**
  * @ingroup AscendCL
@@ -647,7 +669,8 @@ ACL_FUNC_VISIBILITY void *aclGetTensorDescAddress(const aclTensorDesc *desc);
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorDynamicInput(aclTensorDesc *desc, const char *dynamicInputName);
+ACL_FUNC_VISIBILITY aclError
+aclSetTensorDynamicInput(aclTensorDesc *desc, const char *dynamicInputName);
 
 /**
  * @ingroup AscendCL
@@ -660,7 +683,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorDynamicInput(aclTensorDesc *desc, const
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc, void *dataBuffer, size_t length);
+ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc,
+                                               void *dataBuffer, size_t length);
 
 /**
  * @ingroup AscendCL
@@ -673,7 +697,8 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc, void *dataBu
  * @retval ACL_SUCCESS     The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclSetTensorPlaceMent(aclTensorDesc *desc, aclMemType memType);
+ACL_FUNC_VISIBILITY aclError aclSetTensorPlaceMent(aclTensorDesc *desc,
+                                                   aclMemType memType);
 
 /**
  * @ingroup AscendCL
@@ -686,8 +711,9 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorPlaceMent(aclTensorDesc *desc, aclMemTy
  * @param fmt [IN]         the format of current log
  * @param ... [IN]         the value of current log
  */
-ACL_FUNC_VISIBILITY void aclAppLog(aclLogLevel logLevel, const char *func, const char *file, uint32_t line,
-    const char *fmt, ...);
+ACL_FUNC_VISIBILITY void aclAppLog(aclLogLevel logLevel, const char *func,
+                                   const char *file, uint32_t line,
+                                   const char *fmt, ...);
 
 /**
  * @ingroup AscendCL
@@ -699,7 +725,7 @@ ACL_FUNC_VISIBILITY void aclAppLog(aclLogLevel logLevel, const char *func, const
 ACL_FUNC_VISIBILITY const char *aclrtGetSocName();
 
 #define ACL_APP_LOG(level, fmt, ...) \
-    aclAppLog(level, __FUNCTION__, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+  aclAppLog(level, __FUNCTION__, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 /**
  * @ingroup AscendCL
@@ -711,7 +737,8 @@ ACL_FUNC_VISIBILITY const char *aclrtGetSocName();
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues  Failure
  */
-ACL_FUNC_VISIBILITY aclError aclGetCannAttributeList(const aclCannAttr **cannAttrList, size_t *num);
+ACL_FUNC_VISIBILITY aclError
+aclGetCannAttributeList(const aclCannAttr **cannAttrList, size_t *num);
 
 /**
  * @ingroup AscendCL
@@ -724,7 +751,8 @@ ACL_FUNC_VISIBILITY aclError aclGetCannAttributeList(const aclCannAttr **cannAtt
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues  Failure
  */
-ACL_FUNC_VISIBILITY aclError aclGetCannAttribute(aclCannAttr cannAttr, int32_t *value);
+ACL_FUNC_VISIBILITY aclError aclGetCannAttribute(aclCannAttr cannAttr,
+                                                 int32_t *value);
 
 /**
  * @ingroup AscendCL
@@ -737,10 +765,12 @@ ACL_FUNC_VISIBILITY aclError aclGetCannAttribute(aclCannAttr cannAttr, int32_t *
  * @retval ACL_SUCCESS  The function is successfully executed.
  * @retval OtherValues  Failure
  */
-ACL_FUNC_VISIBILITY aclError aclGetDeviceCapability(uint32_t deviceId, aclDeviceInfo deviceInfo, int64_t *value);
+ACL_FUNC_VISIBILITY aclError aclGetDeviceCapability(uint32_t deviceId,
+                                                    aclDeviceInfo deviceInfo,
+                                                    int64_t *value);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_ACL_BASE_H_
+#endif  // INC_EXTERNAL_ACL_ACL_BASE_H_

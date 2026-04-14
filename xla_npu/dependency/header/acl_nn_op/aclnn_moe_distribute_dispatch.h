@@ -55,18 +55,16 @@ extern "C" {
  * @return aclnnStatus: 返回值，返回状态码
  *
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeDispatchGetWorkspaceSize(const aclTensor* x, const aclTensor* expertIds,
-    const aclTensor* scales, const aclTensor* xActiveMask,
-    const aclTensor* expertScales,
+ACLNN_API aclnnStatus aclnnMoeDistributeDispatchGetWorkspaceSize(
+    const aclTensor* x, const aclTensor* expertIds, const aclTensor* scales,
+    const aclTensor* xActiveMask, const aclTensor* expertScales,
     const char* groupEp, int64_t epWorldSize, int64_t epRankId,
     int64_t moeExpertNum, const char* groupTp, int64_t tpWorldSize,
-    int64_t tpRankId, int64_t expertShardType, int64_t sharedExpertNum, 
+    int64_t tpRankId, int64_t expertShardType, int64_t sharedExpertNum,
     int64_t sharedExpertRankNum, int64_t quantMode, int64_t globalBs,
-    int64_t expertTokenNumsType,
-    aclTensor* expandX, aclTensor* dynamicScales,
-    aclTensor* expandIdx, aclTensor* expertTokenNums,
-    aclTensor* epRecvCounts, aclTensor* tpRecvCounts,
-    aclTensor* expandScales, uint64_t* workspaceSize, 
+    int64_t expertTokenNumsType, aclTensor* expandX, aclTensor* dynamicScales,
+    aclTensor* expandIdx, aclTensor* expertTokenNums, aclTensor* epRecvCounts,
+    aclTensor* tpRecvCounts, aclTensor* expandScales, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /**
@@ -77,7 +75,9 @@ ACLNN_API aclnnStatus aclnnMoeDistributeDispatchGetWorkspaceSize(const aclTensor
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeDispatch(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnMoeDistributeDispatch(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
                                                  aclrtStream stream);
 
 #ifdef __cplusplus

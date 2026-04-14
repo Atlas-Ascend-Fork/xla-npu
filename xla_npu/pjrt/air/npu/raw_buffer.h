@@ -44,7 +44,7 @@ limitations under the License.
 
 namespace xla {
 class NpuTrackedDeviceEventPromise : public PjRtDeviceEventPromise {
-public:
+ public:
   explicit NpuTrackedDeviceEventPromise(
       tsl::RCReference<tsl::IndirectAsyncValue> av)
       : av_(av) {}
@@ -59,12 +59,12 @@ public:
 
   tsl::RCReference<tsl::IndirectAsyncValue>& av() { return av_; }
 
-private:
+ private:
   tsl::RCReference<tsl::IndirectAsyncValue> av_;
 };
 
 class NpuTrackedDeviceEvent : public PjRtDeviceEvent {
-public:
+ public:
   explicit NpuTrackedDeviceEvent(
       tsl::AsyncValueRef<NpuEvent> event,
       const char* callee_type = "NpuTrackedDeviceEvent",
@@ -81,14 +81,14 @@ public:
 
   Future<> GetReadyFuture() override;
 
-private:
+ private:
   tsl::AsyncValueRef<NpuEvent> event_;
   const char* callee_type_;
   const char* callee_method_;
 };
 
 class NpuRawBuffer : public CommonPjRtRawBuffer {
-public:
+ public:
   NpuRawBuffer(PjRtMemorySpace* memory_space,
                tsl::AsyncValueRef<NpuDeviceMemory> buffer)
       : memory_space_(memory_space), buffer_(std::move(buffer)) {}
@@ -161,9 +161,9 @@ public:
     return buffer_.CopyRCRef();
   }
 
-private:
+ private:
   PjRtMemorySpace* const memory_space_;
   tsl::AsyncValueRef<NpuDeviceMemory> buffer_;
 };
-} // namespace xla
-#endif //NPU_RAW_BUFFER_H_
+}  // namespace xla
+#endif  //NPU_RAW_BUFFER_H_

@@ -28,10 +28,12 @@ namespace xla {
 // Function wrapper around the XLA NPU transform pipeline.
 // This is the main entry point for all NPU optimization passes.
 // Thread pool may be nullptr.
-HloPassPipeline NpuPipeline(const DebugOptions& debug_options,
-                            HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-                            tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
-                            SymbolicExprContext* symbolic_expr_context);
+HloPassPipeline NpuPipeline(
+    const DebugOptions& debug_options,
+    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+    tsl::thread::ThreadPool* thread_pool,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context);
 
 }  // namespace xla
 

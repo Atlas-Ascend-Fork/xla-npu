@@ -39,44 +39,44 @@ namespace xla {
 //             - 阶段数量 (num_stages) - 用于流水线优化
 class NpuFusionBlockLevelRewriter : public HloModulePass {
  public:
-    explicit NpuFusionBlockLevelRewriter(
-            const se::DeviceDescription& device_description)
-        : device_description_(device_description) {}
+  explicit NpuFusionBlockLevelRewriter(
+      const se::DeviceDescription& device_description)
+      : device_description_(device_description) {}
 
-    ~NpuFusionBlockLevelRewriter() override = default;
+  ~NpuFusionBlockLevelRewriter() override = default;
 
-    absl::string_view name() const override {
-        return "npu-fusion-block-level-rewriter";
-    }
+  absl::string_view name() const override {
+    return "npu-fusion-block-level-rewriter";
+  }
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
-    // Check if a fusion can be converted to block-level
-    bool CanConvertToBlockLevel(const HloInstruction* fusion);
+  // Check if a fusion can be converted to block-level
+  bool CanConvertToBlockLevel(const HloInstruction* fusion);
 
-    // Run on a single computation
-    absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
+  // Run on a single computation
+  absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
 
-    // Convert a loop/input fusion to block-level fusion
-    absl::StatusOr<bool> ConvertFusionToBlockLevel(HloFusionInstruction* fusion);
+  // Convert a loop/input fusion to block-level fusion
+  absl::StatusOr<bool> ConvertFusionToBlockLevel(HloFusionInstruction* fusion);
 
-    // Compute optimal tile sizes for the fusion
-    absl::StatusOr<std::vector<int64_t>> ComputeTileSizes(
-            const HloInstruction* fusion);
+  // Compute optimal tile sizes for the fusion
+  absl::StatusOr<std::vector<int64_t>> ComputeTileSizes(
+      const HloInstruction* fusion);
 
-    // Check if the fusion contains only elementwise operations
-    bool ContainsOnlyElementwiseOps(HloComputation* fusion);
+  // Check if the fusion contains only elementwise operations
+  bool ContainsOnlyElementwiseOps(HloComputation* fusion);
 
-    // Set up block-level configuration for the fusion
-    absl::Status SetBlockLevelConfig(HloFusionInstruction* fusion,
-                                      const std::vector<int64_t>& tile_sizes,
-                                      int64_t num_blocks);
+  // Set up block-level configuration for the fusion
+  absl::Status SetBlockLevelConfig(HloFusionInstruction* fusion,
+                                   const std::vector<int64_t>& tile_sizes,
+                                   int64_t num_blocks);
 
-    const se::DeviceDescription device_description_;
+  const se::DeviceDescription device_description_;
 };
 
 }  // namespace xla

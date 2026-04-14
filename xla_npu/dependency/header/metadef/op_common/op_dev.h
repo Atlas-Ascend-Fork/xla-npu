@@ -33,4 +33,4 @@ limitations under the License.
 #include "common_infershape_fns.h"
 #include "op_error_code.h"
 
-#endif // EXTERNAL_OP_COMMON_OP_DEV_H_
+#endif  // EXTERNAL_OP_COMMON_OP_DEV_H_

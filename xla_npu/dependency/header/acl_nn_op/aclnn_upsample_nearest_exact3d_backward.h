@@ -26,17 +26,20 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnUpsampleNearestExact3dBackwardGetWorkspaceSize(
-    const aclTensor* gradOut, const aclIntArray* outputSize, const aclIntArray* inputSize, double scalesD,
-    double scalesH, double scalesW, aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOut, const aclIntArray* outputSize,
+    const aclIntArray* inputSize, double scalesD, double scalesH,
+    double scalesW, aclTensor* gradInput, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnUpsampleNearestExact3dBackward的第二段接口，用于执行计算。
  */
 ACLNN_API aclnnStatus aclnnUpsampleNearestExact3dBackward(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_UNAMPLE_NEAREST_EXACT3D_GRAD_H_
+#endif  // OP_API_INC_UNAMPLE_NEAREST_EXACT3D_GRAD_H_

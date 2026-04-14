@@ -26,67 +26,71 @@ limitations under the License.
 namespace xla {
 
 class NpuTool {
-public:
-    static std::string GetShapeString(const ge::Shape &shape) {
-        std::stringstream ss;
-        auto dims = shape.GetDims();
-        if (dims.empty()) {
-            return "empty";
-        }
-        ss << "[";
-        size_t index = 0U;
-        for (; index < (dims.size() - 1U); index++) {
-        ss << dims[index] << ", ";
-        }
-        ss << dims[index] << "]";
-        
-        return ss.str(); 
+ public:
+  static std::string GetShapeString(const ge::Shape& shape) {
+    std::stringstream ss;
+    auto dims = shape.GetDims();
+    if (dims.empty()) {
+      return "empty";
+    }
+    ss << "[";
+    size_t index = 0U;
+    for (; index < (dims.size() - 1U); index++) {
+      ss << dims[index] << ", ";
+    }
+    ss << dims[index] << "]";
+
+    return ss.str();
+  }
+
+  static ge::DataType ConvertXlaType2GeType(const PrimitiveType& type) {
+    switch (type) {
+      default:
+        return ge::DataType::DT_FLOAT;
+    };
+  }
+
+  static PrimitiveType ConvertGeType2XlaType(const ge::DataType& type) {
+    switch (type) {
+      default:
+        return PrimitiveType::F32;
+    };
+  }
+
+  static ge::Shape ConvertXlaShape2GeShape(const Shape& xla_data_shape) {
+    std::vector<int64_t> ge_shape_vector;
+    for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
+      const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
+      ge_shape_vector.emplace_back(xla_data_shape_dim);
     }
 
-    static ge::DataType ConvertXlaType2GeType(const PrimitiveType& type)
-    {
-        switch (type) {
-            default:
-                return ge::DataType::DT_FLOAT;
-        };
-    }
+    ge::Shape ge_data_shape(ge_shape_vector);
+    NPU_LOG_FORMAT_PRINT(DEBUG,
+                         "convert xla shape to ge shape, input xla shape is "
+                         "%s, output ge shape is %s",
+                         xla_data_shape.ToString().c_str(),
+                         GetShapeString(ge_data_shape).c_str());
 
-    static PrimitiveType ConvertGeType2XlaType(const ge::DataType& type)
-    {
-        switch (type) {
-            default:
-                return PrimitiveType::F32;
-        };
-    }
+    return ge_data_shape;
+  }
 
-    static ge::Shape ConvertXlaShape2GeShape(const Shape& xla_data_shape)
-    {
-        std::vector<int64_t> ge_shape_vector;
-        for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
-            const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
-            ge_shape_vector.emplace_back(xla_data_shape_dim);
-        }
+  static Shape ConvertGeShape2XlaShape(const ge::Shape& ge_data_shape,
+                                       const ge::DataType& ge_data_type) {
+    const auto& xla_data_dims = ge_data_shape.GetDims();
+    const auto& xla_data_type = ConvertGeType2XlaType(ge_data_type);
+    const Shape& xla_data_shape =
+        ShapeUtil::MakeShape(xla_data_type, xla_data_dims);
 
-        ge::Shape ge_data_shape(ge_shape_vector);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "convert xla shape to ge shape, input xla shape is %s, output ge shape is %s",
-                             xla_data_shape.ToString().c_str(), GetShapeString(ge_data_shape).c_str());
+    NPU_LOG_FORMAT_PRINT(DEBUG,
+                         "convert ge shape to xla shape, input ge shape is %s "
+                         "which type is %d, output xla shape is %s",
+                         GetShapeString(ge_data_shape).c_str(),
+                         static_cast<int>(xla_data_type),
+                         xla_data_shape.ToString().c_str());
 
-        return ge_data_shape;
-    }
-
-    static Shape ConvertGeShape2XlaShape(const ge::Shape& ge_data_shape, const ge::DataType& ge_data_type)
-    {
-        const auto& xla_data_dims = ge_data_shape.GetDims();
-        const auto& xla_data_type = ConvertGeType2XlaType(ge_data_type);
-        const Shape& xla_data_shape = ShapeUtil::MakeShape(xla_data_type, xla_data_dims);
-
-        NPU_LOG_FORMAT_PRINT(DEBUG, "convert ge shape to xla shape, input ge shape is %s which type is %d, output xla shape is %s",
-                             GetShapeString(ge_data_shape).c_str(), static_cast<int>(xla_data_type),
-                             xla_data_shape.ToString().c_str());
-
-        return xla_data_shape;
-    }
+    return xla_data_shape;
+  }
 };
 
-}
+}  // namespace xla
 #endif  //PJRT_NPU_PJRT_COMMON_H_

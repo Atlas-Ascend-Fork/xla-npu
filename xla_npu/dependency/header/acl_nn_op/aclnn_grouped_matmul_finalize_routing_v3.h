@@ -50,14 +50,17 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingV3GetWorkspaceSize(const aclTensor *x1, aclTensor *x2,
-                                                                         const aclTensor *scaleOptional, const aclTensor *biasOptional,
-                                                                         const aclTensor *offsetOptional, const aclTensor *antiquantScaleOptional,
-                                                                         const aclTensor *antiquantOffsetOptional, const aclTensor *pertokenScaleOptional,
-                                                                         const aclTensor *groupListOptional, const aclTensor *sharedInputOptional, 
-                                                                         const aclTensor *logitOptional, const aclTensor *rowIndexOptional, int64_t dtype,
-                                                                         float sharedInputWeight, int64_t sharedInputOffset, bool transposeX1, bool transposeX2, 
-                                                                         int64_t groupListType, const aclIntArray *tuningConfigOptional, aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingV3GetWorkspaceSize(
+    const aclTensor *x1, aclTensor *x2, const aclTensor *scaleOptional,
+    const aclTensor *biasOptional, const aclTensor *offsetOptional,
+    const aclTensor *antiquantScaleOptional,
+    const aclTensor *antiquantOffsetOptional,
+    const aclTensor *pertokenScaleOptional, const aclTensor *groupListOptional,
+    const aclTensor *sharedInputOptional, const aclTensor *logitOptional,
+    const aclTensor *rowIndexOptional, int64_t dtype, float sharedInputWeight,
+    int64_t sharedInputOffset, bool transposeX1, bool transposeX2,
+    int64_t groupListType, const aclIntArray *tuningConfigOptional,
+    aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnGroupedMatmulFinalizeRoutingV3的第二段接口，用于执行计算。
@@ -67,8 +70,9 @@ ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingV3GetWorkspaceSize(const 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingV3(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-                                                        aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingV3(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

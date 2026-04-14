@@ -22,27 +22,31 @@ extern "C" {
  * @brief aclnnVar的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnVarGetWorkspaceSize(const aclTensor* self, const aclIntArray* dim, bool unbiased,
-                                               bool keepdim, aclTensor* out, uint64_t* workspaceSize,
-                                               aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnVarGetWorkspaceSize(
+    const aclTensor* self, const aclIntArray* dim, bool unbiased, bool keepdim,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnVar的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnVar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnVar(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnVarCorrection的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnVarCorrectionGetWorkspaceSize(const aclTensor* self, const aclIntArray* dim,
-                                                         int64_t correction, bool keepdim, aclTensor* out,
-                                                         uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnVarCorrectionGetWorkspaceSize(
+    const aclTensor* self, const aclIntArray* dim, int64_t correction,
+    bool keepdim, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnVarCorrection的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnVarCorrection(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnVarCorrection(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
                                          aclrtStream stream);
 
 #ifdef __cplusplus

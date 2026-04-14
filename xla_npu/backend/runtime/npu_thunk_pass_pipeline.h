@@ -39,7 +39,7 @@ class NpuThunkPassBufferAllocator {
   // Creates a new allocation of the provided size.
   // The ownership of the returned pointer stays with the
   // NpuThunkPassBufferAllocator object.
-  virtual absl::StatusOr<BufferAllocation* absl_nonnull> NewEmptyAllocation(
+  virtual absl::StatusOr<BufferAllocation * absl_nonnull> NewEmptyAllocation(
       int64_t size) = 0;
 };
 

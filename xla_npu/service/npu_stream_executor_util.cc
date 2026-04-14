@@ -75,17 +75,20 @@ using tsl::profiler::TraceMeLevel;
 namespace xla {
 // Returns a mutex that can be used to lock the given stream executor.
 absl::Mutex& GetNpuMutex(const se::StreamExecutor* stream_exec) {
-    static absl::Mutex mu(absl::kConstInit);
-    // se::Platform*s are global singletons guaranteed to live forever.
-    static auto* mutexes = new std::map<std::pair<const se::Platform*, /*device_ordinal*/ int64_t>, absl::Mutex>();
+  static absl::Mutex mu(absl::kConstInit);
+  // se::Platform*s are global singletons guaranteed to live forever.
+  static auto* mutexes =
+      new std::map<std::pair<const se::Platform*, /*device_ordinal*/ int64_t>,
+                   absl::Mutex>();
 
-    absl::MutexLock global_lock(mu);
-    auto it =
-        mutexes
-            ->emplace(std::piecewise_construct,
-                      std::make_tuple(stream_exec->GetPlatform(), stream_exec->device_ordinal()), std::make_tuple())
-            .first;
+  absl::MutexLock global_lock(mu);
+  auto it = mutexes
+                ->emplace(std::piecewise_construct,
+                          std::make_tuple(stream_exec->GetPlatform(),
+                                          stream_exec->device_ordinal()),
+                          std::make_tuple())
+                .first;
 
-    return it->second;
+  return it->second;
 }
 }  // namespace xla

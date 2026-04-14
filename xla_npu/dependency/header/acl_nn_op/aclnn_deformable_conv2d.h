@@ -27,18 +27,20 @@ extern "C" {
  * @brief aclnnDeformableConv2dGetWorkspaceSize
  * 算子功能：进行DeformableConv2d计算
  */
-ACLNN_API aclnnStatus aclnnDeformableConv2dGetWorkspaceSize(const aclTensor* x, const aclTensor* weight,
-                                                            const aclTensor* offset, const aclTensor* biasOptional,
-                                                            const aclIntArray* kernelSize, const aclIntArray* stride,
-                                                            const aclIntArray* padding, const aclIntArray* dilation,
-                                                            int64_t groups, int64_t deformableGroups, bool modulated,
-                                                            aclTensor* out, aclTensor* deformOutOptional,
-                                                            uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnDeformableConv2dGetWorkspaceSize(
+    const aclTensor* x, const aclTensor* weight, const aclTensor* offset,
+    const aclTensor* biasOptional, const aclIntArray* kernelSize,
+    const aclIntArray* stride, const aclIntArray* padding,
+    const aclIntArray* dilation, int64_t groups, int64_t deformableGroups,
+    bool modulated, aclTensor* out, aclTensor* deformOutOptional,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /*
  * @brief aclnnDeformableConv2d
  */
-ACLNN_API aclnnStatus aclnnDeformableConv2d(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnDeformableConv2d(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 #ifdef __cplusplus

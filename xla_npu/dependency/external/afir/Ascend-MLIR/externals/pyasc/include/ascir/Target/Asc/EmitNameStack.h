@@ -25,19 +25,19 @@ limitations under the License.
 namespace mlir {
 
 struct EmitNameStack {
-    using CountStack = std::stack<int64_t>;
-    std::unordered_map<std::string, CountStack> valueInScopeCount;
-    CountStack labelInScopeCount;
+  using CountStack = std::stack<int64_t>;
+  std::unordered_map<std::string, CountStack> valueInScopeCount;
+  CountStack labelInScopeCount;
 
-    EmitNameStack();
+  EmitNameStack();
 
-    void pushScope();
-    void popScope();
+  void pushScope();
+  void popScope();
 
-    CountStack &getCountStack(const std::string &prefix);
-    std::string getNameForEmission(Value val);
+  CountStack &getCountStack(const std::string &prefix);
+  std::string getNameForEmission(Value val);
 };
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_EMITNAMESTACK_H
+#endif  // ASCIR_TARGET_ASC_EMITNAMESTACK_H

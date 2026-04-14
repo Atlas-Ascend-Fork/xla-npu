@@ -43,7 +43,6 @@ limitations under the License.
 #include "xla/xla_npu/pjrt/air/npu/service/npu_executable.h"
 #include "xla/xla_npu/pjrt/air/npu/ge/graph_data.h"
 
-
 namespace xla {
 
 // CPU-targeting implementation of the XLA Executable interface.
@@ -85,7 +84,7 @@ class NpuExecutable : public Executable {
 
   int64_t SizeOfGeneratedCodeInBytes() const override;
 
-  absl::Span<const BufferAllocation* absl_nonnull const> GetAllocations()
+  absl::Span<const BufferAllocation * absl_nonnull const> GetAllocations()
       const override {
     return alloc_ptrs_;
   }

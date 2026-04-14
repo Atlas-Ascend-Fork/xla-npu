@@ -25,7 +25,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::SimpleSoftMaxOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::SoftMaxOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_ADV_ACTIVATION_FUNCTION_H
+#endif  // ASCIR_TARGET_ASC_ADV_ACTIVATION_FUNCTION_H

@@ -112,14 +112,17 @@ void propagateShapesInRegion(Region &region, TypeModificationState &state) {
     for (Operation &op : block) {
       if (op.getDialect() != afirDialect) continue;
 
-      InferShapedTypeOpInterface shapeInterface = dyn_cast<InferShapedTypeOpInterface>(op);
+      InferShapedTypeOpInterface shapeInterface =
+          dyn_cast<InferShapedTypeOpInterface>(op);
       if (!shapeInterface) continue;
 
       SmallVector<ShapedTypeComponents> returnedShapes;
 
       if (shapeInterface
-              .inferReturnTypeComponents(op.getContext(), op.getLoc(), op.getOperands(), op.getAttrDictionary(),
-                                         op.getPropertiesStorage(), op.getRegions(), returnedShapes)
+              .inferReturnTypeComponents(
+                  op.getContext(), op.getLoc(), op.getOperands(),
+                  op.getAttrDictionary(), op.getPropertiesStorage(),
+                  op.getRegions(), returnedShapes)
               .succeeded()) {
         for (auto it : llvm::zip(op.getResults(), returnedShapes)) {
           Value result = std::get<0>(it);
@@ -127,7 +130,8 @@ void propagateShapesInRegion(Region &region, TypeModificationState &state) {
 
           // Determine the knowledge based on the output type.
           Type resultTy = result.getType();
-          auto currentKnowledge = ValueKnowledge::getKnowledgeFromType(resultTy);
+          auto currentKnowledge =
+              ValueKnowledge::getKnowledgeFromType(resultTy);
 
           // Compute the knowledge based on the inferred type.
           auto inferredKnowledge = ValueKnowledge::getPessimisticValueState();
@@ -140,7 +144,8 @@ void propagateShapesInRegion(Region &region, TypeModificationState &state) {
           }
 
           // Compute the new type based on the joined version.
-          auto newKnowledge = ValueKnowledge::join(currentKnowledge, inferredKnowledge);
+          auto newKnowledge =
+              ValueKnowledge::join(currentKnowledge, inferredKnowledge);
           if (!newKnowledge) continue;
           // Set new type
           state.setType(result, newKnowledge.getType());
@@ -154,7 +159,9 @@ void validateSameOperandsAndResultRankTrait(Region &region) {
   int errs = 0;
   for (auto &block : region) {
     for (auto &op : block) {
-      if (!op.getDialect() || op.getDialect()->getNamespace() != AFIRDialect::getDialectNamespace()) continue;
+      if (!op.getDialect() ||
+          op.getDialect()->getNamespace() != AFIRDialect::getDialectNamespace())
+        continue;
       if (op.hasTrait<OpTrait::SameOperandsAndResultRank>()) {
         if (OpTrait::impl::verifySameOperandsAndResultRank(&op).failed()) {
           errs++;
@@ -165,7 +172,8 @@ void validateSameOperandsAndResultRankTrait(Region &region) {
   }
 }
 
-struct AFIRShapeInferencePass : public impl::AFIRShapeInferencePassBase<AFIRShapeInferencePass> {
+struct AFIRShapeInferencePass
+    : public impl::AFIRShapeInferencePassBase<AFIRShapeInferencePass> {
   void runOnOperation() override {
     ModuleOp module = getOperation();
     module.walk([&](func::FuncOp func) {
@@ -175,7 +183,8 @@ struct AFIRShapeInferencePass : public impl::AFIRShapeInferencePassBase<AFIRShap
 
       validateSameOperandsAndResultRankTrait(func.getBody());
       SmallVector<func::ReturnOp> returnOps;
-      func.walk([&](func::ReturnOp returnOp) { returnOps.push_back(returnOp); });
+      func.walk(
+          [&](func::ReturnOp returnOp) { returnOps.push_back(returnOp); });
 
       if (returnOps.empty()) return;
 
@@ -188,7 +197,8 @@ struct AFIRShapeInferencePass : public impl::AFIRShapeInferencePassBase<AFIRShap
 
       // Update function type
       auto funcType = func.getFunctionType();
-      auto newFuncType = FunctionType::get(func.getContext(), funcType.getInputs(), newResultTypes);
+      auto newFuncType = FunctionType::get(
+          func.getContext(), funcType.getInputs(), newResultTypes);
       func.setFunctionType(newFuncType);
     });
 

@@ -34,16 +34,17 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnPowTensorTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* exponent,
-                                                           aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnPowTensorTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* exponent, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplacePowTensorTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnInplacePowTensorTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* exponent,
-                                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplacePowTensorTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* exponent, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnPowTensorTensor的第二段接口，用于执行计算。
@@ -53,10 +54,14 @@ ACLNN_API aclnnStatus aclnnInplacePowTensorTensorGetWorkspaceSize(const aclTenso
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnPowTensorTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnPowTensorTensor(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
-ACLNN_API aclnnStatus aclnnInplacePowTensorTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplacePowTensorTensor(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 #ifdef __cplusplus

@@ -32,7 +32,7 @@ class CompileInfoBase;
 using CompileInfoPtr = std::shared_ptr<CompileInfoBase>;
 
 class CompileInfoBase {
-public:
+ public:
   CompileInfoBase() {}
   virtual ~CompileInfoBase() {}
 };

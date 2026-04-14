@@ -26,51 +26,62 @@ namespace ascendc {
 //===----------------------------------------------------------------------===//
 
 template <typename VecScalarL0Op>
-auto printOperation(CodeEmitter &emitter, VecScalarL0Op op) -> LogicalResultForT<VecScalarL0Op, ascendc::AxpyL0Op>
-{
-    auto &os = emitter.ostream();
-    auto dstTensorType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    auto srcTensorType = cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), dstTensorType));
-    os << ", ";
-    FAIL_OR(emitter.emitType(op.getLoc(), srcTensorType));
-    os << ", " << op.getIsSetMask() << ">";
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc()) << ", "
-       << emitter.getOrCreateName(op.getScalar()) << ", " << emitter.getOrCreateName(op.getMask()) << ", "
-       << emitter.getOrCreateName(op.getRepeatTimes()) << ", " << emitter.getOrCreateName(op.getRepeatParams()) << ")";
-    return success();
+auto printOperation(CodeEmitter &emitter, VecScalarL0Op op)
+    -> LogicalResultForT<VecScalarL0Op, ascendc::AxpyL0Op> {
+  auto &os = emitter.ostream();
+  auto dstTensorType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  auto srcTensorType =
+      cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), dstTensorType));
+  os << ", ";
+  FAIL_OR(emitter.emitType(op.getLoc(), srcTensorType));
+  os << ", " << op.getIsSetMask() << ">";
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc()) << ", "
+     << emitter.getOrCreateName(op.getScalar()) << ", "
+     << emitter.getOrCreateName(op.getMask()) << ", "
+     << emitter.getOrCreateName(op.getRepeatTimes()) << ", "
+     << emitter.getOrCreateName(op.getRepeatParams()) << ")";
+  return success();
 }
 
 template <typename VecScalarL1Op>
-auto printOperation(CodeEmitter &emitter, VecScalarL1Op op) -> LogicalResultForT<VecScalarL1Op, ascendc::AxpyL1Op>
-{
-    auto &os = emitter.ostream();
-    auto maskName = printMask(emitter, op);
-    auto dstTensorType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    auto srcTensorType = cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), dstTensorType));
-    os << ", ";
-    FAIL_OR(emitter.emitType(op.getLoc(), srcTensorType));
-    os << ", " << op.getIsSetMask() << ">";
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc()) << ", "
-       << emitter.getOrCreateName(op.getScalar()) << ", " << maskName << ", "
-       << emitter.getOrCreateName(op.getRepeatTimes()) << ", " << emitter.getOrCreateName(op.getRepeatParams()) << ")";
-    return success();
+auto printOperation(CodeEmitter &emitter, VecScalarL1Op op)
+    -> LogicalResultForT<VecScalarL1Op, ascendc::AxpyL1Op> {
+  auto &os = emitter.ostream();
+  auto maskName = printMask(emitter, op);
+  auto dstTensorType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  auto srcTensorType =
+      cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), dstTensorType));
+  os << ", ";
+  FAIL_OR(emitter.emitType(op.getLoc(), srcTensorType));
+  os << ", " << op.getIsSetMask() << ">";
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc()) << ", "
+     << emitter.getOrCreateName(op.getScalar()) << ", " << maskName << ", "
+     << emitter.getOrCreateName(op.getRepeatTimes()) << ", "
+     << emitter.getOrCreateName(op.getRepeatParams()) << ")";
+  return success();
 }
 
 template <typename VecScalarL2Op>
-auto printOperation(CodeEmitter &emitter, VecScalarL2Op op) -> LogicalResultForT<VecScalarL2Op, ascendc::AxpyL2Op>
-{
-    auto &os = emitter.ostream();
-    os << ascNamespace << "::" << op.getAPIName();
-    os << "(" << emitter.getOrCreateName(op.getDst()) << ", " << emitter.getOrCreateName(op.getSrc()) << ", "
-       << emitter.getOrCreateName(op.getScalar()) << ", " << emitter.getOrCreateName(op.getCalCount()) << ")";
-    return success();
+auto printOperation(CodeEmitter &emitter, VecScalarL2Op op)
+    -> LogicalResultForT<VecScalarL2Op, ascendc::AxpyL2Op> {
+  auto &os = emitter.ostream();
+  os << ascNamespace << "::" << op.getAPIName();
+  os << "(" << emitter.getOrCreateName(op.getDst()) << ", "
+     << emitter.getOrCreateName(op.getSrc()) << ", "
+     << emitter.getOrCreateName(op.getScalar()) << ", "
+     << emitter.getOrCreateName(op.getCalCount()) << ")";
+  return success();
 }
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_TERNARY_SCALAR_INSTR_H
+#endif  // ASCIR_TARGET_ASC_BASIC_TERNARY_SCALAR_INSTR_H

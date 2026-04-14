@@ -55,17 +55,18 @@ extern "C" {
  * @return aclnnStatus: 返回值，返回状态码
  *
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeDispatchV2GetWorkspaceSize(const aclTensor* x, const aclTensor* expertIds,
+ACLNN_API aclnnStatus aclnnMoeDistributeDispatchV2GetWorkspaceSize(
+    const aclTensor* x, const aclTensor* expertIds,
     const aclTensor* scalesOptional, const aclTensor* xActiveMaskOptional,
-    const aclTensor* expertScalesOptional,
-    const char* groupEp, int64_t epWorldSize, int64_t epRankId,
-    int64_t moeExpertNum, const char* groupTp, int64_t tpWorldSize,
-    int64_t tpRankId, int64_t expertShardType, int64_t sharedExpertNum, 
+    const aclTensor* expertScalesOptional, const char* groupEp,
+    int64_t epWorldSize, int64_t epRankId, int64_t moeExpertNum,
+    const char* groupTp, int64_t tpWorldSize, int64_t tpRankId,
+    int64_t expertShardType, int64_t sharedExpertNum,
     int64_t sharedExpertRankNum, int64_t quantMode, int64_t globalBs,
-    int64_t expertTokenNumsType, const char* commAlg,
-    aclTensor* expandXOut, aclTensor* dynamicScalesOut,
-    aclTensor* assistInfoForCombineOut, aclTensor* expertTokenNumsOut,
-    aclTensor* epRecvCountsOut, aclTensor* tpRecvCountsOut, aclTensor* expandScalesOut,
+    int64_t expertTokenNumsType, const char* commAlg, aclTensor* expandXOut,
+    aclTensor* dynamicScalesOut, aclTensor* assistInfoForCombineOut,
+    aclTensor* expertTokenNumsOut, aclTensor* epRecvCountsOut,
+    aclTensor* tpRecvCountsOut, aclTensor* expandScalesOut,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
@@ -76,8 +77,10 @@ ACLNN_API aclnnStatus aclnnMoeDistributeDispatchV2GetWorkspaceSize(const aclTens
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnMoeDistributeDispatchV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
-                                                 aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMoeDistributeDispatchV2(void* workspace,
+                                                   uint64_t workspaceSize,
+                                                   aclOpExecutor* executor,
+                                                   aclrtStream stream);
 
 #ifdef __cplusplus
 }

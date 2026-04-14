@@ -43,9 +43,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnMultiScaleDeformableAttentionGradGetWorkspaceSize(
-    const aclTensor* value, const aclTensor* spatialShape, const aclTensor* levelStartIndex, const aclTensor* location,
-    const aclTensor* attnWeight, const aclTensor* gradOutput, aclTensor* gradValue, aclTensor* gradLocation,
-    aclTensor* gradAttnWeight, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* value, const aclTensor* spatialShape,
+    const aclTensor* levelStartIndex, const aclTensor* location,
+    const aclTensor* attnWeight, const aclTensor* gradOutput,
+    aclTensor* gradValue, aclTensor* gradLocation, aclTensor* gradAttnWeight,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMultiScaleDeformableAttentionGrad的第二段接口，用于执行计算。
@@ -55,8 +57,9 @@ ACLNN_API aclnnStatus aclnnMultiScaleDeformableAttentionGradGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMultiScaleDeformableAttentionGrad(void* workspace, uint64_t workspaceSize,
-                                                             aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMultiScaleDeformableAttentionGrad(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

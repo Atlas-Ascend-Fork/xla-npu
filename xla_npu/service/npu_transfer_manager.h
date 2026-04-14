@@ -33,33 +33,38 @@ namespace xla {
 // An implementation of the XLA GenericTransferManager that
 // handles NPU-specific infeed.
 class NpuTransferManager : public GenericTransferManager {
-   public:
-    NpuTransferManager();
-    ~NpuTransferManager() override {}
+ public:
+  NpuTransferManager();
+  ~NpuTransferManager() override {}
 
-    absl::Status TransferLiteralToInfeed(stream_executor::StreamExecutor* executor,
-                                         const LiteralSlice& literal) override;
-    absl::Status TransferLiteralFromOutfeed(stream_executor::StreamExecutor* executor,
-                                            MutableBorrowingLiteral literal) override;
+  absl::Status TransferLiteralToInfeed(
+      stream_executor::StreamExecutor* executor,
+      const LiteralSlice& literal) override;
+  absl::Status TransferLiteralFromOutfeed(
+      stream_executor::StreamExecutor* executor,
+      MutableBorrowingLiteral literal) override;
 
-    bool CanShapedBufferBeAccessedNow(stream_executor::StreamExecutor* executor,
-                                      const ShapedBuffer& device_buffer) const override {
-        return true;
-    }
+  bool CanShapedBufferBeAccessedNow(
+      stream_executor::StreamExecutor* executor,
+      const ShapedBuffer& device_buffer) const override {
+    return true;
+  }
 
-    bool CanBufferBeAccessedNow(stream_executor::StreamExecutor* executor,
-                                const stream_executor::DeviceMemoryBase& device_buffer) const override {
-        return true;
-    }
+  bool CanBufferBeAccessedNow(
+      stream_executor::StreamExecutor* executor,
+      const stream_executor::DeviceMemoryBase& device_buffer) const override {
+    return true;
+  }
 
-    absl::Status ReadDynamicShapes(stream_executor::Stream* stream, const ShapedBuffer* device_buffer,
-                                   Shape* device_shape) override;
+  absl::Status ReadDynamicShapes(stream_executor::Stream* stream,
+                                 const ShapedBuffer* device_buffer,
+                                 Shape* device_shape) override;
 
-   private:
-    bool PackSubbyteTypes() const override { return true; }
+ private:
+  bool PackSubbyteTypes() const override { return true; }
 
-    NpuTransferManager(const NpuTransferManager&) = delete;
-    NpuTransferManager& operator=(const NpuTransferManager&) = delete;
+  NpuTransferManager(const NpuTransferManager&) = delete;
+  NpuTransferManager& operator=(const NpuTransferManager&) = delete;
 };
 
 }  // namespace xla

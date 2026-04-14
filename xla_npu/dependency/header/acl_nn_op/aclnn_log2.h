@@ -47,7 +47,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnLog2GetWorkspaceSize(const aclTensor* self, const aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnLog2GetWorkspaceSize(const aclTensor* self,
+                                                const aclTensor* out,
+                                                uint64_t* workspaceSize,
                                                 aclOpExecutor** executor);
 
 /**
@@ -59,7 +61,8 @@ ACLNN_API aclnnStatus aclnnLog2GetWorkspaceSize(const aclTensor* self, const acl
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnLog2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLog2(void* workspace, uint64_t workspaceSize,
+                                aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceLog2的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -85,8 +88,9 @@ ACLNN_API aclnnStatus aclnnLog2(void* workspace, uint64_t workspaceSize, aclOpEx
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceLog2GetWorkspaceSize(const aclTensor* selfRef, uint64_t* workspaceSize,
-                                                       aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceLog2GetWorkspaceSize(
+    const aclTensor* selfRef, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceLog2的第二段接口，用于执行计算。
@@ -97,7 +101,8 @@ ACLNN_API aclnnStatus aclnnInplaceLog2GetWorkspaceSize(const aclTensor* selfRef,
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceLog2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceLog2(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
                                        aclrtStream stream);
 
 #ifdef __cplusplus

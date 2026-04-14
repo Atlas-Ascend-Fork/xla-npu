@@ -26,24 +26,24 @@ namespace xla {
 // Certain operations like Dot and Reduce are excluded from fusion to preserve
 // their optimized implementations.
 class NpuFusionWhitelist {
-   public:
-    // Returns true if given instruction should skip fusion.
-    static bool ShouldSkipFusion(const HloInstruction* instr) {
-        if (instr == nullptr) {
-            return false;
-        }
-        return ShouldSkipFusion(instr->opcode());
+ public:
+  // Returns true if given instruction should skip fusion.
+  static bool ShouldSkipFusion(const HloInstruction* instr) {
+    if (instr == nullptr) {
+      return false;
     }
+    return ShouldSkipFusion(instr->opcode());
+  }
 
-    // Returns true if given opcode should skip fusion.
-    static bool ShouldSkipFusion(HloOpcode opcode) {
-        // Hardcoded whitelist of opcodes to skip fusion
-        // Note: Exp, Add, and Subtract are added to avoid numerical instability in fused kernels
-        static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {
-            HloOpcode::kDot,
-        };
-        return kSkipFusionOpcodes.contains(opcode);
-    }
+  // Returns true if given opcode should skip fusion.
+  static bool ShouldSkipFusion(HloOpcode opcode) {
+    // Hardcoded whitelist of opcodes to skip fusion
+    // Note: Exp, Add, and Subtract are added to avoid numerical instability in fused kernels
+    static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {
+        HloOpcode::kDot,
+    };
+    return kSkipFusionOpcodes.contains(opcode);
+  }
 };
 
 }  // namespace xla

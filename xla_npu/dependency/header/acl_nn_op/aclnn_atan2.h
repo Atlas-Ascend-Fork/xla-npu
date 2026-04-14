@@ -35,8 +35,11 @@ extern "C" {
  * @param [out] executor:返回op执行器，包含了算子计算流程。
  * @return aclnnStatus:返回状态码
  */
-ACLNN_API aclnnStatus aclnnAtan2GetWorkspaceSize(const aclTensor* self, const aclTensor* other, aclTensor* out,
-                                                 uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAtan2GetWorkspaceSize(const aclTensor* self,
+                                                 const aclTensor* other,
+                                                 aclTensor* out,
+                                                 uint64_t* workspaceSize,
+                                                 aclOpExecutor** executor);
 /**
  * @brief aclnnAtan2的第二段接口，用于执行计算。
  * 功能描述：对输入张量self和other进行逐元素的反正切运算，注（self表示y坐标，other表示x坐标）。
@@ -58,7 +61,8 @@ graph LR
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAtan2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAtan2(void* workspace, uint64_t workspaceSize,
+                                 aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceAtan2的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -75,8 +79,9 @@ ACLNN_API aclnnStatus aclnnAtan2(void* workspace, uint64_t workspaceSize, aclOpE
  * @param [out]  executor         返回op执行器，包含了算子计算流程。
  * @return       aclnnStatus      返回状态码
  */
-ACLNN_API aclnnStatus aclnnInplaceAtan2GetWorkspaceSize(aclTensor* selfRef, aclTensor* other, uint64_t* workspace_size,
-                                                        aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceAtan2GetWorkspaceSize(
+    aclTensor* selfRef, aclTensor* other, uint64_t* workspace_size,
+    aclOpExecutor** executor);
 
 /**
  * @brief: aclnnInplaceAtan2的第二段接口，用于执行计算
@@ -88,7 +93,8 @@ ACLNN_API aclnnStatus aclnnInplaceAtan2GetWorkspaceSize(aclTensor* selfRef, aclT
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceAtan2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceAtan2(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
                                         aclrtStream stream);
 #ifdef __cplusplus
 }

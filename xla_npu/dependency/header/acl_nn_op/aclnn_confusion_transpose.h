@@ -24,14 +24,16 @@ extern "C" {
 #endif
 
 aclnnStatus aclnnConfusionTransposeGetWorkspaceSize(
-    const aclTensor* x, const aclIntArray* perm, const aclIntArray* shape, bool transpose_first, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* x, const aclIntArray* perm, const aclIntArray* shape,
+    bool transpose_first, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
-aclnnStatus aclnnConfusionTranspose(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+aclnnStatus aclnnConfusionTranspose(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
+                                    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_CONFUSION_TRANSPOSE_H_
+#endif  // OP_API_INC_LEVEL2_CONFUSION_TRANSPOSE_H_

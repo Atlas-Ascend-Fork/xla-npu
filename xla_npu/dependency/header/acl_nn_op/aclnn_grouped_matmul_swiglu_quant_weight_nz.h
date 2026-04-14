@@ -34,10 +34,13 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNZGetWorkspaceSize(
-    const aclTensor *x, const aclTensor *weight, const aclTensor *bias, const aclTensor *offset,
-    const aclTensor *weightScale, const aclTensor *xScale, const aclTensor *groupList, aclTensor *output,
-    aclTensor *outputScale, aclTensor *outputOffset, uint64_t *workspaceSize, aclOpExecutor **executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulSwigluQuantWeightNZGetWorkspaceSize(
+    const aclTensor *x, const aclTensor *weight, const aclTensor *bias,
+    const aclTensor *offset, const aclTensor *weightScale,
+    const aclTensor *xScale, const aclTensor *groupList, aclTensor *output,
+    aclTensor *outputScale, aclTensor *outputOffset, uint64_t *workspaceSize,
+    aclOpExecutor **executor);
 
 /**
  * @brief aclnnGroupedMatmulSwigluQuantWeightNZ的第二段接口，用于执行计算。
@@ -48,10 +51,10 @@ __attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulSwigluQuant
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulSwigluQuantWeightNZ(void *workspace,
-                                                                                         uint64_t workspaceSize,
-                                                                                         aclOpExecutor *executor,
-                                                                                         aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnGroupedMatmulSwigluQuantWeightNZ(void *workspace, uint64_t workspaceSize,
+                                      aclOpExecutor *executor,
+                                      aclrtStream stream);
 
 #ifdef __cplusplus
 }

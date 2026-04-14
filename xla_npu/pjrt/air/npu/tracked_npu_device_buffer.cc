@@ -46,30 +46,33 @@ tsl::AsyncValueRef<NpuEvent> AfterAll(
 //===----------------------------------------------------------------------===//
 
 class AlignedMemory final : public NpuDeviceMemory::RawMemory {
-public:
+ public:
   AlignedMemory(void* base, size_t size_bytes)
       : base_(base), size_bytes_(size_bytes) {}
 
   ~AlignedMemory() final {
-    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedMemory::~AlignedMemory size_bytes: %zu", size_bytes_);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedMemory::~AlignedMemory size_bytes: %zu",
+                         size_bytes_);
     npu::aclrtFree(base_);
   }
 
   void* base() const final { return base_; }
   size_t size_bytes() const final { return size_bytes_; }
 
-private:
+ private:
   void* base_;
   size_t size_bytes_;
 };
 
 class AlignedAllocator final : public NpuDeviceMemory::Allocator {
-public:
+ public:
   absl::StatusOr<std::unique_ptr<NpuDeviceMemory::RawMemory>> Allocate(
       size_t size_bytes, size_t alignment) const final {
-    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedAllocator::Allocate size_bytes: %zu", size_bytes);
-    void *base = nullptr;
-    aclError acl_malloc = npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+    NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedAllocator::Allocate size_bytes: %zu",
+                         size_bytes);
+    void* base = nullptr;
+    aclError acl_malloc =
+        npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
     if (acl_malloc == ACL_SUCCESS) {
       return std::make_unique<AlignedMemory>(base, size_bytes);
     }
@@ -88,19 +91,19 @@ NpuDeviceMemory::MakeDefaultAllocator() {
 }
 
 class NpuDeviceMemoryOwned final : public NpuDeviceMemory {
-public:
+ public:
   explicit NpuDeviceMemoryOwned(std::unique_ptr<RawMemory> mem)
       : mem_(std::move(mem)) {}
 
   void* untyped_data() const final { return mem_->base(); }
   size_t size_bytes() const final { return mem_->size_bytes(); }
 
-private:
+ private:
   std::unique_ptr<RawMemory> mem_;
 };
 
 class NpuDeviceMemoryForeign final : public NpuDeviceMemory {
-public:
+ public:
   NpuDeviceMemoryForeign(void* base, size_t size,
                          absl::AnyInvocable<void() &&> on_delete_callback)
       : base_(base),
@@ -109,7 +112,9 @@ public:
 
   ~NpuDeviceMemoryForeign() final {
     if (on_delete_callback_) {
-      NPU_LOG_FORMAT_PRINT(DEBUG, "need call delete function for %p, which size is %zu", base_, size_bytes_);
+      NPU_LOG_FORMAT_PRINT(
+          DEBUG, "need call delete function for %p, which size is %zu", base_,
+          size_bytes_);
       std::move(on_delete_callback_)();
     }
   }
@@ -117,21 +122,21 @@ public:
   void* untyped_data() const final { return base_; }
   size_t size_bytes() const final { return size_bytes_; }
 
-private:
+ private:
   void* base_;
   size_t size_bytes_;
   absl::AnyInvocable<void() &&> on_delete_callback_;
 };
 
 class NpuDeviceMemoryConstant final : public NpuDeviceMemory {
-public:
+ public:
   NpuDeviceMemoryConstant(void* base, size_t size)
       : base_(base), size_bytes_(size) {}
 
   void* untyped_data() const final { return base_; }
   size_t size_bytes() const final { return size_bytes_; }
 
-private:
+ private:
   void* base_;
   size_t size_bytes_;
 };
@@ -153,7 +158,8 @@ tsl::AsyncValueRef<NpuDeviceMemory> NpuDeviceMemory::CreateConstantMemory(
 // Allocates owning memory wrapped in an available `AsyncValueRef`.
 absl::StatusOr<tsl::AsyncValueRef<NpuDeviceMemory>> NpuDeviceMemory::Allocate(
     size_t size_bytes) {
-  NPU_LOG_FORMAT_PRINT(DEBUG, "NpuDeviceMemory::Allocate size_bytes: %zu", size_bytes);
+  NPU_LOG_FORMAT_PRINT(DEBUG, "NpuDeviceMemory::Allocate size_bytes: %zu",
+                       size_bytes);
   TF_ASSIGN_OR_RETURN(std::unique_ptr<RawMemory> mem,
                       DefaultAllocator().Allocate(size_bytes, 0));
   return tsl::MakeAvailableAsyncValueRef<NpuDeviceMemoryOwned>(std::move(mem));
@@ -293,10 +299,10 @@ void TrackedNpuDeviceBuffer::Delete(PjRtMemorySpace* memory_space) {
 }
 
 Future<> TrackedNpuDeviceBuffer::GetReadyFuture(PjRtMemorySpace* memory_space) {
-    auto [promise, future] = Future<>::MakePromise();
-    promise.Set();
-    
-    return future;
+  auto [promise, future] = Future<>::MakePromise();
+  promise.Set();
+
+  return future;
 }
 
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
@@ -327,4 +333,4 @@ absl::Status TrackedNpuDeviceBuffer::BlockForOperationsToComplete(
   return absl::OkStatus();
 }
 
-}
+}  // namespace xla

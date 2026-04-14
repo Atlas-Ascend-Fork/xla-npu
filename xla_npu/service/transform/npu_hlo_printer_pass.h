@@ -29,19 +29,19 @@ namespace xla {
 // Helper pass to print HLO module after each transformation pass
 class NpuHloPrinterPass : public HloModulePass {
  public:
-    explicit NpuHloPrinterPass(absl::string_view pass_name)
-        : pass_name_(pass_name) {}
-    ~NpuHloPrinterPass() override = default;
+  explicit NpuHloPrinterPass(absl::string_view pass_name)
+      : pass_name_(pass_name) {}
+  ~NpuHloPrinterPass() override = default;
 
-    absl::string_view name() const override { return "npu-hlo-printer"; }
+  absl::string_view name() const override { return "npu-hlo-printer"; }
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
-    std::string pass_name_;
+  std::string pass_name_;
 };
 
 }  // namespace xla

@@ -31,8 +31,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnFastGeluBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, aclTensor* gradInput, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnFastGeluBackward的第二段接口，用于执行计算。
@@ -42,8 +42,10 @@ ACLNN_API aclnnStatus aclnnFastGeluBackwardGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnFastGeluBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnFastGeluBackward(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
+                                            aclrtStream stream);
 
 #ifdef __cplusplus
 }

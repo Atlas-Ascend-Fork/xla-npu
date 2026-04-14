@@ -42,8 +42,8 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceZeroGetWorkspaceSize(aclTensor* selfRef, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceZeroGetWorkspaceSize(
+    aclTensor* selfRef, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceZero的第二段接口，用于执行计算。
@@ -66,11 +66,12 @@ aclnnInplaceZeroGetWorkspaceSize(aclTensor* selfRef, uint64_t* workspaceSize, ac
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceZero(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceZero(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
+                                       aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_Zero_H_
+#endif  // OP_API_INC_Zero_H_

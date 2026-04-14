@@ -29,9 +29,10 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclInit, (const char* configPath), (configPath))
 
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclFinalize, (), ())
 
-DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDeviceCount, (uint32_t* count), (count))
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDeviceCount, (uint32_t * count), (count))
 
-DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDevice, (uint32_t* device_id), (device_id))
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtGetDevice, (uint32_t * device_id),
+                             (device_id))
 
 DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtSetDevice, (uint32_t device_id), (device_id))
 

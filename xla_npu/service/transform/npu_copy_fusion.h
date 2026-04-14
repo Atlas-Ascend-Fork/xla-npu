@@ -31,27 +31,29 @@ namespace xla {
 // CopyFusion checks if a fusion is followed by multiple copies and if so, adds
 // those copies to the fusion, replacing the copies with get_tuple_elements.
 class NpuCopyFusion : public HloModulePass {
-   public:
-    explicit NpuCopyFusion(const se::DeviceDescription& device_description) : device_description_(device_description) {}
+ public:
+  explicit NpuCopyFusion(const se::DeviceDescription& device_description)
+      : device_description_(device_description) {}
 
-    absl::string_view name() const override { return "npu-copy-fusion"; }
+  absl::string_view name() const override { return "npu-copy-fusion"; }
 
-   protected:
-    absl::StatusOr<bool> RunImpl(HloModule* module,
-                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+ protected:
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
-   private:
-    absl::Status FuseCopyInstructionsIntoComputation(
-        HloInstruction* hlo,
-        HloComputation* fused_computation,
-        const std::vector<HloInstruction*>& copies,
-        const std::vector<HloInstruction*>& other_users);
+ private:
+  absl::Status FuseCopyInstructionsIntoComputation(
+      HloInstruction* hlo, HloComputation* fused_computation,
+      const std::vector<HloInstruction*>& copies,
+      const std::vector<HloInstruction*>& other_users);
 
-    std::pair<std::vector<HloInstruction*>, std::vector<HloInstruction*>> ClassifyUsers(HloInstruction* hlo);
+  std::pair<std::vector<HloInstruction*>, std::vector<HloInstruction*>>
+  ClassifyUsers(HloInstruction* hlo);
 
-    absl::StatusOr<bool> DoCopyFusion(HloComputation* computation);
+  absl::StatusOr<bool> DoCopyFusion(HloComputation* computation);
 
-    const se::DeviceDescription& device_description_;
+  const se::DeviceDescription& device_description_;
 };
 
 }  // namespace xla

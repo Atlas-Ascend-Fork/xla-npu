@@ -47,8 +47,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包括算子计算流程
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnAbsGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAbsGetWorkspaceSize(const aclTensor* self,
+                                               aclTensor* out,
+                                               uint64_t* workspaceSize,
+                                               aclOpExecutor** executor);
 
 /**
  * @brief aclnnAbs的第二段接口，用于执行计算。
@@ -58,11 +60,12 @@ aclnnAbsGetWorkspaceSize(const aclTensor* self, aclTensor* out, uint64_t* worksp
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnAbs(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAbs(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor,
+                               const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ABS_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ABS_H_

@@ -40,7 +40,8 @@ struct AscirBackendOptions {
   // Can be overridden by SOC_VERSION environment variable
   std::string soc_version = []() {
     const char* env_soc_version = std::getenv("SOC_VERSION");
-    return env_soc_version ? std::string(env_soc_version) : std::string("Ascend910B1");
+    return env_soc_version ? std::string(env_soc_version)
+                           : std::string("Ascend910B1");
   }();
 };
 

@@ -28,15 +28,19 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulGetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* diagonalMatrix, const aclTensor* deqOffset,
-    const aclTensor* deqScale, const aclTensor* addOffset, const aclTensor* mulScale, const aclTensor* bias,
-    bool transposeX1, bool transposeX2, float antiquantScale, float antiquantOffset, aclTensor* out,
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* diagonalMatrix,
+    const aclTensor* deqOffset, const aclTensor* deqScale,
+    const aclTensor* addOffset, const aclTensor* mulScale,
+    const aclTensor* bias, bool transposeX1, bool transposeX2,
+    float antiquantScale, float antiquantOffset, aclTensor* out,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnWeightQuantBatchMatmul的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmul(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmul(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   const aclrtStream stream);
 
 #ifdef __cplusplus

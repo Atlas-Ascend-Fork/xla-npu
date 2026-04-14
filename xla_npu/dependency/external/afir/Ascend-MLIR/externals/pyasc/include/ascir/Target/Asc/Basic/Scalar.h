@@ -27,7 +27,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::ScalarCastOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_SCALAR_H
+#endif  // ASCIR_TARGET_ASC_BASIC_SCALAR_H

@@ -73,11 +73,10 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnAddRmsNormQuantV2GetWorkspaceSize(
-    const aclTensor *x1, const aclTensor *x2, const aclTensor *gamma,
-    const aclTensor *scales1, const aclTensor *scales2Optional,
-    const aclTensor *zeroPoints1Optional, const aclTensor *zeroPoints2Optional,
-    const aclTensor *betaOptional,
-    int64_t axis, double epsilon, bool divMode,
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* gamma,
+    const aclTensor* scales1, const aclTensor* scales2Optional,
+    const aclTensor* zeroPoints1Optional, const aclTensor* zeroPoints2Optional,
+    const aclTensor* betaOptional, int64_t axis, double epsilon, bool divMode,
     aclTensor* y1Out, aclTensor* y2Out, aclTensor* xOut, aclTensor* rmsNormOut,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
@@ -92,11 +91,13 @@ ACLNN_API aclnnStatus aclnnAddRmsNormQuantV2GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnAddRmsNormQuantV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAddRmsNormQuantV2(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ADD_RMS_NORM_QUANT_V2_H_
+#endif  // OP_API_INC_LEVEL2_ADD_RMS_NORM_QUANT_V2_H_

@@ -29,7 +29,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::GetBlockIdxOp op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::GetBlockNumOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_SYS_VAR_H
+#endif  // ASCIR_TARGET_ASC_BASIC_SYS_VAR_H

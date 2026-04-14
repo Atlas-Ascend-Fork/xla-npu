@@ -34,8 +34,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGroupedBiasAddGradGetWorkspaceSize(
-    const aclTensor* gradY, const aclTensor* groupIdxOptional, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* gradY, const aclTensor* groupIdxOptional, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupedBiasAddGrad的第二段接口，用于执行计算。
@@ -46,8 +46,10 @@ ACLNN_API aclnnStatus aclnnGroupedBiasAddGradGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnGroupedBiasAddGrad(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGroupedBiasAddGrad(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
+                                              aclrtStream stream);
 
 /**
  * @brief aclnnGroupedBiasAddGrad的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -66,8 +68,9 @@ aclnnGroupedBiasAddGrad(void* workspace, uint64_t workspaceSize, aclOpExecutor* 
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGroupedBiasAddGradV2GetWorkspaceSize(
-    const aclTensor* gradY, const aclTensor* groupIdxOptional, int64_t groupIdxType, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradY, const aclTensor* groupIdxOptional,
+    int64_t groupIdxType, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupedBiasAddGrad的第二段接口，用于执行计算。
@@ -78,8 +81,10 @@ ACLNN_API aclnnStatus aclnnGroupedBiasAddGradV2GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnGroupedBiasAddGradV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGroupedBiasAddGradV2(void* workspace,
+                                                uint64_t workspaceSize,
+                                                aclOpExecutor* executor,
+                                                aclrtStream stream);
 
 #ifdef __cplusplus
 }

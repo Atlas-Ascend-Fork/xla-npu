@@ -34,8 +34,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnQuantizeGetWorkspaceSize(
-    const aclTensor* x, const aclTensor* scales, const aclTensor* zeroPoints, aclDataType dtype, int32_t axis,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* x, const aclTensor* scales, const aclTensor* zeroPoints,
+    aclDataType dtype, int32_t axis, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnQuantize的第二段接口，用于执行计算。
@@ -48,11 +49,12 @@ ACLNN_API aclnnStatus aclnnQuantizeGetWorkspaceSize(
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnQuantize(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnQuantize(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
+                                    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_QUANTIZE_H_
+#endif  // OP_API_INC_QUANTIZE_H_

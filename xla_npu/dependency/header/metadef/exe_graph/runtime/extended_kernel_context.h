@@ -48,7 +48,8 @@ class ExtendedKernelContext : protected KernelContext {
    * @param ir_index IR原型定义中的index
    * @return CompileTimeTensorDesc指针，index非法，或该INPUT没有实例化时，返回空指针
    */
-  const CompileTimeTensorDesc *GetOptionalInputDesc(const size_t ir_index) const {
+  const CompileTimeTensorDesc *GetOptionalInputDesc(
+      const size_t ir_index) const {
     return GetDynamicInputDesc(ir_index, 0);
   }
   /**
@@ -57,7 +58,8 @@ class ExtendedKernelContext : protected KernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return CompileTimeTensorDesc指针，index或relative_index非法时，返回空指针
    */
-  const CompileTimeTensorDesc *GetDynamicInputDesc(const size_t ir_index, const size_t relative_index) const {
+  const CompileTimeTensorDesc *GetDynamicInputDesc(
+      const size_t ir_index, const size_t relative_index) const {
     const auto compute_node_info = GetComputeNodeInfo();
     if (compute_node_info == nullptr) {
       return nullptr;
@@ -69,7 +71,8 @@ class ExtendedKernelContext : protected KernelContext {
     if (ins_info->GetInstanceNum() <= relative_index) {
       return nullptr;
     }
-    return compute_node_info->GetInputTdInfo(ins_info->GetInstanceStart() + relative_index);
+    return compute_node_info->GetInputTdInfo(ins_info->GetInstanceStart() +
+                                             relative_index);
   }
   /**
    * 根据index获取节点输出的Tensor description
@@ -88,7 +91,8 @@ class ExtendedKernelContext : protected KernelContext {
    * @param ir_index IR原型中定义的index
    * @return 实例化信息
    */
-  const AnchorInstanceInfo *GetIrInputInstanceInfo(const size_t ir_index) const {
+  const AnchorInstanceInfo *GetIrInputInstanceInfo(
+      const size_t ir_index) const {
     const auto compute_node_info = GetComputeNodeInfo();
     if (compute_node_info == nullptr) {
       return nullptr;
@@ -188,8 +192,9 @@ class ExtendedKernelContext : protected KernelContext {
   }
 
  protected:
-  template<typename T, size_t Offset = 0>
-  const T *GetDynamicInputPointer(size_t ir_index, size_t relative_ins_index) const {
+  template <typename T, size_t Offset = 0>
+  const T *GetDynamicInputPointer(size_t ir_index,
+                                  size_t relative_ins_index) const {
     const auto ins_info = GetIrInputInstanceInfo(ir_index);
     if (ins_info == nullptr) {
       return nullptr;
@@ -197,7 +202,8 @@ class ExtendedKernelContext : protected KernelContext {
     if (ins_info->GetInstanceNum() <= relative_ins_index) {
       return nullptr;
     }
-    return GetInputPointer<T>(Offset + ins_info->GetInstanceStart() + relative_ins_index);
+    return GetInputPointer<T>(Offset + ins_info->GetInstanceStart() +
+                              relative_ins_index);
   }
 };
 static_assert(std::is_standard_layout<ExtendedKernelContext>::value,

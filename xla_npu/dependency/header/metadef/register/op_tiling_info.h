@@ -45,12 +45,13 @@ class TeOpVarAttrArgsImpl;
 class TeOpVarAttrArgs {
   friend class VarAttrHelper;
 
-public:
+ public:
   TeOpVarAttrArgs() = default;
   ~TeOpVarAttrArgs() = default;
-  const uint8_t *GetData(const std::string &name, const std::string &dtype, size_t &size) const;
+  const uint8_t *GetData(const std::string &name, const std::string &dtype,
+                         size_t &size) const;
 
-private:
+ private:
   std::shared_ptr<TeOpVarAttrArgsImpl> impl_;
 };
 
@@ -98,11 +99,12 @@ struct OpCompileInfo {
 namespace utils {
 class OpRunInfoImpl;
 class OpRunInfo {
-public:
+ public:
   OpRunInfo();
   ~OpRunInfo() = default;
 
-  OpRunInfo(const uint32_t &block_dim, const bool &clear_atomic, const uint64_t &tiling_key);
+  OpRunInfo(const uint32_t &block_dim, const bool &clear_atomic,
+            const uint64_t &tiling_key);
   // Copy
   OpRunInfo(const OpRunInfo &runinfo);
   // Move
@@ -123,16 +125,16 @@ public:
   const std::vector<int64_t> &GetAllWorkspaces() const;
   void SetWorkspaces(const std::vector<int64_t> &workspaces);
 
-  template<class T>
+  template <class T>
   void AddTilingData(const T &value) {
     AddTilingData(reinterpret_cast<const char *>(&value), sizeof(value));
   }
   template <typename T>
-  void operator << (const T &value) {
+  void operator<<(const T &value) {
     AddTilingData(reinterpret_cast<const char *>(&value), sizeof(T));
   }
   void AddTilingData(const char *value, const size_t size);
-  void* GetAddrBase(uint64_t& max_size) const;
+  void *GetAddrBase(uint64_t &max_size) const;
   void SetAddrBaseOffset(const uint64_t size);
   ByteBuffer &GetAllTilingData();
   const ByteBuffer &GetAllTilingData() const;
@@ -149,13 +151,14 @@ public:
   bool SetMemCheckBaseOffset(const uint64_t &offset);
   void SetTilingCond(const int32_t tiling_cond);
   int32_t GetTilingCond() const;
-private:
+
+ private:
   std::shared_ptr<OpRunInfoImpl> impl_;
 };
 
 class OpCompileInfoImpl;
 class OpCompileInfo {
-public:
+ public:
   OpCompileInfo();
   ~OpCompileInfo() = default;
   OpCompileInfo(const ge::AscendString &key, const ge::AscendString &value);
@@ -175,9 +178,9 @@ public:
   void SetValue(const ge::AscendString &value);
   const ge::AscendString &GetValue() const;
 
-private:
+ private:
   std::shared_ptr<OpCompileInfoImpl> impl_;
 };
-}
+}  // namespace utils
 }  // namespace optiling
 #endif  // INC_REGISTER_OP_TILING_REGISTRY_H_

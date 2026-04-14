@@ -26,11 +26,8 @@ namespace mlir {
 
 template <typename T>
 struct PointerLikeTypeHash {
-    std::hash<const void *> h;
-    size_t operator()(const T &op) const
-    {
-        return h(op.getAsOpaquePointer());
-    }
+  std::hash<const void *> h;
+  size_t operator()(const T &op) const { return h(op.getAsOpaquePointer()); }
 };
 
 template <typename T>
@@ -40,6 +37,6 @@ using ValueSet = std::unordered_set<Value, PointerLikeTypeHash<Value>>;
 
 using ValueVector = SmallVector<Value>;
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_DIALECT_UTILS_UTILS_H
+#endif  // ASCIR_DIALECT_UTILS_UTILS_H

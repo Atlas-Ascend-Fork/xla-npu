@@ -23,8 +23,9 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnLayerNormGetWorkspaceSize(
-    const aclTensor* input, const aclIntArray* normalizedShape, const aclTensor* weightOptional,
-    const aclTensor* biasOptional, double eps, aclTensor* out, aclTensor* meanOutOptional, aclTensor* rstdOutOptional,
+    const aclTensor* input, const aclIntArray* normalizedShape,
+    const aclTensor* weightOptional, const aclTensor* biasOptional, double eps,
+    aclTensor* out, aclTensor* meanOutOptional, aclTensor* rstdOutOptional,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
@@ -32,24 +33,28 @@ ACLNN_API aclnnStatus aclnnLayerNormGetWorkspaceSize(
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnLayerNormWithImplModeGetWorkspaceSize(
-    const aclTensor* input, const aclIntArray* normalizedShape, const aclTensor* weightOptional,
-    const aclTensor* biasOptional, double eps, aclTensor* out, aclTensor* meanOutOptional, aclTensor* rstdOutOptional,
+    const aclTensor* input, const aclIntArray* normalizedShape,
+    const aclTensor* weightOptional, const aclTensor* biasOptional, double eps,
+    aclTensor* out, aclTensor* meanOutOptional, aclTensor* rstdOutOptional,
     int32_t implMode, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnLayerNorm的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnLayerNorm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLayerNorm(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
+                                     aclrtStream stream);
 
 /**
  * @brief aclnnLayerNormWithImplMode的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnLayerNormWithImplMode(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLayerNormWithImplMode(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
+                                                 aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_LAYER_NORM_H_
+#endif  // OP_API_INC_LEVEL2_LAYER_NORM_H_

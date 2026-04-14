@@ -25,21 +25,23 @@ using std::size_t;
 namespace op {
 
 class Object {
-public:
-    Object() = default;
-    virtual ~Object() = default;
+ public:
+  Object() = default;
+  virtual ~Object() = default;
 
-public:
-    void *operator new(size_t size) throw();
-    void *operator new[](size_t size) throw();
+ public:
+  void *operator new(size_t size) throw();
+  void *operator new[](size_t size) throw();
 
-    void *operator new(size_t size, [[maybe_unused]] const std::nothrow_t &tag) throw();
-    void *operator new[](size_t size, [[maybe_unused]] const std::nothrow_t &tag) throw();
+  void *operator new(size_t size,
+                     [[maybe_unused]] const std::nothrow_t &tag) throw();
+  void *operator new[](size_t size,
+                       [[maybe_unused]] const std::nothrow_t &tag) throw();
 
-    void operator delete(void *addr);
-    void operator delete[](void *addr);
+  void operator delete(void *addr);
+  void operator delete[](void *addr);
 };
 
-} // namespace op
+}  // namespace op
 
 #endif

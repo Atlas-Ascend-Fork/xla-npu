@@ -47,7 +47,8 @@ class TilingContext : public ExtendedKernelContext {
       return nullptr;
     }
 
-    const size_t index = compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
+    const size_t index =
+        compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
     const auto av = GetInput(index);
     if (av == nullptr) {
       return nullptr;
@@ -59,7 +60,7 @@ class TilingContext : public ExtendedKernelContext {
    * @tparam T CompileInfo的类型
    * @return CompileInfo的指针
    */
-  template<typename T>
+  template <typename T>
   const T *GetCompileInfo() const {
     return reinterpret_cast<const T *>(GetCompileInfo());
   }
@@ -103,7 +104,8 @@ class TilingContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return Tensor指针，index或relative_index非法时，返回空指针
    */
-  const Tensor *GetDynamicInputTensor(const size_t ir_index, const size_t relative_index) const {
+  const Tensor *GetDynamicInputTensor(const size_t ir_index,
+                                      const size_t relative_index) const {
     return GetDynamicInputPointer<Tensor>(ir_index, relative_index);
   }
   /**
@@ -120,7 +122,8 @@ class TilingContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return shape指针，index或relative_index非法时，返回空指针
    */
-  const StorageShape *GetDynamicInputShape(const size_t ir_index, const size_t relative_index) const {
+  const StorageShape *GetDynamicInputShape(const size_t ir_index,
+                                           const size_t relative_index) const {
     return GetDynamicInputPointer<StorageShape>(ir_index, relative_index);
   }
   /**
@@ -300,8 +303,8 @@ class TilingContext : public ExtendedKernelContext {
    * @tparam T tiling data类型，sizeof(T)不可以大于编译结果中指定的最大tiling data长度
    * @return tiling data指针，失败时返回空指针
    */
-  template<typename T>
-  auto GetTilingData() -> T* {
+  template <typename T>
+  auto GetTilingData() -> T * {
     auto tiling_data = GetRawTilingData();
     if (tiling_data == nullptr) {
       return nullptr;
@@ -325,7 +328,8 @@ class TilingContext : public ExtendedKernelContext {
    * @return workspace sizes指针
    */
   size_t *GetWorkspaceSizes(const size_t workspace_count) {
-    const auto workspace = GetOutputPointer<TypedContinuousVector<size_t>>(kOutputWorkspace);
+    const auto workspace =
+        GetOutputPointer<TypedContinuousVector<size_t>>(kOutputWorkspace);
     if (workspace == nullptr) {
       return nullptr;
     }
@@ -334,12 +338,13 @@ class TilingContext : public ExtendedKernelContext {
     }
     return workspace->MutableData();
   }
-   /**
+  /**
    * 获取 workspace 个数
    * @return workspace 个数
    */
   size_t GetWorkspaceNum() const {
-    const auto workspace = GetOutputPointer<TypedContinuousVector<size_t>>(kOutputWorkspace);
+    const auto workspace =
+        GetOutputPointer<TypedContinuousVector<size_t>>(kOutputWorkspace);
     if (workspace == nullptr) {
       return 0U;
     }
@@ -355,7 +360,8 @@ class TilingContext : public ExtendedKernelContext {
       return nullptr;
     }
 
-    const size_t index = compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
+    const size_t index =
+        compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
     const auto av = GetInput(index + 1U);
     if (av == nullptr) {
       return nullptr;
@@ -372,7 +378,8 @@ class TilingContext : public ExtendedKernelContext {
     if (compute_node_info == nullptr) {
       return std::numeric_limits<int32_t>::max();
     }
-    const size_t index = compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
+    const size_t index =
+        compute_node_info->GetInputsNum() + compute_node_info->GetOutputsNum();
     // 此处按照tiling内存排布，将确定性计算的字段添加在
     // inputshape outputshape compileinfo platform tiling_func之后
     const auto av = GetInput(index + 3U);
@@ -382,6 +389,7 @@ class TilingContext : public ExtendedKernelContext {
     return av->GetValue<int32_t>();
   }
 };
-static_assert(std::is_standard_layout<TilingContext>::value, "The class TilingContext must be a POD");
+static_assert(std::is_standard_layout<TilingContext>::value,
+              "The class TilingContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_TILING_CONTEXT_H_

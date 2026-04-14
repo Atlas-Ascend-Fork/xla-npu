@@ -39,33 +39,33 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNormalTensorTensorGetWorkspaceSize(const aclTensor* mean, const aclTensor* std, int64_t seed,
-                                                              int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                              aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNormalTensorTensorGetWorkspaceSize(
+    const aclTensor* mean, const aclTensor* std, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnNormalTensorFloat的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnNormalTensorFloatGetWorkspaceSize(const aclTensor* mean, float std, int64_t seed,
-                                                             int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                             aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNormalTensorFloatGetWorkspaceSize(
+    const aclTensor* mean, float std, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnNormalFloatTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnNormalFloatTensorGetWorkspaceSize(float mean, const aclTensor* std, int64_t seed,
-                                                             int64_t offset, aclTensor* out, uint64_t* workspaceSize,
-                                                             aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNormalFloatTensorGetWorkspaceSize(
+    float mean, const aclTensor* std, int64_t seed, int64_t offset,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnNormalFloatFloat的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnNormalFloatFloatGetWorkspaceSize(float mean, float std, int64_t seed, int64_t offset,
-                                                            aclTensor* out, uint64_t* workspaceSize,
-                                                            aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnNormalFloatFloatGetWorkspaceSize(
+    float mean, float std, int64_t seed, int64_t offset, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnNormal的第二段接口，用于执行计算。
@@ -75,16 +75,24 @@ ACLNN_API aclnnStatus aclnnNormalFloatFloatGetWorkspaceSize(float mean, float st
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnNormalTensorTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNormalTensorTensor(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
                                               aclrtStream stream);
 
-ACLNN_API aclnnStatus aclnnNormalTensorFloat(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNormalTensorFloat(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
-ACLNN_API aclnnStatus aclnnNormalFloatTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNormalFloatTensor(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
-ACLNN_API aclnnStatus aclnnNormalFloatFloat(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnNormalFloatFloat(void* workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor* executor,
                                             aclrtStream stream);
 
 #ifdef __cplusplus

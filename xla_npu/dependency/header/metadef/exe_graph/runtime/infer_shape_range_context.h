@@ -68,7 +68,8 @@ class InferShapeRangeContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return tensor range指针，index或relative_index非法时，返回空指针
    */
-  const TensorRange *GetDynamicInputTensorRange(const size_t ir_index, const size_t relative_index) const {
+  const TensorRange *GetDynamicInputTensorRange(
+      const size_t ir_index, const size_t relative_index) const {
     return GetDynamicInputPointer<TensorRange>(ir_index, relative_index);
   }
   /**
@@ -85,7 +86,8 @@ class InferShapeRangeContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return shape range指针，index或relative_index非法时，返回空指针
    */
-  const Range<Shape> *GetDynamicInputShapeRange(const size_t ir_index, const size_t relative_index) const {
+  const Range<Shape> *GetDynamicInputShapeRange(
+      const size_t ir_index, const size_t relative_index) const {
     return GetDynamicInputPointer<Range<Shape>>(ir_index, relative_index);
   }
 
@@ -98,6 +100,7 @@ class InferShapeRangeContext : public ExtendedKernelContext {
     return GetOutputPointer<Range<Shape>>(index);
   }
 };
-static_assert(std::is_standard_layout<InferShapeRangeContext>::value, "The class InferShapeContext must be a POD");
+static_assert(std::is_standard_layout<InferShapeRangeContext>::value,
+              "The class InferShapeContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_INFER_SHAPE_RANGE_CONTEXT_H_

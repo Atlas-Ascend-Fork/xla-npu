@@ -31,7 +31,8 @@ limitations under the License.
 namespace ge {
 enum class HiddenInputType : uint32_t { HCOM };
 
-using GetHiddenAddr = ge::graphStatus (*)(const ge::OpDescPtr &op_desc, void *&addr);
+using GetHiddenAddr = ge::graphStatus (*)(const ge::OpDescPtr &op_desc,
+                                          void *&addr);
 class HiddenInputFuncRegistry {
  public:
   static HiddenInputFuncRegistry &GetInstance();
@@ -44,7 +45,8 @@ class HiddenInputFuncRegistry {
 
 class HiddenInputFuncRegister {
  public:
-  HiddenInputFuncRegister(const HiddenInputType input_type, const GetHiddenAddr func);
+  HiddenInputFuncRegister(const HiddenInputType input_type,
+                          const GetHiddenAddr func);
 };
 }  // namespace ge
 
@@ -53,10 +55,12 @@ class HiddenInputFuncRegister {
 #else
 #define ATTRIBUTE_USED
 #endif
-#define REG_HIDDEN_INPUT_FUNC(type, func) REG_HIDDEN_INPUT_FUNC_UNIQ_HELPER(type, func, __COUNTER__)
-#define REG_HIDDEN_INPUT_FUNC_UNIQ_HELPER(type, func, counter) REG_HIDDEN_INPUT_FUNC_UNIQ(type, func, counter)
-#define REG_HIDDEN_INPUT_FUNC_UNIQ(type, func, counter)                                                                \
-  static ::ge::HiddenInputFuncRegister register_hidden_func_##counter ATTRIBUTE_USED =                                 \
-      ge::HiddenInputFuncRegister(type, func)
+#define REG_HIDDEN_INPUT_FUNC(type, func) \
+  REG_HIDDEN_INPUT_FUNC_UNIQ_HELPER(type, func, __COUNTER__)
+#define REG_HIDDEN_INPUT_FUNC_UNIQ_HELPER(type, func, counter) \
+  REG_HIDDEN_INPUT_FUNC_UNIQ(type, func, counter)
+#define REG_HIDDEN_INPUT_FUNC_UNIQ(type, func, counter)               \
+  static ::ge::HiddenInputFuncRegister register_hidden_func_##counter \
+      ATTRIBUTE_USED = ge::HiddenInputFuncRegister(type, func)
 
 #endif  // INC_EXTERNAL_REGISTER_HIDDEN_INPUT_FUNC_REGISTRY_H_

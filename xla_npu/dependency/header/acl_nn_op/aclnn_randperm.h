@@ -27,13 +27,17 @@ extern "C" {
  * @brief aclnnRandperm的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnRandpermGetWorkspaceSize(int64_t n, int64_t seed, int64_t offset, aclTensor* out,
-                                                    uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnRandpermGetWorkspaceSize(int64_t n, int64_t seed,
+                                                    int64_t offset,
+                                                    aclTensor* out,
+                                                    uint64_t* workspaceSize,
+                                                    aclOpExecutor** executor);
 
 /**
  * @brief aclnnRandperm的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnRandperm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnRandperm(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
                                     aclrtStream stream);
 
 #ifdef __cplusplus

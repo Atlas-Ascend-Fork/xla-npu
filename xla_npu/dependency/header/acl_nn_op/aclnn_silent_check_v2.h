@@ -45,10 +45,12 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnSilentCheckV2GetWorkspaceSize(const aclTensor *val, const aclTensor *max, aclTensor *avgRef, aclTensor *inputGradRef, aclTensor *stepRef, 
-                                aclIntArray *dstSize, aclIntArray *dstStride, aclIntArray *dstOffset, float cThreshL1, 
-                                float cThreshL2, float beta1, int32_t npuAsdDetect, aclTensor* result, 
-                                uint64_t *workspaceSize, aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnSilentCheckV2GetWorkspaceSize(
+    const aclTensor *val, const aclTensor *max, aclTensor *avgRef,
+    aclTensor *inputGradRef, aclTensor *stepRef, aclIntArray *dstSize,
+    aclIntArray *dstStride, aclIntArray *dstOffset, float cThreshL1,
+    float cThreshL2, float beta1, int32_t npuAsdDetect, aclTensor *result,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief: aclnnSilentCheckV2的第二段接口，用于执行计算
@@ -61,8 +63,10 @@ ACLNN_API aclnnStatus aclnnSilentCheckV2GetWorkspaceSize(const aclTensor *val, c
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnSilentCheckV2(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-                                       aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSilentCheckV2(void *workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor *executor,
+                                         aclrtStream stream);
 
 #ifdef __cplusplus
 }

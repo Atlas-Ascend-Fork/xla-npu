@@ -22,18 +22,21 @@ extern "C" {
  * @domain aclnn_ops_train
  */
 ACLNN_API aclnnStatus aclnnBatchNormElemtBackwardGetWorkspaceSize(
-    const aclTensor* gradOut, const aclTensor* input, const aclTensor* mean, const aclTensor* invstd,
-    const aclTensor* weight, const aclTensor* sumDy, const aclTensor* sumDyXmu, aclTensor* counter,
-    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOut, const aclTensor* input, const aclTensor* mean,
+    const aclTensor* invstd, const aclTensor* weight, const aclTensor* sumDy,
+    const aclTensor* sumDyXmu, aclTensor* counter, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBatchNormElemtBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnBatchNormElemtBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBatchNormElemtBackward(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_BATCH_NORM_ELEMT_BACKWARD_H_
+#endif  // OP_API_INC_BATCH_NORM_ELEMT_BACKWARD_H_

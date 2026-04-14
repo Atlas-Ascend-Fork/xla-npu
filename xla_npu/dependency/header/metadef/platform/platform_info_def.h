@@ -30,8 +30,8 @@ limitations under the License.
 #include <vector>
 
 using std::map;
-using std::vector;
 using std::string;
+using std::vector;
 
 namespace fe {
 enum MemoryType { DDR = 0, HBM };
@@ -61,7 +61,13 @@ typedef struct tag_so_c_info {
   int32_t arch_type;
   int32_t chip_type;
   tag_so_c_info()
-      : ai_core_cnt(0), vector_core_cnt(0), memory_size(0), l2_size(0), l2PageNum(0), task_num(0), arch_type(-1),
+      : ai_core_cnt(0),
+        vector_core_cnt(0),
+        memory_size(0),
+        l2_size(0),
+        l2PageNum(0),
+        task_num(0),
+        arch_type(-1),
         chip_type(-1) {}
 } SoCInfo;
 
@@ -156,7 +162,8 @@ typedef struct tag_platform_info {
   VectorCoreSpec vector_core_spec;
   VectorCoreMemoryRates vector_core_memory_rates;
   CPUCache cpucache;
-  std::map<std::string, std::vector<std::string>> vector_core_intrinsic_dtype_map;
+  std::map<std::string, std::vector<std::string>>
+      vector_core_intrinsic_dtype_map;
   SoftwareSpec software_spec;
 } PlatformInfo;
 

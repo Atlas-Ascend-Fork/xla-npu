@@ -50,10 +50,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnQuantMatmulReduceSumWeightNzGetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* x1Scale, const aclTensor* x2Scale,
-    const aclTensor* yScale, const aclTensor* x1Offset, const aclTensor* x2Offset, const aclTensor* yOffset,
-    const aclTensor* bias, bool transposeX1, bool transposeX2,
-    int64_t groupSize, const aclIntArray* dims, bool keepDims,
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* x1Scale,
+    const aclTensor* x2Scale, const aclTensor* yScale,
+    const aclTensor* x1Offset, const aclTensor* x2Offset,
+    const aclTensor* yOffset, const aclTensor* bias, bool transposeX1,
+    bool transposeX2, int64_t groupSize, const aclIntArray* dims, bool keepDims,
     aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
@@ -65,8 +66,10 @@ ACLNN_API aclnnStatus aclnnQuantMatmulReduceSumWeightNzGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnQuantMatmulReduceSumWeightNz(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnQuantMatmulReduceSumWeightNz(void* workspace,
+                                                        uint64_t workspaceSize,
+                                                        aclOpExecutor* executor,
+                                                        aclrtStream stream);
 
 #ifdef __cplusplus
 }

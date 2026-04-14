@@ -30,10 +30,11 @@ LogicalResult printOperation(CodeEmitter &codeEmitter, scf::IndexSwitchOp op);
 
 LogicalResult printOperation(CodeEmitter &codeEmitter, scf::YieldOp yieldOp);
 
-LogicalResult printOperation(CodeEmitter &codeEmitter, scf::ConditionOp conditionOp);
+LogicalResult printOperation(CodeEmitter &codeEmitter,
+                             scf::ConditionOp conditionOp);
 
 LogicalResult printOperation(CodeEmitter &codeEmitter, scf::WhileOp whileOp);
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_MLIR_SCF_H
+#endif  // ASCIR_TARGET_ASC_MLIR_SCF_H

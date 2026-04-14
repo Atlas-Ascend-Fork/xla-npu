@@ -25,20 +25,22 @@ limitations under the License.
 #ifndef INC_EXTERNAL_REGISTER_REGISTER_TYPES_H_
 #define INC_EXTERNAL_REGISTER_REGISTER_TYPES_H_
 
-#if(defined(HOST_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(HOST_VISIBILITY)) && (defined(__GNUC__))
 #define FMK_FUNC_HOST_VISIBILITY __attribute__((visibility("default")))
 #else
 #define FMK_FUNC_HOST_VISIBILITY
 #endif
-#if(defined(DEV_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(DEV_VISIBILITY)) && (defined(__GNUC__))
 #define FMK_FUNC_DEV_VISIBILITY __attribute__((visibility("default")))
 #else
 #define FMK_FUNC_DEV_VISIBILITY
 #endif
 #ifdef __GNUC__
-#define ATTRIBUTED_DEPRECATED(replacement) __attribute__((deprecated("Please use " #replacement " instead.")))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __attribute__((deprecated("Please use " #replacement " instead.")))
 #else
-#define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __declspec(deprecated("Please use " #replacement " instead."))
 #endif
 namespace domi {
 

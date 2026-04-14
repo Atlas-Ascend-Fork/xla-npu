@@ -22,53 +22,33 @@ extern "C" {
  * @domain aclnn_ops_infer
 */
 aclnnStatus aclnnFlashAttentionScoreVXGetWorkspaceSize(
-    const aclTensor *query,
-    const aclTensor *key,
-    const aclTensor *value,
-    const aclTensor *realShiftOptional,
-    const aclTensor *dropMaskOptional,
-    const aclTensor *paddingMaskOptional,
-    const aclTensor *attenMaskOptional,
-    const aclTensor *queryRopeOptional,
-    const aclTensor *keyRopeOptional,
-    const aclTensor *dScaleQOptional,
-    const aclTensor *dScaleKOptional,
-    const aclTensor *dScaleVOptional,
-    const aclIntArray *prefixOptional,
-    const aclIntArray *actualSeqQLenOptional, /*varlen only*/
+    const aclTensor *query, const aclTensor *key, const aclTensor *value,
+    const aclTensor *realShiftOptional, const aclTensor *dropMaskOptional,
+    const aclTensor *paddingMaskOptional, const aclTensor *attenMaskOptional,
+    const aclTensor *queryRopeOptional, const aclTensor *keyRopeOptional,
+    const aclTensor *dScaleQOptional, const aclTensor *dScaleKOptional,
+    const aclTensor *dScaleVOptional, const aclIntArray *prefixOptional,
+    const aclIntArray *actualSeqQLenOptional,  /*varlen only*/
     const aclIntArray *actualSeqKvLenOptional, /*varlen only*/
-    const aclIntArray *qStartIdxOptional,
-    const aclIntArray *kvStartIdxOptional,
-    double scaleValue,
-    double keepProb,
-    int64_t preTokens,
-    int64_t nextTokens,
-    int64_t headNum,
-    char *inputLayout,
-    int64_t innerPrecise,
-    int64_t sparseMode,
-    int64_t outDtype,
-    int64_t pseType,
-    int64_t seed, /*dropout ADD*/
+    const aclIntArray *qStartIdxOptional, const aclIntArray *kvStartIdxOptional,
+    double scaleValue, double keepProb, int64_t preTokens, int64_t nextTokens,
+    int64_t headNum, char *inputLayout, int64_t innerPrecise,
+    int64_t sparseMode, int64_t outDtype, int64_t pseType,
+    int64_t seed,   /*dropout ADD*/
     int64_t offset, /*dropout ADD*/
-    const aclTensor *softmaxMaxOut,
-    const aclTensor *softmaxSumOut,
-    const aclTensor *softmaxOutOut,
-    const aclTensor *attentionOutOut,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
+    const aclTensor *softmaxMaxOut, const aclTensor *softmaxSumOut,
+    const aclTensor *softmaxOutOut, const aclTensor *attentionOutOut,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnFlashAttentionScoreVX的第二段接口，用于执行计算。
 */
-aclnnStatus aclnnFlashAttentionScoreVX(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    const aclrtStream stream);
+aclnnStatus aclnnFlashAttentionScoreVX(void *workspace, uint64_t workspaceSize,
+                                       aclOpExecutor *executor,
+                                       const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_FLASH_ATTENTION_SCORE_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_FLASH_ATTENTION_SCORE_H_

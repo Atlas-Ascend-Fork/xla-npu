@@ -15,17 +15,17 @@ limitations under the License.
 
 #ifndef ASCIR_DIALECT_EMITASC_UTILS_ATTRIBUTES_H
 #define ASCIR_DIALECT_EMITASC_UTILS_ATTRIBUTES_H
-#define LITERAL constexpr const char *
+#define LITERAL constexpr const char*
 
 namespace mlir {
 namespace emitasc {
 
 namespace attr {
 LITERAL kernelArg = "emitasc.kernel_arg";
-} // namespace attr
+}  // namespace attr
 
-} // namespace emitasc
-} // namespace mlir
+}  // namespace emitasc
+}  // namespace mlir
 
 #undef LITERAL
-#endif // ASCIR_DIALECT_EMITASC_UTILS_ATTRIBUTES_H
+#endif  // ASCIR_DIALECT_EMITASC_UTILS_ATTRIBUTES_H

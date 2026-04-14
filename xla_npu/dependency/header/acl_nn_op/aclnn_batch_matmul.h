@@ -22,14 +22,15 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnBatchMatMulGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* mat2, aclTensor* out, int8_t cubeMathType, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* mat2, aclTensor* out,
+    int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBatchMatMul的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnBatchMatMul(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBatchMatMul(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
+                                       aclrtStream stream);
 
 /**
  * @brief aclnnBatchMatMulWeightNz的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -53,8 +54,8 @@ aclnnBatchMatMul(void* workspace, uint64_t workspaceSize, aclOpExecutor* executo
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnBatchMatMulWeightNzGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* mat2, aclTensor* out, int8_t cubeMathType, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* mat2, aclTensor* out,
+    int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnBatchMatMulWeightNz的第二段接口，用于执行计算。
  *
@@ -64,11 +65,13 @@ ACLNN_API aclnnStatus aclnnBatchMatMulWeightNzGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnBatchMatMulWeightNz(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBatchMatMulWeightNz(void* workspace,
+                                               uint64_t workspaceSize,
+                                               aclOpExecutor* executor,
+                                               aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_ACLNN_BATCHMATMUL_H
+#endif  // OP_API_ACLNN_BATCHMATMUL_H

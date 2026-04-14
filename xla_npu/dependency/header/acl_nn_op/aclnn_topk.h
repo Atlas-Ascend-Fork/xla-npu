@@ -50,9 +50,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTopkGetWorkspaceSize(const aclTensor* self, int64_t k, int64_t dim, bool largest,
-                                                bool sorted, aclTensor* valuesOut, aclTensor* indicesOut,
-                                                uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnTopkGetWorkspaceSize(
+    const aclTensor* self, int64_t k, int64_t dim, bool largest, bool sorted,
+    aclTensor* valuesOut, aclTensor* indicesOut, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 /**
  * @brief aclnnTopk的第二段接口，用于执行计算。
  *
@@ -64,7 +65,8 @@ ACLNN_API aclnnStatus aclnnTopkGetWorkspaceSize(const aclTensor* self, int64_t k
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTopk(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnTopk(void* workspace, uint64_t workspaceSize,
+                                aclOpExecutor* executor,
                                 const aclrtStream stream);
 
 #ifdef __cplusplus

@@ -59,9 +59,10 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnMoeFusedTopkGetWorkspaceSize(
-    const aclTensor* x, const aclTensor* addNum, const aclTensor* mappingNum, const aclTensor* mappingTable,
-    uint32_t groupNum, uint32_t groupTopk, uint32_t topN, uint32_t topK, uint32_t activateType, 
-    bool isNorm, float scale, bool enableExpertMapping, aclTensor* y, aclTensor* indices,
+    const aclTensor* x, const aclTensor* addNum, const aclTensor* mappingNum,
+    const aclTensor* mappingTable, uint32_t groupNum, uint32_t groupTopk,
+    uint32_t topN, uint32_t topK, uint32_t activateType, bool isNorm,
+    float scale, bool enableExpertMapping, aclTensor* y, aclTensor* indices,
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /* @brief aclnnMoeFusedTopk的第二段接口，用于执行计算. 
@@ -71,10 +72,12 @@ ACLNN_API aclnnStatus aclnnMoeFusedTopkGetWorkspaceSize(
  * @param [in] stream: acl stream流.
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnMoeFusedTopk(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnMoeFusedTopk(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
+                                        aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_MOE_FUSED_TOPK_H_
+#endif  // OP_API_INC_MOE_FUSED_TOPK_H_

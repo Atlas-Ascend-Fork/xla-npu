@@ -32,29 +32,37 @@ limitations under the License.
 #include "graph/ascend_string.h"
 
 #ifdef __GNUC__
-#define ATTRIBUTED_DEPRECATED(replacement) __attribute__((deprecated("Please use " #replacement " instead.")))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __attribute__((deprecated("Please use " #replacement " instead.")))
 #else
-#define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __declspec(deprecated("Please use " #replacement " instead."))
 #endif
 
 #ifndef GE_ERRORNO_DEFINE
-#define GE_ERRORNO_DEFINE(runtime, type, level, sysid, modid, name, value)                                \
-  constexpr ge::Status name = ((static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30U) | \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28U) |     \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level))) << 25U) |    \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17U) |    \
-                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12U) |    \
-                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value))))
+#define GE_ERRORNO_DEFINE(runtime, type, level, sysid, modid, name, value)     \
+  constexpr ge::Status name =                                                  \
+      ((static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime)))        \
+        << 30U) |                                                              \
+       (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28U) | \
+       (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level)))          \
+        << 25U) |                                                              \
+       (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid)))          \
+        << 17U) |                                                              \
+       (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid)))          \
+        << 12U) |                                                              \
+       (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value))))
 #endif
 
 #ifndef GE_ERRORNO_EXTERNAL
-#define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_errorno_##name((name), (desc))
+#define GE_ERRORNO_EXTERNAL(name, desc) \
+  const ErrorNoRegisterar g_errorno_##name((name), (desc))
 #endif
 
 #ifndef GE_ERRORNO
 // Code compose(4 byte), runtime: 2 bit,  type: 2 bit,   level: 3 bit,  sysid: 8 bit, modid: 5 bit, value: 12 bit
-#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)     \
-  GE_ERRORNO_DEFINE(runtime, type, level, sysid, modid, name, value);         \
+#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc) \
+  GE_ERRORNO_DEFINE(runtime, type, level, sysid, modid, name, value);     \
   GE_ERRORNO_EXTERNAL(name, desc)
 
 namespace ge {
@@ -85,7 +93,9 @@ class GE_FUNC_VISIBILITY StatusFactory {
   }
 
   std::string GetErrDesc(const uint32_t err) {
-    const auto iter_find = static_cast<const std::map<uint32_t, std::string>::const_iterator>(err_desc_.find(err));
+    const auto iter_find =
+        static_cast<const std::map<uint32_t, std::string>::const_iterator>(
+            err_desc_.find(err));
     if (iter_find == err_desc_.cend()) {
       return "";
     }
@@ -93,7 +103,9 @@ class GE_FUNC_VISIBILITY StatusFactory {
   }
 
   AscendString GetErrDescV2(const uint32_t err) {
-    const auto iter_find = static_cast<const std::map<uint32_t, std::string>::const_iterator>(err_desc_.find(err));
+    const auto iter_find =
+        static_cast<const std::map<uint32_t, std::string>::const_iterator>(
+            err_desc_.find(err));
     if (iter_find == err_desc_.cend()) {
       return AscendString("");
     }
@@ -121,11 +133,12 @@ class GE_FUNC_VISIBILITY ErrorNoRegisterar {
 
 // General error code
 GE_ERRORNO(0, 0, 0, 0, 0, SUCCESS, 0, "success");
-GE_ERRORNO(0b11, 0b11, 0b111, 0xFFU, 0b11111, FAILED, 0xFFFU, "failed"); /*lint !e401*/
+GE_ERRORNO(0b11, 0b11, 0b111, 0xFFU, 0b11111, FAILED, 0xFFFU,
+           "failed"); /*lint !e401*/
 }  // namespace ge
 #endif
 
 namespace ge {
-  GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 0, END_OF_SEQUENCE, 7);
+GE_ERRORNO_DEFINE(0b01, 0b01, 0b000, 8, 0, END_OF_SEQUENCE, 7);
 }
 #endif  // INC_EXTERNAL_GE_COMMON_GE_API_ERROR_CODES_H_

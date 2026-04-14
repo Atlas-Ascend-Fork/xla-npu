@@ -21,14 +21,15 @@ extern "C" {
  * @brief aclnnMishBackward的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_train
  */
-ACLNN_API aclnnStatus aclnnMishBackwardGetWorkspaceSize(const aclTensor* gradOutput, const aclTensor* self,
-                                                        aclTensor* gradInput, uint64_t* workspaceSize,
-                                                        aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnMishBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* self, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnMishBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnMishBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnMishBackward(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
                                         aclrtStream stream);
 
 #ifdef __cplusplus

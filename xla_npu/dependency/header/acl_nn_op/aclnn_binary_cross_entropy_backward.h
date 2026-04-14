@@ -23,13 +23,16 @@ extern "C" {
  * 算子功能：求二元交叉熵反向传播的梯度值
  */
 ACLNN_API aclnnStatus aclnnBinaryCrossEntropyBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target, const aclTensor* weightOptional,
-    int64_t reduction, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target,
+    const aclTensor* weightOptional, int64_t reduction, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /*
  * @brief aclnnBinaryCrossEntropyBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnBinaryCrossEntropyBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnBinaryCrossEntropyBackward(void* workspace,
+                                                      uint64_t workspaceSize,
+                                                      aclOpExecutor* executor,
                                                       const aclrtStream stream);
 
 #ifdef __cplusplus

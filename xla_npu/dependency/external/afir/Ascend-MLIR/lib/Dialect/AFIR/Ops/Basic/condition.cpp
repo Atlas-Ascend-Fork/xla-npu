@@ -50,8 +50,10 @@ static LogicalResult verifyTernaryOp(Operation *op) {
   }
 
   if (input1Type.hasRank() && input2Type.hasRank() && resultType.hasRank()) {
-    if (input1Type.getRank() != input2Type.getRank() || input1Type.getRank() != resultType.getRank()) {
-      return op->emitOpError("value operands and result must have the same rank");
+    if (input1Type.getRank() != input2Type.getRank() ||
+        input1Type.getRank() != resultType.getRank()) {
+      return op->emitOpError(
+          "value operands and result must have the same rank");
     }
 
     ArrayRef<int64_t> input1Shape = input1Type.getShape();
@@ -59,11 +61,14 @@ static LogicalResult verifyTernaryOp(Operation *op) {
     ArrayRef<int64_t> resultShape = resultType.getShape();
 
     for (size_t i = 0; i < input1Shape.size(); ++i) {
-      if ((input1Shape[i] != ShapedType::kDynamic && input2Shape[i] != ShapedType::kDynamic &&
+      if ((input1Shape[i] != ShapedType::kDynamic &&
+           input2Shape[i] != ShapedType::kDynamic &&
            input1Shape[i] != input2Shape[i]) ||
-          (input1Shape[i] != ShapedType::kDynamic && resultShape[i] != ShapedType::kDynamic &&
+          (input1Shape[i] != ShapedType::kDynamic &&
+           resultShape[i] != ShapedType::kDynamic &&
            input1Shape[i] != resultShape[i])) {
-        return op->emitOpError("value operands and result must have compatible shapes");
+        return op->emitOpError(
+            "value operands and result must have compatible shapes");
       }
     }
   }
@@ -84,9 +89,11 @@ static LogicalResult verifyTernaryOp(Operation *op) {
       int64_t conditionDim = conditionShape[i];
       int64_t resultDim = resultShape[i + offset];
 
-      if (conditionDim != ShapedType::kDynamic && resultDim != ShapedType::kDynamic && conditionDim != 1 &&
+      if (conditionDim != ShapedType::kDynamic &&
+          resultDim != ShapedType::kDynamic && conditionDim != 1 &&
           conditionDim != resultDim) {
-        return op->emitOpError("condition shape must be broadcastable to result shape");
+        return op->emitOpError(
+            "condition shape must be broadcastable to result shape");
       }
     }
   }
@@ -100,9 +107,5 @@ static LogicalResult verifyTernaryOp(Operation *op) {
 // Condition Operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult SelectOp::verify() {
-  return verifyTernaryOp(getOperation());
-}
-LogicalResult WhereOp::verify() {
-  return verifyTernaryOp(getOperation());
-}
+LogicalResult SelectOp::verify() { return verifyTernaryOp(getOperation()); }
+LogicalResult WhereOp::verify() { return verifyTernaryOp(getOperation()); }

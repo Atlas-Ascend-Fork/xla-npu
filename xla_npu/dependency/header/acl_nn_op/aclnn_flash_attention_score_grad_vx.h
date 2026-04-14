@@ -21,30 +21,37 @@ extern "C" {
  * @domain aclnn_ops_train
 */
 aclnnStatus aclnnFlashAttentionScoreGradVXGetWorkspaceSize(
-    const aclTensor *query, const aclTensor *keyIn, const aclTensor *value, const aclTensor *dy,
-    const aclTensor *pseShiftOptional, const aclTensor *dropMaskOptional, const aclTensor *paddingMaskOptional,
-    const aclTensor *attenMaskOptional, const aclTensor *softmaxMaxOptional, const aclTensor *softmaxSumOptional,
-    const aclTensor *softmaxInOptional, const aclTensor *attentionInOptional, const aclTensor *queryRopeOptional,
+    const aclTensor *query, const aclTensor *keyIn, const aclTensor *value,
+    const aclTensor *dy, const aclTensor *pseShiftOptional,
+    const aclTensor *dropMaskOptional, const aclTensor *paddingMaskOptional,
+    const aclTensor *attenMaskOptional, const aclTensor *softmaxMaxOptional,
+    const aclTensor *softmaxSumOptional, const aclTensor *softmaxInOptional,
+    const aclTensor *attentionInOptional, const aclTensor *queryRopeOptional,
     const aclTensor *keyRopeOptional, const aclTensor *dScaleQOptional,
-    const aclTensor *dScaleKOptional, const aclTensor *dScaleVOptional, const aclTensor *dScaleDyOptional,
-    const aclTensor *dScaleOOptional, const aclIntArray *prefixOptional,
-    const aclIntArray *actualSeqQLenOptional, const aclIntArray *actualSeqKvLenOptional,
-    const aclIntArray *qStartIdxOptional, const aclIntArray *kvStartIdxOptional, double scaleValueOptional,
-    double keepProbOptional, int64_t preTokensOptional, int64_t nextTokensOptional, int64_t headNum,
-    char *inputLayout, int64_t innerPreciseOptional, int64_t sparseModeOptional, int64_t pseTypeOptional,
-    int64_t seed, int64_t offset, int64_t outDtypeOptional,
-    const aclTensor *dqOut, const aclTensor *dkOut, const aclTensor *dvOut,
-    const aclTensor *dqRopeOut, const aclTensor *dkRopeOut, const aclTensor *dpseOut,
+    const aclTensor *dScaleKOptional, const aclTensor *dScaleVOptional,
+    const aclTensor *dScaleDyOptional, const aclTensor *dScaleOOptional,
+    const aclIntArray *prefixOptional, const aclIntArray *actualSeqQLenOptional,
+    const aclIntArray *actualSeqKvLenOptional,
+    const aclIntArray *qStartIdxOptional, const aclIntArray *kvStartIdxOptional,
+    double scaleValueOptional, double keepProbOptional,
+    int64_t preTokensOptional, int64_t nextTokensOptional, int64_t headNum,
+    char *inputLayout, int64_t innerPreciseOptional, int64_t sparseModeOptional,
+    int64_t pseTypeOptional, int64_t seed, int64_t offset,
+    int64_t outDtypeOptional, const aclTensor *dqOut, const aclTensor *dkOut,
+    const aclTensor *dvOut, const aclTensor *dqRopeOut,
+    const aclTensor *dkRopeOut, const aclTensor *dpseOut,
     uint64_t *workspaceSize, aclOpExecutor **executor);
- 
+
 /**
  * @brief aclnnFlashAttentionScoreGradVX的第二段接口，用于执行计算。
 */
-aclnnStatus aclnnFlashAttentionScoreGradVX(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
-                                                    const aclrtStream stream);
+aclnnStatus aclnnFlashAttentionScoreGradVX(void *workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor *executor,
+                                           const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_FLASH_ATTENTION_SCORE_GRAD_REGBASE_H_
+#endif  // OP_API_INC_FLASH_ATTENTION_SCORE_GRAD_REGBASE_H_

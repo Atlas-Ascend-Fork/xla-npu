@@ -39,9 +39,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnPrecisionCompareGetWorkspaceSize(const aclTensor *golden, const aclTensor *realdata,
-                                                            aclTensor *out, uint64_t *workspaceSize,
-                                                            aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnPrecisionCompareGetWorkspaceSize(
+    const aclTensor *golden, const aclTensor *realdata, aclTensor *out,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 /**
  * @brief aclnnPrecisionCompare的第二段接口，用于执行计算。
  * @param [in] workspace: 在npu device侧申请的workspace内存起址。
@@ -51,7 +51,9 @@ ACLNN_API aclnnStatus aclnnPrecisionCompareGetWorkspaceSize(const aclTensor *gol
  * @return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnPrecisionCompare(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+ACLNN_API aclnnStatus aclnnPrecisionCompare(void *workspace,
+                                            uint64_t workspaceSize,
+                                            aclOpExecutor *executor,
                                             aclrtStream stream);
 #ifdef __cplusplus
 }

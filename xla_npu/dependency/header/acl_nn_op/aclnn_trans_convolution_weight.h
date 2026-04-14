@@ -30,9 +30,9 @@ extern "C" {
  * @param [out] weightTensorSize: 根据Convolution内部处理逻辑，计算该输入下Weight转换之后需要多少个元素的数据量
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnCalculateConvolutionWeightSize(const aclIntArray* tensorShape, bool transposed,
-                                                          int64_t groups, aclDataType dataType,
-                                                          uint64_t* weightTensorSize);
+ACLNN_API aclnnStatus aclnnCalculateConvolutionWeightSize(
+    const aclIntArray* tensorShape, bool transposed, int64_t groups,
+    aclDataType dataType, uint64_t* weightTensorSize);
 
 /**
  * @brief aclnnTransConvolutionWeight的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -49,9 +49,9 @@ ACLNN_API aclnnStatus aclnnCalculateConvolutionWeightSize(const aclIntArray* ten
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTransConvolutionWeightGetWorkspaceSize(const aclTensor* weightIn, bool transposed,
-                                                                  const int64_t groups, aclTensor* weightOut,
-                                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnTransConvolutionWeightGetWorkspaceSize(
+    const aclTensor* weightIn, bool transposed, const int64_t groups,
+    aclTensor* weightOut, uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnTransConvolutionWeight的第二段接口，用于执行计算。
  *
@@ -64,7 +64,9 @@ ACLNN_API aclnnStatus aclnnTransConvolutionWeightGetWorkspaceSize(const aclTenso
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTransConvolutionWeight(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnTransConvolutionWeight(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 #ifdef __cplusplus

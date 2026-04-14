@@ -30,6 +30,6 @@ namespace ge {
 // Op can inherit from this struct and extend more content
 struct ResourceContext {
   virtual ~ResourceContext() {}
-}; // struct ResourceContext
+};  // struct ResourceContext
 }  // namespace ge
 #endif  // INC_EXTERNAL_GRAPH_RESOURCE_CONTEXT_H_

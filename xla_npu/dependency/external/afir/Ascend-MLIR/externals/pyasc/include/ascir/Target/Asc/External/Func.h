@@ -20,7 +20,8 @@ limitations under the License.
 
 namespace mlir {
 
-LogicalResult printOperation(CodeEmitter &codeEmitter, func::ConstantOp constantOp);
+LogicalResult printOperation(CodeEmitter &codeEmitter,
+                             func::ConstantOp constantOp);
 
 LogicalResult printOperation(CodeEmitter &codeEmitter, func::CallOp callOp);
 
@@ -28,6 +29,6 @@ LogicalResult printOperation(CodeEmitter &codeEmitter, func::ReturnOp returnOp);
 
 LogicalResult printOperation(CodeEmitter &codeEmitter, func::FuncOp functionOp);
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_MLIR_FUNC_H
+#endif  // ASCIR_TARGET_ASC_MLIR_FUNC_H

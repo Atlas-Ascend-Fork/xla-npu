@@ -33,28 +33,29 @@ namespace xla {
 
 // Multi-output fusion pass for NPU.
 class NpuMultiOutputFusion : public HloModulePass {
-   public:
-    NpuMultiOutputFusion(const se::DeviceDescription& device_description,
-                         HloCostAnalysis::ShapeSizeFunction shape_size_function,
-                         SymbolicExprContext* symbolic_expr_context)
-        : device_description_(device_description),
-          shape_size_function_(shape_size_function),
-          symbolic_expr_context_(symbolic_expr_context) {}
+ public:
+  NpuMultiOutputFusion(const se::DeviceDescription& device_description,
+                       HloCostAnalysis::ShapeSizeFunction shape_size_function,
+                       SymbolicExprContext* symbolic_expr_context)
+      : device_description_(device_description),
+        shape_size_function_(shape_size_function),
+        symbolic_expr_context_(symbolic_expr_context) {}
 
-    absl::string_view name() const override { return "npu-multi-output-fusion"; }
+  absl::string_view name() const override { return "npu-multi-output-fusion"; }
 
-   protected:
-    absl::StatusOr<bool> RunImpl(HloModule* module,
-                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+ protected:
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
-   private:
-    void RecomputeReachability();
-    bool FuseSiblings(HloInstruction* parent, HloCostAnalysis* cost_analysis);
-    absl::StatusOr<bool> DoMultiOutputFusion();
+ private:
+  void RecomputeReachability();
+  bool FuseSiblings(HloInstruction* parent, HloCostAnalysis* cost_analysis);
+  absl::StatusOr<bool> DoMultiOutputFusion();
 
-    const se::DeviceDescription& device_description_;
-    HloCostAnalysis::ShapeSizeFunction shape_size_function_;
-    SymbolicExprContext* symbolic_expr_context_;
+  const se::DeviceDescription& device_description_;
+  HloCostAnalysis::ShapeSizeFunction shape_size_function_;
+  SymbolicExprContext* symbolic_expr_context_;
 };
 
 }  // namespace xla

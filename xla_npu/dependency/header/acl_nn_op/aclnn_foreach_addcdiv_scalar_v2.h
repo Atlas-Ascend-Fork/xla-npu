@@ -45,12 +45,8 @@ extern "C" {
  * @return       aclnnStatus      返回状态码
  */
 ACLNN_API aclnnStatus aclnnForeachAddcdivScalarV2GetWorkspaceSize(
-    const aclTensorList *x1,
-    const aclTensorList *x2,
-    const aclTensorList *x3,
-    const aclScalar *scalar,
-    aclTensorList *out,
-    uint64_t *workspaceSize,
+    const aclTensorList *x1, const aclTensorList *x2, const aclTensorList *x3,
+    const aclScalar *scalar, aclTensorList *out, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
 /**
@@ -66,11 +62,10 @@ ACLNN_API aclnnStatus aclnnForeachAddcdivScalarV2GetWorkspaceSize(
  * param [in] executor: op执行器，包含了算子计算流程。
  * return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnForeachAddcdivScalarV2(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
+ACLNN_API aclnnStatus aclnnForeachAddcdivScalarV2(void *workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor *executor,
+                                                  aclrtStream stream);
 
 #ifdef __cplusplus
 }

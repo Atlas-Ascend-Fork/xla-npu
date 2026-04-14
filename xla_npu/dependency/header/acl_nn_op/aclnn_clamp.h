@@ -22,68 +22,81 @@ extern "C" {
  * @brief aclnnClamp的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnClampGetWorkspaceSize(const aclTensor* self, const aclScalar* clipValueMin,
-                                                 const aclScalar* clipValueMax, aclTensor* out, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus aclnnClampGetWorkspaceSize(const aclTensor* self,
+                                                 const aclScalar* clipValueMin,
+                                                 const aclScalar* clipValueMax,
+                                                 aclTensor* out,
+                                                 uint64_t* workspaceSize,
                                                  aclOpExecutor** executor);
 
 /**
  * @brief aclnnClamp的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnClamp(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClamp(void* workspace, uint64_t workspaceSize,
+                                 aclOpExecutor* executor,
                                  const aclrtStream stream);
 
 /**
  * @brief aclnnClampMin的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnClampMinGetWorkspaceSize(const aclTensor* self, const aclScalar* clipValueMin,
-                                                    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnClampMinGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* clipValueMin, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnClampMin的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnClampMin(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClampMin(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
                                     const aclrtStream stream);
 
 /**
  * @brief aclnnClampTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnClampTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* clipValueMin,
-                                                       const aclTensor* clipValueMax, aclTensor* out,
-                                                       uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnClampTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* clipValueMin,
+    const aclTensor* clipValueMax, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnClampMinTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnClampMinTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* clipValueMin,
-                                                          aclTensor* out, uint64_t* workspaceSize,
-                                                          aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnClampMinTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* clipValueMin, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnClampMinTensor的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnClampMinTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClampMinTensor(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           const aclrtStream stream);
 
 /**
  * @brief aclnnInplaceClampMinTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnInplaceClampMinTensorGetWorkspaceSize(aclTensor* selfRef, const aclTensor* clipValueMin,
-                                                                 uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceClampMinTensorGetWorkspaceSize(
+    aclTensor* selfRef, const aclTensor* clipValueMin, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceClampMinTensor的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnInplaceClampMinTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceClampMinTensor(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
                                                  const aclrtStream stream);
 
 /**
  * @brief aclnnClampTensor的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnClampTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClampTensor(void* workspace, uint64_t workspaceSize,
+                                       aclOpExecutor* executor,
                                        const aclrtStream stream);
 
 /**
@@ -103,8 +116,9 @@ ACLNN_API aclnnStatus aclnnClampTensor(void* workspace, uint64_t workspaceSize, 
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnClampMaxGetWorkspaceSize(const aclTensor* self, const aclScalar* clipValueMax,
-                                                    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnClampMaxGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* clipValueMax, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnClampMax的第二段接口，用于执行计算。
@@ -119,7 +133,8 @@ ACLNN_API aclnnStatus aclnnClampMaxGetWorkspaceSize(const aclTensor* self, const
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnClampMax(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClampMax(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
                                     aclrtStream stream);
 
 /**
@@ -137,8 +152,9 @@ ACLNN_API aclnnStatus aclnnClampMax(void* workspace, uint64_t workspaceSize, acl
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceClampMaxGetWorkspaceSize(const aclTensor* selfRef, const aclScalar* clipValueMax,
-                                                           uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceClampMaxGetWorkspaceSize(
+    const aclTensor* selfRef, const aclScalar* clipValueMax,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceClampMax的第二段接口，用于执行计算。
@@ -153,7 +169,9 @@ ACLNN_API aclnnStatus aclnnInplaceClampMaxGetWorkspaceSize(const aclTensor* self
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceClampMax(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceClampMax(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 /**
@@ -173,15 +191,17 @@ ACLNN_API aclnnStatus aclnnInplaceClampMax(void* workspace, uint64_t workspaceSi
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnClampMaxTensorGetWorkspaceSize(const aclTensor* self, const aclTensor* max, aclTensor* out,
-                                                          uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnClampMaxTensorGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* max, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceClampMaxTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnInplaceClampMaxTensorGetWorkspaceSize(aclTensor* selfRef, const aclTensor* max,
-                                                                 uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceClampMaxTensorGetWorkspaceSize(
+    aclTensor* selfRef, const aclTensor* max, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnClampMaxTensor的第二段接口，用于执行计算。
@@ -194,10 +214,14 @@ ACLNN_API aclnnStatus aclnnInplaceClampMaxTensorGetWorkspaceSize(aclTensor* self
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnClampMaxTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnClampMaxTensor(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           aclrtStream stream);
 
-ACLNN_API aclnnStatus aclnnInplaceClampMaxTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceClampMaxTensor(void* workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor* executor,
                                                  aclrtStream stream);
 
 #ifdef __cplusplus

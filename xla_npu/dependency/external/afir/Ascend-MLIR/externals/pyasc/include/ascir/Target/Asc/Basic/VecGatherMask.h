@@ -27,7 +27,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::GatherMaskOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_ASC_BASIC_GATHER_MASK_H
+#endif  // ASCIR_TARGET_ASC_ASC_BASIC_GATHER_MASK_H

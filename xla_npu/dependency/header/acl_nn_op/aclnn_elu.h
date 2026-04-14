@@ -62,8 +62,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnEluGetWorkspaceSize(
-    const aclTensor* self, const aclScalar* alpha, const aclScalar* scale, const aclScalar* inputScale, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclScalar* alpha, const aclScalar* scale,
+    const aclScalar* inputScale, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnElu的第二段接口，用于执行计算。
@@ -73,7 +74,8 @@ ACLNN_API aclnnStatus aclnnEluGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnElu(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnElu(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceElu的第一段接口，根据具体的计算流程，计算workspace大小
@@ -89,8 +91,9 @@ ACLNN_API aclnnStatus aclnnElu(void* workspace, uint64_t workspaceSize, aclOpExe
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnInplaceEluGetWorkspaceSize(
-    aclTensor* selfRef, const aclScalar* alpha, const aclScalar* scale, const aclScalar* inputScale,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    aclTensor* selfRef, const aclScalar* alpha, const aclScalar* scale,
+    const aclScalar* inputScale, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceElu的第二段接口，用于执行计算。
@@ -100,11 +103,12 @@ ACLNN_API aclnnStatus aclnnInplaceEluGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceElu(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceElu(void* workspace, uint64_t workspaceSize,
+                                      aclOpExecutor* executor,
+                                      aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ELU_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ELU_H_

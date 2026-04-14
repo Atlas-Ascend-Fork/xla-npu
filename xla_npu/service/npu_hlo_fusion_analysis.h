@@ -34,80 +34,95 @@ namespace xla {
 bool IsNpuFusionKind(const HloInstruction& hlo, absl::string_view kind);
 
 class NpuHloFusionAnalysis {
-   public:
-    // The type of emitted fusion.
-    enum class EmitterFusionKind {
-        kLoop,
-        kCustomFusion,
-        kReduction,
-        kTranspose,
-        kConcatenate,
-        kScatter,
-        kDynamicMemcpy,
-        // NPU ACLNN specific types (using kNpuAclnn prefix):
-        kNpuAclnnMatMul,       // NPU ACLNN matrix multiplication
-        kNpuAclnnSoftmax,      // NPU ACLNN softmax
-        kNpuAclnnLayerNorm,    // NPU ACLNN layer normalization
-        kNpuAclnnBatchMatMul,  // NPU ACLNN batch matrix multiplication
-        kNpuAclnnGelu,         // NPU ACLNN GELU
-        kNpuAclnnConv2d,       // NPU ACLNN convolution
-    };
+ public:
+  // The type of emitted fusion.
+  enum class EmitterFusionKind {
+    kLoop,
+    kCustomFusion,
+    kReduction,
+    kTranspose,
+    kConcatenate,
+    kScatter,
+    kDynamicMemcpy,
+    // NPU ACLNN specific types (using kNpuAclnn prefix):
+    kNpuAclnnMatMul,       // NPU ACLNN matrix multiplication
+    kNpuAclnnSoftmax,      // NPU ACLNN softmax
+    kNpuAclnnLayerNorm,    // NPU ACLNN layer normalization
+    kNpuAclnnBatchMatMul,  // NPU ACLNN batch matrix multiplication
+    kNpuAclnnGelu,         // NPU ACLNN GELU
+    kNpuAclnnConv2d,       // NPU ACLNN convolution
+  };
 
-    // Precomputed information about inputs (arguments) and outputs (roots) of the fusion.
-    struct InputOutputInfo {
-        int smallest_input_dtype_bits;
-        int smallest_output_dtype_bits;
-    };
+  // Precomputed information about inputs (arguments) and outputs (roots) of the fusion.
+  struct InputOutputInfo {
+    int smallest_input_dtype_bits;
+    int smallest_output_dtype_bits;
+  };
 
-    static NpuHloFusionAnalysis Create(
-        // FusionBackendConfig backend_config,
-        std::unique_ptr<HloFusionAdaptor> fusion, const se::DeviceDescription* device_info);
+  static NpuHloFusionAnalysis Create(
+      // FusionBackendConfig backend_config,
+      std::unique_ptr<HloFusionAdaptor> fusion,
+      const se::DeviceDescription* device_info);
 
-    // Creates a NpuHloFusionAnalysis that analyzes just instruction as a standalone fusion.
-    static NpuHloFusionAnalysis Create(const HloInstruction& instruction, const se::DeviceDescription& device_info);
+  // Creates a NpuHloFusionAnalysis that analyzes just instruction as a standalone fusion.
+  static NpuHloFusionAnalysis Create(const HloInstruction& instruction,
+                                     const se::DeviceDescription& device_info);
 
-    // Creates a NpuHloFusionAnalysis that analyzes a hypothetical fusion of producer into consumer.
-    static NpuHloFusionAnalysis Create(const HloInstruction& producer, const HloInstruction& consumer,
-                                       const se::DeviceDescription& device_info);
+  // Creates a NpuHloFusionAnalysis that analyzes a hypothetical fusion of producer into consumer.
+  static NpuHloFusionAnalysis Create(const HloInstruction& producer,
+                                     const HloInstruction& consumer,
+                                     const se::DeviceDescription& device_info);
 
-    const HloFusionAdaptor& fusion() const { return fusion_spec_.fusion(); }
-    const HloFusionSpec& fusion_spec() const { return fusion_spec_; }
+  const HloFusionAdaptor& fusion() const { return fusion_spec_.fusion(); }
+  const HloFusionSpec& fusion_spec() const { return fusion_spec_; }
 
-    absl::Span<const HloInstructionAdaptor> fusion_roots() const { return fusion_spec_.fusion_roots(); }
-    HloInstructionAdaptor fusion_root(int64_t i) const { return fusion_spec_.fusion_root(i); }
-    int64_t fusion_root_count() const { return fusion_spec_.fusion_root_count(); }
+  absl::Span<const HloInstructionAdaptor> fusion_roots() const {
+    return fusion_spec_.fusion_roots();
+  }
+  HloInstructionAdaptor fusion_root(int64_t i) const {
+    return fusion_spec_.fusion_root(i);
+  }
+  int64_t fusion_root_count() const { return fusion_spec_.fusion_root_count(); }
 
-    absl::Span<const HloInstructionAdaptor> fusion_heroes() const { return fusion_spec_.fusion_heroes(); }
-    HloInstructionAdaptor fusion_hero(int64_t i) const { return fusion_spec_.fusion_hero(i); }
+  absl::Span<const HloInstructionAdaptor> fusion_heroes() const {
+    return fusion_spec_.fusion_heroes();
+  }
+  HloInstructionAdaptor fusion_hero(int64_t i) const {
+    return fusion_spec_.fusion_hero(i);
+  }
 
-    EmitterFusionKind emitter_fusion_kind() const { return emitter_fusion_kind_; }
+  EmitterFusionKind emitter_fusion_kind() const { return emitter_fusion_kind_; }
 
-    // Returns the hero reduction of the computation.
-    const HloInstruction* FindHeroReduction() const;
+  // Returns the hero reduction of the computation.
+  const HloInstruction* FindHeroReduction() const;
 
-    const se::DeviceDescription& device_info() const { return *device_info_; }
+  const se::DeviceDescription& device_info() const { return *device_info_; }
 
-    // Returns the tiled transpose description. Requires that emitter_fusion_kind_ is kTranspose.
-    const TransposeDescription& tiled_transpose() const {
-        CHECK(tiled_transpose_.has_value());
-        return *tiled_transpose_;
-    }
+  // Returns the tiled transpose description. Requires that emitter_fusion_kind_ is kTranspose.
+  const TransposeDescription& tiled_transpose() const {
+    CHECK(tiled_transpose_.has_value());
+    return *tiled_transpose_;
+  }
 
-    const InputOutputInfo& input_output_info() const { return input_output_info_; }
+  const InputOutputInfo& input_output_info() const {
+    return input_output_info_;
+  }
 
-   private:
-    NpuHloFusionAnalysis(
-        HloFusionSpec fusion_spec, EmitterFusionKind emitter_fusion_kind, const se::DeviceDescription* device_info,
-        std::optional<TransposeDescription> tiled_transpose, InputOutputInfo input_output_info);
+ private:
+  NpuHloFusionAnalysis(HloFusionSpec fusion_spec,
+                       EmitterFusionKind emitter_fusion_kind,
+                       const se::DeviceDescription* device_info,
+                       std::optional<TransposeDescription> tiled_transpose,
+                       InputOutputInfo input_output_info);
 
-    bool HasConsistentTransposeHeros() const;
+  bool HasConsistentTransposeHeros() const;
 
-    HloFusionSpec fusion_spec_;
-    EmitterFusionKind emitter_fusion_kind_;
+  HloFusionSpec fusion_spec_;
+  EmitterFusionKind emitter_fusion_kind_;
 
-    const se::DeviceDescription* device_info_;
-    std::optional<TransposeDescription> tiled_transpose_;
-    InputOutputInfo input_output_info_;
+  const se::DeviceDescription* device_info_;
+  std::optional<TransposeDescription> tiled_transpose_;
+  InputOutputInfo input_output_info_;
 };
 
 }  // namespace xla

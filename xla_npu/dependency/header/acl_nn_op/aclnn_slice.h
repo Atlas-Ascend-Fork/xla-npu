@@ -22,17 +22,21 @@ extern "C" {
  * @brief aclnnSlice的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_infer
  */
-ACLNN_API aclnnStatus aclnnSliceGetWorkspaceSize(
-    const aclTensor* self, int64_t dim, int64_t start, int64_t end, int64_t step, aclTensor* out,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSliceGetWorkspaceSize(const aclTensor* self,
+                                                 int64_t dim, int64_t start,
+                                                 int64_t end, int64_t step,
+                                                 aclTensor* out,
+                                                 uint64_t* workspaceSize,
+                                                 aclOpExecutor** executor);
 
 /**
  * @brief aclnnSlice的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnSlice(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSlice(void* workspace, uint64_t workspaceSize,
+                                 aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_SLICE_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_SLICE_H_

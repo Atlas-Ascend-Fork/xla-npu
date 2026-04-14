@@ -211,5 +211,5 @@ class TrackedNpuDeviceBuffer : public AbstractTrackedDeviceBuffer {
   absl::InlinedVector<tsl::AsyncValueRef<NpuEvent>, 4> usage_events_;
 };
 
-}
-#endif //NPU_TRACKED_NPU_DEVICE_BUFFER_H_
+}  // namespace xla
+#endif  //NPU_TRACKED_NPU_DEVICE_BUFFER_H_

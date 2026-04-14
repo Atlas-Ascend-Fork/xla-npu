@@ -26,31 +26,34 @@ namespace ascendc {
 // ===----------------------------------------------------------------------===//
 
 template <typename OpType>
-LogicalResult printCastDeqL01Template(CodeEmitter &emitter, OpType op)
-{
-    auto &os = emitter.ostream();
-    auto dstType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    auto srcType = cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", ";
-    FAIL_OR(emitter.emitType(op.getLoc(), srcType));
-    os << ", " << op.getIsSetMask() << ", " << op.getIsVecDeq() << ", " << op.getHalfBlock() << ">";
-    return success();
+LogicalResult printCastDeqL01Template(CodeEmitter &emitter, OpType op) {
+  auto &os = emitter.ostream();
+  auto dstType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  auto srcType =
+      cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", ";
+  FAIL_OR(emitter.emitType(op.getLoc(), srcType));
+  os << ", " << op.getIsSetMask() << ", " << op.getIsVecDeq() << ", "
+     << op.getHalfBlock() << ">";
+  return success();
 }
 
 template <typename OpType>
-LogicalResult printCastDeqL2Template(CodeEmitter &emitter, OpType op)
-{
-    auto &os = emitter.ostream();
-    auto dstType = cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
-    auto srcType = cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
-    os << ascNamespace << "::" << op.getAPIName() << "<";
-    FAIL_OR(emitter.emitType(op.getLoc(), dstType));
-    os << ", ";
-    FAIL_OR(emitter.emitType(op.getLoc(), srcType));
-    os << ", " << op.getIsVecDeq() << ", " << op.getHalfBlock() << ">";
-    return success();
+LogicalResult printCastDeqL2Template(CodeEmitter &emitter, OpType op) {
+  auto &os = emitter.ostream();
+  auto dstType =
+      cast<ascendc::LocalTensorType>(op.getDst().getType()).getElementType();
+  auto srcType =
+      cast<ascendc::LocalTensorType>(op.getSrc().getType()).getElementType();
+  os << ascNamespace << "::" << op.getAPIName() << "<";
+  FAIL_OR(emitter.emitType(op.getLoc(), dstType));
+  os << ", ";
+  FAIL_OR(emitter.emitType(op.getLoc(), srcType));
+  os << ", " << op.getIsVecDeq() << ", " << op.getHalfBlock() << ">";
+  return success();
 }
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::CastL0Op op);
@@ -67,7 +70,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::CastDeqL2Op op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::SetDeqScaleOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_VCONV_H
+#endif  // ASCIR_TARGET_ASC_BASIC_VCONV_H

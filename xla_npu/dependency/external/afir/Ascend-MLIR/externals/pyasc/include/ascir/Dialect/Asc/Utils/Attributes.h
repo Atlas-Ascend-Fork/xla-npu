@@ -15,7 +15,7 @@ limitations under the License.
 
 #ifndef ASCIR_DIALECT_ASC_UTILS_ATTRIBUTES_H
 #define ASCIR_DIALECT_ASC_UTILS_ATTRIBUTES_H
-#define LITERAL constexpr const char *
+#define LITERAL constexpr const char*
 
 namespace mlir {
 namespace ascendc {
@@ -28,10 +28,10 @@ LITERAL emitAsUnsigned = "ascendc.emit_as_unsigned";
 LITERAL global = "ascendc.global";
 LITERAL enable_debug = "asc.enable_debug";
 LITERAL matmulCubeOnly = "asc.matmul_cube_only";
-} // namespace attr
+}  // namespace attr
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
 #undef LITERAL
-#endif // ASCIR_DIALECT_ASC_UTILS_ATTRIBUTES_H
+#endif  // ASCIR_DIALECT_ASC_UTILS_ATTRIBUTES_H

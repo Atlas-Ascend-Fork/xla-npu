@@ -23,17 +23,20 @@ extern "C" {
  * @brief aclnnAdaptiveAvgPool2d的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_infer
  */
-ACLNN_API aclnnStatus aclnnCatGetWorkspaceSize(
-    const aclTensorList* tensors, int64_t dim, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnCatGetWorkspaceSize(const aclTensorList* tensors,
+                                               int64_t dim, aclTensor* out,
+                                               uint64_t* workspaceSize,
+                                               aclOpExecutor** executor);
 
 /**
  * @brief aclnnCat的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnCat(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnCat(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor,
+                               const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_CAT_H_
+#endif  // OP_API_INC_CAT_H_

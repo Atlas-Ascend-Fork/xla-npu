@@ -34,9 +34,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnPowTensorScalarGetWorkspaceSize(const aclTensor* self, const aclScalar* exponent,
-                                                           const aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnPowTensorScalarGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* exponent, const aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnPowTensorScalar的第二段接口，用于执行计算。
  * @param [in] workspace: 在npu device侧申请的workspace内存起址。
@@ -45,7 +45,9 @@ ACLNN_API aclnnStatus aclnnPowTensorScalarGetWorkspaceSize(const aclTensor* self
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnPowTensorScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnPowTensorScalar(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            const aclrtStream stream);
 
 /**
@@ -62,8 +64,9 @@ ACLNN_API aclnnStatus aclnnPowTensorScalar(void* workspace, uint64_t workspaceSi
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplacePowTensorScalarGetWorkspaceSize(const aclTensor* self, const aclScalar* exponent,
-                                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplacePowTensorScalarGetWorkspaceSize(
+    const aclTensor* self, const aclScalar* exponent, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplacePowTensorScalar的第二段接口，用于执行计算。
@@ -75,18 +78,22 @@ ACLNN_API aclnnStatus aclnnInplacePowTensorScalarGetWorkspaceSize(const aclTenso
  * @param [in] executor: op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplacePowTensorScalar(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplacePowTensorScalar(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
                                                   aclrtStream stream);
 
 /**
  * @brief aclnnPowScalarTensor的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnPowScalarTensorGetWorkspaceSize(const aclScalar* self, const aclTensor* exponent,
-                                                           const aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnPowScalarTensorGetWorkspaceSize(
+    const aclScalar* self, const aclTensor* exponent, const aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnPowScalarTensor(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnPowScalarTensor(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 #ifdef __cplusplus

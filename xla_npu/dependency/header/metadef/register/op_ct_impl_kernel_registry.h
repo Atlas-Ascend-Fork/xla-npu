@@ -34,13 +34,15 @@ namespace gert {
 struct OpCtImplKernelRegistry {
   using OpType = ge::AscendString;
   using OpCalcParamKernelFunc = UINT32 (*)(ExeResGenerationContext *context);
-  using OpGenTaskKernelFunc = UINT32 (*)(const ExeResGenerationContext *context,
-                                         std::vector<std::vector<uint8_t>> &tasks);
+  using OpGenTaskKernelFunc =
+      UINT32 (*)(const ExeResGenerationContext *context,
+                 std::vector<std::vector<uint8_t>> &tasks);
   struct OpCtImplFunctions {
     uint32_t st_size = sizeof(OpCtImplFunctions);
     uint32_t version = OP_CT_IMPL_MAIM_VERSION;
     OpCalcParamKernelFunc calc_op_param = nullptr;
-    OpGenTaskKernelFunc gen_task = nullptr;;
+    OpGenTaskKernelFunc gen_task = nullptr;
+    ;
   };
 };
 }  // namespace gert

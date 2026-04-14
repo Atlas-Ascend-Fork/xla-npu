@@ -66,9 +66,11 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnAddRmsNormDynamicQuantGetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* gamma, const aclTensor* smoothScale1Optional,
-    const aclTensor* smoothScale2Optional, double epsilon, aclTensor* y1Out, aclTensor* y2Out, aclTensor* xOut,
-    aclTensor* scale1Out, aclTensor* scale2Out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* gamma,
+    const aclTensor* smoothScale1Optional,
+    const aclTensor* smoothScale2Optional, double epsilon, aclTensor* y1Out,
+    aclTensor* y2Out, aclTensor* xOut, aclTensor* scale1Out,
+    aclTensor* scale2Out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAddRmsNormQuant的第二段接口，用于执行计算。
@@ -79,11 +81,13 @@ ACLNN_API aclnnStatus aclnnAddRmsNormDynamicQuantGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnAddRmsNormDynamicQuant(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAddRmsNormDynamicQuant(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ADD_RMS_NORM_QUANT_H_
+#endif  // OP_API_INC_LEVEL2_ADD_RMS_NORM_QUANT_H_

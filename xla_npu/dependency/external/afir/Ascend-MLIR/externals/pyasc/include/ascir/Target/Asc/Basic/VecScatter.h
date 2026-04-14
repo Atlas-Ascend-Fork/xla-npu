@@ -27,7 +27,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::ScatterL1Op op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_SCATTER_H
+#endif  // ASCIR_TARGET_ASC_BASIC_SCATTER_H

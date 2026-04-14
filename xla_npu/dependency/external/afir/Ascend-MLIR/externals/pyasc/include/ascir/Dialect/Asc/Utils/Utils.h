@@ -27,29 +27,24 @@ namespace ascendc {
 
 template <typename OpT>
 struct HoistOpPattern : public OpRewritePattern<OpT> {
-    using OpRewritePattern<OpT>::OpRewritePattern;
+  using OpRewritePattern<OpT>::OpRewritePattern;
 
-    virtual bool hoistable(OpT) const
-    {
-        return true;
-    }
+  virtual bool hoistable(OpT) const { return true; }
 
-    LogicalResult matchAndRewrite(OpT op, PatternRewriter &rewriter) const override
-    {
-        Operation *parent = op->getParentOp();
-        if (isa<func::FuncOp>(parent))
-            return failure();
-        if (!hoistable(op))
-            return failure();
-        DominanceInfo di;
-        bool dominatedByOperands =
-            llvm::all_of(op->getOperands(), [&](Value opnd) { return di.dominates(opnd, parent); });
-        if (!dominatedByOperands)
-            return failure();
-        rewriter.setInsertionPoint(parent);
-        rewriter.replaceOp(op, rewriter.clone(*op.getOperation())->getResults());
-        return success();
-    }
+  LogicalResult matchAndRewrite(OpT op,
+                                PatternRewriter &rewriter) const override {
+    Operation *parent = op->getParentOp();
+    if (isa<func::FuncOp>(parent)) return failure();
+    if (!hoistable(op)) return failure();
+    DominanceInfo di;
+    bool dominatedByOperands = llvm::all_of(op->getOperands(), [&](Value opnd) {
+      return di.dominates(opnd, parent);
+    });
+    if (!dominatedByOperands) return failure();
+    rewriter.setInsertionPoint(parent);
+    rewriter.replaceOp(op, rewriter.clone(*op.getOperation())->getResults());
+    return success();
+  }
 };
 
 bool opPrecedes(Operation *lhs, Operation *rhs);
@@ -58,7 +53,7 @@ bool opPrecedes(Operation *lhs, Operation *rhs, DominanceInfo &di);
 
 void registerInlinerInterfaces(DialectRegistry &registry);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_DIALECT_ASC_UTILS_UTILS_H
+#endif  // ASCIR_DIALECT_ASC_UTILS_UTILS_H

@@ -27,26 +27,23 @@ limitations under the License.
 namespace mlir {
 namespace ascir {
 
-inline void registerDialects(DialectRegistry &registry)
-{
-    registerAllDialects(registry);
-    registry.insert<ascendc::AscendCDialect, emitasc::EmitAscDialect>();
-    ascendc::registerExternalModels(registry);
-    emitasc::registerExternalModels(registry);
+inline void registerDialects(DialectRegistry &registry) {
+  registerAllDialects(registry);
+  registry.insert<ascendc::AscendCDialect, emitasc::EmitAscDialect>();
+  ascendc::registerExternalModels(registry);
+  emitasc::registerExternalModels(registry);
 }
 
-inline void registerExtensions(DialectRegistry &registry)
-{
-    registerAllExtensions(registry);
+inline void registerExtensions(DialectRegistry &registry) {
+  registerAllExtensions(registry);
 }
 
-inline void registerPasses()
-{
-    registerAllPasses();
-    registerascendcPasses();
+inline void registerPasses() {
+  registerAllPasses();
+  registerascendcPasses();
 }
 
-} // namespace ascir
-} // namespace mlir
+}  // namespace ascir
+}  // namespace mlir
 
-#endif // ASCIR_DIALECT_UTILS_REGISTRATION_H
+#endif  // ASCIR_DIALECT_UTILS_REGISTRATION_H

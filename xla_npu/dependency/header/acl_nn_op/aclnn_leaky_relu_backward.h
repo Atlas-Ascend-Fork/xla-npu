@@ -36,8 +36,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnLeakyReluBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclScalar* negativeSlope, bool selfIsResult,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self,
+    const aclScalar* negativeSlope, bool selfIsResult, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnLeakyReluBackward的第二段接口，用于执行计算。
  *
@@ -49,11 +50,13 @@ ACLNN_API aclnnStatus aclnnLeakyReluBackwardGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnLeakyReluBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnLeakyReluBackward(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
+                                             aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEAKY_RELU_BACKWARD_H_
+#endif  // OP_API_INC_LEAKY_RELU_BACKWARD_H_

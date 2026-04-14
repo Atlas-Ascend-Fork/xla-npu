@@ -22,18 +22,21 @@ extern "C" {
  * @brief aclnnAny的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnAnyGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* dim, bool keepdim, aclTensor* out, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAnyGetWorkspaceSize(const aclTensor* self,
+                                               const aclIntArray* dim,
+                                               bool keepdim, aclTensor* out,
+                                               uint64_t* workspaceSize,
+                                               aclOpExecutor** executor);
 
 /**
  * @brief aclnnAny的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnAny(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAny(void* workspace, uint64_t workspaceSize,
+                               aclOpExecutor* executor,
+                               const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ANY_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ANY_H_

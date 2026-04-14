@@ -42,8 +42,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnNLLLossBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target, const aclTensor* weight,
-    int64_t reduction, int64_t ignoreIndex, const aclTensor* totalWeight, aclTensor* out, uint64_t* workspaceSize,
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target,
+    const aclTensor* weight, int64_t reduction, int64_t ignoreIndex,
+    const aclTensor* totalWeight, aclTensor* out, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /**
@@ -57,11 +58,13 @@ ACLNN_API aclnnStatus aclnnNLLLossBackwardGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnNLLLossBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnNLLLossBackward(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
+                                           aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_ADD_H_
+#endif  // OP_API_INC_ADD_H_

@@ -33,40 +33,46 @@ namespace xla {
 
 // PriorityFusion-like pass for NPU.
 class NpuPriorityFusion : public HloModulePass {
-   public:
-    NpuPriorityFusion(tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& device,
-                      HloCostAnalysis::Options cost_analysis_options, SymbolicExprContext* symbolic_expr_context)
-        : thread_pool_(thread_pool),
-          device_info_(device),
-          cost_analysis_options_(std::move(cost_analysis_options)),
-          symbolic_expr_context_(symbolic_expr_context) {}
+ public:
+  NpuPriorityFusion(tsl::thread::ThreadPool* thread_pool,
+                    const se::DeviceDescription& device,
+                    HloCostAnalysis::Options cost_analysis_options,
+                    SymbolicExprContext* symbolic_expr_context)
+      : thread_pool_(thread_pool),
+        device_info_(device),
+        cost_analysis_options_(std::move(cost_analysis_options)),
+        symbolic_expr_context_(symbolic_expr_context) {}
 
-    absl::string_view name() const override { return "npu-priority-fusion"; }
+  absl::string_view name() const override { return "npu-priority-fusion"; }
 
-   protected:
-    HloInstruction::FusionKind ChooseKind(const HloInstruction* producer, const HloInstruction* consumer);
+ protected:
+  HloInstruction::FusionKind ChooseKind(const HloInstruction* producer,
+                                        const HloInstruction* consumer);
 
-    HloInstruction* Fuse(HloInstruction* producer, HloInstruction* consumer, bool use_multi_output_fusion = false);
+  HloInstruction* Fuse(HloInstruction* producer, HloInstruction* consumer,
+                       bool use_multi_output_fusion = false);
 
-    absl::StatusOr<bool> RunImpl(HloModule* module,
-                                 const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
-   private:
-    // Consumes a unit of compiler fuel and returns true if we should
-    // continue with the transformation.
-    bool ConsumeFuel(HloInstruction* producer, HloInstruction* consumer);
+ private:
+  // Consumes a unit of compiler fuel and returns true if we should
+  // continue with the transformation.
+  bool ConsumeFuel(HloInstruction* producer, HloInstruction* consumer);
 
-    // Returns the decision if the constant can be fused into the user.
-    bool CanFuseConstant(const HloInstruction* constant, const HloInstruction* user);
+  // Returns the decision if the constant can be fused into the user.
+  bool CanFuseConstant(const HloInstruction* constant,
+                       const HloInstruction* user);
 
-    tsl::thread::ThreadPool* thread_pool_;
-    const se::DeviceDescription& device_info_;
+  tsl::thread::ThreadPool* thread_pool_;
+  const se::DeviceDescription& device_info_;
 
-    // Cost model options that defines priorities in the queue.
-    // Using the base HloCostAnalysis::Options (not GPU-specific).
-    HloCostAnalysis::Options cost_analysis_options_;
+  // Cost model options that defines priorities in the queue.
+  // Using the base HloCostAnalysis::Options (not GPU-specific).
+  HloCostAnalysis::Options cost_analysis_options_;
 
-    SymbolicExprContext* symbolic_expr_context_;
+  SymbolicExprContext* symbolic_expr_context_;
 };
 
 }  // namespace xla

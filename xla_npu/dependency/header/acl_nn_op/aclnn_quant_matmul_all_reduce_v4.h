@@ -51,11 +51,13 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnQuantMatmulAllReduceV4GetWorkspaceSize(
-    const aclTensor* x1, const aclTensor* x2, const aclTensor* biasOptional, const aclTensor* x3Optional,
-    const aclTensor* x1ScaleOptional, const aclTensor* x2Scale, const aclTensor* commQuantScale1Optional,
-    const aclTensor* commQuantScale2Optional, const char* group, const char* reduceOp, int64_t commTurn,
-    int64_t streamMode, int64_t groupSize, int64_t commQuantMode, const aclTensor* output, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* x1, const aclTensor* x2, const aclTensor* biasOptional,
+    const aclTensor* x3Optional, const aclTensor* x1ScaleOptional,
+    const aclTensor* x2Scale, const aclTensor* commQuantScale1Optional,
+    const aclTensor* commQuantScale2Optional, const char* group,
+    const char* reduceOp, int64_t commTurn, int64_t streamMode,
+    int64_t groupSize, int64_t commQuantMode, const aclTensor* output,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnQuantMatmulAllReduceV4的第二段接口，用于执行计算。
@@ -66,11 +68,13 @@ ACLNN_API aclnnStatus aclnnQuantMatmulAllReduceV4GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus
-aclnnQuantMatmulAllReduceV4(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnQuantMatmulAllReduceV4(void* workspace,
+                                                  uint64_t workspaceSize,
+                                                  aclOpExecutor* executor,
+                                                  const aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_QUANT_MATMUL_ALL_REDUCE_V4_
+#endif  // OP_API_INC_QUANT_MATMUL_ALL_REDUCE_V4_

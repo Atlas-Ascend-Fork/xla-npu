@@ -65,10 +65,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAddcdivGetWorkspaceSize(const aclTensor* self, const aclTensor* tensor1,
-                                                   const aclTensor* tensor2, const aclScalar* value,
-                                                   const aclTensor* out, uint64_t* workspaceSize,
-                                                   aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnAddcdivGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* tensor1, const aclTensor* tensor2,
+    const aclScalar* value, const aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnAddcdiv的第二段接口，用于执行计算。
@@ -102,7 +102,8 @@ ACLNN_API aclnnStatus aclnnAddcdivGetWorkspaceSize(const aclTensor* self, const 
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnAddcdiv(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnAddcdiv(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor,
                                    const aclrtStream stream);
 
 /**
@@ -147,9 +148,10 @@ ACLNN_API aclnnStatus aclnnAddcdiv(void* workspace, uint64_t workspaceSize, aclO
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceAddcdivGetWorkspaceSize(const aclTensor* selfRef, const aclTensor* tensor1,
-                                                          const aclTensor* tensor2, const aclScalar* value,
-                                                          uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceAddcdivGetWorkspaceSize(
+    const aclTensor* selfRef, const aclTensor* tensor1,
+    const aclTensor* tensor2, const aclScalar* value, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceAddcdiv的第二段接口，用于执行计算。
@@ -183,7 +185,9 @@ ACLNN_API aclnnStatus aclnnInplaceAddcdivGetWorkspaceSize(const aclTensor* selfR
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceAddcdiv(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceAddcdiv(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
                                           const aclrtStream stream);
 
 #ifdef __cplusplus

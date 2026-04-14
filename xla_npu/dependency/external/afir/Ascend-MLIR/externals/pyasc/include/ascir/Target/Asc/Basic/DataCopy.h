@@ -31,7 +31,7 @@ LogicalResult printOperation(CodeEmitter &emitter, ascendc::CopyL0Op op);
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::CopyL1Op op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_DATA_COPY_H
+#endif  // ASCIR_TARGET_ASC_BASIC_DATA_COPY_H

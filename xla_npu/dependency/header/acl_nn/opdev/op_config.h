@@ -21,27 +21,25 @@
 namespace op {
 
 struct OpConfigInfo {
-    OpConfigInfo() = default;
-    OpConfigInfo(const OpConfigInfo &rhs)
-    {
-        isDeterministicOn_ = rhs.isDeterministicOn_;
-        aicNum_ = rhs.aicNum_;
-        aivNum_ = rhs.aivNum_;
+  OpConfigInfo() = default;
+  OpConfigInfo(const OpConfigInfo &rhs) {
+    isDeterministicOn_ = rhs.isDeterministicOn_;
+    aicNum_ = rhs.aicNum_;
+    aivNum_ = rhs.aivNum_;
+  }
+  OpConfigInfo &operator=(const OpConfigInfo &rhs) {
+    if (this != &rhs) {
+      isDeterministicOn_ = rhs.isDeterministicOn_;
+      aicNum_ = rhs.aicNum_;
+      aivNum_ = rhs.aivNum_;
     }
-    OpConfigInfo &operator=(const OpConfigInfo &rhs)
-    {
-        if (this != &rhs) {
-            isDeterministicOn_ = rhs.isDeterministicOn_;
-            aicNum_ = rhs.aicNum_;
-            aivNum_ = rhs.aivNum_;
-        }
-        return *this;
-    }
+    return *this;
+  }
 
-    uint32_t aicNum_{0};
-    uint32_t aivNum_{0};
-    bool isDeterministicOn_{false};
-    uint8_t reserved[7] = {0};
+  uint32_t aicNum_{0};
+  uint32_t aivNum_{0};
+  bool isDeterministicOn_{false};
+  uint8_t reserved[7] = {0};
 };
 
 }  // namespace op

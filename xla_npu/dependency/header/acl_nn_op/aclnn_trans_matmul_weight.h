@@ -29,8 +29,9 @@ extern "C" {
  * @param [out] weightTensorSize: 根据MatMul内部处理逻辑，计算该输入下Weight需要多少个元素的数据量
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSizeV2(const aclIntArray* tensorShape, aclDataType dataType,
-                                                       uint64_t* weightTensorSize);
+ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSizeV2(
+    const aclIntArray* tensorShape, aclDataType dataType,
+    uint64_t* weightTensorSize);
 
 /**
  * @brief aclnnCalculateMatmulWeightSize用于计算调用aclnnMatMul或aclnnMm传入的weight tensor需要占用的元素大小
@@ -40,7 +41,8 @@ ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSizeV2(const aclIntArray* tensor
  * @param [in] weightTensorSize: 根据MatMul内部处理逻辑，计算该输入下Weight需要多少个元素的数据量
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSize(const aclIntArray* tensorShape, uint64_t* weightTensorSize);
+ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSize(
+    const aclIntArray* tensorShape, uint64_t* weightTensorSize);
 
 /**
  * @brief aclnnTransMatmulWeight的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -54,8 +56,8 @@ ACLNN_API aclnnStatus aclnnCalculateMatmulWeightSize(const aclIntArray* tensorSh
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTransMatmulWeightGetWorkspaceSize(aclTensor* mmWeightRef, uint64_t* workspaceSize,
-                                                             aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnTransMatmulWeightGetWorkspaceSize(
+    aclTensor* mmWeightRef, uint64_t* workspaceSize, aclOpExecutor** executor);
 /**
  * @brief aclnnTransMatmulWeight的第二段接口，用于执行计算。
  *
@@ -68,7 +70,9 @@ ACLNN_API aclnnStatus aclnnTransMatmulWeightGetWorkspaceSize(aclTensor* mmWeight
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnTransMatmulWeight(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnTransMatmulWeight(void* workspace,
+                                             uint64_t workspaceSize,
+                                             aclOpExecutor* executor,
                                              aclrtStream stream);
 
 #ifdef __cplusplus

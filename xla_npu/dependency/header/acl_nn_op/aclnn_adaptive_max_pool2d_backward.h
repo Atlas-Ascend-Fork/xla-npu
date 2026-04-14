@@ -42,8 +42,9 @@ extern "C" {
  */
 
 ACLNN_API aclnnStatus aclnnAdaptiveMaxPool2dBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* indices, aclTensor* gradInput,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self,
+    const aclTensor* indices, aclTensor* gradInput, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 /**
  * @brief A second interface of aclnnAdaptiveMaxPool2dBackward, used to perform calculation.
  * @param [in] workspace: start address of the workspace memory allocated on the NPU device.
@@ -54,11 +55,13 @@ ACLNN_API aclnnStatus aclnnAdaptiveMaxPool2dBackwardGetWorkspaceSize(
  * @return aclnnStatus: returned status code
  */
 
-ACLNN_API aclnnStatus
-aclnnAdaptiveMaxPool2dBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAdaptiveMaxPool2dBackward(void* workspace,
+                                                     uint64_t workspaceSize,
+                                                     aclOpExecutor* executor,
+                                                     aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ADAPTIVE_MAX_POOL2D_BACKWARD_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ADAPTIVE_MAX_POOL2D_BACKWARD_H_

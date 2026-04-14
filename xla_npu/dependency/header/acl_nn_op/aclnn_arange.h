@@ -23,10 +23,12 @@ extern "C" {
  * @domain aclnn_ops_infer
  * 功能描述：从start到end按照step的间隔获取每个值，保存到输出1维张量。
  */
-ACLNN_API aclnnStatus aclnnArangeGetWorkspaceSize(const aclScalar* start, const aclScalar* end, const aclScalar* step,
-                                                  aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnArangeGetWorkspaceSize(
+    const aclScalar* start, const aclScalar* end, const aclScalar* step,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 /* @brief aclnnArange的第二段接口，用于执行计算。 */
-ACLNN_API aclnnStatus aclnnArange(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnArange(void* workspace, uint64_t workspaceSize,
+                                  aclOpExecutor* executor,
                                   const aclrtStream stream);
 
 #ifdef __cplusplus

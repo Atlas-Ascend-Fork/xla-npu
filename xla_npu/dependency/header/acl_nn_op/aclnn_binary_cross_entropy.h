@@ -23,15 +23,17 @@ enum Reduction { None = 0, Mean = 1, Sum = 2 };
  * @brief aclnnBinaryCrossEntropy的第一段接口，根据具体的计算流程，计算workspace大小
  * @domain aclnn_ops_train
  */
-ACLNN_API aclnnStatus aclnnBinaryCrossEntropyGetWorkspaceSize(const aclTensor* self, const aclTensor* target,
-                                                              const aclTensor* weight, int64_t reduction,
-                                                              aclTensor* out, uint64_t* workspaceSize,
-                                                              aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnBinaryCrossEntropyGetWorkspaceSize(
+    const aclTensor* self, const aclTensor* target, const aclTensor* weight,
+    int64_t reduction, aclTensor* out, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /*
  * @brief aclnnBinaryCrossEntropy的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnBinaryCrossEntropy(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnBinaryCrossEntropy(void* workspace,
+                                              uint64_t workspaceSize,
+                                              aclOpExecutor* executor,
                                               aclrtStream stream);
 
 #ifdef __cplusplus

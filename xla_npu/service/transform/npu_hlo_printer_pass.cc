@@ -24,12 +24,12 @@ limitations under the License.
 namespace xla {
 
 absl::StatusOr<bool> NpuHloPrinterPass::RunImpl(
-        HloModule* module,
-        const absl::flat_hash_set<absl::string_view>& execution_threads) {
-    // 使用 NpuTool::PrintHloModule 打印 HLO 模块
-    NpuTool::PrintHloModule(module, pass_name_);
+    HloModule* module,
+    const absl::flat_hash_set<absl::string_view>& execution_threads) {
+  // 使用 NpuTool::PrintHloModule 打印 HLO 模块
+  NpuTool::PrintHloModule(module, pass_name_);
 
-    return false;  // This pass never changes the HLO
+  return false;  // This pass never changes the HLO
 }
 
 }  // namespace xla

@@ -19,18 +19,19 @@ limitations under the License.
 
 namespace xla {
 
-const BufferAllocation& NpuBufferAssignment::GetAllocation(BufferAllocation::Index index) const {
-    CHECK_GE(index, 0);
-    CHECK_LT(index, allocations_.size());
-    return allocations_[index];
+const BufferAllocation& NpuBufferAssignment::GetAllocation(
+    BufferAllocation::Index index) const {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, allocations_.size());
+  return allocations_[index];
 }
 
 BufferAllocation* NpuBufferAssignment::NewEmptyAllocation(
     int64_t size, LogicalBuffer::Color color) {
-    BufferAllocation::Index index = allocations_.size();
-    allocations_.emplace_back(index, size, color);
-    BufferAllocation* allocation = &allocations_.back();
-    return allocation;
+  BufferAllocation::Index index = allocations_.size();
+  allocations_.emplace_back(index, size, color);
+  BufferAllocation* allocation = &allocations_.back();
+  return allocation;
 }
 
 void NpuBufferAssignment::Finalize() {}

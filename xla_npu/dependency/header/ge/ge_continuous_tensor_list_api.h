@@ -35,7 +35,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ContinuousTensorList {
  public:
   ContinuousTensorList() = default;
   ~ContinuousTensorList();
-  explicit ContinuousTensorList(const std::vector<TensorDesc> &tensor_desc_list);
+  explicit ContinuousTensorList(
+      const std::vector<TensorDesc> &tensor_desc_list);
 
   graphStatus Initialize();
   graphStatus Finalize();

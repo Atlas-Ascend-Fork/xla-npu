@@ -105,7 +105,8 @@ DeviceMemoryBase NpuExecutor::Allocate(uint64_t size, int64_t memory_space) {
   xla::NpuOperation::SetDevice(device_ordinal_);
 
   void* base = nullptr;
-  aclError ret = ::xla::dep::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
+  aclError ret =
+      ::xla::dep::aclrtMalloc(&base, size, ACL_MEM_MALLOC_HUGE_FIRST);
   if (ret != ACL_SUCCESS) {
     NPU_LOG_FORMAT_PRINT(
         ERROR, "Allocate %d byte on npu failed, error code: %d", size, ret);

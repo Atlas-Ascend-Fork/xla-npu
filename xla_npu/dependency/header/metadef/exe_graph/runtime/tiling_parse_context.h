@@ -46,8 +46,8 @@ class TilingParseContext : public ExtendedKernelContext {
    * @tparam T 实例类型，该类型需要与`IMPL_OP`注册时TilingParse的类型一致
    * @return 指向`CompiledInfo`实例的指针
    */
-  template<typename T>
-  auto GetCompiledInfo() -> T* {
+  template <typename T>
+  auto GetCompiledInfo() -> T * {
     auto av = GetOutput(0);
     if (av == nullptr) {
       return nullptr;
@@ -62,6 +62,7 @@ class TilingParseContext : public ExtendedKernelContext {
     return GetInputValue<fe::PlatFormInfos *>(1);
   }
 };
-static_assert(std::is_standard_layout<TilingParseContext>::value, "The class TilingParseContext must be a POD");
+static_assert(std::is_standard_layout<TilingParseContext>::value,
+              "The class TilingParseContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_TILING_PARSE_CONTEXT_H_

@@ -23,35 +23,38 @@ namespace mlir {
 
 /// Convenience functions to produce interleaved output with functions returning a LogicalResult.
 /// This is different than those in STLExtras as functions used on each element doesn't return a string.
-template <typename ForwardIterator, typename UnaryFunctor, typename NullaryFunctor>
-inline LogicalResult interleaveWithError(ForwardIterator beginIter, ForwardIterator endIter, UnaryFunctor eachFn,
-                                         NullaryFunctor betweenFn)
-{
-    if (beginIter == endIter)
-        return success();
-    if (failed(eachFn(*beginIter)))
-        return failure();
-    ++beginIter;
-    for (; beginIter != endIter; ++beginIter) {
-        betweenFn();
-        if (failed(eachFn(*beginIter)))
-            return failure();
-    }
-    return success();
+template <typename ForwardIterator, typename UnaryFunctor,
+          typename NullaryFunctor>
+inline LogicalResult interleaveWithError(ForwardIterator beginIter,
+                                         ForwardIterator endIter,
+                                         UnaryFunctor eachFn,
+                                         NullaryFunctor betweenFn) {
+  if (beginIter == endIter) return success();
+  if (failed(eachFn(*beginIter))) return failure();
+  ++beginIter;
+  for (; beginIter != endIter; ++beginIter) {
+    betweenFn();
+    if (failed(eachFn(*beginIter))) return failure();
+  }
+  return success();
 }
 
 template <typename Container, typename UnaryFunctor, typename NullaryFunctor>
-inline LogicalResult interleaveWithError(const Container &container, UnaryFunctor eachFn, NullaryFunctor betweenFn)
-{
-    return interleaveWithError(std::cbegin(container), std::cend(container), eachFn, betweenFn);
+inline LogicalResult interleaveWithError(const Container &container,
+                                         UnaryFunctor eachFn,
+                                         NullaryFunctor betweenFn) {
+  return interleaveWithError(std::cbegin(container), std::cend(container),
+                             eachFn, betweenFn);
 }
 
 template <typename Container, typename UnaryFunctor>
-inline LogicalResult interleaveCommaWithError(const Container &c, raw_ostream &os, UnaryFunctor eachFn)
-{
-    return interleaveWithError(std::cbegin(c), std::cend(c), eachFn, [&]() { os << ", "; });
+inline LogicalResult interleaveCommaWithError(const Container &c,
+                                              raw_ostream &os,
+                                              UnaryFunctor eachFn) {
+  return interleaveWithError(std::cbegin(c), std::cend(c), eachFn,
+                             [&]() { os << ", "; });
 }
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_UTILS_H
+#endif  // ASCIR_TARGET_ASC_UTILS_H

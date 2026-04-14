@@ -46,8 +46,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnBaddbmmGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* batch1, const aclTensor* batch2, const aclScalar* beta,
-    const aclScalar* alpha, aclTensor* out, int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* batch1, const aclTensor* batch2,
+    const aclScalar* beta, const aclScalar* alpha, aclTensor* out,
+    int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnBaddbmm的第二段接口，用于执行计算。
@@ -62,8 +63,8 @@ ACLNN_API aclnnStatus aclnnBaddbmmGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnBaddbmm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBaddbmm(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnInplaceBaddbmm的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -91,8 +92,9 @@ aclnnBaddbmm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, a
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnInplaceBaddbmmGetWorkspaceSize(
-    const aclTensor* selfRef, const aclTensor* batch1, const aclTensor* batch2, const aclScalar* beta,
-    const aclScalar* alpha, int8_t cubeMathType, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* selfRef, const aclTensor* batch1, const aclTensor* batch2,
+    const aclScalar* beta, const aclScalar* alpha, int8_t cubeMathType,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceBaddbmm的第二段接口，用于执行计算。
@@ -107,11 +109,13 @@ ACLNN_API aclnnStatus aclnnInplaceBaddbmmGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnInplaceBaddbmm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceBaddbmm(void* workspace,
+                                          uint64_t workspaceSize,
+                                          aclOpExecutor* executor,
+                                          aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_BADDBMM_H_
+#endif  // OP_API_INC_BADDBMM_H_

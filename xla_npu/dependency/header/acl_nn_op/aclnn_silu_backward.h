@@ -22,14 +22,15 @@ extern "C" {
  * @domain aclnn_ops_train
  * 算子功能：求silu反向传播的梯度值
  */
-ACLNN_API aclnnStatus aclnnSiluBackwardGetWorkspaceSize(const aclTensor* gradOutput, const aclTensor* self,
-                                                        aclTensor* gradInput, uint64_t* workspaceSize,
-                                                        aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnSiluBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* self, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /*
  * @brief aclnnSiluBackwardGetWorkspaceSize的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnSiluBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnSiluBackward(void* workspace, uint64_t workspaceSize,
+                                        aclOpExecutor* executor,
                                         aclrtStream stream);
 
 #ifdef __cplusplus

@@ -62,9 +62,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceUniformGetWorkspaceSize(const aclTensor* selfRef, double from, double to,
-                                                          uint64_t seed, uint64_t offset, uint64_t* workspaceSize,
-                                                          aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceUniformGetWorkspaceSize(
+    const aclTensor* selfRef, double from, double to, uint64_t seed,
+    uint64_t offset, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceUniform的第二段接口，用于执行计算。
@@ -98,7 +98,9 @@ ACLNN_API aclnnStatus aclnnInplaceUniformGetWorkspaceSize(const aclTensor* selfR
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceUniform(void* workspace, uint64_t workspace_size, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnInplaceUniform(void* workspace,
+                                          uint64_t workspace_size,
+                                          aclOpExecutor* executor,
                                           const aclrtStream stream);
 
 /**
@@ -119,9 +121,10 @@ ACLNN_API aclnnStatus aclnnInplaceUniform(void* workspace, uint64_t workspace_si
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceUniformTensorGetWorkspaceSize(const aclTensor* selfRef, double from, double to,
-                                                          const aclTensor* seedTensor, const aclTensor* offsetTensor, uint64_t offset,
-                                                          uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnInplaceUniformTensorGetWorkspaceSize(
+    const aclTensor* selfRef, double from, double to,
+    const aclTensor* seedTensor, const aclTensor* offsetTensor, uint64_t offset,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnInplaceUniformTensor的第二段接口，用于执行计算。
@@ -133,8 +136,10 @@ ACLNN_API aclnnStatus aclnnInplaceUniformTensorGetWorkspaceSize(const aclTensor*
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnInplaceUniformTensor(void* workspace, uint64_t workspace_size, aclOpExecutor* executor,
-                                          const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnInplaceUniformTensor(void* workspace,
+                                                uint64_t workspace_size,
+                                                aclOpExecutor* executor,
+                                                const aclrtStream stream);
 
 #ifdef __cplusplus
 }

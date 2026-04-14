@@ -36,16 +36,18 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGeluBackwardV2GetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, char* approximate, aclTensor* gradInput,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, char* approximate,
+    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGeluBackwardV2的第二段接口，用于执行计算
  */
-ACLNN_API aclnnStatus
-aclnnGeluBackwardV2(void* workspace, uint64_t workspace_size, aclOpExecutor* executor, const aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGeluBackwardV2(void* workspace,
+                                          uint64_t workspace_size,
+                                          aclOpExecutor* executor,
+                                          const aclrtStream stream);
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_GELU_BACKWARD_V2_H_
+#endif  // OP_API_INC_GELU_BACKWARD_V2_H_

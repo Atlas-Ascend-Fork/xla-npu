@@ -34,13 +34,13 @@ limitations under the License.
 namespace gert {
 using rtStream = void *;
 struct OpExecuteOptions {
-  int32_t precision_mode; // 精度模式
-  int32_t deterministic; // 确定性计算
-  char allow_hf32[3UL]; // hf32
-  char reserve[53]; // 预留
+  int32_t precision_mode;  // 精度模式
+  int32_t deterministic;   // 确定性计算
+  char allow_hf32[3UL];    // hf32
+  char reserve[53];        // 预留
 };
 
-enum class OpExecuteInputExtendIndex{
+enum class OpExecuteInputExtendIndex {
   kAllocate,
   kStream,
   kExecuteOption,
@@ -49,7 +49,7 @@ enum class OpExecuteInputExtendIndex{
   kNum
 };
 
-enum class OpExecuteOutputIndex{
+enum class OpExecuteOutputIndex {
   kBlockMemory,
   // add new extend output here
   kNum
@@ -59,7 +59,7 @@ enum class OpExecuteOutputIndex{
  * Aclnn kernel的context
  */
 class OpExecuteContext : public ExtendedKernelContext {
-public:
+ public:
   /**
    * 根据输入index，获取输出tensor指针
    *
@@ -84,7 +84,8 @@ public:
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return tensor指针，index或relative_index非法时，返回空指针
    */
-  const Tensor *GetDynamicInputTensor(const size_t ir_index, const size_t relative_index) const {
+  const Tensor *GetDynamicInputTensor(const size_t ir_index,
+                                      const size_t relative_index) const {
     return GetDynamicInputPointer<Tensor>(ir_index, relative_index);
   }
 
@@ -119,8 +120,8 @@ public:
   rtStream GetStream() const {
     const size_t input_num = GetComputeNodeInputNum();
     const size_t output_num = GetComputeNodeOutputNum();
-    auto stream =
-        GetInputPointer<rtStream>(input_num + output_num +
+    auto stream = GetInputPointer<rtStream>(
+        input_num + output_num +
         static_cast<size_t>(OpExecuteInputExtendIndex::kStream));
     if (stream == nullptr) {
       return nullptr;
@@ -135,8 +136,8 @@ public:
   void *GetOpExecuteFunc() const {
     const size_t input_num = GetComputeNodeInputNum();
     const size_t output_num = GetComputeNodeOutputNum();
-    auto op_execute_func =
-        GetInputPointer<void *>(input_num + output_num +
+    auto op_execute_func = GetInputPointer<void *>(
+        input_num + output_num +
         static_cast<size_t>(OpExecuteInputExtendIndex::kExecuteFunc));
     if (op_execute_func == nullptr) {
       return nullptr;
@@ -163,8 +164,8 @@ public:
   bool GetDeterministic() const {
     const size_t input_num = GetComputeNodeInputNum();
     const size_t output_num = GetComputeNodeOutputNum();
-    const OpExecuteOptions *options =
-        GetInputPointer<OpExecuteOptions>(input_num + output_num +
+    const OpExecuteOptions *options = GetInputPointer<OpExecuteOptions>(
+        input_num + output_num +
         static_cast<size_t>(OpExecuteInputExtendIndex::kExecuteOption));
     if (options == nullptr) {
       return false;
@@ -181,8 +182,8 @@ public:
   const char *GetAllowHf32() const {
     const size_t input_num = GetComputeNodeInputNum();
     const size_t output_num = GetComputeNodeOutputNum();
-    const OpExecuteOptions *options =
-        GetInputPointer<OpExecuteOptions>(input_num + output_num +
+    const OpExecuteOptions *options = GetInputPointer<OpExecuteOptions>(
+        input_num + output_num +
         static_cast<size_t>(OpExecuteInputExtendIndex::kExecuteOption));
     if (options == nullptr) {
       return nullptr;
@@ -197,8 +198,8 @@ public:
   int32_t GetPrecisionMode() const {
     const size_t input_num = GetComputeNodeInputNum();
     const size_t output_num = GetComputeNodeOutputNum();
-    const OpExecuteOptions *options =
-        GetInputPointer<OpExecuteOptions>(input_num + output_num +
+    const OpExecuteOptions *options = GetInputPointer<OpExecuteOptions>(
+        input_num + output_num +
         static_cast<size_t>(OpExecuteInputExtendIndex::kExecuteOption));
     if (options == nullptr) {
       return std::numeric_limits<int32_t>::max();
@@ -206,6 +207,7 @@ public:
     return options->precision_mode;
   }
 };
-static_assert(std::is_standard_layout<OpExecuteContext>::value, "The class OpExecuteContext must be a POD");
+static_assert(std::is_standard_layout<OpExecuteContext>::value,
+              "The class OpExecuteContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_OP_EXECUTE_CONTEXT_H_

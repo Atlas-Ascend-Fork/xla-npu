@@ -23,17 +23,18 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnSliceV2GetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* starts, const aclIntArray* ends, const aclIntArray* axes,
-    const aclIntArray* steps, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* starts, const aclIntArray* ends,
+    const aclIntArray* axes, const aclIntArray* steps, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnSliceV2的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnSliceV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSliceV2(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_SLICEV2_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_SLICEV2_H_

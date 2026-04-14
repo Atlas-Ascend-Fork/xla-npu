@@ -45,12 +45,14 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingGetWorkspaceSize(const aclTensor *x, aclTensor *w, const aclTensor *scaleOptional,
-                                                     const aclTensor* biasOptional, const aclTensor *pertokenScaleOptional, 
-                                                     const aclTensor *groupListOptional, const aclTensor *sharedInputOptional, const aclTensor* logitOptional,
-                                                     const aclTensor *rowIndexOptional, int64_t dtype, float sharedInputWeight,  
-                                                     int64_t sharedInputOffset, bool transposeX, bool transposeW, int64_t groupListType, aclTensor *y,
-                                                     uint64_t *workspaceSize, aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingGetWorkspaceSize(
+    const aclTensor *x, aclTensor *w, const aclTensor *scaleOptional,
+    const aclTensor *biasOptional, const aclTensor *pertokenScaleOptional,
+    const aclTensor *groupListOptional, const aclTensor *sharedInputOptional,
+    const aclTensor *logitOptional, const aclTensor *rowIndexOptional,
+    int64_t dtype, float sharedInputWeight, int64_t sharedInputOffset,
+    bool transposeX, bool transposeW, int64_t groupListType, aclTensor *y,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnGroupedMatmulFinalizeRouting的第二段接口，用于执行计算。
@@ -60,7 +62,9 @@ ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRoutingGetWorkspaceSize(const ac
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码
  */
-ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRouting(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+ACLNN_API aclnnStatus aclnnGroupedMatmulFinalizeRouting(void *workspace,
+                                                        uint64_t workspaceSize,
+                                                        aclOpExecutor *executor,
                                                         aclrtStream stream);
 
 #ifdef __cplusplus

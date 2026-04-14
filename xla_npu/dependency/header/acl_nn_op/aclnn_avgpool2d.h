@@ -23,15 +23,18 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnAvgPool2dGetWorkspaceSize(
-    const aclTensor* self, const aclIntArray* kernelSize, const aclIntArray* strides, const aclIntArray* paddings,
-    const bool ceilMode, const bool countIncludePad, const int64_t divisorOverride, const int8_t cubeMathType,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclIntArray* kernelSize,
+    const aclIntArray* strides, const aclIntArray* paddings,
+    const bool ceilMode, const bool countIncludePad,
+    const int64_t divisorOverride, const int8_t cubeMathType, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAvgPool2d的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnAvgPool2d(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAvgPool2d(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
+                                     aclrtStream stream);
 
 #ifdef __cplusplus
 }

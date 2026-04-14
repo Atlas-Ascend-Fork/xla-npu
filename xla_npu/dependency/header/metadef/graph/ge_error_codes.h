@@ -28,22 +28,28 @@ limitations under the License.
 #include <cstdint>
 
 namespace ge {
-#if(defined(HOST_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(HOST_VISIBILITY)) && (defined(__GNUC__))
 #define GE_FUNC_HOST_VISIBILITY __attribute__((visibility("default")))
 #else
 #define GE_FUNC_HOST_VISIBILITY
 #endif
-#if(defined(DEV_VISIBILITY)) && (defined(__GNUC__))
+#if (defined(DEV_VISIBILITY)) && (defined(__GNUC__))
 #define GE_FUNC_DEV_VISIBILITY __attribute__((visibility("default")))
 #else
 #define GE_FUNC_DEV_VISIBILITY
 #endif
 #ifdef __GNUC__
-#define ATTRIBUTED_DEPRECATED(replacement) __attribute__((deprecated("Please use " #replacement " instead.")))
-#define ATTRIBUTED_NOT_SUPPORT() __attribute__((deprecated("The method will not be supported in the future.")))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __attribute__((deprecated("Please use " #replacement " instead.")))
+#define ATTRIBUTED_NOT_SUPPORT()                            \
+  __attribute__((                                           \
+      deprecated("The method will not be supported in the " \
+                 "future.")))
 #else
-#define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
-#define ATTRIBUTED_NOT_SUPPORT() __declspec(deprecated("The method will not be supported in the future."))
+#define ATTRIBUTED_DEPRECATED(replacement) \
+  __declspec(deprecated("Please use " #replacement " instead."))
+#define ATTRIBUTED_NOT_SUPPORT() \
+  __declspec(deprecated("The method will not be supported in the future."))
 #endif
 
 using graphStatus = uint32_t;

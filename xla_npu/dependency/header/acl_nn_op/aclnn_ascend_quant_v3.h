@@ -38,8 +38,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnAscendQuantV3GetWorkspaceSize(
-    const aclTensor* x, const aclTensor* scale, const aclTensor* offset, bool sqrtMode, const char* roundMode,
-    int32_t dstType, int32_t axis, const aclTensor* y, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* x, const aclTensor* scale, const aclTensor* offset,
+    bool sqrtMode, const char* roundMode, int32_t dstType, int32_t axis,
+    const aclTensor* y, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnAscendQuantV3的第二段接口，用于执行计算。
@@ -49,11 +50,13 @@ ACLNN_API aclnnStatus aclnnAscendQuantV3GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnAscendQuantV3(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnAscendQuantV3(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
+                                         aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_ASCEND_QUANT_V3_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_ASCEND_QUANT_V3_H_

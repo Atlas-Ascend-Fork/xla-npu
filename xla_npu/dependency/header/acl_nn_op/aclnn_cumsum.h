@@ -60,8 +60,9 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnCumsumGetWorkspaceSize(const aclTensor* self, int64_t dim, aclDataType dtype, aclTensor* out,
-                                                  uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnCumsumGetWorkspaceSize(
+    const aclTensor* self, int64_t dim, aclDataType dtype, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnCumsum的第二段接口，用于执行计算。
@@ -71,16 +72,19 @@ ACLNN_API aclnnStatus aclnnCumsumGetWorkspaceSize(const aclTensor* self, int64_t
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnCumsum(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnCumsum(void* workspace, uint64_t workspaceSize,
+                                  aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnCumsumV2的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  */
-ACLNN_API aclnnStatus aclnnCumsumV2GetWorkspaceSize(const aclTensor* self, int64_t dim, bool exclusive, bool reverse,
-                                                    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnCumsumV2GetWorkspaceSize(
+    const aclTensor* self, int64_t dim, bool exclusive, bool reverse,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnCumsumV2(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnCumsumV2(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
                                     aclrtStream stream);
 
 #ifdef __cplusplus

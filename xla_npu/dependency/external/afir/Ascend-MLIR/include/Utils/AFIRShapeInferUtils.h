@@ -53,9 +53,7 @@ struct ValueKnowledge {
     for (auto size : newSizes) sizes.push_back(size);
   }
 
-  operator bool() const {
-    return !hasError;
-  }
+  operator bool() const { return !hasError; }
 
   // Get the static knowledge intrinsic to `type`.
   static ValueKnowledge getKnowledgeFromType(Type type) {
@@ -92,7 +90,8 @@ struct ValueKnowledge {
 
   // Given two pieces of static knowledge, calculate conservatively the
   // information we can be sure about.
-  static ValueKnowledge join(const ValueKnowledge &lhs, const ValueKnowledge &rhs) {
+  static ValueKnowledge join(const ValueKnowledge &lhs,
+                             const ValueKnowledge &rhs) {
     // Mental model: All conditions are checking how to change from the safe "no
     // knowledge" default-initialized state to a state with more knowledge
     // consistent with lhs and rhs.
@@ -143,7 +142,8 @@ struct ValueKnowledge {
   // Given to types, generate a new ValueKnowledge that meets to cover both
   // cases. E.g. if the rank of the LHS and RHS differ, the resulting tensor
   // has unknown rank.
-  static ValueKnowledge meet(const ValueKnowledge &lhs, const ValueKnowledge &rhs) {
+  static ValueKnowledge meet(const ValueKnowledge &lhs,
+                             const ValueKnowledge &rhs) {
     ValueKnowledge result = getPessimisticValueState();
     result.hasError = true;
 

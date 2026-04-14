@@ -39,7 +39,7 @@ class RuntimeAttrs {
    * @param index 属性index
    * @return 指向属性的指针
    */
-  template<typename T>
+  template <typename T>
   const T *GetAttrPointer(size_t index) const {
     return reinterpret_cast<const T *>(GetPointerByIndex(index));
   }
@@ -135,6 +135,7 @@ class RuntimeAttrs {
 
   uint64_t placeholder_;
 };
-static_assert(std::is_standard_layout<RuntimeAttrs>::value, "This class must be a POD");
+static_assert(std::is_standard_layout<RuntimeAttrs>::value,
+              "This class must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_ATTRS_H_

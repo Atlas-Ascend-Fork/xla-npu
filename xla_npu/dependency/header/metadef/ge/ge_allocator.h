@@ -29,7 +29,7 @@ limitations under the License.
 namespace ge {
 class MemBlock;
 class Allocator {
-public:
+ public:
   Allocator() = default;
   virtual ~Allocator() = default;
   Allocator(const Allocator &) = delete;
@@ -46,22 +46,17 @@ public:
 };
 
 class MemBlock {
-public:
+ public:
   MemBlock(Allocator &allocator, void *addr, size_t block_size)
-      : allocator_(allocator), addr_(addr), count_(1U), block_size_(block_size) {}
+      : allocator_(allocator),
+        addr_(addr),
+        count_(1U),
+        block_size_(block_size) {}
   virtual ~MemBlock() = default;
-  const void *GetAddr() const {
-    return addr_;
-  }
-  void *GetAddr() {
-    return addr_;
-  }
-  size_t GetSize() const {
-    return block_size_;
-  }
-  void SetSize(const size_t mem_size) {
-    block_size_ = mem_size;
-  }
+  const void *GetAddr() const { return addr_; }
+  void *GetAddr() { return addr_; }
+  size_t GetSize() const { return block_size_; }
+  void SetSize(const size_t mem_size) { block_size_ = mem_size; }
   void Free() {
     if (GetCount() > 0U) {
       if (SubCount() == 0U) {
@@ -70,16 +65,11 @@ public:
     }
   }
 
-  size_t AddCount() {
-    return ++count_;
-  }
-  size_t SubCount() {
-    return --count_;
-  }
-  size_t GetCount() const {
-    return count_;
-  }
-private:
+  size_t AddCount() { return ++count_; }
+  size_t SubCount() { return --count_; }
+  size_t GetCount() const { return count_; }
+
+ private:
   Allocator &allocator_;
   void *addr_;
   size_t count_;

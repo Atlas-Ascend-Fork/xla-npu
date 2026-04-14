@@ -32,77 +32,67 @@ limitations under the License.
 
 namespace xla {
 class PjRtNpuDevice final : public PjRtDevice {
-public:
-    explicit PjRtNpuDevice(int process_id, int local_device_id);
+ public:
+  explicit PjRtNpuDevice(int process_id, int local_device_id);
 
-    ~PjRtNpuDevice() override = default;
+  ~PjRtNpuDevice() override = default;
 
-    const NpuDeviceDescription& description() const override
-    {
-        return description_;
-    }
+  const NpuDeviceDescription& description() const override {
+    return description_;
+  }
 
-    void SetClient(PjRtClient* client)
-    {
-        CHECK(client_ == nullptr);
-        client_ = client;
-    }
+  void SetClient(PjRtClient* client) {
+    CHECK(client_ == nullptr);
+    client_ = client;
+  }
 
-    PjRtClient* client() const override
-    {
-        return client_;
-    }
+  PjRtClient* client() const override { return client_; }
 
-    bool IsAddressable() const override
-    {
-        return process_index() == client()->process_index();
-    }
+  bool IsAddressable() const override {
+    return process_index() == client()->process_index();
+  }
 
-    PjRtLocalDeviceId local_device_id() const override
-    {
-        return PjRtLocalDeviceId(local_hardware_id().value());
-    }
+  PjRtLocalDeviceId local_device_id() const override {
+    return PjRtLocalDeviceId(local_hardware_id().value());
+  }
 
-    PjRtLocalHardwareId local_hardware_id() const override
-    {
-        return PjRtLocalHardwareId(description_.local_hardware_id());
-    }
+  PjRtLocalHardwareId local_hardware_id() const override {
+    return PjRtLocalHardwareId(description_.local_hardware_id());
+  }
 
-    std::unique_ptr<ScopedAsyncTrackingEvent> CreateAsyncTrackingEvent(
-        absl::string_view description) const override
-    {
-        return nullptr;
-    }
+  std::unique_ptr<ScopedAsyncTrackingEvent> CreateAsyncTrackingEvent(
+      absl::string_view description) const override {
+    return nullptr;
+  }
 
-    absl::Status TransferToInfeed(const LiteralSlice& literal) override
-    {
-        return absl::UnimplementedError("TransferToInfeed is unimplemented");
-    }
+  absl::Status TransferToInfeed(const LiteralSlice& literal) override {
+    return absl::UnimplementedError("TransferToInfeed is unimplemented");
+  }
 
-    absl::Status TransferFromOutfeed(MutableBorrowingLiteral literal) override
-    {
-        return absl::UnimplementedError("TransferFromOutfeed is unimplemented");
-    }
+  absl::Status TransferFromOutfeed(MutableBorrowingLiteral literal) override {
+    return absl::UnimplementedError("TransferFromOutfeed is unimplemented");
+  }
 
-    void AttachMemorySpace(PjRtMemorySpace* memory_space);
+  void AttachMemorySpace(PjRtMemorySpace* memory_space);
 
-    absl::Span<PjRtMemorySpace* const> memory_spaces() const override;
+  absl::Span<PjRtMemorySpace* const> memory_spaces() const override;
 
-    absl::StatusOr<PjRtMemorySpace*> default_memory_space() const override;
+  absl::StatusOr<PjRtMemorySpace*> default_memory_space() const override;
 
-    absl::StatusOr<PjRtMemorySpace*> memory_space_by_kind(absl::string_view memory_space_kind) const override;
+  absl::StatusOr<PjRtMemorySpace*> memory_space_by_kind(
+      absl::string_view memory_space_kind) const override;
 
-    absl::StatusOr<PjRtMemorySpace*> memory_space_by_kind_id(int id) const;
+  absl::StatusOr<PjRtMemorySpace*> memory_space_by_kind_id(int id) const;
 
-    absl::StatusOr<bool> PoisonExecution(int32_t launch_id,
-                                        absl::Status error) override;
+  absl::StatusOr<bool> PoisonExecution(int32_t launch_id,
+                                       absl::Status error) override;
 
-private:
-    PjRtClient* client_ = nullptr;
-    NpuDeviceDescription description_;
-    absl::InlinedVector<PjRtMemorySpace*, 1> memory_spaces_;
-    absl::flat_hash_map<int, PjRtMemorySpace*> memory_spaces_by_id_;
+ private:
+  PjRtClient* client_ = nullptr;
+  NpuDeviceDescription description_;
+  absl::InlinedVector<PjRtMemorySpace*, 1> memory_spaces_;
+  absl::flat_hash_map<int, PjRtMemorySpace*> memory_spaces_by_id_;
 };
 
 }  // namespace xla
-#endif //NPU_DEVICE_H_
+#endif  //NPU_DEVICE_H_

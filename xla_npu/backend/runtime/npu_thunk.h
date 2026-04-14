@@ -239,8 +239,7 @@ class NpuThunk {
   // Parameters passed to Prepare. At thunk prepare time we do not launch any
   // work or do any expensive initialization and only pass resource requirements
   // back to executable, i.e. request collective cliques required at run time.
-  struct PrepareParams {
-  };
+  struct PrepareParams {};
 
   //===--------------------------------------------------------------------===//
   // InitializeParams
@@ -385,9 +384,8 @@ class NpuThunk {
       const std::string& entry_computation_name);
 
   // 打印单个 computation 的 HLO 文本
-  static void PrintComputationHlo(const std::string& hlo_text, 
-                                   const std::string& name,
-                                   bool is_entry);
+  static void PrintComputationHlo(const std::string& hlo_text,
+                                  const std::string& name, bool is_entry);
 
   // 统一的流同步和打印控制函数
   // 根据环境变量 ENABLE_SYNC_AFTER_EXECUTE 控制是否在算子执行后同步流
@@ -397,9 +395,9 @@ class NpuThunk {
   // 统一的参数打印函数
   // 打印单个参数信息(执行前或执行后)
   static void PrintParamInfo(int param_id, const std::string& param_type,
-                              int device_ordinal,
-                              const BufferAllocation::Slice& slice,
-                              const Shape& shape, void* device_addr);
+                             int device_ordinal,
+                             const BufferAllocation::Slice& slice,
+                             const Shape& shape, void* device_addr);
 
   // 检查是否启用 IO 值打印
   static bool IsPrintIOValuesEnabled();

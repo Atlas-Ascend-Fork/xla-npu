@@ -25,11 +25,13 @@ namespace ascendc {
 // ShapeInfo operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::ShapeInfoShapeOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::ShapeInfoShapeOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::ShapeInfoOriginalShapeOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::ShapeInfoOriginalShapeOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_CORE_SHAPE_INFO_H
+#endif  // ASCIR_TARGET_ASC_CORE_SHAPE_INFO_H

@@ -75,7 +75,7 @@ GetNpuPjrtStreamExecutorClient() {
       /*process_index=*/0, std::move(memory_spaces),
       /*allocator=*/
       nullptr,  // 不传递则会使用local_client的backend().memory_allocator(),
-                // 其由backend构建时自动创建(类型:StreamExecutorMemoryAllocator)
+      // 其由backend构建时自动创建(类型:StreamExecutorMemoryAllocator)
       // StreamExecutorMemoryAllocator中的内存分配和释放都是调用的executor的接口
       /*host_memory_allocator=*/nullptr,  // 不传递则会使用默认的CpuAllocator
       /*should_stage_host_to_device_transfers=*/false,

@@ -32,7 +32,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 ACLNN_API aclnnStatus aclnnNpuFormatCastGetWorkspaceSize(
-    const aclTensor* srcTensor, aclTensor* dstTensor, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* srcTensor, aclTensor* dstTensor, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnNpuFormatCast的第二段接口，用于执行计算。
@@ -43,8 +44,10 @@ ACLNN_API aclnnStatus aclnnNpuFormatCastGetWorkspaceSize(
  * @return aclnnStatus: 返回状态码
  */
 
-ACLNN_API aclnnStatus
-aclnnNpuFormatCast(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnNpuFormatCast(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
+                                         aclrtStream stream);
 
 /**
  * @brief 用于计算转换目标数据的shape和数据格式
@@ -60,11 +63,11 @@ aclnnNpuFormatCast(void* workspace, uint64_t workspaceSize, aclOpExecutor* execu
  */
 
 ACLNN_API aclnnStatus aclnnNpuFormatCastCalculateSizeAndFormat(
-    const aclTensor* srcTensor, const int dstFormat, int additionalDtype, int64_t** dstShape,
-    uint64_t* dstShapeSize, int* actualFormat);
+    const aclTensor* srcTensor, const int dstFormat, int additionalDtype,
+    int64_t** dstShape, uint64_t* dstShapeSize, int* actualFormat);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_NPU_FORMAT_CAST_H_
+#endif  // OP_API_INC_NPU_FORMAT_CAST_H_

@@ -27,11 +27,13 @@ extern "C" {
  * @brief aclnnDropoutBackward的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_rand
  */
-ACLNN_API aclnnStatus aclnnDropoutBackwardGetWorkspaceSize(const aclTensor* gradOutput, const aclTensor* mask,
-                                                           double scale, aclTensor* out, uint64_t* workspaceSize,
-                                                           aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnDropoutBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* mask, double scale,
+    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
-ACLNN_API aclnnStatus aclnnDropoutBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+ACLNN_API aclnnStatus aclnnDropoutBackward(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
                                            aclrtStream stream);
 
 #ifdef __cplusplus

@@ -17,8 +17,8 @@
 #ifndef OP_API_INC_SWI_GLU_QUANT_H_
 #define OP_API_INC_SWI_GLU_QUANT_H_
 
- #include "aclnn_base.h"
- #include "aclnn_util.h"
+#include "aclnn_base.h"
+#include "aclnn_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,15 +61,10 @@ extern "C" {
  */
 
 ACLNN_API aclnnStatus aclnnSwiGluQuantGetWorkspaceSize(
-    const aclTensor *x,
-    const aclTensor *smoothScalesOptional,
-    const aclTensor *offsetsOptional,
-    const aclTensor *groupIndexOptional,
-    bool activateLeft,
-    char *quantModeOptional,
-    const aclTensor *yOut,
-    const aclTensor *scaleOut,
-    uint64_t *workspaceSize,
+    const aclTensor *x, const aclTensor *smoothScalesOptional,
+    const aclTensor *offsetsOptional, const aclTensor *groupIndexOptional,
+    bool activateLeft, char *quantModeOptional, const aclTensor *yOut,
+    const aclTensor *scaleOut, uint64_t *workspaceSize,
     aclOpExecutor **executor);
 
 /**
@@ -94,14 +89,12 @@ ACLNN_API aclnnStatus aclnnSwiGluQuantGetWorkspaceSize(
  * return aclnnStatus: 返回状态码。
  */
 
-ACLNN_API aclnnStatus aclnnSwiGluQuant(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
+ACLNN_API aclnnStatus aclnnSwiGluQuant(void *workspace, uint64_t workspaceSize,
+                                       aclOpExecutor *executor,
+                                       aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_SWI_GLU_QUANT_H_
+#endif  // OP_API_INC_SWI_GLU_QUANT_H_

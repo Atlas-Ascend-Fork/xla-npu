@@ -61,8 +61,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGeGluBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* gelu, int64_t dim, int64_t approximate,
-    aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* gelu,
+    int64_t dim, int64_t approximate, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGeGluV3Backward的第一段接口，根据具体的计算流程，计算workspace大小。
@@ -87,8 +88,9 @@ ACLNN_API aclnnStatus aclnnGeGluBackwardGetWorkspaceSize(
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGeGluV3BackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* gelu, int64_t dim, int64_t approximate,
-    bool activateLeft, aclTensor* gradInput, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* gelu,
+    int64_t dim, int64_t approximate, bool activateLeft, aclTensor* gradInput,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGeGluBackward的第二段接口，用于执行计算。
@@ -98,8 +100,10 @@ ACLNN_API aclnnStatus aclnnGeGluV3BackwardGetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnGeGluBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGeGluBackward(void* workspace,
+                                         uint64_t workspaceSize,
+                                         aclOpExecutor* executor,
+                                         aclrtStream stream);
 
 /**
  * @brief aclnnGeGluBackward的第二段接口，用于执行计算。
@@ -109,11 +113,13 @@ aclnnGeGluBackward(void* workspace, uint64_t workspaceSize, aclOpExecutor* execu
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnGeGluV3Backward(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGeGluV3Backward(void* workspace,
+                                           uint64_t workspaceSize,
+                                           aclOpExecutor* executor,
+                                           aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_GEGLU_BACKWARD_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_GEGLU_BACKWARD_H_

@@ -35,10 +35,10 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnGroupQuantGetWorkspaceSize(const aclTensor* x, const aclTensor* scale,
-                                                      const aclTensor* groupIndex, const aclTensor* offsetOptional,
-                                                      int32_t dstType, aclTensor* y,
-                                                      uint64_t* workspaceSize, aclOpExecutor** executor);
+ACLNN_API aclnnStatus aclnnGroupQuantGetWorkspaceSize(
+    const aclTensor* x, const aclTensor* scale, const aclTensor* groupIndex,
+    const aclTensor* offsetOptional, int32_t dstType, aclTensor* y,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupQuant的第二段接口，用于执行计算。
@@ -49,7 +49,8 @@ ACLNN_API aclnnStatus aclnnGroupQuantGetWorkspaceSize(const aclTensor* x, const 
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGroupQuant(void* workspace, uint64_t workspaceSize,
-                                      aclOpExecutor* executor, aclrtStream stream);
+                                      aclOpExecutor* executor,
+                                      aclrtStream stream);
 
 #ifdef __cplusplus
 }

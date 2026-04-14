@@ -35,8 +35,10 @@ namespace gert {
  * 在节点输入后的扩展输入的索引，若需要扩展，请新增枚举类型
  */
 enum class InputExternLayout : uint32_t {
-  kInferShapeFunc = 1,   // only exe runtime need infer shape func, compile stage need set to null
-  kInferenceContext = 2, // only resource op in compile stage need inference context, exe runtime need set to null
+  kInferShapeFunc =
+      1,  // only exe runtime need infer shape func, compile stage need set to null
+  kInferenceContext =
+      2,  // only resource op in compile stage need inference context, exe runtime need set to null
 };
 /**
  * InferShape kernel的context
@@ -85,7 +87,8 @@ class InferShapeContext : public ExtendedKernelContext {
    * @param relative_index 该输入实例化后的相对index，例如某个DYNAMIC_INPUT实例化了3个输入，那么relative_index的有效范围是[0,2]
    * @return shape指针，index或relative_index非法时，返回空指针
    */
-  const Shape *GetDynamicInputShape(const size_t ir_index, const size_t relative_index) const {
+  const Shape *GetDynamicInputShape(const size_t ir_index,
+                                    const size_t relative_index) const {
     return GetDynamicInputPointer<Shape>(ir_index, relative_index);
   }
 
@@ -104,17 +107,21 @@ class InferShapeContext : public ExtendedKernelContext {
    * @return 输出InferenceContext指针 指针在节点输入地址后，仅编译态使用
    */
   const ge::InferenceContext *GetInferenceContextPtr() const {
-    const auto compute_node_info = reinterpret_cast<const ComputeNodeInfo *>(GetContext()->compute_node_info);
+    const auto compute_node_info = reinterpret_cast<const ComputeNodeInfo *>(
+        GetContext()->compute_node_info);
     if (compute_node_info == nullptr) {
       return nullptr;
     }
-    const size_t offset = compute_node_info->GetInputsNum() + static_cast<size_t>(InputExternLayout::kInferenceContext);
+    const size_t offset =
+        compute_node_info->GetInputsNum() +
+        static_cast<size_t>(InputExternLayout::kInferenceContext);
     if (GetContext()->input_size < offset) {
       return nullptr;
     }
     return GetInputPointer<ge::InferenceContext>(offset - 1UL);
   }
 };
-static_assert(std::is_standard_layout<InferShapeContext>::value, "The class InferShapeContext must be a POD");
+static_assert(std::is_standard_layout<InferShapeContext>::value,
+              "The class InferShapeContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_INFER_SHAPE_CONTEXT_H_

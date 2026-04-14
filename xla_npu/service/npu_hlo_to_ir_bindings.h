@@ -33,41 +33,49 @@ namespace xla {
 // This class encapsulates the bindings between HloInstructions and LLVM IR
 // values that represent their addresses.
 class NpuHloToIrBindings {
-   public:
-    NpuHloToIrBindings(llvm::IRBuilderBase* b, llvm::Module* llvm_module, bool is_nested)
-        : is_nested_(is_nested), b_(b), module_(llvm_module) {}
+ public:
+  NpuHloToIrBindings(llvm::IRBuilderBase* b, llvm::Module* llvm_module,
+                     bool is_nested)
+      : is_nested_(is_nested), b_(b), module_(llvm_module) {}
 
-    void EmitBasePointersForHlos(absl::Span<const HloInstruction* const> io_hlos,
-                                 absl::Span<const HloInstruction* const> non_io_hlos);
+  void EmitBasePointersForHlos(
+      absl::Span<const HloInstruction* const> io_hlos,
+      absl::Span<const HloInstruction* const> non_io_hlos);
 
-    // Rebinds the given HLO to the LLVM IR value that represent its address.
-    void BindHloToIrValue(const HloInstruction& hlo, llvm::Value* ir_value, ShapeIndexView shape_index = {});
+  // Rebinds the given HLO to the LLVM IR value that represent its address.
+  void BindHloToIrValue(const HloInstruction& hlo, llvm::Value* ir_value,
+                        ShapeIndexView shape_index = {});
 
-    // Returns whether `hlo` is bound to an LLVM IR value.
-    bool BoundToIrValue(const HloInstruction& hlo) const { return base_ptrs_.contains(&hlo); }
+  // Returns whether `hlo` is bound to an LLVM IR value.
+  bool BoundToIrValue(const HloInstruction& hlo) const {
+    return base_ptrs_.contains(&hlo);
+  }
 
-    // A helper method that returns the base pointer of the IrArray containing the
-    // output of "inst".at the given ShapeIndex.
-    llvm::Value* GetBasePointer(const HloInstruction& hlo, ShapeIndexView shape_index = {}) const {
-        auto it = base_ptrs_.find(&hlo);
-        CHECK(it != base_ptrs_.end()) << hlo.ToString();
-        return it->second.element(shape_index);
-    }
+  // A helper method that returns the base pointer of the IrArray containing the
+  // output of "inst".at the given ShapeIndex.
+  llvm::Value* GetBasePointer(const HloInstruction& hlo,
+                              ShapeIndexView shape_index = {}) const {
+    auto it = base_ptrs_.find(&hlo);
+    CHECK(it != base_ptrs_.end()) << hlo.ToString();
+    return it->second.element(shape_index);
+  }
 
-    llvm_ir::IrArray GetIrArray(const HloInstruction& hlo, const HloInstruction& consumer,
-                                const ShapeIndex& shape_index = {});
+  llvm_ir::IrArray GetIrArray(const HloInstruction& hlo,
+                              const HloInstruction& consumer,
+                              const ShapeIndex& shape_index = {});
 
-   private:
-    const bool is_nested_;
+ private:
+  const bool is_nested_;
 
-    llvm::IRBuilderBase* b_;
-    llvm::Module* module_;
+  llvm::IRBuilderBase* b_;
+  llvm::Module* module_;
 
-    // Stores the underlying llvm::IrArray for each HloInstruction.
-    // For an instruction that generates multiple outputs, the root will be a
-    // tuple shape. The IrArray for each element output is stored in the subnode
-    // in the ShapeTree.
-    absl::flat_hash_map<const HloInstruction*, ShapeTree<llvm::Value*>> base_ptrs_;
+  // Stores the underlying llvm::IrArray for each HloInstruction.
+  // For an instruction that generates multiple outputs, the root will be a
+  // tuple shape. The IrArray for each element output is stored in the subnode
+  // in the ShapeTree.
+  absl::flat_hash_map<const HloInstruction*, ShapeTree<llvm::Value*>>
+      base_ptrs_;
 };
 
 }  // namespace xla

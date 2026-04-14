@@ -23,6 +23,6 @@ namespace mlir {
 
 LogicalResult translateToAscendC(Operation *op, raw_ostream &os);
 
-} // namespace mlir
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_TRANSLATION_H
+#endif  // ASCIR_TARGET_ASC_TRANSLATION_H

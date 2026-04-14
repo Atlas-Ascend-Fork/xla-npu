@@ -27,82 +27,79 @@ using namespace mlir::ascendc;
 
 namespace {
 
-LogicalResult eraseUnusedOp(Operation *op, PatternRewriter &rewriter)
-{
-    if (!op->getUses().empty()) {
-        return failure();
-    }
-    rewriter.eraseOp(op);
-    return success();
+LogicalResult eraseUnusedOp(Operation *op, PatternRewriter &rewriter) {
+  if (!op->getUses().empty()) {
+    return failure();
+  }
+  rewriter.eraseOp(op);
+  return success();
 }
 
-} // namespace
+}  // namespace
 
 //===----------------------------------------------------------------------===//
 // GlobalTensorOp
 //===----------------------------------------------------------------------===//
 
-LogicalResult GlobalTensorOp::canonicalize(GlobalTensorOp op, PatternRewriter &rewriter)
-{
-    return eraseUnusedOp(op, rewriter);
+LogicalResult GlobalTensorOp::canonicalize(GlobalTensorOp op,
+                                           PatternRewriter &rewriter) {
+  return eraseUnusedOp(op, rewriter);
 }
 
 //===----------------------------------------------------------------------===//
 // LocalTensorOp
 //===----------------------------------------------------------------------===//
 
-LogicalResult LocalTensorOp::canonicalize(LocalTensorOp op, PatternRewriter &rewriter)
-{
-    return eraseUnusedOp(op, rewriter);
+LogicalResult LocalTensorOp::canonicalize(LocalTensorOp op,
+                                          PatternRewriter &rewriter) {
+  return eraseUnusedOp(op, rewriter);
 }
 
 //===----------------------------------------------------------------------===//
 // PipeBarrierOp
 //===----------------------------------------------------------------------===//
 
-LogicalResult PipeBarrierOp::canonicalize(PipeBarrierOp op, PatternRewriter &rewriter)
-{
-    Block *block = op->getBlock();
-    auto nextIt = std::next(Block::iterator(op));
-    if (nextIt == block->end())
-        return failure();
-    if (auto nextOp = dyn_cast<ascendc::PipeBarrierOp>(*nextIt)) {
-        if (op.getPipe() == Pipe::PIPE_ALL) {
-            rewriter.eraseOp(nextOp);
-            return success();
-        }
-        if (op->getAttrs() == nextOp->getAttrs() || nextOp.getPipe() == Pipe::PIPE_ALL) {
-            rewriter.eraseOp(op);
-            return success();
-        }
+LogicalResult PipeBarrierOp::canonicalize(PipeBarrierOp op,
+                                          PatternRewriter &rewriter) {
+  Block *block = op->getBlock();
+  auto nextIt = std::next(Block::iterator(op));
+  if (nextIt == block->end()) return failure();
+  if (auto nextOp = dyn_cast<ascendc::PipeBarrierOp>(*nextIt)) {
+    if (op.getPipe() == Pipe::PIPE_ALL) {
+      rewriter.eraseOp(nextOp);
+      return success();
     }
-    return failure();
+    if (op->getAttrs() == nextOp->getAttrs() ||
+        nextOp.getPipe() == Pipe::PIPE_ALL) {
+      rewriter.eraseOp(op);
+      return success();
+    }
+  }
+  return failure();
 }
 
 //===----------------------------------------------------------------------===//
 // ReinterpretCastOp
 //===----------------------------------------------------------------------===//
 
-bool LocalTensorReinterpretCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
-{
-    return inputs.size() == 1 && outputs.size() == 1 && isa<LocalTensorType>(inputs[0]) &&
-           isa<LocalTensorType>(outputs[0]);
+bool LocalTensorReinterpretCastOp::areCastCompatible(TypeRange inputs,
+                                                     TypeRange outputs) {
+  return inputs.size() == 1 && outputs.size() == 1 &&
+         isa<LocalTensorType>(inputs[0]) && isa<LocalTensorType>(outputs[0]);
 }
 
-OpFoldResult LocalTensorReinterpretCastOp::fold(FoldAdaptor adaptor)
-{
-    Value in = getIn();
-    return in.getType() == getType() ? in : nullptr;
+OpFoldResult LocalTensorReinterpretCastOp::fold(FoldAdaptor adaptor) {
+  Value in = getIn();
+  return in.getType() == getType() ? in : nullptr;
 }
 
 //===----------------------------------------------------------------------===//
 // AscendCDialect
 //===----------------------------------------------------------------------===//
 
-void AscendCDialect::registerOps()
-{
-    addOperations<
+void AscendCDialect::registerOps() {
+  addOperations<
 #define GET_OP_LIST
 #include "ascir/Dialect/Asc/IR/AscendCOps.cpp.inc"
-        >();
+      >();
 }

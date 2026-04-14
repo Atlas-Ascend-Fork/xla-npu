@@ -29,28 +29,33 @@ limitations under the License.
 
 namespace xla {
 
-HloPassPipeline NpuPipeline(const DebugOptions& debug_options,
-                            HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
-                            tsl::thread::ThreadPool* thread_pool, const se::DeviceDescription& npu_device_info,
-                            SymbolicExprContext* symbolic_expr_context) {
-    HloPassFix<HloPassPipeline> pipeline("npu-pipeline");
+HloPassPipeline NpuPipeline(
+    const DebugOptions& debug_options,
+    HloCostAnalysis::ShapeSizeFunction shape_size_bytes_function,
+    tsl::thread::ThreadPool* thread_pool,
+    const se::DeviceDescription& npu_device_info,
+    SymbolicExprContext* symbolic_expr_context) {
+  HloPassFix<HloPassPipeline> pipeline("npu-pipeline");
 
-    HloVerifierOpts opts = HloVerifierOpts().MakeLayoutSensitive().WithInstructionCanChangeLayout(
-        LayoutAssignment::InstructionCanChangeLayout);
-    pipeline.AddInvariantCheckerDebug<HloVerifier>(std::make_unique<CpuGpuVerifierMetadata>(std::move(opts)),
-                                                   "hlo verifier (npu)");
+  HloVerifierOpts opts =
+      HloVerifierOpts().MakeLayoutSensitive().WithInstructionCanChangeLayout(
+          LayoutAssignment::InstructionCanChangeLayout);
+  pipeline.AddInvariantCheckerDebug<HloVerifier>(
+      std::make_unique<CpuGpuVerifierMetadata>(std::move(opts)),
+      "hlo verifier (npu)");
 
-    pipeline.AddPass<NpuHloPrinterPass>("Npu pipeline initial");
+  pipeline.AddPass<NpuHloPrinterPass>("Npu pipeline initial");
 
-    pipeline.AddPass<FlattenCallGraph>();
-    pipeline.AddPass<NpuHloPrinterPass>("FlattenCallGraph");
+  pipeline.AddPass<FlattenCallGraph>();
+  pipeline.AddPass<NpuHloPrinterPass>("FlattenCallGraph");
 
 #if NPU_AUTO_FUSE_BACKEND != 0
-    pipeline.AddPass(std::make_unique<HloPassPipeline>(NpuFusionPipeline(
-        debug_options, std::move(shape_size_bytes_function), thread_pool, npu_device_info, symbolic_expr_context)));
+  pipeline.AddPass(std::make_unique<HloPassPipeline>(
+      NpuFusionPipeline(debug_options, std::move(shape_size_bytes_function),
+                        thread_pool, npu_device_info, symbolic_expr_context)));
 #endif
 
-    return std::move(pipeline);
+  return std::move(pipeline);
 }
 
 }  // namespace xla

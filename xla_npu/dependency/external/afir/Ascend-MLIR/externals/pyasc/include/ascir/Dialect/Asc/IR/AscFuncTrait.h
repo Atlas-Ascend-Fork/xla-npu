@@ -20,38 +20,38 @@ namespace mlir {
 namespace OpTrait {
 template <typename ConcreteOp>
 struct AscConstructorTrait : public TraitBase<ConcreteOp, AscConstructorTrait> {
-    static mlir::LogicalResult verifyTrait(Operation *op)
-    {
-        if (op->getNumResults() != 1) {
-            return op->emitError("AscConstructorTrait must have a result");
-        }
-        return success();
+  static mlir::LogicalResult verifyTrait(Operation *op) {
+    if (op->getNumResults() != 1) {
+      return op->emitError("AscConstructorTrait must have a result");
     }
+    return success();
+  }
 };
 
 template <typename ConcreteOp>
 struct AscMemberFuncTrait : public TraitBase<ConcreteOp, AscMemberFuncTrait> {
-    static mlir::LogicalResult verifyTrait(Operation *op)
-    {
-        if (op->getNumOperands() < 1 || op->getNumResults() > 1) {
-            return op->emitError("AscMemberFuncTrait must have more than one inputs and less than one return value");
-        }
-        return success();
+  static mlir::LogicalResult verifyTrait(Operation *op) {
+    if (op->getNumOperands() < 1 || op->getNumResults() > 1) {
+      return op->emitError(
+          "AscMemberFuncTrait must have more than one inputs and less than one "
+          "return value");
     }
+    return success();
+  }
 };
 
 template <typename ConcreteOp>
 struct AscFuncTrait : public TraitBase<ConcreteOp, AscFuncTrait> {
-    static mlir::LogicalResult verifyTrait(Operation *op)
-    {
-        if (op->getNumResults() > 1) {
-            return op->emitError("AscFunc trait only support less than one return value");
-        }
-        return success();
+  static mlir::LogicalResult verifyTrait(Operation *op) {
+    if (op->getNumResults() > 1) {
+      return op->emitError(
+          "AscFunc trait only support less than one return value");
     }
+    return success();
+  }
 };
 
-} // namespace OpTrait
-} // namespace mlir
+}  // namespace OpTrait
+}  // namespace mlir
 
 #endif

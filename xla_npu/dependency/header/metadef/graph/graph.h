@@ -60,12 +60,17 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   Graph &SetOutputs(const std::vector<Operator> &outputs);
 
-  Graph &SetOutputs(const std::vector<std::pair<Operator, std::vector<size_t>>> &output_indexs);
+  Graph &SetOutputs(const std::vector<std::pair<Operator, std::vector<size_t>>>
+                        &output_indexs);
 
-  ATTRIBUTED_DEPRECATED(Graph &SetOutputs(const std::vector<std::pair<ge::Operator, AscendString) &)
-  Graph &SetOutputs(const std::vector<std::pair<ge::Operator, std::string>> &outputs);
+  ATTRIBUTED_DEPRECATED(Graph &SetOutputs(const std::vector < std::pair <
+                                              ge::Operator,
+                                          AscendString) &)
+  Graph &SetOutputs(
+      const std::vector<std::pair<ge::Operator, std::string>> &outputs);
 
-  Graph &SetOutputs(const std::vector<std::pair<ge::Operator, AscendString>> &outputs);
+  Graph &SetOutputs(
+      const std::vector<std::pair<ge::Operator, AscendString>> &outputs);
 
   Graph &SetTargets(const std::vector<Operator> &targets);
 
@@ -73,17 +78,22 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus AddOp(const ge::Operator &op);
 
-  ATTRIBUTED_DEPRECATED(graphStatus FindOpByName(const char_t *, ge::Operator &))
+  ATTRIBUTED_DEPRECATED(graphStatus FindOpByName(const char_t *,
+                                                 ge::Operator &))
   graphStatus FindOpByName(const std::string &name, ge::Operator &op) const;
 
   graphStatus FindOpByName(const char_t *name, ge::Operator &op) const;
 
-  ATTRIBUTED_DEPRECATED(graphStatus FindOpByType(const char_t *, std::vector<ge::Operator> &))
-  graphStatus FindOpByType(const std::string &type, std::vector<ge::Operator> &ops) const;
+  ATTRIBUTED_DEPRECATED(graphStatus FindOpByType(const char_t *,
+                                                 std::vector<ge::Operator> &))
+  graphStatus FindOpByType(const std::string &type,
+                           std::vector<ge::Operator> &ops) const;
 
-  graphStatus FindOpByType(const char_t *type, std::vector<ge::Operator> &ops) const;
+  graphStatus FindOpByType(const char_t *type,
+                           std::vector<ge::Operator> &ops) const;
 
-  ATTRIBUTED_DEPRECATED(graphStatus GetAllOpName(std::vector<AscendString> &) const)
+  ATTRIBUTED_DEPRECATED(graphStatus GetAllOpName(std::vector<AscendString> &)
+                            const)
   graphStatus GetAllOpName(std::vector<std::string> &op_name) const;
 
   graphStatus GetAllOpName(std::vector<AscendString> &names) const;
@@ -98,7 +108,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus LoadFromFile(const char_t *file_name);
 
-  graphStatus LoadFromSerializedModelArray(const void *serialized_model, size_t size);
+  graphStatus LoadFromSerializedModelArray(const void *serialized_model,
+                                           size_t size);
 
   graphStatus SaveToMem(GraphBuffer &graph_buffer) const;
 
@@ -121,13 +132,14 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   std::vector<GNode> GetAllNodes() const;
 
-  std::vector<GNode> GetDirectNode () const;
+  std::vector<GNode> GetDirectNode() const;
 
   graphStatus RemoveNode(GNode &node);
 
   graphStatus RemoveNode(GNode &node, bool contain_subgraph);
 
-  graphStatus RemoveEdge(GNode &src_node, const int32_t src_port_index, GNode &dst_node, const int32_t dst_port_index);
+  graphStatus RemoveEdge(GNode &src_node, const int32_t src_port_index,
+                         GNode &dst_node, const int32_t dst_port_index);
 
   GNode AddNodeByOp(const Operator &op);
 
@@ -138,10 +150,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus CopyFrom(const Graph &src_graph);
 
-  static GraphPtr ConstructFromInputs(const std::vector<Operator> &inputs, const AscendString &name);
+  static GraphPtr ConstructFromInputs(const std::vector<Operator> &inputs,
+                                      const AscendString &name);
 
  private:
-
   GraphImplPtr impl_{nullptr};
 };
 }  // namespace ge

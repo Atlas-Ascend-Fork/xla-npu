@@ -28,16 +28,19 @@ extern "C" {
  * @domain aclnn_ops_train
  * 算子功能：求二元交叉熵关于target反向传播的梯度值
  */
-ACLNN_API aclnnStatus aclnnBinaryCrossEntropyWithLogitsTargetBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target, const aclTensor* weightOptional,
-    const aclTensor* posWeightOptional, int64_t reduction, aclTensor* gradTarget, uint64_t* workspaceSize,
+ACLNN_API aclnnStatus
+aclnnBinaryCrossEntropyWithLogitsTargetBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclTensor* self, const aclTensor* target,
+    const aclTensor* weightOptional, const aclTensor* posWeightOptional,
+    int64_t reduction, aclTensor* gradTarget, uint64_t* workspaceSize,
     aclOpExecutor** executor);
 
 /*
  * @brief aclnnBinaryCrossEntropyWithLogitsTargetBackward的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus aclnnBinaryCrossEntropyWithLogitsTargetBackward(void* workspace, uint64_t workspaceSize,
-                                                                aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnBinaryCrossEntropyWithLogitsTargetBackward(
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

@@ -33,15 +33,18 @@ class AttrData;
 using AttrDataPtr = std::shared_ptr<AttrData>;
 
 class AttrData {
-public:
+ public:
   AttrData() {}
   virtual ~AttrData() {}
   virtual size_t GetSize() const = 0;
   virtual const std::uint8_t *GetData() = 0;
 };
 
-ge::graphStatus GetOperatorAttrValue(const ge::Operator &op, const char *attr_name, const char *attr_dtype,
-                                     AttrDataPtr &attr_data_ptr, const char *target_dtype = nullptr);
+ge::graphStatus GetOperatorAttrValue(const ge::Operator &op,
+                                     const char *attr_name,
+                                     const char *attr_dtype,
+                                     AttrDataPtr &attr_data_ptr,
+                                     const char *target_dtype = nullptr);
 
 }  // namespace optiling
 #endif  // INC_EXTERNAL_REGISTER_OP_TILING_ATTR_UTILS_H_

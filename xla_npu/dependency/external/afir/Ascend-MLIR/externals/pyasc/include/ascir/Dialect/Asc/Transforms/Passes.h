@@ -41,11 +41,11 @@ std::unique_ptr<Pass> createUnifyPipePass();
 std::unique_ptr<Pass> createVerifySyncPass();
 std::unique_ptr<Pass> createDetectEnableDebugPass();
 
-} // namespace ascendc
+}  // namespace ascendc
 
 #define GEN_PASS_REGISTRATION
 #include "ascir/Dialect/Asc/Transforms/Passes.h.inc"
 
-} // end namespace mlir
+}  // end namespace mlir
 
-#endif // ASCIR_DIALECT_ASC_TRANSFORMS_PASSES_H
+#endif  // ASCIR_DIALECT_ASC_TRANSFORMS_PASSES_H

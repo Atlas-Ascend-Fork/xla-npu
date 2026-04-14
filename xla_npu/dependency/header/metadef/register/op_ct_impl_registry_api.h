@@ -44,7 +44,8 @@ extern "C" {
 #endif
 
 METADEF_FUNC_VISIBILITY size_t GetRegisteredOpCtNum(void);
-METADEF_FUNC_VISIBILITY int32_t GetOpCtImplFunctions(TypesToCtImpl *impl, size_t impl_num);
+METADEF_FUNC_VISIBILITY int32_t GetOpCtImplFunctions(TypesToCtImpl *impl,
+                                                     size_t impl_num);
 
 #ifdef __cplusplus
 }

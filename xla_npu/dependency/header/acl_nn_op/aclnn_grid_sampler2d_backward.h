@@ -58,10 +58,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnGridSampler2DBackwardGetWorkspaceSize(const aclTensor *gradOutput, const aclTensor *input,
-    const aclTensor *grid, int64_t interpolationMode, int64_t paddingMode, bool alignCorners,
-    const aclBoolArray *outputMask, aclTensor *inputGrad, aclTensor *gridGrad, uint64_t *workspaceSize,
-    aclOpExecutor **executor);
+ACLNN_API aclnnStatus aclnnGridSampler2DBackwardGetWorkspaceSize(
+    const aclTensor *gradOutput, const aclTensor *input, const aclTensor *grid,
+    int64_t interpolationMode, int64_t paddingMode, bool alignCorners,
+    const aclBoolArray *outputMask, aclTensor *inputGrad, aclTensor *gridGrad,
+    uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnGridSampler2DBackward的第二段接口，用于执行计算。
@@ -88,8 +89,10 @@ ACLNN_API aclnnStatus aclnnGridSampler2DBackwardGetWorkspaceSize(const aclTensor
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnGridSampler2DBackward(
-    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGridSampler2DBackward(void *workspace,
+                                                 uint64_t workspaceSize,
+                                                 aclOpExecutor *executor,
+                                                 aclrtStream stream);
 
 #ifdef __cplusplus
 }

@@ -65,5 +65,5 @@ class GE_FUNC_VISIBILITY FeatureMemory {
   std::shared_ptr<FeatureMemoryData> data_{nullptr};
 };
 using FeatureMemoryPtr = std::shared_ptr<FeatureMemory>;
-} // namespace ge
+}  // namespace ge
 #endif  // INC_EXTERNAL_GE_GE_FEATURE_MEMORY_H

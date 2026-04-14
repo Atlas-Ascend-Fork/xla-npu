@@ -31,11 +31,11 @@ namespace xla {
 
 // NPU指定的内存布局格式
 enum class NpuLayoutFormat {
-    kDefault,      // 默认布局 (Row-major)
-    kNC1HWC0,      // NPU专用卷积布局
-    kFRACTAL_NZ,   // NPU矩阵计算的高效布局
-    kNDHWC,        // 3D卷积布局
-    kNCHW,         // 通道优先布局
+  kDefault,     // 默认布局 (Row-major)
+  kNC1HWC0,     // NPU专用卷积布局
+  kFRACTAL_NZ,  // NPU矩阵计算的高效布局
+  kNDHWC,       // 3D卷积布局
+  kNCHW,        // 通道优先布局
 };
 
 // 交换GEMM操作数以获得更好的NPU布局/分块性能
@@ -49,39 +49,37 @@ enum class NpuLayoutFormat {
 // 注意: 交换操作数需要在dot_dimension_numbers中相应地调整维度映射。
 class NpuGemmFusionSwapOperands : public HloModulePass {
  public:
-    NpuGemmFusionSwapOperands() = default;
-    ~NpuGemmFusionSwapOperands() override = default;
+  NpuGemmFusionSwapOperands() = default;
+  ~NpuGemmFusionSwapOperands() override = default;
 
-    absl::string_view name() const override {
-        return "npu-gemm-fusion-swap-operands";
-    }
+  absl::string_view name() const override {
+    return "npu-gemm-fusion-swap-operands";
+  }
 
  protected:
-    absl::StatusOr<bool> RunImpl(
-            HloModule* module,
-            const absl::flat_hash_set<absl::string_view>& execution_threads) override;
+  absl::StatusOr<bool> RunImpl(
+      HloModule* module,
+      const absl::flat_hash_set<absl::string_view>& execution_threads) override;
 
  private:
-    // Run on a single computation
-    absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
+  // Run on a single computation
+  absl::StatusOr<bool> RunOnComputation(HloComputation* computation);
 
-    // Check if GEMM operands should be swapped
-    bool ShouldSwapOperands(const HloDotInstruction* dot);
+  // Check if GEMM operands should be swapped
+  bool ShouldSwapOperands(const HloDotInstruction* dot);
 
-    // Get the preferred layout format for a given tensor
-    NpuLayoutFormat GetPreferredLayoutFormat(const Shape& shape,
-                                             bool is_lhs);
+  // Get the preferred layout format for a given tensor
+  NpuLayoutFormat GetPreferredLayoutFormat(const Shape& shape, bool is_lhs);
 
-    // Check if the shape is compatible with a given layout format
-    bool IsLayoutCompatible(const Shape& shape, NpuLayoutFormat format);
+  // Check if the shape is compatible with a given layout format
+  bool IsLayoutCompatible(const Shape& shape, NpuLayoutFormat format);
 
-    // Swap the operands of a GEMM instruction
-    absl::StatusOr<bool> SwapGemmOperands(HloDotInstruction* dot);
+  // Swap the operands of a GEMM instruction
+  absl::StatusOr<bool> SwapGemmOperands(HloDotInstruction* dot);
 
-    // Create a transpose instruction for layout conversion
-    absl::StatusOr<HloInstruction*> CreateLayoutTranspose(
-            HloInstruction* operand,
-            const std::vector<int64_t>& permutation);
+  // Create a transpose instruction for layout conversion
+  absl::StatusOr<HloInstruction*> CreateLayoutTranspose(
+      HloInstruction* operand, const std::vector<int64_t>& permutation);
 };
 
 }  // namespace xla

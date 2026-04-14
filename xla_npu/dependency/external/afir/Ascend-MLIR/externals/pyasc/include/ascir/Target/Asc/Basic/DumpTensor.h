@@ -27,7 +27,7 @@ namespace ascendc {
 
 LogicalResult printOperation(CodeEmitter &emitter, ascendc::PrintfOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_DUMP_TENSOR_H
+#endif  // ASCIR_TARGET_ASC_BASIC_DUMP_TENSOR_H

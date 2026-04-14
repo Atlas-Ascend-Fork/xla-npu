@@ -39,9 +39,10 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 __attribute__((visibility("default"))) aclnnStatus
-aclnnGroupedMatmulAddV2GetWorkspaceSize(const aclTensor *x, const aclTensor *weight, const aclTensor *groupList,
-                                        aclTensor *yRef, bool transposeX, bool transposeWeight, int64_t groupType,
-                                        int64_t groupListType, uint64_t *workspaceSize, aclOpExecutor **executor);
+aclnnGroupedMatmulAddV2GetWorkspaceSize(
+    const aclTensor *x, const aclTensor *weight, const aclTensor *groupList,
+    aclTensor *yRef, bool transposeX, bool transposeWeight, int64_t groupType,
+    int64_t groupListType, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
  * @brief aclnnGroupedMatmulAddV2的第二段接口，用于执行计算。
@@ -52,8 +53,9 @@ aclnnGroupedMatmulAddV2GetWorkspaceSize(const aclTensor *x, const aclTensor *wei
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulAddV2(void *workspace, uint64_t workspaceSize,
-                                                                           aclOpExecutor *executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus aclnnGroupedMatmulAddV2(
+    void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }

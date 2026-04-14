@@ -22,19 +22,22 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulV3GetWorkspaceSize(
-    const aclTensor* x, const aclTensor* weight, const aclTensor* antiquantScale,
-    const aclTensor* antiquantOffsetOptional, const aclTensor* quantScaleOptional, const aclTensor* quantOffsetOptional,
-    const aclTensor* biasOptional, int antiquantGroupSize, int innerPrecise, const aclTensor* y,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* x, const aclTensor* weight,
+    const aclTensor* antiquantScale, const aclTensor* antiquantOffsetOptional,
+    const aclTensor* quantScaleOptional, const aclTensor* quantOffsetOptional,
+    const aclTensor* biasOptional, int antiquantGroupSize, int innerPrecise,
+    const aclTensor* y, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnWeightQuantBatchMatmulV3的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnWeightQuantBatchMatmulV3(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnWeightQuantBatchMatmulV3(void* workspace,
+                                                    uint64_t workspaceSize,
+                                                    aclOpExecutor* executor,
+                                                    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_WEIGHT_QUANT_BATCH_MATMUL_V3_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_WEIGHT_QUANT_BATCH_MATMUL_V3_H_

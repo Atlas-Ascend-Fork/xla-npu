@@ -25,11 +25,13 @@ namespace ascendc {
 // Memory swap and workspace operations
 //===----------------------------------------------------------------------===//
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::GetSysWorkspacePtrOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::GetSysWorkspacePtrOp op);
 
-LogicalResult printOperation(CodeEmitter &emitter, ascendc::SetSysWorkspaceOp op);
+LogicalResult printOperation(CodeEmitter &emitter,
+                             ascendc::SetSysWorkspaceOp op);
 
-} // namespace ascendc
-} // namespace mlir
+}  // namespace ascendc
+}  // namespace mlir
 
-#endif // ASCIR_TARGET_ASC_BASIC_SWAP_MEM_H
+#endif  // ASCIR_TARGET_ASC_BASIC_SWAP_MEM_H

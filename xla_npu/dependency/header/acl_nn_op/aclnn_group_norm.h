@@ -23,18 +23,20 @@ extern "C" {
  * @domain aclnn_ops_infer
  */
 ACLNN_API aclnnStatus aclnnGroupNormGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* gamma, const aclTensor* beta, int64_t N, int64_t C, int64_t HxW,
-    int64_t group, double eps, aclTensor* out, aclTensor* meanOut, aclTensor* rstdOut, uint64_t* workspaceSize,
-    aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* gamma, const aclTensor* beta,
+    int64_t N, int64_t C, int64_t HxW, int64_t group, double eps,
+    aclTensor* out, aclTensor* meanOut, aclTensor* rstdOut,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnGroupNorm的第二段接口，用于执行计算。
  */
-ACLNN_API aclnnStatus
-aclnnGroupNorm(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGroupNorm(void* workspace, uint64_t workspaceSize,
+                                     aclOpExecutor* executor,
+                                     aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_GROUP_NORM_H_
+#endif  // OP_API_INC_GROUP_NORM_H_

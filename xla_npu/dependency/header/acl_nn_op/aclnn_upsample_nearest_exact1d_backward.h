@@ -38,9 +38,11 @@ extern "C" {
  * @param [out] executor: 返回op执行器，包含了算子计算流程。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnUpsampleNearestExact1dBackwardGetWorkspaceSize(
-    const aclTensor* gradOutput, const aclIntArray* outputSize, const aclIntArray* inputSize, double scales,
-    aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnUpsampleNearestExact1dBackwardGetWorkspaceSize(
+    const aclTensor* gradOutput, const aclIntArray* outputSize,
+    const aclIntArray* inputSize, double scales, aclTensor* out,
+    uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnUpsampleNearestExact1dBackward的第二段接口，用于执行计算。
@@ -54,8 +56,10 @@ __attribute__((visibility("default"))) aclnnStatus aclnnUpsampleNearestExact1dBa
  * @param [in] stream: 指定执行任务的AscendCL Stream流。
  * @return aclnnStatus: 返回状态码。
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnUpsampleNearestExact1dBackward(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+__attribute__((visibility("default"))) aclnnStatus
+aclnnUpsampleNearestExact1dBackward(void* workspace, uint64_t workspaceSize,
+                                    aclOpExecutor* executor,
+                                    aclrtStream stream);
 
 #ifdef __cplusplus
 }

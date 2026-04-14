@@ -45,8 +45,11 @@ extern "C" {
  * @param [out] executor: Return the op executor, including the operator calculation process.
  * @return aclnnStatus: Return the status code.
  */
- 
-aclnnStatus aclRfft1DGetWorkspaceSize(const aclTensor* self, int64_t n, int64_t dim, int64_t norm, aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
+
+aclnnStatus aclRfft1DGetWorkspaceSize(const aclTensor* self, int64_t n,
+                                      int64_t dim, int64_t norm, aclTensor* out,
+                                      uint64_t* workspaceSize,
+                                      aclOpExecutor** executor);
 
 /**
  * @brief A second interface of aclRfft1D, used to perform calculation.
@@ -56,8 +59,9 @@ aclnnStatus aclRfft1DGetWorkspaceSize(const aclTensor* self, int64_t n, int64_t 
  * @param [in] stream: acl stream.
  * @return aclnnStatus: returned status code
  */
-                                    
-aclnnStatus aclRfft1D(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+
+aclnnStatus aclRfft1D(void* workspace, uint64_t workspaceSize,
+                      aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }

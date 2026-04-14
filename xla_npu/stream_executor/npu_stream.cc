@@ -81,7 +81,7 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst,
   void* dst_mem = npu_dst->opaque();
   void* src_mem = const_cast<void*>(npu_src.opaque());
   auto acl_ret = ::xla::dep::aclrtMemcpy(dst_mem, size, src_mem, size,
-                                  ACL_MEMCPY_DEVICE_TO_DEVICE);
+                                         ACL_MEMCPY_DEVICE_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(
         absl::StrCat("Execute aclrtMemcpy d2d on stream '", GetName(),
@@ -100,7 +100,7 @@ absl::Status NpuStream::Memcpy(void* host_dst, const DeviceMemoryBase& npu_src,
 
   void* src_mem = const_cast<void*>(npu_src.opaque());
   auto acl_ret = ::xla::dep::aclrtMemcpy(host_dst, size, src_mem, size,
-                                  ACL_MEMCPY_DEVICE_TO_HOST);
+                                         ACL_MEMCPY_DEVICE_TO_HOST);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat(
         "Execute aclrtMemcpy d2h on stream '%s' failed, error code: %d",
@@ -119,7 +119,7 @@ absl::Status NpuStream::Memcpy(DeviceMemoryBase* npu_dst, const void* host_src,
 
   void* dst_mem = npu_dst->opaque();
   auto acl_ret = ::xla::dep::aclrtMemcpy(dst_mem, size, host_src, size,
-                                  ACL_MEMCPY_HOST_TO_DEVICE);
+                                         ACL_MEMCPY_HOST_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(absl::StrCat(
         "Execute aclrtMemcpy h2d on stream '%s' failed, error code: %d",

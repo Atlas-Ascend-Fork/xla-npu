@@ -680,7 +680,8 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   if (runtime_path.empty()) {
     return absl::InternalError(
         "ASCEND_MLIR_PYTHON_PATH environment variable not set. "
-        "Please set it to {xla-npu code repository path}/xla_npu/dependency/external/afir/Ascend-MLIR/python");
+        "Please set it to {xla-npu code repository "
+        "path}/xla_npu/dependency/external/afir/Ascend-MLIR/python");
   }
   NPU_LOG_FORMAT_PRINT(DEBUG, "Adding runtime path: %s", runtime_path.c_str());
   std::string import_cmd =
@@ -708,22 +709,22 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   // Create AscGen instance with soc_version parameter
   // Build argument tuple: (ascend_root=None, soc_version=options.soc_version)
   PyObject* args = PyTuple_New(0);  // No positional args
-  
+
   // Build keyword arguments dict: {"soc_version": options.soc_version}
   PyObject* kwargs = PyDict_New();
   PyObject* soc_version_str = PyUnicode_FromString(options.soc_version.c_str());
   PyDict_SetItemString(kwargs, "soc_version", soc_version_str);
   Py_XDECREF(soc_version_str);
-  
-  NPU_LOG_FORMAT_PRINT(INFO, "Creating AscGen instance with soc_version: %s", 
+
+  NPU_LOG_FORMAT_PRINT(INFO, "Creating AscGen instance with soc_version: %s",
                        options.soc_version.c_str());
-  
+
   // Call AscGen constructor with kwargs
   PyObject* ascgen_instance = PyObject_Call(ascgen_class, args, kwargs);
   Py_DECREF(args);
   Py_DECREF(kwargs);
   Py_DECREF(ascgen_class);
-  
+
   if (!ascgen_instance) {
     PyErr_Print();
     return absl::InternalError("Failed to create AscGen instance");
@@ -772,8 +773,9 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
 
   // Use SafePythonCall with timeout (default 600 seconds = 10 min)
   std::atomic<bool> compile_timed_out{false};
-  PyObject* compile_result = SafePythonCall(
-      compile_graph_method, compile_args, "compile_graph", &compile_timed_out, 600);
+  PyObject* compile_result =
+      SafePythonCall(compile_graph_method, compile_args, "compile_graph",
+                     &compile_timed_out, 600);
   Py_DECREF(compile_args);
   Py_DECREF(compile_graph_method);
 
@@ -903,9 +905,13 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
       absl::StrCat(abs_output_dir, "/", computation_name);
 
   // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True", "--soc_version", "--compile_options"]
-  bool use_old_cann_style = NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
+  bool use_old_cann_style =
+      NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
   // Prepare arguments list (4th parameter is a list)
-  int args_list_size = use_old_cann_style ? 5 : 6; // When use_old_cann_style is true, create 5, otherwise 6 elements.
+  int args_list_size =
+      use_old_cann_style
+          ? 5
+          : 6;  // When use_old_cann_style is true, create 5, otherwise 6 elements.
   PyObject* args_list = PyList_New(args_list_size);
   if (!args_list) {
     Py_DECREF(jit_compile_func);
@@ -915,10 +921,10 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   // Set list items
   std::string graph_name_arg = absl::StrCat("--graph_name=", graph_name);
   std::string output_file_arg = absl::StrCat("--output_file=", output_file);
-  std::string output_path_arg =
-      absl::StrCat("--output_path=", jit_output_path);
+  std::string output_path_arg = absl::StrCat("--output_path=", jit_output_path);
   const char* force_unknown_arg = "--force_unknown=True";
-  std::string soc_version_arg = absl::StrCat("--soc_version=", options.soc_version);
+  std::string soc_version_arg =
+      absl::StrCat("--soc_version=", options.soc_version);
 
   PyList_SetItem(args_list, 0, PyUnicode_FromString(graph_name_arg.c_str()));
   PyList_SetItem(args_list, 1, PyUnicode_FromString(output_file_arg.c_str()));

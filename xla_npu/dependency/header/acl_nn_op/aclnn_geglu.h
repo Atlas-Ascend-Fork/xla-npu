@@ -54,8 +54,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGeGluGetWorkspaceSize(
-    const aclTensor* self, int64_t dim, int64_t approximate, aclTensor* out, aclTensor* outGelu,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, int64_t dim, int64_t approximate, aclTensor* out,
+    aclTensor* outGelu, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @param [in] self: 待进行GeGlu计算的入参，npu
@@ -75,8 +75,9 @@ ACLNN_API aclnnStatus aclnnGeGluGetWorkspaceSize(
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnGeGluV3GetWorkspaceSize(
-    const aclTensor* self, int64_t dim, int64_t approximate, bool activateLeft, aclTensor* out, aclTensor* outGelu,
-    uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, int64_t dim, int64_t approximate, bool activateLeft,
+    aclTensor* out, aclTensor* outGelu, uint64_t* workspaceSize,
+    aclOpExecutor** executor);
 
 /**
  * @brief aclnnGeGlu的第二段接口，用于执行计算。
@@ -86,7 +87,8 @@ ACLNN_API aclnnStatus aclnnGeGluV3GetWorkspaceSize(
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus aclnnGeGlu(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGeGlu(void* workspace, uint64_t workspaceSize,
+                                 aclOpExecutor* executor, aclrtStream stream);
 
 /**
  * @brief aclnnGeGlu的第二段接口，用于执行计算。
@@ -96,11 +98,11 @@ ACLNN_API aclnnStatus aclnnGeGlu(void* workspace, uint64_t workspaceSize, aclOpE
  * @param [in] stream: acl stream流。
  * @return aclnnStatus: 返回状态码。
  */
-ACLNN_API aclnnStatus
-aclnnGeGluV3(void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+ACLNN_API aclnnStatus aclnnGeGluV3(void* workspace, uint64_t workspaceSize,
+                                   aclOpExecutor* executor, aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_GEGLU_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_GEGLU_H_

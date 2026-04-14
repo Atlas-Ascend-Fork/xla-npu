@@ -35,7 +35,8 @@ class Chain {
    * @tparam T 数据类型
    * @return 指向数据的指针
    */
-  template<typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)), int>::type = 0>
+  template <typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)),
+                                                int>::type = 0>
   const T *GetPointer() const {
     return reinterpret_cast<const T *>(any_value_.data.inplace);
   }
@@ -44,7 +45,8 @@ class Chain {
    * @tparam T 数据类型
    * @return 指向数据的指针
    */
-  template<typename T, typename std::enable_if<(sizeof(T) > sizeof(void *)), int>::type = 0>
+  template <typename T, typename std::enable_if<(sizeof(T) > sizeof(void *)),
+                                                int>::type = 0>
   const T *GetPointer() const {
     return reinterpret_cast<const T *>(any_value_.data.pointer);
   }
@@ -53,8 +55,9 @@ class Chain {
    * @tparam T 数据类型
    * @return 指向数据的指针
    */
-  template<typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)), int>::type = 0>
-  auto GetPointer() -> T* {
+  template <typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)),
+                                                int>::type = 0>
+  auto GetPointer() -> T * {
     return reinterpret_cast<T *>(any_value_.data.inplace);
   }
   /**
@@ -62,8 +65,9 @@ class Chain {
    * @tparam T 数据类型
    * @return 指向数据的指针
    */
-  template<typename T, typename std::enable_if<(sizeof(T) > sizeof(void *)), int>::type = 0>
-  auto GetPointer() -> T* {
+  template <typename T, typename std::enable_if<(sizeof(T) > sizeof(void *)),
+                                                int>::type = 0>
+  auto GetPointer() -> T * {
     return reinterpret_cast<T *>(any_value_.data.pointer);
   }
   /**
@@ -71,7 +75,8 @@ class Chain {
    * @tparam T 数据类型
    * @return 数据的值的引用
    */
-  template<typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)), int>::type = 0>
+  template <typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)),
+                                                int>::type = 0>
   const T &GetValue() const {
     return *reinterpret_cast<const T *>(any_value_.data.inplace);
   }
@@ -80,8 +85,9 @@ class Chain {
    * @tparam T 数据类型
    * @return 数据的值的引用
    */
-  template<typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)), int>::type = 0>
-  auto GetValue() -> T& {
+  template <typename T, typename std::enable_if<(sizeof(T) <= sizeof(void *)),
+                                                int>::type = 0>
+  auto GetValue() -> T & {
     return *reinterpret_cast<T *>(any_value_.data.inplace);
   }
   /**
@@ -89,7 +95,7 @@ class Chain {
    * @param data 指向数据的指针
    * @param deleter 释放数据的接口，空指针的含义为不需要释放
    */
-  void Set(void * const data, const Chain::Deleter deleter) {
+  void Set(void *const data, const Chain::Deleter deleter) {
     FreeResource();
     any_value_.data.pointer = data;
     any_value_.deleter = deleter;
@@ -99,7 +105,8 @@ class Chain {
    * @tparam T 数据的类型
    * @param data 数据的指针
    */
-  template<typename T, typename std::enable_if<(!std::is_array<T>::value), int>::type = 0>
+  template <typename T,
+            typename std::enable_if<(!std::is_array<T>::value), int>::type = 0>
   void SetWithDefaultDeleter(T *data) {
     Set(data, reinterpret_cast<FreeCallback>(DefaultDeleter<T>));
   }
@@ -108,8 +115,8 @@ class Chain {
    * @tparam T 数据的类型
    * @param data 数据的指针
    */
-  template<typename T, typename PureT = typename std::remove_extent<T>::type,
-           typename std::enable_if<std::is_array<T>::value, int>::type = 0>
+  template <typename T, typename PureT = typename std::remove_extent<T>::type,
+            typename std::enable_if<std::is_array<T>::value, int>::type = 0>
   void SetWithDefaultDeleter(PureT *data) {
     Set(data, reinterpret_cast<FreeCallback>(DefaultArrayDeleter<PureT>));
   }
@@ -117,17 +124,15 @@ class Chain {
    * 判断当前Chain中保存的数据是否有deleter
    * @return true代表含有deleter
    */
-  bool HasDeleter() const {
-    return any_value_.deleter != nullptr;
-  }
+  bool HasDeleter() const { return any_value_.deleter != nullptr; }
 
  private:
-  template<typename T>
+  template <typename T>
   static void DefaultArrayDeleter(T *data) {
     delete[] data;
   }
 
-  template<typename T>
+  template <typename T>
   static void DefaultDeleter(T *data) {
     delete data;
   }
@@ -140,7 +145,8 @@ class Chain {
 
   AsyncAnyValue any_value_;
 };
-static_assert(std::is_standard_layout<Chain>::value, "The class Chain must be a POD");
+static_assert(std::is_standard_layout<Chain>::value,
+              "The class Chain must be a POD");
 
 class KernelContext {
  public:
@@ -148,16 +154,12 @@ class KernelContext {
    * 获取kernel的输入数量
    * @return kernel的输入数量
    */
-  size_t GetInputNum() const {
-    return context_.input_size;
-  }
+  size_t GetInputNum() const { return context_.input_size; }
   /**
    * 获取kernel的输出数量
    * @return kernel的输出数量
    */
-  size_t GetOutputNum() const {
-    return context_.output_size;
-  }
+  size_t GetOutputNum() const { return context_.output_size; }
   /**
    * 获取输入的Chain指针
    * @param i kernel的输入index
@@ -169,7 +171,7 @@ class KernelContext {
     }
     return reinterpret_cast<const Chain *>(context_.values[i]);
   }
-    /**
+  /**
    * 获取输入的Chain指针
    * @param i kernel的输入index
    * @return 输入Chain的指针
@@ -200,7 +202,8 @@ class KernelContext {
     if (i >= context_.output_size) {
       return nullptr;
     }
-    return reinterpret_cast<const Chain *>(context_.values[context_.input_size + i]);
+    return reinterpret_cast<const Chain *>(
+        context_.values[context_.input_size + i]);
   }
   Chain *GetOutput2(const size_t i) {
     if (i >= context_.output_size) {
@@ -214,7 +217,7 @@ class KernelContext {
    * @param i kernel的输入index
    * @return 输入的值
    */
-  template<typename T>
+  template <typename T>
   const T GetInputValue(size_t i) const {
     const auto av = GetInput(i);
     if (av == nullptr) {
@@ -228,7 +231,7 @@ class KernelContext {
    * @param i kernel的输入index
    * @return 输入数据的指针
    */
-  template<typename T>
+  template <typename T>
   const T *GetInputPointer(size_t i) const {
     const auto av = GetInput(i);
     if (av == nullptr) {
@@ -242,8 +245,8 @@ class KernelContext {
    * @param i kernel的输入index
    * @return 输入数据的指针
    */
-  template<typename T>
-  auto MutableInputPointer(size_t i) const -> T* {
+  template <typename T>
+  auto MutableInputPointer(size_t i) const -> T * {
     const auto av = MutableInput(i);
     if (av == nullptr) {
       return nullptr;
@@ -275,17 +278,15 @@ class KernelContext {
    * 获取kernel扩展信息的指针
    * @return
    */
-  const void *GetKernelExtend() const {
-    return context_.kernel_extend_info;
-  }
+  const void *GetKernelExtend() const { return context_.kernel_extend_info; }
   /**
    * 获取输出数据的指针，本函数首先获取输出Chain，然后从Chain中获取指针
    * @tparam T 数据的类型
    * @param i kernel的输出index
    * @return 输出数据的指针
    */
-  template<typename T>
-  auto GetOutputPointer(size_t i) -> T* {
+  template <typename T>
+  auto GetOutputPointer(size_t i) -> T * {
     const auto av = GetOutput(i);
     if (av == nullptr) {
       return nullptr;
@@ -298,7 +299,7 @@ class KernelContext {
    * @param i kernel的输出index
    * @return 输出数据的指针
    */
-  template<typename T>
+  template <typename T>
   const T *GetOutputPointer(size_t i) const {
     const auto av = GetOutput(i);
     if (av == nullptr) {
@@ -310,28 +311,23 @@ class KernelContext {
    * 获取底层的context结构体，非框架代码请勿直接操作此结构体
    * @return 指向context结构体的指针
    */
-  KernelRunContext *GetContext() {
-    return &context_;
-  }
+  KernelRunContext *GetContext() { return &context_; }
   /**
    * 获取底层的context结构体，非框架代码请勿直接操作此结构体
    * @return 指向context结构体的指针
    */
-  const KernelRunContext *GetContext() const {
-    return &context_;
-  }
+  const KernelRunContext *GetContext() const { return &context_; }
   /**
    * 根据数据的长度判断一个数据是否会被Inline存储，所谓Inline存储是指此数据保存在context中时不需要单独分配内存
    * @param size 数据的长度
    * @return true代表会被inline存储
    */
-  static bool IsInlineSize(const size_t size) {
-    return size <= sizeof(void *);
-  }
+  static bool IsInlineSize(const size_t size) { return size <= sizeof(void *); }
 
  private:
   KernelRunContext context_;
 };
-static_assert(std::is_standard_layout<KernelContext>::value, "The class KernelContext must be a POD");
+static_assert(std::is_standard_layout<KernelContext>::value,
+              "The class KernelContext must be a POD");
 }  // namespace gert
 #endif  // METADEF_CXX_INC_EXE_GRAPH_RUNTIME_KERNEL_CONTEXT_H_

@@ -83,7 +83,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
  public:
   TensorDesc();
   ~TensorDesc() = default;
-  explicit TensorDesc(Shape shape, Format format = FORMAT_ND, DataType dt = DT_FLOAT);
+  explicit TensorDesc(Shape shape, Format format = FORMAT_ND,
+                      DataType dt = DT_FLOAT);
   // Copy
   TensorDesc(const TensorDesc &desc);
   // Move
@@ -93,14 +94,17 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   // Move
   TensorDesc &operator=(TensorDesc &&desc);
 
-  void Update(const Shape &shape, Format format = FORMAT_ND, DataType dt = DT_FLOAT);
+  void Update(const Shape &shape, Format format = FORMAT_ND,
+              DataType dt = DT_FLOAT);
   Shape GetShape() const;
   void SetShape(const Shape &shape);
   // set shape with -2, it stand for unknown shape
   graphStatus SetUnknownDimNumShape();
   // for unknown shape
-  graphStatus SetShapeRange(const std::vector<std::pair<int64_t, int64_t>> &range);
-  graphStatus GetShapeRange(std::vector<std::pair<int64_t, int64_t>> &range) const;
+  graphStatus SetShapeRange(
+      const std::vector<std::pair<int64_t, int64_t>> &range);
+  graphStatus GetShapeRange(
+      std::vector<std::pair<int64_t, int64_t>> &range) const;
 
   Format GetFormat() const;
   void SetFormat(Format format);
@@ -133,9 +137,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   void SetPlacement(Placement placement);
   Placement GetPlacement() const;
 
-  void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer, const size_t &const_data_len);
+  void SetConstData(std::unique_ptr<uint8_t[]> const_data_buffer,
+                    const size_t &const_data_len);
   bool GetConstData(uint8_t **const_data_buffer, size_t &const_data_len) const;
- /*
+  /*
   * 补维类似于ExpandDims算子，在原有shape的基础上，添加一到多个维度，例如原shape[2,2]有两根轴，那么在两根轴中间补两维后的shape为[2,1,1,2]。
   * 补维后shape的第0、3根轴被称为原始轴，第1、2根轴被称为补维轴。
   *
@@ -183,7 +188,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Tensor {
   ATTRIBUTED_DEPRECATED(graphStatus SetData(const std::vector<AscendString> &))
   graphStatus SetData(const std::vector<std::string> &data);
   graphStatus SetData(const std::vector<AscendString> &datas);
-  graphStatus SetData(uint8_t *data, size_t size, const Tensor::DeleteFunc &deleter_func);
+  graphStatus SetData(uint8_t *data, size_t size,
+                      const Tensor::DeleteFunc &deleter_func);
   graphStatus IsValid();
 
   graphStatus SetOriginShapeDimNum(const size_t dim_num);
@@ -226,7 +232,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Tensor {
   graphStatus GetExpandDimsRule(AscendString &expand_dims_rule) const;
 
   // 高性能接口，与SetData接口的区别是避免重复make_shared,此时需要用户保证该tensor的内存只被当前tensor使用，具有独占所有权
-  graphStatus ResetData(uint8_t *data, size_t size, const Tensor::DeleteFunc &deleter_func);
+  graphStatus ResetData(uint8_t *data, size_t size,
+                        const Tensor::DeleteFunc &deleter_func);
 
   Tensor Clone() const;
 

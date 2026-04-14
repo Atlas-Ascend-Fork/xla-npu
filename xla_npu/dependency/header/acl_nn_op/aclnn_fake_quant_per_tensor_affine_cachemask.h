@@ -67,8 +67,9 @@ extern "C" {
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnFakeQuantPerTensorAffineCachemaskGetWorkspaceSize(
-    const aclTensor* self, const aclTensor* scale, const aclTensor* zeroPoint, float fakeQuantEnbled, int64_t quantMin,
-    int64_t quantMax, aclTensor* out, aclTensor* mask, uint64_t* workspaceSize, aclOpExecutor** executor);
+    const aclTensor* self, const aclTensor* scale, const aclTensor* zeroPoint,
+    float fakeQuantEnbled, int64_t quantMin, int64_t quantMax, aclTensor* out,
+    aclTensor* mask, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
  * @brief aclnnFakeQuantPerTensorAffineCachemask的第二段接口，用于执行计算。
@@ -81,10 +82,11 @@ ACLNN_API aclnnStatus aclnnFakeQuantPerTensorAffineCachemaskGetWorkspaceSize(
  * @return aclnnStatus: 返回状态码。
  */
 ACLNN_API aclnnStatus aclnnFakeQuantPerTensorAffineCachemask(
-    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor, aclrtStream stream);
+    void* workspace, uint64_t workspaceSize, aclOpExecutor* executor,
+    aclrtStream stream);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // OP_API_INC_LEVEL2_ACLNN_FAKE_QUANT_PER_TENSOR_AFFINE_CACHEMASK_TENSOR_QPARAMS_H_
+#endif  // OP_API_INC_LEVEL2_ACLNN_FAKE_QUANT_PER_TENSOR_AFFINE_CACHEMASK_TENSOR_QPARAMS_H_
