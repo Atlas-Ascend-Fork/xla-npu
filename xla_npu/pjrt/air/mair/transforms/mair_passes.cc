@@ -201,16 +201,20 @@ class ConvertBroadcastInDimOp
         rewriter.replaceOp(op, newOp.getResult());
         return success();
       } else {
-        auto axesTensorType = RankedTensorType::get(
-            {static_cast<int64_t>(axesToUnsqueeze.size())},
-            rewriter.getI64Type());
-        auto axesAttr =
-            DenseIntElementsAttr::get(axesTensorType, axesToUnsqueeze);
-        auto axesConstOp = rewriter.create<air::ConstantOp>(
-            op.getLoc(), axesTensorType, axesAttr);
-
-        auto newOp = rewriter.create<air::UnsqueezeV3Op>(
-            op.getLoc(), resultType, operand, axesConstOp.getResult());
+        // 不需要 Broadcast，元素总数不变，使用 Reshape
+        auto targetShape = resultType.getShape();
+        SmallVector<int64_t> shapeValues(targetShape.begin(), targetShape.end());
+        
+        auto shapeTensorType = RankedTensorType::get(
+            {static_cast<int64_t>(shapeValues.size())}, rewriter.getI64Type());
+        auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, shapeValues);
+        auto shapeConstOp = rewriter.create<air::ConstantOp>(
+            op.getLoc(), shapeTensorType, shapeAttr);
+        
+        auto newOp = rewriter.create<air::ReshapeOp>(
+            op.getLoc(), resultType, operand, shapeConstOp.getResult(),
+            rewriter.getI64IntegerAttr(0),
+            rewriter.getI64IntegerAttr(-1));
         rewriter.replaceOp(op, newOp.getResult());
         return success();
       }
@@ -387,10 +391,209 @@ class ConvertMatMulOp : public OpConversionPattern<stablehlo::DotGeneralOp> {
   LogicalResult matchAndRewrite(
       stablehlo::DotGeneralOp op, OpAdaptor adaptor,
       ConversionPatternRewriter& rewriter) const final {
-    rewriter.replaceOpWithNewOp<MatMulOp>(op, op.getType(), op.getLhs(),
-                                          op.getRhs(), nullptr, false, false);
+    auto lhs = op.getLhs();
+    auto rhs = op.getRhs();
+    auto resultType = op.getType();
+    
+    auto dimNumbers = op.getDotDimensionNumbers();
+    auto lhsBatchingDims = dimNumbers.getLhsBatchingDimensions();
+    auto rhsBatchingDims = dimNumbers.getRhsBatchingDimensions();
+    auto lhsContractingDims = dimNumbers.getLhsContractingDimensions();
+    auto rhsContractingDims = dimNumbers.getRhsContractingDimensions();
+    
+    auto lhsType = dyn_cast<RankedTensorType>(lhs.getType());
+    auto rhsType = dyn_cast<RankedTensorType>(rhs.getType());
+    if (!lhsType || !rhsType) {
+      return failure();
+    }
+    
+    auto lhsShape = lhsType.getShape();
+    auto rhsShape = rhsType.getShape();
+    auto resultShape = dyn_cast<RankedTensorType>(resultType).getShape();
+    
+    llvm::SmallDenseSet<int64_t> lhsBatchSet(lhsBatchingDims.begin(), lhsBatchingDims.end());
+    llvm::SmallDenseSet<int64_t> rhsBatchSet(rhsBatchingDims.begin(), rhsBatchingDims.end());
+    llvm::SmallDenseSet<int64_t> lhsContractSet(lhsContractingDims.begin(), lhsContractingDims.end());
+    llvm::SmallDenseSet<int64_t> rhsContractSet(rhsContractingDims.begin(), rhsContractingDims.end());
+    
+    SmallVector<int64_t> lhsNonBatchNonContractDims;
+    SmallVector<int64_t> rhsNonBatchNonContractDims;
+    
+    for (int64_t i = 0; i < lhsType.getRank(); ++i) {
+      if (lhsBatchSet.count(i) == 0 && lhsContractSet.count(i) == 0) {
+        lhsNonBatchNonContractDims.push_back(i);
+      }
+    }
+    
+    for (int64_t i = 0; i < rhsType.getRank(); ++i) {
+      if (rhsBatchSet.count(i) == 0 && rhsContractSet.count(i) == 0) {
+        rhsNonBatchNonContractDims.push_back(i);
+      }
+    }
+    
+    SmallVector<int64_t> lhsPermutation;
+    for (auto dim : lhsBatchingDims) lhsPermutation.push_back(dim);
+    for (auto dim : lhsNonBatchNonContractDims) lhsPermutation.push_back(dim);
+    for (auto dim : lhsContractingDims) lhsPermutation.push_back(dim);
+    
+    SmallVector<int64_t> rhsPermutation;
+    for (auto dim : rhsBatchingDims) rhsPermutation.push_back(dim);
+    for (auto dim : rhsContractingDims) rhsPermutation.push_back(dim);
+    for (auto dim : rhsNonBatchNonContractDims) rhsPermutation.push_back(dim);
+    
+    Value lhsTransposed = transposeTensor(lhs, lhsPermutation, rewriter, op.getLoc());
+    Value rhsTransposed = transposeTensor(rhs, rhsPermutation, rewriter, op.getLoc());
+    
+    SmallVector<int64_t> lhsReshapeShape;
+    SmallVector<int64_t> rhsReshapeShape;
+    
+    int64_t lhsBatchSize = 1;
+    for (auto dim : lhsBatchingDims) {
+      lhsBatchSize *= lhsShape[dim];
+    }
+    
+    int64_t lhsNonContractSize = 1;
+    for (auto dim : lhsNonBatchNonContractDims) {
+      lhsNonContractSize *= lhsShape[dim];
+    }
+    
+    int64_t lhsContractSize = 1;
+    for (auto dim : lhsContractingDims) {
+      lhsContractSize *= lhsShape[dim];
+    }
+    
+    int64_t rhsContractSize = 1;
+    for (auto dim : rhsContractingDims) {
+      rhsContractSize *= rhsShape[dim];
+    }
+    
+    int64_t rhsNonContractSize = 1;
+    for (auto dim : rhsNonBatchNonContractDims) {
+      rhsNonContractSize *= rhsShape[dim];
+    }
+    
+    int64_t rhsBatchSize = 1;
+    for (auto dim : rhsBatchingDims) {
+      rhsBatchSize *= rhsShape[dim];
+    }
+    
+    // 验证 contract 维度大小匹配
+    if (lhsContractSize != rhsContractSize) {
+      return rewriter.notifyMatchFailure(op, 
+          "Contract dimension sizes must match: lhs=" + std::to_string(lhsContractSize) + 
+          ", rhs=" + std::to_string(rhsContractSize));
+    }
+    
+    // 验证 batch 维度大小匹配
+    if (lhsBatchSize != rhsBatchSize) {
+      return rewriter.notifyMatchFailure(op, 
+          "Batch dimension sizes must match: lhs=" + std::to_string(lhsBatchSize) + 
+          ", rhs=" + std::to_string(rhsBatchSize));
+    }
+    
+    if (!lhsBatchingDims.empty()) {
+      // 有 batch 维度，使用 BatchMatMul
+      // lhs: [batch_size, non_contract_size, contract_size]
+      // rhs: [batch_size, contract_size, non_contract_size]
+      lhsReshapeShape = {lhsBatchSize, lhsNonContractSize, lhsContractSize};
+      rhsReshapeShape = {rhsBatchSize, rhsContractSize, rhsNonContractSize};
+    } else {
+      // 无 batch 维度，使用 MatMul
+      lhsReshapeShape = {lhsNonContractSize, lhsContractSize};
+      rhsReshapeShape = {rhsContractSize, rhsNonContractSize};
+    }
+    
+    auto lhsReshaped = reshapeTensor(lhsTransposed, lhsReshapeShape, rewriter, op.getLoc());
+    auto rhsReshaped = reshapeTensor(rhsTransposed, rhsReshapeShape, rewriter, op.getLoc());
+    
+    SmallVector<int64_t> matmulResultShape;
+    Value matmulResult;
+    
+    if (!lhsBatchingDims.empty()) {
+      // 使用 BatchMatMul
+      matmulResultShape = {lhsBatchSize, lhsNonContractSize, rhsNonContractSize};
+      auto matmulResultType = RankedTensorType::get(matmulResultShape, lhsType.getElementType());
+      matmulResult = rewriter.create<BatchMatMulOp>(
+          op.getLoc(), matmulResultType, lhsReshaped, rhsReshaped, 
+          false, false).getResult();
+      
+    } else {
+      // 使用 MatMul
+      matmulResultShape = {lhsNonContractSize, rhsNonContractSize};
+      auto matmulResultType = RankedTensorType::get(matmulResultShape, lhsType.getElementType());
+      matmulResult = rewriter.create<MatMulOp>(
+          op.getLoc(), matmulResultType, lhsReshaped, rhsReshaped, 
+          nullptr, false, false).getResult();
+    }
+    
+    auto finalResult = reshapeTensor(matmulResult, 
+                                     SmallVector<int64_t>(resultShape.begin(), resultShape.end()),
+                                     rewriter, op.getLoc());    
+    rewriter.replaceOp(op, finalResult);
     return success();
-  };
+  }
+
+ private:
+  Value transposeTensor(Value input, ArrayRef<int64_t> permutation,
+                       ConversionPatternRewriter& rewriter, Location loc) const {
+    auto inputType = dyn_cast<RankedTensorType>(input.getType());
+    if (!inputType) return input;
+    
+    bool needTranspose = false;
+    for (size_t i = 0; i < permutation.size(); ++i) {
+      needTranspose = true;
+      break;
+    }
+    
+    if (!needTranspose) return input;
+    
+    auto inputShape = inputType.getShape();
+    SmallVector<int64_t> resultShape;
+    for (auto idx : permutation) {
+      resultShape.push_back(inputShape[idx]);
+    }
+    
+    auto resultType = RankedTensorType::get(resultShape, inputType.getElementType());
+    
+    auto permTensorType = RankedTensorType::get(
+        {static_cast<int64_t>(permutation.size())}, rewriter.getI64Type());
+    auto permAttr = DenseIntElementsAttr::get(permTensorType, permutation);
+    auto permConst = rewriter.create<ConstantOp>(loc, permTensorType, permAttr);
+    
+    return rewriter.create<TransposeOp>(loc, resultType, input, permConst.getResult()).getResult();
+  }
+  
+  Value reshapeTensor(Value input, ArrayRef<int64_t> targetShape,
+                     ConversionPatternRewriter& rewriter, Location loc) const {
+    auto inputType = dyn_cast<RankedTensorType>(input.getType());
+    if (!inputType) return input;
+    
+    auto inputShape = inputType.getShape();
+    bool needReshape = false;
+    if (inputShape.size() != targetShape.size()) {
+      needReshape = true;
+    } else {
+      for (size_t i = 0; i < inputShape.size(); ++i) {
+        if (inputShape[i] != targetShape[i]) {
+          needReshape = true;
+          break;
+        }
+      }
+    }
+    
+    if (!needReshape) return input;
+    
+    auto resultType = RankedTensorType::get(targetShape, inputType.getElementType());
+    
+    auto shapeTensorType = RankedTensorType::get(
+        {static_cast<int64_t>(targetShape.size())}, rewriter.getI64Type());
+    auto shapeAttr = DenseIntElementsAttr::get(shapeTensorType, targetShape);
+    auto shapeConst = rewriter.create<ConstantOp>(loc, shapeTensorType, shapeAttr);
+    
+    return rewriter.create<ReshapeOp>(loc, resultType, input, shapeConst.getResult(),
+                                      rewriter.getI64IntegerAttr(0),
+                                      rewriter.getI64IntegerAttr(-1)).getResult();
+  }
 };
 class ConvertReshapeOp : public OpConversionPattern<stablehlo::ReshapeOp> {
  public:
@@ -413,8 +616,9 @@ class ConvertReshapeOp : public OpConversionPattern<stablehlo::ReshapeOp> {
                                op.getLoc(), shapeTensorType, shapeAttr)
                            .getResult();
     auto newReshapeOp = rewriter.create<mlir::air::ReshapeOp>(
-        op.getLoc(), op.getType(), inputTensor, shapeTensor
-        // axis and num_axes use default values
+        op.getLoc(), op.getType(), inputTensor, shapeTensor,
+        rewriter.getI64IntegerAttr(0),
+        rewriter.getI64IntegerAttr(-1)
     );
     rewriter.replaceOp(op, newReshapeOp.getResult());
     return success();
@@ -447,8 +651,10 @@ class ConvertReduceOp : public OpConversionPattern<stablehlo::ReduceOp> {
     bool isSum = isa<stablehlo::AddOp>(singleComputeOp);
     bool isMax = isa<stablehlo::MaxOp>(singleComputeOp);
     bool isMin = isa<stablehlo::MinOp>(singleComputeOp);
+    bool isLogicalAnd = isa<stablehlo::AndOp>(singleComputeOp);
+    bool isLogicalOr = isa<stablehlo::OrOp>(singleComputeOp);
 
-    if (!isSum && !isMax && !isMin) {
+    if (!isSum && !isMax && !isMin && !isLogicalAnd && !isLogicalOr) {
       return success();
     }
 
@@ -489,6 +695,12 @@ class ConvertReduceOp : public OpConversionPattern<stablehlo::ReduceOp> {
     } else if (isMin) {
       newOp = rewriter.create<mlir::air::ReduceMinOp>(
           op.getLoc(), op.getResultTypes(), inputs, axesValue, keepDimsAttr);
+    } else if (isLogicalAnd) {
+      newOp = rewriter.create<mlir::air::ReduceAllOp>(
+          op.getLoc(), op.getResultTypes(), inputs, axesValue, keepDimsAttr);
+    } else if (isLogicalOr) {
+      newOp = rewriter.create<mlir::air::ReduceAnyOp>(
+          op.getLoc(), op.getResultTypes(), inputs, axesValue, keepDimsAttr);
     }
     if (newOp) {
       rewriter.replaceOp(op, newOp->getResults());
@@ -509,9 +721,255 @@ class ConvertCastOp : public OpConversionPattern<stablehlo::ConvertOp> {
           op, "failed to get destination type for convert op");
     }
     rewriter.replaceOpWithNewOp<CastOp>(op, dstType, inputValue,
-                                        TypeAttr::get(dstType));
+                                         TypeAttr::get(dstType));
     return success();
   }
+};
+class ConvertAndOp : public OpConversionPattern<stablehlo::AndOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::AndOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<AndOp>(op, op.getType(), op.getLhs(),
+                                       op.getRhs());
+    return success();
+  };
+};
+class ConvertCompareOp : public OpConversionPattern<stablehlo::CompareOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::CompareOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    auto direction = op.getComparisonDirection();
+    auto lhs = op.getLhs();
+    auto rhs = op.getRhs();
+    auto resultType = op.getType();
+
+    if (direction == stablehlo::ComparisonDirection::EQ) {
+      rewriter.replaceOpWithNewOp<EqualOp>(op, resultType, lhs, rhs);
+    } else if (direction == stablehlo::ComparisonDirection::NE) {
+      rewriter.replaceOpWithNewOp<NotEqualOp>(op, resultType, lhs, rhs);
+    } else if (direction == stablehlo::ComparisonDirection::GT) {
+      rewriter.replaceOpWithNewOp<GreaterOp>(op, resultType, lhs, rhs);
+    } else if (direction == stablehlo::ComparisonDirection::GE) {
+      rewriter.replaceOpWithNewOp<GreaterEqualOp>(op, resultType, lhs, rhs);
+    } else if (direction == stablehlo::ComparisonDirection::LT) {
+      rewriter.replaceOpWithNewOp<LessOp>(op, resultType, lhs, rhs);
+    } else if (direction == stablehlo::ComparisonDirection::LE) {
+      rewriter.replaceOpWithNewOp<LessEqualOp>(op, resultType, lhs, rhs);
+    } else {
+      return failure();
+    }
+    return success();
+  };
+};
+class ConvertCosineOp : public OpConversionPattern<stablehlo::CosineOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::CosineOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<CosOp>(op, op.getType(), op.getOperand());
+    return success();
+  };
+};
+class ConvertGatherOp : public OpConversionPattern<stablehlo::GatherOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::GatherOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    auto dimensionNumbers = op.getDimensionNumbers();
+    auto sliceSizes = op.getSliceSizes();
+    
+    auto offsetDims = dimensionNumbers.getOffsetDims();
+    auto collapsedSliceDims = dimensionNumbers.getCollapsedSliceDims();
+    auto startIndexMap = dimensionNumbers.getStartIndexMap();
+    auto indexVectorDim = dimensionNumbers.getIndexVectorDim();
+    
+    auto operand = op.getOperand();
+    auto startIndices = op.getStartIndices();
+    auto operandType = dyn_cast<RankedTensorType>(operand.getType());
+    auto indicesType = dyn_cast<RankedTensorType>(startIndices.getType());
+    
+    if (!operandType || !indicesType) {
+      return rewriter.notifyMatchFailure(op, "Operand and indices must be ranked tensors");
+    }
+    
+    // 简单情况：单轴 gather
+    // 条件：
+    // 1. start_index_map 只有一个元素
+    // 2. collapsed_slice_dims 只有一个元素
+    // 3. collapsed_slice_dims[0] == start_index_map[0]
+    // 4. slice_sizes 在 collapsed 维度上为 1
+    
+    if (startIndexMap.size() == 1 && 
+        collapsedSliceDims.size() == 1 &&
+        collapsedSliceDims[0] == startIndexMap[0]) {
+      
+      int64_t axis = startIndexMap[0];
+      
+      // 验证 slice_sizes 在 collapsed 维度上为 1
+      if (sliceSizes[axis] != 1) {
+        return rewriter.notifyMatchFailure(op, 
+            "Slice size on collapsed dimension must be 1, got " + 
+            std::to_string(sliceSizes[axis]));
+      }
+      
+      // 创建 axis 常量
+      auto axisType = RankedTensorType::get({}, rewriter.getI64Type());
+      auto axisAttr = DenseIntElementsAttr::get(axisType, {axis});
+      auto axisConst = rewriter.create<ConstantOp>(op.getLoc(), axisType, axisAttr);
+      
+      // 处理 indices（可能需要 squeeze）
+      Value indices = startIndices;
+      auto indicesShape = indicesType.getShape();
+      int64_t indicesRank = indicesType.getRank();
+      
+      // 如果 index_vector_dim 是最后一个维度，且大小为 1，则 squeeze
+      if (indexVectorDim == indicesRank - 1 && indicesShape.back() == 1) {
+        SmallVector<int64_t> newShape(indicesShape.begin(), indicesShape.end() - 1);
+        
+        auto newIndicesType = RankedTensorType::get(newShape, indicesType.getElementType());
+        auto shapeType = RankedTensorType::get(
+            {static_cast<int64_t>(newShape.size())}, rewriter.getI64Type());
+        auto shapeAttr = DenseIntElementsAttr::get(shapeType, newShape);
+        auto shapeConst = rewriter.create<ConstantOp>(op.getLoc(), shapeType, shapeAttr);
+        
+        indices = rewriter.create<ReshapeOp>(op.getLoc(), newIndicesType, indices, 
+                                             shapeConst.getResult(),
+                                             rewriter.getI64IntegerAttr(0),
+                                             rewriter.getI64IntegerAttr(-1)).getResult();
+      }
+      
+      // 创建 GatherV2
+      auto gatherResult = rewriter.create<GatherV2Op>(
+          op.getLoc(), op.getType(), operand, indices, 
+          axisConst.getResult(), nullptr);
+      rewriter.replaceOp(op, gatherResult.getResult());
+      return success();
+    }
+    
+    // 复杂情况：需要更复杂的转换
+    return rewriter.notifyMatchFailure(op, 
+        "Complex gather not yet supported. " +
+        std::string("start_index_map size: ") + std::to_string(startIndexMap.size()) +
+        ", collapsed_slice_dims size: " + std::to_string(collapsedSliceDims.size()));
+  }
+};
+class ConvertPowOp : public OpConversionPattern<stablehlo::PowOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::PowOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<PowOp>(op, op.getType(), op.getLhs(),
+                                        op.getRhs());
+    return success();
+  };
+};
+class ConvertRsqrtOp : public OpConversionPattern<stablehlo::RsqrtOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::RsqrtOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<RsqrtOp>(op, op.getType(), op.getOperand());
+    return success();
+  };
+};
+class ConvertSelectOp : public OpConversionPattern<stablehlo::SelectOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::SelectOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<SelectOp>(op, op.getType(), op.getPred(),
+                                           op.getOnTrue(), op.getOnFalse());
+    return success();
+  };
+};
+class ConvertSineOp : public OpConversionPattern<stablehlo::SineOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::SineOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    rewriter.replaceOpWithNewOp<SinOp>(op, op.getType(), op.getOperand());
+    return success();
+  };
+};
+class ConvertSliceOp : public OpConversionPattern<stablehlo::SliceOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::SliceOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    auto operand = op.getOperand();
+    auto startIndices = op.getStartIndices();
+    auto limitIndices = op.getLimitIndices();
+    auto strides = op.getStrides();
+    auto resultType = op.getType();
+
+    for (auto stride : strides) {
+      if (stride != 1) {
+        return failure();
+      }
+    }
+
+    SmallVector<int64_t> startValues(startIndices.begin(), startIndices.end());
+    SmallVector<int64_t> limitValues(limitIndices.begin(), limitIndices.end());
+
+    SmallVector<int64_t> sizeValues;
+    for (size_t i = 0; i < startValues.size(); ++i) {
+      sizeValues.push_back(limitValues[i] - startValues[i]);
+    }
+
+    auto startTensorType = RankedTensorType::get(
+        {static_cast<int64_t>(startValues.size())}, rewriter.getI64Type());
+    auto startTensorAttr = DenseIntElementsAttr::get(startTensorType, startValues);
+    auto startConstOp = rewriter.create<ConstantOp>(
+        op.getLoc(), startTensorType, startTensorAttr);
+
+    auto sizeTensorType = RankedTensorType::get(
+        {static_cast<int64_t>(sizeValues.size())}, rewriter.getI64Type());
+    auto sizeTensorAttr = DenseIntElementsAttr::get(sizeTensorType, sizeValues);
+    auto sizeConstOp = rewriter.create<ConstantOp>(
+        op.getLoc(), sizeTensorType, sizeTensorAttr);
+
+    rewriter.replaceOpWithNewOp<SliceOp>(op, resultType, operand,
+                                         startConstOp.getResult(),
+                                         sizeConstOp.getResult());
+    return success();
+  };
+};
+class ConvertTransposeOp : public OpConversionPattern<stablehlo::TransposeOp> {
+ public:
+  using OpConversionPattern::OpConversionPattern;
+  LogicalResult matchAndRewrite(
+      stablehlo::TransposeOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const final {
+    auto operand = op.getOperand();
+    auto permutation = op.getPermutation();
+    auto resultType = op.getType();
+
+    SmallVector<int64_t> permValues;
+    for (auto val : permutation) {
+      permValues.push_back(val);
+    }
+
+    auto permTensorType = RankedTensorType::get(
+        {static_cast<int64_t>(permValues.size())}, rewriter.getI64Type());
+    auto permTensorAttr = DenseIntElementsAttr::get(permTensorType, permValues);
+    auto permConstOp = rewriter.create<ConstantOp>(
+        op.getLoc(), permTensorType, permTensorAttr);
+
+    rewriter.replaceOpWithNewOp<TransposeOp>(op, resultType, operand,
+                                              permConstOp.getResult());
+    return success();
+  };
 };
 }  // namespace
 
@@ -534,6 +992,8 @@ void LegalizeToMairPass::runOnOperation() {
   target.addLegalDialect<AirDialect>();
   target.addIllegalDialect<stablehlo::StablehloDialect>();
 
+  target.addLegalOp<stablehlo::ReturnOp>();
+
   RewritePatternSet patterns(&getContext());
   patterns.add<ConvertAddOp>(&getContext());
   patterns.add<ConvertMulOp>(&getContext());
@@ -552,6 +1012,16 @@ void LegalizeToMairPass::runOnOperation() {
   patterns.add<ConvertReduceOp>(&getContext());
   patterns.add<ConvertConcatV2Op>(&getContext());
   patterns.add<ConvertCastOp>(&getContext());
+  patterns.add<ConvertAndOp>(&getContext());
+  patterns.add<ConvertCompareOp>(&getContext());
+  patterns.add<ConvertCosineOp>(&getContext());
+  patterns.add<ConvertGatherOp>(&getContext());
+  patterns.add<ConvertPowOp>(&getContext());
+  patterns.add<ConvertRsqrtOp>(&getContext());
+  patterns.add<ConvertSelectOp>(&getContext());
+  patterns.add<ConvertSineOp>(&getContext());
+  patterns.add<ConvertSliceOp>(&getContext());
+  patterns.add<ConvertTransposeOp>(&getContext());
 
   if (failed(applyPartialConversion(getOperation(), target,
                                     std::move(patterns)))) {

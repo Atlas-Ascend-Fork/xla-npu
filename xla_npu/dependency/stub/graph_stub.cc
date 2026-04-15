@@ -56,11 +56,12 @@ TensorDesc::TensorDesc(const TensorDesc& desc) {}
 TensorDesc::TensorDesc(TensorDesc&& desc) {}
 TensorDesc::TensorDesc(Shape shape, Format format, DataType dt) {}
 void TensorDesc::SetShape(const Shape& shape) {}
-void TensorDesc::SetPlacement(Placement placement){};
-void TensorDesc::SetFormat(Format format){};
-void TensorDesc::SetOriginFormat(Format origin_format){};
-void TensorDesc::SetOriginShape(const Shape& origin_shape){};
-void TensorDesc::SetDataType(DataType dt){};
+void TensorDesc::SetPlacement(Placement placement) {};
+Placement TensorDesc::GetPlacement() const { return {}; }
+void TensorDesc::SetFormat(Format format) {};
+void TensorDesc::SetOriginFormat(Format origin_format) {};
+void TensorDesc::SetOriginShape(const Shape& origin_shape) {};
+void TensorDesc::SetDataType(DataType dt) {};
 Shape TensorDesc::GetShape() const { return {}; }
 DataType TensorDesc::GetDataType() const { return DataType::DT_FLOAT; }
 TensorDesc& TensorDesc::operator=(TensorDesc&& desc){};

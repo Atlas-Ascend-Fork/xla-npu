@@ -236,6 +236,28 @@ def Air_MatMulOp : Air_Op<"MatMul", [Pure]> {
 }
 
 //===--------------------------------------------------------------------------===//
+// BatchMatMulOp
+//===--------------------------------------------------------------------------===//
+def Air_BatchMatMulOp : Air_Op<"BatchMatMul", [Pure]> {
+  let summary = "Batch matrix multiplication operation";
+  let description = [{
+    Performs batch matrix multiplication on two input tensors.
+    Supports batch dimensions: [batch..., M, K] x [batch..., K, N] -> [batch..., M, N]
+  }];
+
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2,
+    DefaultValuedAttr<BoolAttr, "false">:$adj_x1,
+    DefaultValuedAttr<BoolAttr, "false">:$adj_x2
+  );
+
+  let results = (outs
+    Air_Tensor:$output
+  );
+}
+
+//===--------------------------------------------------------------------------===//
 // ExpOp
 //===--------------------------------------------------------------------------===//
 def Air_ExpOp : Air_Op<"Exp", [Pure, SameOperandsAndResultType]> {
@@ -415,6 +437,274 @@ def Air_UnsqueezeV3Op : Air_Op<"UnsqueezeV3", [Pure]> {
   let results = (outs
     Air_Tensor:$output
   );
+}
+
+//===--------------------------------------------------------------------------===//
+// AndOp
+//===--------------------------------------------------------------------------===//
+def Air_AndOp : Air_Op<"LogicalAnd", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise logical AND operation.";
+  let description = [{
+    Computes element-wise logical AND of two input tensors.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// EqualOp
+//===--------------------------------------------------------------------------===//
+def Air_EqualOp : Air_Op<"Equal", [Pure]> {
+  let summary = "Element-wise equal comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 == x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// NotEqualOp
+//===--------------------------------------------------------------------------===//
+def Air_NotEqualOp : Air_Op<"NotEqual", [Pure]> {
+  let summary = "Element-wise not equal comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 != x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// GreaterOp
+//===--------------------------------------------------------------------------===//
+def Air_GreaterOp : Air_Op<"Greater", [Pure]> {
+  let summary = "Element-wise greater than comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 > x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// GreaterEqualOp
+//===--------------------------------------------------------------------------===//
+def Air_GreaterEqualOp : Air_Op<"GreaterEqual", [Pure]> {
+  let summary = "Element-wise greater than or equal comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 >= x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// LessOp
+//===--------------------------------------------------------------------------===//
+def Air_LessOp : Air_Op<"Less", [Pure]> {
+  let summary = "Element-wise less than comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 < x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// LessEqualOp
+//===--------------------------------------------------------------------------===//
+def Air_LessEqualOp : Air_Op<"LessEqual", [Pure]> {
+  let summary = "Element-wise less than or equal comparison operation.";
+  let description = [{
+    Returns the truth value of (x1 <= x2) element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// CosOp
+//===--------------------------------------------------------------------------===//
+def Air_CosOp : Air_Op<"Cos", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise cosine operation.";
+  let description = [{
+    Computes cosine of input elements element-wise.
+  }];
+  let arguments = (ins Air_Tensor:$x);
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// GatherOp
+//===--------------------------------------------------------------------------===//
+def Air_GatherOp : Air_Op<"Gather", [Pure]> {
+  let summary = "Gather operation.";
+  let description = [{
+    Gather slices from params according to indices.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$indices
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// GatherV2Op
+//===--------------------------------------------------------------------------===//
+def Air_GatherV2Op : Air_Op<"GatherV2", [Pure]> {
+  let summary = "GatherV2 operation";
+  let description = [{
+    Gathers slices from params axis according to indices.
+    Similar to TensorFlow's tf.gather and PyTorch's torch.gather.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$indices,
+    Air_Tensor:$axis,
+    Optional<Air_Tensor>:$batch_dims
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// PowOp
+//===--------------------------------------------------------------------------===//
+def Air_PowOp : Air_Op<"Pow", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise power operation.";
+  let description = [{
+    Computes x1 raised to the power of x2 element-wise.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// RsqrtOp
+//===--------------------------------------------------------------------------===//
+def Air_RsqrtOp : Air_Op<"Rsqrt", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise reciprocal square root operation.";
+  let description = [{
+    Computes reciprocal square root of input elements element-wise.
+  }];
+  let arguments = (ins Air_Tensor:$x);
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// SelectOp
+//===--------------------------------------------------------------------------===//
+def Air_SelectOp : Air_Op<"Select", [Pure]> {
+  let summary = "Select operation.";
+  let description = [{
+    Selects elements from x1 or x2 based on condition.
+  }];
+  let arguments = (ins
+    Air_Tensor:$condition,
+    Air_Tensor:$x1,
+    Air_Tensor:$x2
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// SinOp
+//===--------------------------------------------------------------------------===//
+def Air_SinOp : Air_Op<"Sin", [Pure, SameOperandsAndResultType]> {
+  let summary = "Element-wise sine operation.";
+  let description = [{
+    Computes sine of input elements element-wise.
+  }];
+  let arguments = (ins Air_Tensor:$x);
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// SliceOp
+//===--------------------------------------------------------------------------===//
+def Air_SliceOp : Air_Op<"Slice", [Pure]> {
+  let summary = "Slice operation.";
+  let description = [{
+    Extracts a slice from a tensor.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$offsets,
+    Air_Tensor:$size
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// TransposeOp
+//===--------------------------------------------------------------------------===//
+def Air_TransposeOp : Air_Op<"Transpose", [Pure]> {
+  let summary = "Transpose operation.";
+  let description = [{
+    Permutes the dimensions of a tensor according to the given permutation.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$perm
+  );
+  let results = (outs Air_Tensor);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReduceAllOp
+//===--------------------------------------------------------------------------===//
+def Air_ReduceAllOp : Air_Op<"ReduceAll", [Pure]> {
+  let summary = "ReduceAll operation.";
+  let description = [{
+    Computes the logical AND of elements along specified dimensions.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$axes,
+    DefaultValuedAttr<BoolAttr, "false">:$keep_dims
+  );
+  let results = (outs Variadic<AnyType>:$outputs);
+}
+
+//===--------------------------------------------------------------------------===//
+// ReduceAnyOp
+//===--------------------------------------------------------------------------===//
+def Air_ReduceAnyOp : Air_Op<"ReduceAny", [Pure]> {
+  let summary = "ReduceAny operation.";
+  let description = [{
+    Computes the logical OR of elements along specified dimensions.
+  }];
+  let arguments = (ins
+    Air_Tensor:$x,
+    Air_Tensor:$axes,
+    DefaultValuedAttr<BoolAttr, "false">:$keep_dims
+  );
+  let results = (outs Variadic<AnyType>:$outputs);
 }
 
 #endif // MAIR_OPS
