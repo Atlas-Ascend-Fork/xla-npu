@@ -1,4 +1,5 @@
-/* Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
+/* Copyright 2019 The OpenXLA Authors.
+Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,7 +54,7 @@ class AlignedMemory final : public NpuDeviceMemory::RawMemory {
   ~AlignedMemory() final {
     NPU_LOG_FORMAT_PRINT(DEBUG, "AlignedMemory::~AlignedMemory size_bytes: %zu",
                          size_bytes_);
-    npu::aclrtFree(base_);
+    dep::aclrtFree(base_);
   }
 
   void* base() const final { return base_; }
@@ -72,7 +73,7 @@ class AlignedAllocator final : public NpuDeviceMemory::Allocator {
                          size_bytes);
     void* base = nullptr;
     aclError acl_malloc =
-        npu::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+        dep::aclrtMalloc(&base, size_bytes, ACL_MEM_MALLOC_HUGE_FIRST);
     if (acl_malloc == ACL_SUCCESS) {
       return std::make_unique<AlignedMemory>(base, size_bytes);
     }

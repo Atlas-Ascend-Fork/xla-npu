@@ -1,4 +1,5 @@
-/* Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
+/* Copyright 2019 The OpenXLA Authors.
+Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -638,141 +639,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
       usage_transaction.ConvertUsageHold(execute_usage_event);
       tracked_buffers.emplace_back(/*can_donate=*/false, tracked_buffer);
 
-    // Handle inputs.
-    // `execute_event` indicates whether npu computation is complete and whether
-    // there was an error.
-    auto execute_event = tsl::MakeConstructedAsyncValueRef<NpuEvent>();
-    // Asynchronously call needed
-    MarkEventReadyOnExit ready_on_exit(execute_event);
-    auto execute_usage_event = tsl::MakeRef<NpuTrackedDeviceEvent>(execute_event);
-
-    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> tracked_buffers;
-    tracked_buffers.reserve(argument_handles.size());
-
-    // To avoid clobbering inputs, we must ensure that
-    //   `extra_deps` = inputs' definition events + donated inputs' usage events.
-    // This also ensures that the returned `execute_event` dominates all inputs'
-    // events, and thus output buffer only need to contain `execute_event` as the
-    // single definition event.
-    std::vector<tsl::RCReference<tsl::AsyncValue>> input_deps;
-    input_deps.reserve(argument_handles.size());
-
-    for (int i = 0; i < argument_handles.size(); ++i) {
-        PjRtBuffer* handle = argument_handles[i];
-        auto* npu_buffer = tsl::down_cast<CommonPjRtBuffer*>(handle);
-        if (npu_buffer->device() != device) {
-            return InvalidArgument(
-                "Buffer passed to Execute() as argument %d to replica %d is on "
-                "device %s, but replica is assigned to device %s.",
-                i, replica, npu_buffer->device()->DebugString(),
-                device->DebugString());
-        }
-
-        TrackedNpuDeviceBuffer* tracked_buffer;
-        auto get_buffer = [&](int i) -> absl::Status {
-            CommonPjRtBuffer::ScopedHold usage_transaction =
-            npu_buffer->GetBufferWithHold(CommonPjRtBuffer::ScopedHold::kUsage);
-            if (!usage_transaction.ok()) {
-                return InvalidArgument(
-                    "Invalid buffer passed: buffer has been deleted or donated.");
-            }
-            tracked_buffer = tensorflow::down_cast<TrackedNpuDeviceBuffer*>(
-                usage_transaction.buffer());
-            usage_transaction.ConvertUsageHold(execute_usage_event);
-            tracked_buffers.emplace_back(/*can_donate=*/false, tracked_buffer);
-
-            return absl::OkStatus();
-        };
-
-        TF_RETURN_IF_ERROR(get_buffer(i));
-
-        // Definition events are never modified after buffer construction. If they
-        // are available and have no error, they can be skipped in input deps.
-        // In contrast, already known errors in the input are taken as deps so that
-        // they can poison output buffers.
-        const auto& definition_event = tracked_buffer->definition_event();
-        if (!definition_event.IsAvailable() || definition_event.IsError()) {
-            input_deps.push_back(definition_event.CopyRCRef());
-        }
-    }
-
-    for (auto& tracked_buffer: tracked_buffers) {
-        NPU_LOG_FORMAT_PRINT(DEBUG, "argument handle buffer addr=%p, size=%zu",
-        tracked_buffer.second->buffer().get().untyped_data(), tracked_buffer.second->buffer().get().size_bytes());
-    }
-
-    if (!input_deps.empty()) {
-        NPU_LOG_FORMAT_PRINT(DEBUG, "input is not ready");
-    }
-
-    auto npu_executable = tsl::down_pointer_cast<NpuExecutable>(npu_executable_);
-    ge::Session* ge_session = client_->GetGlobalGeSession();
-    const GraphData& graph_data = npu_executable->GetGraphData();
-
-    // transfer to ge tensor
-    std::vector<ge::Tensor> inputs;
-    for (int i = 0; i < tracked_buffers.size(); ++i) {
-        ge::TensorDesc desc;
-        const ge::Shape& input_data_shape = graph_data.inputs_shapes[i];
-        desc.SetOriginShape(input_data_shape);
-        desc.SetOriginFormat(ge::FORMAT_ND);
-        desc.SetPlacement(ge::Placement::kPlacementDevice);
-        desc.SetFormat(ge::FORMAT_ND);
-        desc.SetDataType(graph_data.input_dtypes[i]);
-        ge::Tensor input;
-        const static ge::Tensor::DeleteFunc kDoNothing = [](uint8_t* data) {};
-        input.ResetData(
-            (uint8_t*)tracked_buffers[i].second->buffer().get().untyped_data(),
-            tracked_buffers[i].second->buffer().get().size_bytes(),
-            kDoNothing);
-
-        const auto& dimSize = input_data_shape.GetDims().size();
-        input.SetShapeDimNum(dimSize);
-        for (int j = 0; j < dimSize; ++j) {
-            input.SetShapeDim(j, input_data_shape.GetDim(j));
-        }
-        input.SetTensorDesc(desc);
-        NPU_LOG_FORMAT_PRINT(DEBUG, "input tensor %d data addr=%p, data size=%zu, data tpye=%s", i,
-        tracked_buffers[i].second->buffer().get().untyped_data(), tracked_buffers[i].second->buffer().get().size_bytes(), 
-        NpuTool::GetGeTypeName(graph_data.input_dtypes[i]).c_str());
-        inputs.emplace_back(input);
-    }
-
-    /* 运行GE图,使用上面准备好的输出内存,参考cpu的用法使用result_buffers_info */
-    std::vector<ge::Tensor> outputs;
-    ge::Status ge_status = ge_session->RunGraph(graph_data.id, inputs, outputs);
-    if (ge_status != ge::SUCCESS) {
-        return absl::InternalError(
-            absl::StrCat("run graph id ", graph_data.id, " failed, ge status is ", ge_status));
-    }
-
-    /* debug */
-    auto output_data_ptr = outputs[0].GetData();
-    auto output_data_size = outputs[0].GetSize();
-    auto output_data_desc = outputs[0].GetTensorDesc();
-    auto output_data_shape = output_data_desc.GetShape();
-    auto output_data_type = output_data_desc.GetDataType();
-    
-    auto buffer_assignment = std::make_unique<NpuBufferAssignment>();
-    int64_t size = output_data_shape.GetShapeSize() * GetSizeByDataType(output_data_type);
-    auto allocation = buffer_assignment->NewEmptyAllocation(size, BufferValue::Color(0));
-    allocation->set_entry_computation_parameter(0, ShapeIndex{0}, false);
-
-    /* prepare output buffer */ 
-    // `buffer_alloc` and `buffer_alloc_and_copy` are used to do real memory allocation and copy work.
-    absl::InlinedVector<std::pair<bool, TrackedNpuDeviceBuffer*>, 4> output_tracked_buffers;
-    output_tracked_buffers.reserve(outputs.size());
-    void* output_memory_ptr = NULL;
-    auto acl_ret = npu::aclrtMalloc(&output_memory_ptr, output_data_size, ACL_MEM_MALLOC_HUGE_FIRST);
-    if (acl_ret != ACL_SUCCESS) {
-        return absl::InternalError(absl::StrCat("malloc host memory failed, error code: ", acl_ret));
-    }
-    acl_ret = npu::aclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr, output_data_size, ACL_MEMCPY_HOST_TO_DEVICE);
-    if (acl_ret != ACL_SUCCESS) {
-        return absl::InternalError(absl::StrCat("memcpy from host to device failed, error code: ", acl_ret));
-    }
-    auto deleter = [output_memory_ptr]() {
-        npu::aclrtFree(output_memory_ptr);
+     return absl::OkStatus();
     };
 
     TF_RETURN_IF_ERROR(get_buffer(i));
@@ -822,6 +689,7 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
     for (int j = 0; j < dimSize; ++j) {
       input.SetShapeDim(j, input_data_shape.GetDim(j));
     }
+    input.SetTensorDesc(desc);
     NPU_LOG_FORMAT_PRINT(
         DEBUG, "input tensor %d data addr=%p, data size=%zu", i,
         tracked_buffers[i].second->buffer().get().untyped_data(),
@@ -857,21 +725,20 @@ absl::StatusOr<PjRtLoadedExecutable::Result> PjRtNpuExecutable::ExecuteHelper(
       output_tracked_buffers;
   output_tracked_buffers.reserve(outputs.size());
   void* output_memory_ptr = NULL;
-  auto acl_ret = npu::aclrtMallocHost(&output_memory_ptr, output_data_size);
+  auto acl_ret = dep::aclrtMalloc(&output_memory_ptr, output_data_size,
+                                  ACL_MEM_MALLOC_HUGE_FIRST);
   if (acl_ret != ACL_SUCCESS) {
     return absl::InternalError(
         absl::StrCat("malloc host memory failed, error code: ", acl_ret));
   }
   acl_ret =
-      npu::aclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr,
-                       output_data_size, ACL_MEMCPY_HOST_TO_HOST);
+      dep::aclrtMemcpy(output_memory_ptr, output_data_size, output_data_ptr,
+                       output_data_size, ACL_MEMCPY_HOST_TO_DEVICE);
   if (acl_ret != ACL_SUCCESS) {
-    return absl::InternalError(
-        absl::StrCat("memcpy from host to host failed, error code: ", acl_ret));
+    return absl::InternalError(absl::StrCat(
+        "memcpy from host to device failed, error code: ", acl_ret));
   }
-  auto deleter = [output_memory_ptr]() {
-    npu::aclrtFreeHost(output_memory_ptr);
-  };
+  auto deleter = [output_memory_ptr]() { dep::aclrtFree(output_memory_ptr); };
   tsl::AsyncValueRef<NpuDeviceMemory> output_device_memory =
       NpuDeviceMemory::CreateForeignMemory(output_memory_ptr, output_data_size,
                                            deleter);

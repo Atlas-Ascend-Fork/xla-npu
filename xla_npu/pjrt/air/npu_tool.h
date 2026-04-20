@@ -242,6 +242,23 @@ public:
          return xlaType;
     }
 
+  static ge::Shape ConvertXlaShape2GeShape(const Shape& xla_data_shape) {
+    std::vector<int64_t> ge_shape_vector;
+    for (int i = 0; i < xla_data_shape.dimensions_size(); ++i) {
+      const int64_t& xla_data_shape_dim = xla_data_shape.dimensions(i);
+      ge_shape_vector.emplace_back(xla_data_shape_dim);
+    }
+
+    ge::Shape ge_data_shape(ge_shape_vector);
+    NPU_LOG_FORMAT_PRINT(DEBUG,
+                         "convert xla shape to ge shape, input xla shape is "
+                         "%s, output ge shape is %s",
+                         xla_data_shape.ToString().c_str(),
+                         GetShapeString(ge_data_shape).c_str());
+
+    return ge_data_shape;
+  }
+
   static Shape ConvertGeShape2XlaShape(const ge::Shape& ge_data_shape,
                                        const ge::DataType& ge_data_type) {
     const auto& xla_data_dims = ge_data_shape.GetDims();

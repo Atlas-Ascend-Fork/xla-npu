@@ -235,7 +235,7 @@ class PjRtNpuExecutable final : public PjRtLoadedExecutable {
     } else {
       NPU_LOG_FORMAT_PRINT(DEBUG, "GE finalize success");
     }
-    aclError acl_ret = npu::aclFinalize();
+    aclError acl_ret = dep::aclFinalize();
     if (acl_ret != ACL_SUCCESS) {
       NPU_LOG_FORMAT_PRINT(ERROR, "ACL finalize failed, ret: %d", acl_ret);
     } else {
@@ -389,19 +389,19 @@ inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient() {
   int process_index = 0;
   std::vector<std::unique_ptr<xla::PjRtNpuDevice>> devices;
 
-  aclError acl_init = npu::aclInit(nullptr);
+  aclError acl_init = dep::aclInit(nullptr);
   if (acl_init != ACL_SUCCESS) {
     return absl::InternalError("ACL init failed.");
   }
   uint32_t device_count = -1;
-  aclError acl_device_count = npu::aclrtGetDeviceCount(&device_count);
+  aclError acl_device_count = dep::aclrtGetDeviceCount(&device_count);
   if (acl_device_count != ACL_SUCCESS) {
     return absl::InternalError("ACL get device count failed.");
   }
   if (device_count <= 0) {
     return absl::InternalError("Threre is no valid device.");
   }
-  aclError acl_set_device = npu::aclrtSetDevice(device_id);
+  aclError acl_set_device = dep::aclrtSetDevice(device_id);
   if (acl_set_device != ACL_SUCCESS) {
     return absl::InternalError("ACL set device failed.");
   }
