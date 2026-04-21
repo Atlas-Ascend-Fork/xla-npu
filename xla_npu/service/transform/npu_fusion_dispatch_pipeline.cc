@@ -35,12 +35,9 @@ limitations under the License.
 #include "xla/xla.pb.h"
 
 // NPU fusion transforms
-#include "xla/xla_npu/service/transform/npu_custom_kernel_fusion_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_fusion_block_level_rewriter.h"
 #include "xla/xla_npu/service/transform/npu_fusion_dynamic_memcpy_rewriter.h"
-#include "xla/xla_npu/service/transform/npu_gemm_fusion.h"
 #include "xla/xla_npu/service/transform/npu_gemm_fusion_swap_operands.h"
-#include "xla/xla_npu/service/transform/npu_nest_gemm_fusion.h"
 
 namespace xla {
 
@@ -89,14 +86,8 @@ absl::StatusOr<bool> NpuFusionDispatchPipeline::RunImpl(
                       swap_operands_pass.Run(module, execution_threads));
   changed |= pass_changed;
 
-  // Create GEMM fusions (this creates NPU ACLNN GEMM fusions)
-  NpuGemmFusion gemm_fusion_pass(device_description_, &mlir_context);
-  TF_ASSIGN_OR_RETURN(pass_changed,
-                      gemm_fusion_pass.Run(module, execution_threads));
-  changed |= pass_changed;
-
-  // Phase 3: Clean up after GEMM fusion
-  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 3: GEMM cleanup";
+    // Phase 3: Clean up after GEMM optimization
+    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 3: GEMM cleanup";
 
   TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
   changed |= pass_changed;
@@ -104,41 +95,24 @@ absl::StatusOr<bool> NpuFusionDispatchPipeline::RunImpl(
   TF_ASSIGN_OR_RETURN(pass_changed, cse_pass.Run(module, execution_threads));
   changed |= pass_changed;
 
-  // Phase 4: Custom kernel fusion
-  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 4: Custom kernels";
-
-  NpuCustomKernelFusionRewriter custom_kernel_pass;
-  TF_ASSIGN_OR_RETURN(pass_changed,
-                      custom_kernel_pass.Run(module, execution_threads));
-  changed |= pass_changed;
-
-  // Phase 5: Block-level fusion conversion
-  VLOG(2)
-      << "Running NPU Fusion Dispatch Pipeline - Phase 5: Block-level fusion";
+    // Phase 4: Block-level fusion conversion
+    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 4: Block-level fusion";
 
   NpuFusionBlockLevelRewriter block_level_pass(device_description_);
   TF_ASSIGN_OR_RETURN(pass_changed,
                       block_level_pass.Run(module, execution_threads));
   changed |= pass_changed;
 
-  // Phase 6: Nested GEMM fusion
-  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 6: Nested GEMM";
-
-  NpuNestGemmFusion nest_gemm_pass(device_description_, symbolic_expr_context_);
-  TF_ASSIGN_OR_RETURN(pass_changed,
-                      nest_gemm_pass.Run(module, execution_threads));
-  changed |= pass_changed;
-
-  // Phase 7: Dynamic memcpy rewriter
-  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 7: Dynamic memcpy";
+    // Phase 5: Dynamic memcpy rewriter
+    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 5: Dynamic memcpy";
 
   NpuFusionDynamicMemcpyRewriter dynamic_memcpy_pass;
   TF_ASSIGN_OR_RETURN(pass_changed,
                       dynamic_memcpy_pass.Run(module, execution_threads));
   changed |= pass_changed;
 
-  // Phase 8: Final cleanup
-  VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 8: Final cleanup";
+    // Phase 6: Final cleanup
+    VLOG(2) << "Running NPU Fusion Dispatch Pipeline - Phase 6: Final cleanup";
 
   TF_ASSIGN_OR_RETURN(pass_changed, dce_pass.Run(module, execution_threads));
   changed |= pass_changed;

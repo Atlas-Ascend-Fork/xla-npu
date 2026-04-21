@@ -16,8 +16,10 @@ limitations under the License.
 #include "xla/xla_npu/backend/runtime/npu_aclnn_thunk.h"
 
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -104,13 +106,24 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
         return false;
       }
       break;
-    case HloOpcode::kDynamicSlice:
-      // DynamicSlice 操作：输入 + 输出 = 2 个参数（简化实现）
+    case HloOpcode::kSlice:
+      // Slice 操作：输入 + 输出 = 2 个参数
+      // Slice 是静态切片，参数在编译时确定，不需要额外的 start_indices 参数
       if (param_shapes.size() != 2) {
         NPU_LOG_FORMAT_PRINT(
-            ERROR,
-            "DynamicSlice param shape size %d does not meet target value 2",
+            ERROR, "Slice param shape size %d does not meet target value 2",
             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kDynamicSlice:
+      // DynamicSlice 操作：输入 + start_indices... + 输出 = 至少 3 个参数
+      // start_indices 数量 = param_shapes.size() - 2（每个切片维度一个）
+      if (param_shapes.size() < 3) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "DynamicSlice param shape size %d is less than 3 "
+                             "(input + start_indices + output)",
+                             param_shapes.size());
         return false;
       }
       break;
@@ -224,6 +237,15 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
   TF_ASSIGN_OR_RETURN(auto acl_tensor_ptr_vector,
                       ExtractAclInputOutTensorPtr(allocations, param_shapes));
+
+  // 打印输入输出的 allocation_index，用于诊断 alias 问题
+  if (args_.size() >= 2) {
+    NPU_LOG_FORMAT_PRINT(
+        DEBUG,
+        "Allocation indices: input=%d, output=%d",
+        args_[0].index(),
+        args_.back().index());
+  }
 
   switch (thunk_info().op_code) {
     case HloOpcode::kReshape: {
@@ -493,9 +515,20 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kMultiply: {
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "Multiply: input[0]=%p (shape=%s), input[1]=%p (shape=%s), output=%p",
+                           acl_tensor_ptr_vector[0],
+                           NpuTool::GetXlaShapeString(param_shapes[0]).c_str(),
+                           acl_tensor_ptr_vector[1],
+                           NpuTool::GetXlaShapeString(param_shapes[1]).c_str(),
+                           acl_tensor_ptr_vector.back());
+      
+      // XLA会在multiply之前插入显式broadcast操作
+      // 所以multiply的两个输入形状应该相同，直接执行即可
       ret = dep::aclnnMulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnMulGetWorkspaceSize failed. Error code: %d", ret);
@@ -509,8 +542,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kDot: {
-      int8_t cubeMathType =
-          4;  // 0：保持输入的数据类型进行计算；4：FORCE_GRP_ACC_FOR_FP32，支持使用分组累加方式进行计算。
+      int8_t cubeMathType = 0;
       ret = dep::aclnnMatmulGetWorkspaceSize(
           acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
           acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize,
@@ -926,11 +958,14 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
                 starts_data.push_back(start_val);
                 ends_data.push_back(end_val);
+                // CANN 的 aclnnSliceV2 期望逻辑维度顺序的 axes
+                // XLA 的 slice 参数已经是逻辑维度顺序
                 axes_data.push_back(dim);
                 steps_data.push_back(1);
 
-                NPU_LOG_FORMAT_PRINT(DEBUG, "Slice dim %d: [%ld:%ld]", dim,
-                                     start_val, end_val);
+                NPU_LOG_FORMAT_PRINT(
+                     INFO, "Slice logical dim %d: [%ld:%ld]",
+                     dim, start_val, end_val);
               } catch (...) {
                 NPU_LOG_FORMAT_PRINT(ERROR, "Failed to parse slice range: %s",
                                      range_str.c_str());
@@ -953,6 +988,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ends_data.push_back((i < output_shape.dimensions().size())
                                   ? output_shape.dimensions()[i]
                                   : input_shape.dimensions()[i]);
+          // CANN 的 aclnnSliceV2 期望逻辑维度顺序的 axes
           axes_data.push_back(i);
           steps_data.push_back(1);
         }
@@ -1007,8 +1043,8 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kDynamicSlice: {
-      // Slice V2 接口需要 starts, ends, axes, steps 四个 aclIntArray 参数
-      // 从 HLO 指令中解析这些参数
+      // DynamicSlice 操作：输入 + start_indices... + 输出
+      // 从 HLO 指令中解析 slice_sizes 和 start_indices
       const auto& slice_sizes = thunk_info().dimensions;
 
       if (slice_sizes.empty()) {
@@ -1021,19 +1057,134 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       const auto& input_shape = param_shapes[0];
       const auto& output_shape = param_shapes.back();
 
+      // start_indices 参数数量 = 总参数数 - 2（输入和输出）
+      size_t num_start_indices = acl_tensor_ptr_vector.size() - 2;
+
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "DynamicSlice: input_shape=%s, output_shape=%s, "
+                           "slice_sizes=%zu, num_start_indices=%zu",
+                           NpuTool::GetXlaShapeString(input_shape).c_str(),
+                           NpuTool::GetXlaShapeString(output_shape).c_str(),
+                           slice_sizes.size(), num_start_indices);
+
+      // output_shape.dimensions() 返回的是逻辑维度顺序的 slice sizes
+      // CANN 的 aclnnSliceV2 也期望逻辑维度顺序的 axes/starts/ends
+      // 所以直接使用 output_shape.dimensions() 作为 slice_sizes_logical
+      std::vector<int64_t> slice_sizes_logical(output_shape.dimensions().begin(),
+                                                output_shape.dimensions().end());
+
+      NPU_LOG_FORMAT_PRINT(INFO, "DynamicSlice: slice_sizes_from_thunk=[%s], slice_sizes_from_output=[%s]",
+                           [&slice_sizes]() {
+                             std::string s;
+                             for (size_t i = 0; i < slice_sizes.size(); ++i) {
+                               if (i > 0) s += ", ";
+                               s += std::to_string(slice_sizes[i]);
+                             }
+                             return s;
+                           }().c_str(),
+                           [&slice_sizes_logical]() {
+                             std::string s;
+                             for (size_t i = 0; i < slice_sizes_logical.size(); ++i) {
+                               if (i > 0) s += ", ";
+                               s += std::to_string(slice_sizes_logical[i]);
+                             }
+                             return s;
+                           }().c_str());
+
       // 构建 starts, ends, axes, steps 数组
-      // 注意：这里假设是静态 slice，动态 start_indices 需要特殊处理
+      // axes 使用逻辑维度，与 starts/ends 一一对应
       std::vector<int64_t> starts_data;
       std::vector<int64_t> ends_data;
       std::vector<int64_t> axes_data;
       std::vector<int64_t> steps_data;
 
-      // 简化实现：假设对所有维度进行 slice
-      for (size_t i = 0; i < slice_sizes.size(); ++i) {
-        starts_data.push_back(0);  // 简化：假设从 0 开始
-        ends_data.push_back(slice_sizes[i]);
-        axes_data.push_back(i);
+      // 处理每个切片维度（按逻辑维度顺序）
+      for (size_t i = 0; i < slice_sizes_logical.size(); ++i) {
+        int64_t start_val = 0;
+
+        // 如果存在对应的 start_indices 参数，从 device 内存读取
+        if (i < num_start_indices) {
+          // start_indices 参数从 args_[1] 开始（args_[0] 是输入，args_.back() 是输出）
+          auto start_idx_addr = allocations->GetDeviceAddress(args_[i + 1]);
+          void* start_idx_device_addr = start_idx_addr.opaque();
+
+          // 获取 start_indices 的数据类型和形状
+          xla::PrimitiveType start_dtype = param_shapes[i + 1].element_type();
+          const auto& start_shape = param_shapes[i + 1];
+
+          NPU_LOG_FORMAT_PRINT(
+              DEBUG,
+              "DynamicSlice: start_indices[%zu] shape=%s, dtype=%s, "
+              "device_addr=%p",
+              i, NpuTool::GetXlaShapeString(start_shape).c_str(),
+              xla::PrimitiveType_Name(start_dtype).c_str(),
+              start_idx_device_addr);
+
+          // 根据数据类型读取值
+          if (start_dtype == xla::S32) {
+            int32_t host_start_val = 0;
+            aclrtMemcpyKind kind = ACL_MEMCPY_DEVICE_TO_HOST;
+            aclError memcpy_ret =
+                dep::aclrtMemcpy(&host_start_val, sizeof(int32_t),
+                                 start_idx_device_addr, sizeof(int32_t), kind);
+            if (memcpy_ret == ACL_SUCCESS) {
+              start_val = static_cast<int64_t>(host_start_val);
+              NPU_LOG_FORMAT_PRINT(
+                  DEBUG,
+                  "DynamicSlice: read start_indices[%zu] = %d (S32) from "
+                  "device",
+                  i, host_start_val);
+            } else {
+              NPU_LOG_FORMAT_PRINT(WARN,
+                                   "Failed to read start_indices[%zu] from "
+                                   "device, using default 0",
+                                   i);
+              start_val = 0;
+            }
+          } else if (start_dtype == xla::S64) {
+            int64_t host_start_val = 0;
+            aclrtMemcpyKind kind = ACL_MEMCPY_DEVICE_TO_HOST;
+            aclError memcpy_ret =
+                dep::aclrtMemcpy(&host_start_val, sizeof(int64_t),
+                                 start_idx_device_addr, sizeof(int64_t), kind);
+            if (memcpy_ret == ACL_SUCCESS) {
+              start_val = host_start_val;
+              NPU_LOG_FORMAT_PRINT(
+                  DEBUG,
+                  "DynamicSlice: read start_indices[%zu] = %ld (S64) from "
+                  "device",
+                  i, start_val);
+            } else {
+              NPU_LOG_FORMAT_PRINT(WARN,
+                                   "Failed to read start_indices[%zu] from "
+                                   "device, using default 0",
+                                   i);
+              start_val = 0;
+            }
+          } else {
+            NPU_LOG_FORMAT_PRINT(
+                WARN, "Unsupported start_indices dtype %s, using default 0",
+                xla::PrimitiveType_Name(start_dtype).c_str());
+          }
+        }
+
+        // 计算 end 值：start + slice_size
+        int64_t end_val = start_val + slice_sizes_logical[i];
+
+        // 确保 end 不超过输入维度大小
+        if (i < input_shape.dimensions().size()) {
+          end_val = std::min(end_val, input_shape.dimensions()[i]);
+        }
+
+        starts_data.push_back(start_val);
+        ends_data.push_back(end_val);
+        // 使用逻辑维度作为 axes
+        axes_data.push_back(static_cast<int64_t>(i));
         steps_data.push_back(1);
+
+        NPU_LOG_FORMAT_PRINT(
+            INFO, "DynamicSlice logical_dim %zu: start=%ld, end=%ld, axis=%zu, step=1",
+            i, start_val, end_val, i);
       }
 
       // 创建 aclIntArray
@@ -1424,14 +1575,60 @@ NpuAclnnThunk::ExtractAclInputOutTensorPtr(
     const std::vector<Shape>& param_shapes) {
   std::vector<aclTensor*> acl_tensor_ptr_vector;
 
+  // 先获取所有参数的设备地址
+  std::vector<void*> param_addrs;
+  param_addrs.reserve(args_.size());
   for (int i = 0; i < args_.size(); ++i) {
     auto addr = allocations->GetDeviceAddress(args_[i]);
-    void* device_addr = addr.opaque();
-    auto tensor_ptr = NpuTool::CreateAclTensorPtr(
-        param_shapes[i], param_shapes[i].element_type(), device_addr);
-    acl_tensor_ptr_vector.push_back(tensor_ptr);
+    param_addrs.push_back(addr.opaque());
+  }
 
-    // 最后一个追加的tensor_ptr为出参tensor
+  // 打印所有参数的地址用于诊断
+  std::string addr_debug = "Param addrs: ";
+  for (size_t i = 0; i < param_addrs.size(); ++i) {
+    addr_debug += absl::StrFormat("[%d]=%p; ", i, param_addrs[i]);
+  }
+  NPU_LOG_FORMAT_PRINT(DEBUG, addr_debug);
+
+  // 对于 kDot 算子，检测不对称的 batch 维度
+  bool dot_lhs_expand = false;
+  bool dot_rhs_expand = false;
+  // 检查是否有 batch_dims（通过 HLO 描述判断）
+  const std::string& hlo_desc = thunk_info().hloInstrDesc;
+  bool has_batch_dims = (hlo_desc.find("lhs_batch_dims=") != std::string::npos &&
+                         hlo_desc.find("lhs_batch_dims={}") == std::string::npos);
+
+  if (thunk_info().op_code == HloOpcode::kDot && args_.size() == 3) {
+    int lhs_dims = param_shapes[0].dimensions_size();
+    int rhs_dims = param_shapes[1].dimensions_size();
+    int out_dims = param_shapes[2].dimensions_size();
+
+    // 检测不对称情况：lhs 3D, rhs 4D -> lhs 需要扩展
+    if (lhs_dims == 3 && rhs_dims == 4) {
+      dot_lhs_expand = true;
+      NPU_LOG_FORMAT_PRINT(INFO, "Dot: lhs 3D, rhs 4D, will expand lhs to 4D");
+    }
+    // 检测不对称情况：lhs 4D, rhs 3D -> rhs 需要扩展
+    if (lhs_dims == 4 && rhs_dims == 3) {
+      dot_rhs_expand = true;
+      NPU_LOG_FORMAT_PRINT(INFO, "Dot: lhs 4D, rhs 3D, will expand rhs to 4D");
+    }
+  }
+
+  for (int i = 0; i < args_.size(); ++i) {
+    void* device_addr = param_addrs[i];
+
+    if ((thunk_info().op_code == HloOpcode::kSlice ||
+         thunk_info().op_code == HloOpcode::kDynamicSlice) &&
+        i == args_.size() - 1) {
+      auto tensor_ptr = NpuTool::CreateAclTensorPtr(
+          param_shapes[i], param_shapes[i].element_type(), device_addr);
+      acl_tensor_ptr_vector.push_back(tensor_ptr);
+    } else {
+      auto tensor_ptr = NpuTool::CreateAclTensorPtr(
+          param_shapes[i], param_shapes[i].element_type(), device_addr);
+      acl_tensor_ptr_vector.push_back(tensor_ptr);
+    }
   }
 
   return acl_tensor_ptr_vector;

@@ -1,4 +1,5 @@
-/* Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
+/* Copyright 2019 The OpenXLA Authors.
+Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -11,6 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+This file is modified from OpenXLA source code.
+Modification: Custom adaptation for NPU/XLA-NPU scenarios.
 ==============================================================================*/
 
 #include "xla/xla_npu/service/npu_executable.h"
@@ -83,6 +87,7 @@ limitations under the License.
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
 #include "xla/xla_npu/backend/runtime/npu_thunk_pass_pipeline.h"
 #include "xla/xla_npu/common/npu_constant.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 #include "xla/xla_npu/service/npu_buffer_allocations.h"
 #include "xla/xla_npu/service/npu_ir_emission_utils.h"
 #include "xla/xla_npu/service/npu_stream_executor_util.h"
@@ -129,7 +134,7 @@ class NpuExecutableThunkPassBufferAllocator
       BufferAllocation::Index start_idx)
       : next_idx_(start_idx) {}
 
-  absl::StatusOr<BufferAllocation * absl_nonnull> NewEmptyAllocation(
+  absl::StatusOr<BufferAllocation* absl_nonnull> NewEmptyAllocation(
       int64_t size) override {
     allocations_.push_back(BufferAllocation(next_idx_++, size, /*color=*/0));
     return &allocations_.back();
@@ -538,6 +543,7 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(
     VariantArguments arguments) {
   XLA_SCOPED_LOGGING_TIMER(absl::StrCat(
       "NpuExecutable::ExecuteAsyncOnStreamImpl(", module_name_, ")"));
+  NPU_LOG_FORMAT_PRINT(DEBUG, "=== ExecuteAsyncOnStreamImpl called for module: %s ===", module_name_.c_str());
   se::DeviceMemoryAllocator* const memory_allocator = run_options->allocator();
   se::StreamExecutor* executor = run_options->stream()->parent();
   std::variant<absl::ReaderMutexLock, absl::WriterMutexLock> npu_lock(
@@ -581,6 +587,9 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(
 
   std::set<se::DeviceMemoryBase> buffers_in_result;
 
+  NPU_LOG_FORMAT_PRINT(DEBUG, "ExecuteAsyncOnStreamImpl: output_info_.size()=%d",
+                       output_info_.size());
+
   for (auto& p : result.MutableResult()->buffers()) {
     const ShapeIndex& index = p.first;
     if (!output_info_.contains(index)) {
@@ -591,8 +600,137 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(
         allocations[output_info.allocation_index];
     se::DeviceMemoryBase& result_buffer = p.second;
 
+    NPU_LOG_FORMAT_PRINT(
+        DEBUG,
+        "Processing output: index %s, allocation_index=%d, has_alias_config=%d",
+        index.ToString().c_str(), output_info.allocation_index,
+        output_info.alias_config.has_value());
     VLOG(4) << "Looking at: allocation " << output_info.allocation_index
             << " @ index: " << index.ToString();
+
+    bool needs_passthrough =
+        output_info.passthrough && !output_info.alias_config;
+    if (output_info.alias_config || needs_passthrough) {
+      int param_number = output_info.alias_config.has_value()
+                             ? output_info.alias_config->parameter_number
+                             : allocation->parameter_number();
+      ShapeIndex param_shape_index =
+          output_info.alias_config.has_value()
+              ? output_info.alias_config->parameter_index
+              : allocation->param_shape_index();
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "Processing: index %s, allocation_index=%d, "
+                           "passthrough=%d, has_alias=%d, param_number=%d",
+                           index.ToString().c_str(),
+                           output_info.allocation_index,
+                           output_info.passthrough,
+                           output_info.alias_config.has_value(), param_number);
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "Allocation: is_entry_param=%d, param_number=%d, "
+                           "param_shape_index={%s}",
+                           allocation->is_entry_computation_parameter(),
+                           allocation->parameter_number(),
+                           allocation->param_shape_index().ToString().c_str());
+      MaybeOwningDeviceMemory* maybe_owning_memory =
+          [&]() -> xla::MaybeOwningDeviceMemory* {
+        // ScopedBuffer is never an owned buffer.
+        if (std::holds_alternative<absl::Span<const ShapedBuffer* const>>(
+                arguments)) {
+          return nullptr;
+        } else {
+          auto unowned_execution_input =
+              std::get<absl::Span<ExecutionInput>>(arguments);
+          ExecutionInput& input = unowned_execution_input[param_number];
+          return input.MutableBuffer(param_shape_index);
+        }
+      }();
+      NPU_LOG_FORMAT_PRINT(
+          DEBUG, "maybe_owning_memory=%p, has_ownership=%d",
+          (void*)maybe_owning_memory,
+          maybe_owning_memory ? maybe_owning_memory->HasOwnership() : 0);
+      if (output_info.alias_config && output_info.alias_config->must_alias() &&
+          maybe_owning_memory && !maybe_owning_memory->HasOwnership()) {
+        return InvalidArgument(
+            "An input was configured to be must-alias at "
+            "compile time but not donated at runtime: allocation %d",
+            output_info.allocation_index);
+      }
+      if (maybe_owning_memory && maybe_owning_memory->HasOwnership()) {
+        std::optional<se::OwningDeviceMemory> owning =
+            maybe_owning_memory->Release();
+        // If the caller passes the ownership of the device memory, reuse it
+        // as the output buffer. It is up to the caller whether or not to
+        // donate a buffer; the aliasing information describes which buffers
+        // may alias, not buffers that must alias.
+        se::DeviceMemoryBase argument_buffer = owning->Release();
+        *maybe_owning_memory = argument_buffer;
+        result_buffer = argument_buffer;
+        NPU_LOG_FORMAT_PRINT(DEBUG,
+                             "Passthrough: allocation_index=%d, "
+                             "param_number=%d, transferred ownership",
+                             output_info.allocation_index, param_number);
+        // The caller is giving us the
+        // input buffer, but in case of error from the execute call, we should
+        // not be releasing it as it contains valid data (for example, it is a
+        // parameter which the user wants us to alias, in a gradient update
+        // computation). So we store the index into the result in the aliased
+        // vector, which will be fed to the ExecutionOutput, which will use
+        // the indices to drop the addresses from its own ScopedShapedBuffer
+        // result, if the ExecutionOutput is not committed.
+        result.AddAliasedIndex(index);
+      } else if (output_info.passthrough) {
+        // For passthrough computation, if the caller doesn't donate ownership,
+        // we need to allocate a new buffer and copy the data.
+        // We cannot use the external buffer directly because ExecutionOutput's
+        // ScopedShapedBuffer will try to release it when ConsumeResult() is
+        // called (which clears aliased_indices_).
+        se::DeviceMemoryBase argument_buffer =
+            maybe_owning_memory->AsDeviceMemoryBase();
+        int64_t allocation_size = ShapeUtil::ByteSizeOf(
+            ShapeUtil::GetSubshape(program_shape_.result(), index));
+        absl::StatusOr<se::OwningDeviceMemory> allocated_buffer =
+            memory_allocator->Allocate(device_ordinal, allocation_size,
+                                       /*retry_on_failure=*/true,
+                                       /*memory_space=*/allocation->color());
+        if (!allocated_buffer.ok()) {
+          return allocated_buffer.status();
+        }
+        result_buffer = allocated_buffer->Release();
+        // Copy data from argument buffer to result buffer
+        TF_RETURN_IF_ERROR(run_options->stream()->MemcpyD2D(
+            &result_buffer, argument_buffer, allocation_size));
+        NPU_LOG_FORMAT_PRINT(DEBUG,
+                             "Passthrough: allocation_index=%d, "
+                             "param_number=%d, copied to new buffer %p",
+                             output_info.allocation_index, param_number,
+                             (void*)result_buffer.opaque());
+      } else if (!output_info.passthrough &&
+                 !ShapeUtil::GetSubshape(program_shape_.result(), index)
+                      .IsTuple()) {
+        // The guard is above is not to insert copy-protection when aliasing
+        // pass-through params, as we do not need to write into the output
+        // buffer.
+        VLOG(3) << "Using copy-protection: aliasing is specified, but the "
+                   "buffer is not donated; allocating a fresh buffer";
+        int64_t allocation_size = ShapeUtil::ByteSizeOf(
+            ShapeUtil::GetSubshape(program_shape_.result(), index));
+        absl::StatusOr<se::OwningDeviceMemory> allocated_buffer =
+            memory_allocator->Allocate(device_ordinal, allocation_size,
+                                       /*retry_on_failure=*/true,
+                                       /*memory_space=*/allocation->color());
+        if (!allocated_buffer.ok()) {
+          return allocated_buffer.status();
+        }
+        result_buffer = allocated_buffer->Release();
+        se::DeviceMemoryBase& aliased_buffer =
+            buffer_allocations.GetMutableDeviceAddress(
+                output_info.allocation_index);
+        CHECK_EQ(aliased_buffer.size(), result_buffer.size());
+        TF_RETURN_IF_ERROR(run_options->stream()->MemcpyD2D(
+            &result_buffer, aliased_buffer, aliased_buffer.size()));
+        aliased_buffer = result_buffer;
+      }
+    }
 
     if (result_buffer.is_null()) {
       // The source instruction should have a non-parameter buffer assigned.
@@ -615,6 +753,16 @@ absl::StatusOr<ExecutionOutput> NpuExecutable::ExecuteAsyncOnStreamImpl(
 
   // Free allocations for arguments.
   if (auto args = std::get_if<absl::Span<ExecutionInput>>(&arguments)) {
+    for (int i = 0; i < args->size(); ++i) {
+      ExecutionInput& argument = (*args)[i];
+      for (auto& index_buffer : *argument.MutableBuffers()) {
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG,
+            "MarkToBeReleasedArguments: arg %d, index %s, has_ownership=%d", i,
+            index_buffer.first.ToString().c_str(),
+            index_buffer.second.HasOwnership());
+      }
+    }
     MarkToBeReleasedArguments(*args, result);
   }
   return std::move(result);
@@ -703,6 +851,22 @@ NpuGetOutputInfo(const HloModule& hlo_module,
   using OutputInfoMap =
       absl::flat_hash_map<ShapeIndex, NpuExecutable::OutputInfo>;
   OutputInfoMap output;
+
+  int alias_count = 0;
+  hlo_module.input_output_alias_config().ForEachAlias(
+      [&](const ShapeIndex& output_index,
+          const HloInputOutputAliasConfig::Alias& alias) {
+        alias_count++;
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG,
+            "NpuGetOutputInfo: module %s, alias: output {%s} -> param %d index "
+            "{%s}",
+            hlo_module.name().c_str(), output_index.ToString().c_str(),
+            alias.parameter_number, alias.parameter_index.ToString().c_str());
+      });
+  NPU_LOG_FORMAT_PRINT(DEBUG, "NpuGetOutputInfo: module %s, total %d aliases",
+                       hlo_module.name().c_str(), alias_count);
+
   TF_RETURN_IF_ERROR(ShapeUtil::ForEachSubshapeWithStatus(
       root->shape(),
       [&](const Shape& /*sub_shape*/, const ShapeIndex& index) -> absl::Status {
@@ -711,15 +875,39 @@ NpuGetOutputInfo(const HloModule& hlo_module,
         HloInstruction* src_hlo = sources.values()[0]->instruction();
 
         NpuExecutable::OutputInfo& info = output[index];
-        info.passthrough = src_hlo->opcode() == HloOpcode::kParameter;
         TF_ASSIGN_OR_RETURN(
             const BufferAllocation::Slice slice,
             assignment.GetUniqueSlice(src_hlo, sources.values()[0]->index()));
         CHECK_EQ(slice.offset(), 0) << "Parameter should get its own slice";
         info.allocation_index = slice.index();
+        const BufferAllocation& allocation =
+            assignment.GetAllocation(slice.index());
+        info.passthrough = src_hlo->opcode() == HloOpcode::kParameter ||
+                           allocation.is_entry_computation_parameter();
+        NPU_LOG_FORMAT_PRINT(
+            DEBUG,
+            "NpuGetOutputInfo: output index %s, src_hlo opcode=%d (%s), "
+            "is_entry_param=%d, passthrough=%d",
+            index.ToString().c_str(), static_cast<int>(src_hlo->opcode()),
+            HloOpcodeString(src_hlo->opcode()).data(),
+            allocation.is_entry_computation_parameter(), info.passthrough);
 
-        output[index].alias_config =
+        auto alias_config =
             hlo_module.input_output_alias_config().GetAliasedParameter(index);
+        if (alias_config.has_value()) {
+          NPU_LOG_FORMAT_PRINT(DEBUG,
+                               "NpuGetOutputInfo: output index %s -> param %d, "
+                               "shape index {%s}, kind %d",
+                               index.ToString().c_str(),
+                               alias_config->parameter_number,
+                               alias_config->parameter_index.ToString().c_str(),
+                               static_cast<int>(alias_config->kind));
+        } else {
+          NPU_LOG_FORMAT_PRINT(
+              DEBUG, "NpuGetOutputInfo: output index %s has no alias_config",
+              index.ToString().c_str());
+        }
+        output[index].alias_config = alias_config;
 
         return absl::OkStatus();
       }));

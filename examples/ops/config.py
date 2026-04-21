@@ -186,9 +186,9 @@ ops_configs = [
     {
         'name': 'Transpose Operation',
         'inputs': lambda: {
-            'x': generate_input((2, 3, 4))
+            'x': generate_input((1, 1, 64))
         },
-        'func': lambda x: jnp.transpose(x, (1, 2, 0))
+        'func': lambda x: jnp.transpose(x, (0, 2, 1))
     },
     {
         'name': 'Slice Operation',

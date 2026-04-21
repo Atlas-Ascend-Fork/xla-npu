@@ -190,6 +190,12 @@ bool NpuPriorityFusion::ConsumeFuel(HloInstruction* producer,
 
 bool NpuPriorityFusion::CanFuseConstant(const HloInstruction* constant,
                                         const HloInstruction* user) {
+  // Only fuse scalar constants (dimensions().size() == 0)
+  // Non-scalar constants are not supported by AFIR converter
+  if (constant->shape().dimensions().size() != 0) {
+    return false;
+  }
+
   // Check if constant is small enough to fuse
   constexpr int64_t kMaxConstantSizeBytes = 256;  // 256 bytes threshold
   if (constant->literal().size_bytes() > kMaxConstantSizeBytes) {

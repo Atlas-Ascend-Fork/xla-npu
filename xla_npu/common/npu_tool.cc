@@ -50,64 +50,83 @@ void NpuTool::PrintNpuDeviceMemoryValueByShape(const std::string& title,
                                                int64_t max_print_count) {
   int64_t size = GetXlaShapeSize(xla_shape);
   PrimitiveType element_type = xla_shape.element_type();
+  const char* type_name = nullptr;
 
   switch (element_type) {
+    case PRED:
+      type_name = "PRED/ACL_BOOL";
+      PrintNpuDeviceMemoryValue(title, size, device_addr, max_print_count,
+                                true);
+      break;
     case F32:
+      type_name = "F32/ACL_FLOAT";
       PrintNpuDeviceMemoryValue<float>(title, size, device_addr,
                                        max_print_count);
       break;
     case F64:
+      type_name = "F64/ACL_DOUBLE";
       PrintNpuDeviceMemoryValue<double>(title, size, device_addr,
                                         max_print_count);
       break;
     case S32:
+      type_name = "S32/ACL_INT32";
       PrintNpuDeviceMemoryValue<int32_t>(title, size, device_addr,
                                          max_print_count);
       break;
     case S64:
+      type_name = "S64/ACL_INT64";
       PrintNpuDeviceMemoryValue<int64_t>(title, size, device_addr,
                                          max_print_count);
       break;
     case U32:
+      type_name = "U32/ACL_UINT32";
       PrintNpuDeviceMemoryValue<uint32_t>(title, size, device_addr,
                                           max_print_count);
       break;
     case U64:
+      type_name = "U64/ACL_UINT64";
       PrintNpuDeviceMemoryValue<uint64_t>(title, size, device_addr,
                                           max_print_count);
       break;
     case F16:
+      type_name = "F16/ACL_FLOAT16";
       PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr,
                                           max_print_count);
       break;
     case BF16:
+      type_name = "BF16/ACL_BF16";
       PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr,
                                           max_print_count);
       break;
     case S16:
+      type_name = "S16/ACL_INT16";
       PrintNpuDeviceMemoryValue<int16_t>(title, size, device_addr,
                                          max_print_count);
       break;
     case U16:
+      type_name = "U16/ACL_UINT16";
       PrintNpuDeviceMemoryValue<uint16_t>(title, size, device_addr,
                                           max_print_count);
       break;
     case S8:
+      type_name = "S8/ACL_INT8";
       PrintNpuDeviceMemoryValue<int8_t>(title, size, device_addr,
                                         max_print_count);
       break;
     case U8:
+      type_name = "U8/ACL_UINT8";
       PrintNpuDeviceMemoryValue<uint8_t>(title, size, device_addr,
                                          max_print_count);
       break;
     default:
-      // 默认使用 float 类型打印
       NPU_LOG_FORMAT_PRINT(DEBUG, "%s (unsupported type %d, using float)",
                            title.c_str(), element_type);
       PrintNpuDeviceMemoryValue<float>(title, size, device_addr,
                                        max_print_count);
-      break;
+      return;
   }
+
+  NPU_LOG_FORMAT_PRINT(DEBUG, "%s (%s)", title.c_str(), type_name);
 }
 
 }  // namespace xla

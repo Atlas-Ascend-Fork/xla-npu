@@ -1,4 +1,5 @@
-/* Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
+/* Copyright 2019 The OpenXLA Authors.
+Copyright (c) 2026 Huawei Technologies Co., Ltd. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -11,6 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+This file is modified from OpenXLA source code.
+Modification: Custom adaptation for NPU/XLA-NPU scenarios.
 ==============================================================================*/
 
 #include "xla/xla_npu/backend/runtime/npu_thunk.h"
@@ -237,6 +241,15 @@ NpuThunk::ThunkInfo NpuThunk::ThunkInfo::WithProfileAnnotation(
     auto dimensions_span = instr->dimensions();
     thunk_info.dimensions =
         std::vector<int64_t>(dimensions_span.begin(), dimensions_span.end());
+  }
+
+  // DynamicSlice 使用 dynamic_slice_sizes 而不是 dimensions
+  if (instr->opcode() == HloOpcode::kDynamicSlice) {
+    const auto* dynamic_slice_instr =
+        dynamic_cast<const HloDynamicSliceInstruction*>(instr);
+    if (dynamic_slice_instr) {
+      thunk_info.dimensions = dynamic_slice_instr->dynamic_slice_sizes();
+    }
   }
 
   return thunk_info;

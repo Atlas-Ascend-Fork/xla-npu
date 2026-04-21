@@ -99,6 +99,46 @@ class NpuTool {
     NPU_LOG_FORMAT_PRINT(DEBUG, "========================================");
   }
 
+  // 特化版本：处理 bool 类型（std::vector<bool> 的 data() 不返回指针）
+  static void PrintNpuDeviceMemoryValue(const std::string& title,
+                                        const int64_t& size,
+                                        const void* deviceAddr,
+                                        int64_t max_print_count,
+                                        bool /*is_bool*/) {
+    NPU_LOG_FORMAT_PRINT(DEBUG, title);
+
+    // 获取配置的最大打印数量
+    if (max_print_count <= 0) {
+      max_print_count =
+          NPU_CONFIG_GET_INT(xla::NpuConfig::Key::XLA_NPU_MAX_PRINT_COUNT);
+    }
+
+    int64_t print_count = std::min(size, max_print_count);
+    // 使用 uint8_t 接收 bool 数据
+    std::vector<uint8_t> resultData(print_count, 0);
+    aclError acl_ret = dep::aclrtMemcpy(
+        resultData.data(), resultData.size() * sizeof(uint8_t), deviceAddr,
+        print_count * sizeof(uint8_t), ACL_MEMCPY_DEVICE_TO_HOST);
+    if (acl_ret != ACL_SUCCESS) {
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "    Copy result from device to host failed. "
+                           "ERROR: %d",
+                           acl_ret);
+      return;
+    }
+
+    for (int64_t i = 0; i < print_count; i++) {
+      NPU_LOG_FORMAT_PRINT(DEBUG, "    Value[%ld] on device is: %d", i,
+                           static_cast<int>(resultData[i]));
+    }
+
+    if (size > max_print_count) {
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "    ...(total %ld elements, showing first %ld)",
+                           size, max_print_count);
+    }
+  }
+
   template <typename printDataType>
   static void PrintNpuDeviceMemoryValue(const std::string& title,
                                         const int64_t& size,
@@ -119,9 +159,10 @@ class NpuTool {
         deviceAddr, print_count * sizeof(printDataType),
         ACL_MEMCPY_DEVICE_TO_HOST);
     if (acl_ret != ACL_SUCCESS) {
-      NPU_LOG_FORMAT_PRINT(
-          DEBUG, "    Copy result from device to host failed. ERROR: %d",
-          acl_ret);
+      NPU_LOG_FORMAT_PRINT(DEBUG,
+                           "    Copy result from device to host failed. "
+                           "ERROR: %d",
+                           acl_ret);
       return;
     }
 
@@ -238,31 +279,12 @@ class NpuTool {
     const auto& data_shape = ConvertXlaShape2VectorShape(xla_data_shape);
     const auto& data_type = ConvertXlaType2AclDataType(xla_data_type);
 
-    // 从 XLA shape 的 layout 中获取正确的 strides
-    // 如果 shape 没有 layout 信息或 layout 是默认的，则使用连续布局的 strides
-    std::vector<int64_t> strides;
-    if (xla_data_shape.has_layout()) {
-      // 从 layout 中获取 strides
-      const auto& layout = xla_data_shape.layout();
-      const auto& minor_to_major = layout.minor_to_major();
-
-      // 根据 minor_to_major 顺序计算 strides
-      // minor_to_major[0] 是最 minor 的维度（stride=1）
-      strides.resize(data_shape.size());
-      int64_t stride = 1;
-      for (size_t i = 0; i < minor_to_major.size(); ++i) {
-        int64_t dim = minor_to_major[i];
-        strides[dim] = stride;
-        stride *= data_shape[dim];
-      }
-      NPU_LOG_FORMAT_PRINT(DEBUG,
-                           "CreateAclTensorPtr: Using layout-based strides");
-    } else {
-      // 使用默认的连续 tensor strides (从后往前累乘)
-      strides.resize(data_shape.size(), 1);
-      for (int64_t i = data_shape.size() - 2; i >= 0; i--) {
-        strides[i] = data_shape[i + 1] * strides[i + 1];
-      }
+    // 始终使用标准 C 顺序 strides（行主序）
+    // 这是最安全的做法，因为 XLA 分配的内存通常是连续的
+    // 使用 XLA 的 layout 计算 strides 会导致与实际内存布局不匹配
+    std::vector<int64_t> strides(data_shape.size(), 1);
+    for (int64_t i = data_shape.size() - 2; i >= 0; i--) {
+      strides[i] = data_shape[i + 1] * strides[i + 1];
     }
 
     // Debug: print strides
@@ -272,7 +294,7 @@ class NpuTool {
       strides_str += std::to_string(strides[i]);
     }
     strides_str += "]";
-    NPU_LOG_FORMAT_PRINT(DEBUG, "CreateAclTensorPtr: shape=%s, strides=%s",
+    NPU_LOG_FORMAT_PRINT(INFO, "CreateAclTensorPtr: shape=%s, strides=%s",
                          GetXlaShapeString(xla_data_shape).c_str(),
                          strides_str.c_str());
 
