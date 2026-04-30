@@ -1,4 +1,0 @@
-[submodule "xla_npu/dependency/external/npuir/AscendNPU-IR"]
-	path = xla_npu/dependency/external/npuir/AscendNPU-IR
-	url = https://gitcode.com/XDaoHong/AscendNPU-IR.git
-	branch = tmp
