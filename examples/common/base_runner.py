@@ -170,6 +170,16 @@ class BaseRunner:
             files_to_remove = [
                 self.config.INPUT_DATA_FILE,
             ]
+            
+            # Add individual output files if defined in config
+            if hasattr(self.config, 'CPU_OUTPUT_FILE'):
+                if not args.skip_cpu:
+                    files_to_remove.append(self.config.CPU_OUTPUT_FILE)
+            if hasattr(self.config, 'NPU_OUTPUT_FILE'):
+                if not args.skip_npu:
+                    files_to_remove.append(self.config.NPU_OUTPUT_FILE)
+            
+            # Add all outputs files
             if not args.skip_cpu and os.path.exists(self.config.CPU_ALL_OUTPUTS_FILE):
                 files_to_remove.append(self.config.CPU_ALL_OUTPUTS_FILE)
             if not args.skip_npu and os.path.exists(self.config.NPU_ALL_OUTPUTS_FILE):

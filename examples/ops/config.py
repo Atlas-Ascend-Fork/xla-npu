@@ -61,6 +61,8 @@ OPS_OUTPUT_DIR, _ = create_output_dirs(OUTPUT_DIR, "ops")
 
 # Output file paths (default without run number)
 output_files = get_output_files(OPS_OUTPUT_DIR)
+CPU_OUTPUT_FILE = output_files['cpu_output_file']
+NPU_OUTPUT_FILE = output_files['npu_output_file']
 CPU_ALL_OUTPUTS_FILE = output_files['cpu_all_outputs_file']
 NPU_ALL_OUTPUTS_FILE = output_files['npu_all_outputs_file']
 INPUT_DATA_FILE = output_files['input_data_file']

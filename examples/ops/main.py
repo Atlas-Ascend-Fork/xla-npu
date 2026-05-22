@@ -29,6 +29,8 @@ from config import (
     DESCRIPTION, 
     DEFAULT_NUM_RUNS, 
     OPS_OUTPUT_DIR, 
+    CPU_OUTPUT_FILE,
+    NPU_OUTPUT_FILE,
     CPU_ALL_OUTPUTS_FILE, 
     NPU_ALL_OUTPUTS_FILE, 
     INPUT_DATA_FILE,
@@ -205,20 +207,18 @@ class OperationsRunner(BaseRunner):
 
 
 if __name__ == "__main__":
-    # Create config object with run number support
+    # Create config object
     class Config:
         DESCRIPTION = DESCRIPTION
         DEFAULT_NUM_RUNS = DEFAULT_NUM_RUNS
-        
-        def __init__(self, run_number=1):
-            # Update output paths with run number
-            output_files = get_output_files(OPS_OUTPUT_DIR, run_number=run_number)
-            self.CPU_ALL_OUTPUTS_FILE = output_files['cpu_all_outputs_file']
-            self.NPU_ALL_OUTPUTS_FILE = output_files['npu_all_outputs_file']
-            self.INPUT_DATA_FILE = output_files['input_data_file']
+        CPU_OUTPUT_FILE = CPU_OUTPUT_FILE
+        NPU_OUTPUT_FILE = NPU_OUTPUT_FILE
+        CPU_ALL_OUTPUTS_FILE = CPU_ALL_OUTPUTS_FILE
+        NPU_ALL_OUTPUTS_FILE = NPU_ALL_OUTPUTS_FILE
+        INPUT_DATA_FILE = INPUT_DATA_FILE
     
-    # Create config with run number 1 (can be extended to support multiple runs)
-    config = Config(run_number=1)
+    # Create config
+    config = Config()
     
     # Create and run runner
     runner = OperationsRunner(config)

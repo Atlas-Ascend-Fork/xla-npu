@@ -993,7 +993,7 @@ main_install() {
     echo -e "\033[36msource xla_npu_env\033[0m"
     echo ""
     echo "或者添加到 ~/.bashrc 以自动加载:"
-    echo -e "\033[36mecho 'source $(pwd)/build/xla_npu_env' >> ~/.bashrc\033[0m"
+    echo -e "\033[36mecho 'source $INSTALL_DIR/build/xla_npu_env' >> ~/.bashrc\033[0m"
     echo ""
 }
 
