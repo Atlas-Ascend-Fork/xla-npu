@@ -67,6 +67,11 @@ print(f"Result: {result}")
 
 ---
 
+## 运行样例验证
+完成安装与环境配置后，可参考 [examples/README.md](examples/README.md) 运行基础算子测试与模型推理样例（ops / mmoe / qwen），验证 XLA-NPU 功能，并支持 CPU 与 NPU 执行结果对比。
+
+---
+
 ## 特性介绍
 xla\_npu插件通过实现OpenXLA PJRT接口，将NPU设备接入XLA生态，对接JAX框架。详细特性介绍请访问[docs](docs/zh/README.md)。
 

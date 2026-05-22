@@ -60,7 +60,7 @@ examples/
 `后，可不用手动修改）
 4. 安装 MMOE 模型样例所需的 Python 依赖:
    ```bash
-   pip install flax
+   pip install flax==0.12.4
    ```
 
 ### 运行算子测试样例
