@@ -231,3 +231,17 @@ ops_configs = [
         'func': lambda x1, x2: jnp.logical_and(x1, x2)
     }
 ]
+
+
+# Skip ops whose lowered HLO opcode is not yet implemented in the NPU backend
+# (xla_npu/service/convert_to_afir/convert_to_afir.cc). These currently raise
+# "UNIMPLEMENTED: Unsupported opcode": kDot / kGather / kCompare / kSelect / kAnd.
+# Remove a name from this set once its opcode is supported.
+_UNSUPPORTED_OPS = {
+    'Dot Operation',
+    'Gather Operation',
+    'Compare EQ Operation',
+    'Select Operation',
+    'And Operation',
+}
+ops_configs = [c for c in ops_configs if c['name'] not in _UNSUPPORTED_OPS]
