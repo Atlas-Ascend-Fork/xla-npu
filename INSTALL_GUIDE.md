@@ -148,7 +148,7 @@ sudo ./build.sh install
 
 **错误信息**：
 ```
-INTRENAL: Failed to initialize GE.
+INTERNAL: Failed to initialize GE.
 ```
 
 **解决方案**：
@@ -169,4 +169,4 @@ cd /path/to/xla-npu/build
 
 ---
 
-**注意**: 本安装脚本已针对国内网络环境优化，使用华为镜像源加速下载。如需使用其他镜像源，可修改脚本中的镜像配置。
+**注意**：本安装脚本已针对国内网络环境优化，使用华为镜像源加速下载。如需使用其他镜像源，可修改脚本中的镜像配置。
