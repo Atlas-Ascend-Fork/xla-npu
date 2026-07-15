@@ -42,8 +42,7 @@ examples/
 │   ├── init_params.py   # 参数初始化
 │   ├── run_cpu.py       # CPU 运行脚本
 │   ├── run_npu.py       # NPU 运行脚本
-│   ├── utils.py         # 工具函数
-│   └── test.sh          # 测试脚本
+│   └── utils.py         # 工具函数
 └── output/          # 输出目录
     ├── ops/             # ops 样例输出
     ├── mmoe/            # mmoe 样例输出
