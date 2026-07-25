@@ -25,6 +25,7 @@ limitations under the License.
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -38,6 +39,7 @@ limitations under the License.
 #include "xla/xla_npu/common/npu_config.h"
 #include "xla/xla_npu/common/npu_constant.h"
 #include "xla/xla_npu/dependency/tool/log.h"
+#include "xla/xla_npu/dependency/interface/acl_interface.h"
 #include "xla/xla_npu/service/convert_to_afir/convert_to_afir.h"
 #include "xla/xla_npu/service/convert_to_afir/python_gil_guard.h"
 
@@ -905,13 +907,30 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
       absl::StrCat(abs_output_dir, "/", computation_name);
 
   // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True", "--soc_version", "--compile_options"]
+  int idx = 0;
   bool use_old_cann_style =
       NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
+  aclCANNPackageVersion version{};
+  aclError ret = xla::dep::aclsysGetCANNVersion(ACL_PKG_NAME_CANN, &version);
+  bool pass_soc_version = true;
+  if (ret == ACL_SUCCESS) {
+    int major = 0;
+    if (absl::SimpleAtoi(version.majorVersion, &major)) {
+      pass_soc_version = (major > 8);
+    } else {
+      NPU_LOG_FORMAT_PRINT(WARN, "Failed to parse CANN major version, fallback");
+    }
+  } else {
+    NPU_LOG_FORMAT_PRINT(WARN, "aclsysGetCANNVersion failed, fallback");
+  }
   // Prepare arguments list (4th parameter is a list)
-  int args_list_size =
-      use_old_cann_style
-          ? 5
-          : 6;  // When use_old_cann_style is true, create 5, otherwise 6 elements.
+  int args_list_size = 4;
+  if (pass_soc_version) {
+    ++args_list_size;
+  } // When pass_soc_version is true, add one element.
+  if (!use_old_cann_style) {
+    ++args_list_size;
+  } // When use_old_cann_style is false, add one element.
   PyObject* args_list = PyList_New(args_list_size);
   if (!args_list) {
     Py_DECREF(jit_compile_func);
@@ -923,19 +942,22 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   std::string output_file_arg = absl::StrCat("--output_file=", output_file);
   std::string output_path_arg = absl::StrCat("--output_path=", jit_output_path);
   const char* force_unknown_arg = "--force_unknown=True";
-  std::string soc_version_arg =
-      absl::StrCat("--soc_version=", options.soc_version);
 
-  PyList_SetItem(args_list, 0, PyUnicode_FromString(graph_name_arg.c_str()));
-  PyList_SetItem(args_list, 1, PyUnicode_FromString(output_file_arg.c_str()));
-  PyList_SetItem(args_list, 2, PyUnicode_FromString(output_path_arg.c_str()));
-  PyList_SetItem(args_list, 3, PyUnicode_FromString(force_unknown_arg));
-  PyList_SetItem(args_list, 4, PyUnicode_FromString(soc_version_arg.c_str()));
+  PyList_SetItem(args_list, idx++, PyUnicode_FromString(graph_name_arg.c_str()));
+  PyList_SetItem(args_list, idx++, PyUnicode_FromString(output_file_arg.c_str()));
+  PyList_SetItem(args_list, idx++, PyUnicode_FromString(output_path_arg.c_str()));
+  PyList_SetItem(args_list, idx++, PyUnicode_FromString(force_unknown_arg));
+
+  // Only set soc_version when pass_soc_version is true
+  if(pass_soc_version) {
+    std::string soc_version_arg = absl::StrCat("--soc_version=", options.soc_version);
+    PyList_SetItem(args_list, idx++, PyUnicode_FromString(soc_version_arg.c_str()));
+  }
 
   // Only set compile_options_arg when use_old_cann_style is false
   if (!use_old_cann_style) {
     const char* compile_options_arg = "--compile_options=-Wno-unused-parameter";
-    PyList_SetItem(args_list, 5, PyUnicode_FromString(compile_options_arg));
+    PyList_SetItem(args_list, idx++, PyUnicode_FromString(compile_options_arg));
   }
 
   // Prepare positional arguments: tiling_def, host_impl, device_impl, args_list

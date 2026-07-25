@@ -46,6 +46,7 @@ REGISTER_FUNCTION(libascendcl, aclrtKernelArgsGetPlaceHolderBuffer)
 REGISTER_FUNCTION(libascendcl, aclrtKernelArgsFinalize)
 REGISTER_FUNCTION(libascendcl, aclrtLaunchKernel)
 REGISTER_FUNCTION(libascendcl, aclrtLaunchKernelWithConfig)
+REGISTER_FUNCTION(libascendcl, aclsysGetCANNVersion)
 
 }  // namespace dep
 }  // namespace xla

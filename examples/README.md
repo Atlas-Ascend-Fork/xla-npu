@@ -57,7 +57,7 @@ examples/
 2. 设置运行所需环境变量， 参考项目根目录 [README.md](../README.md)
 3. 修改 `common/config.py` 中的 `NPU_LIBRARY_NAME`（可选，默认为 `NPU_LIBRARY_NAME` 通过环境变量 `XLA_NPU_ROOT_DIR` 自动拼接路径，如需自定义请修改为xla-npu编译产物的实际路径，在参考[README.md](../README.md)中`执行`source ./build/xla_npu_env`
 `后，可不用手动修改）
-4. 安装 MMOE 模型样例所需的 Python 依赖:
+4. 安装 MMOE/QWEN 模型样例所需的 Python 依赖:
    ```bash
    pip install flax==0.12.4
    ```

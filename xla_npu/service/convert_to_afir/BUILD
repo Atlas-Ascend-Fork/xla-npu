@@ -69,6 +69,7 @@ cc_library(
         "//xla/hlo/ir:hlo",
         "//xla/xla_npu/common:npu_config",
         "//xla/xla_npu/common:npu_constant",
+        "//xla/xla_npu/dependency/interface:acl_interface",
         "//xla/xla_npu/dependency/external/afir:AFIRHeaders",
         "//xla/xla_npu/dependency/external/afir:AFIRToASCIRText",
         "//xla/xla_npu/dependency/external/afir:AFIRTransforms",

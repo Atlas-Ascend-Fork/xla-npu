@@ -121,6 +121,10 @@ DECLARE_ACL_FUNC_IN_ASCENDCL(aclrtLaunchKernelWithConfig,
                              (funcHandle, blockDim, stream, cfg, argsHandle,
                               reserve))
 
+DECLARE_ACL_FUNC_IN_ASCENDCL(aclsysGetCANNVersion,
+                             (aclCANNPackageName name, aclCANNPackageVersion *version),
+                             (name, version))
+
 }  // namespace dep
 }  // namespace xla
 
