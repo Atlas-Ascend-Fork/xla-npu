@@ -35,7 +35,7 @@ namespace stream_executor {
 
 static const std::string get_tiling_size_func_name = "GetTilingDataSize";
 static const std::string tiling_func_name = "AutofuseTiling";
-static const std::string launch_func_name = "AutofuseLaunchV2";
+static const std::string launch_func_name = "XlaAutofuseLaunch";
 
 absl::Status NpuAutoFuseKernel::Load() {
   // 注册lib
@@ -102,10 +102,11 @@ absl::Status NpuAutoFuseKernel::Launch(
 
   uint32_t workspace_size = 0;
   uint32_t block_dim;
-  uint32_t auto_fuse_ret =
+  int64_t auto_fuse_ret =
       TilingFunc_(tiling_data, &workspace_size, &block_dim, nullptr);
   CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0,
-                               "Tiling failed, error code: %d.", auto_fuse_ret);
+                               "Tiling failed, error code: %lld.",
+                               static_cast<long long>(auto_fuse_ret));
   NPU_LOG_FORMAT_PRINT(DEBUG, "  tiling_size=%zu", tiling_size);
   NPU_LOG_FORMAT_PRINT(DEBUG, "  TilingFunc_ workspace_size=%u, block_dim=%u",
                        workspace_size, block_dim);
@@ -150,9 +151,9 @@ absl::Status NpuAutoFuseKernel::Launch(
     auto_fuse_ret = LaunchFunc_(block_dim, acl_stream, input_param_addrs.data(),
                                 input_param_num, &output_param_addr,
                                 output_param_num, workspace, tiling_data);
-    CHECK_COND_AND_PRINT_NPU_LOG(auto_fuse_ret != 0,
-                                 "Launch fusion kernel failed, error code: %d.",
-                                 auto_fuse_ret);
+    CHECK_COND_AND_PRINT_NPU_LOG(
+        auto_fuse_ret != 0, "Launch fusion kernel failed, error code: %lld.",
+        static_cast<long long>(auto_fuse_ret));
   } else {
     NPU_LOG_FORMAT_PRINT(ERROR, "Get args failed.");
     return absl::InternalError("Get args failed.");

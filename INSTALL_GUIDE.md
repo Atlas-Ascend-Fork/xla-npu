@@ -8,7 +8,7 @@
 
 ### 必须满足
 - **Python = 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
-- **基本工具**：`wget`， `curl`， `git`， `tar`
+- **基本工具**：`wget`， `curl`， `git`， `tar`， `xz`
 - **磁盘空间**：至少 10GB 可用空间
 
 ### 推荐配置
@@ -41,7 +41,7 @@ python3.11 --version
 ### 2. 安装基本工具
 ```bash
 sudo apt-get update
-sudo apt-get install wget curl git tar
+sudo apt-get install wget curl git tar xz-utils
 ```
 
 ### 3. 克隆 xla-npu 仓库

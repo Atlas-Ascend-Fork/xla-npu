@@ -55,15 +55,15 @@ class NpuAutoFuseKernel : public Kernel {
   StreamExecutor* executor_ = nullptr;
   unsigned arity_ = 0;  // number of formal parameters the kernel takes
 
-  using graphStatus = uint32_t;
+  using graphStatus = int64_t;
   using GetTilingSizeFunc = size_t (*)();
   using TilingFunc = graphStatus (*)(void*, uint32_t*, uint32_t*, void*);
-  using LaunchFunc = uint32_t (*)(uint32_t, void*, void**, int32_t, void**,
-                                  int32_t, void*, void*);
+  using LaunchFunc = int64_t (*)(uint32_t, void*, void**, int32_t, void**,
+                                 int32_t, void*, void*);
 
-  GetTilingSizeFunc GetTilingSizeFunc_;
-  TilingFunc TilingFunc_;
-  LaunchFunc LaunchFunc_;
+  GetTilingSizeFunc GetTilingSizeFunc_ = nullptr;
+  TilingFunc TilingFunc_ = nullptr;
+  LaunchFunc LaunchFunc_ = nullptr;
 
   std::string load_file_base_dir_;  // 编译生成的.o, .bin, .so后缀文件的根路径
   std::string kernel_name_;

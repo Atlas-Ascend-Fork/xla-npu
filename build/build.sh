@@ -288,7 +288,7 @@ init_environment() {
 
     if [ ${#missing_tools[@]} -gt 0 ]; then
         error_exit "缺少必要工具: ${missing_tools[*]}" \
-            "请先安装: sudo apt-get install ${missing_tools[*]}"
+            "请先安装: sudo apt-get install ${missing_tools[*]/xz/xz-utils}"
     fi
 
     # 检查 Python (系统要求)

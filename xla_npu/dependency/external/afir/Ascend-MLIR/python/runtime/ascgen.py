@@ -10,11 +10,12 @@ AscendC 源代码生成接口
 """
 import ctypes
 import os
+import re
 import struct
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from .utils import (
     get_platform,
@@ -24,6 +25,80 @@ from .utils import (
     CompilerError,
     ASCEND_A2,
 )
+
+
+def _extract_xla_input_index_map(graph_text: str) -> List[int]:
+    """Extract original XLA argument indices from ASCIR Data nodes."""
+    data_index_pattern = re.compile(
+        r'name:\s*"[^"]+/Data_\d+"\s*'
+        r'type:\s*"Data".*?'
+        r'key:\s*"index"\s*value\s*\{\s*i:\s*(\d+)\s*\}',
+        re.DOTALL)
+    input_index_map = sorted(
+        int(match.group(1))
+        for match in data_index_pattern.finditer(graph_text))
+    if len(input_index_map) != len(set(input_index_map)):
+        raise CompilerError(
+            f"Duplicate ASCIR Data indices: {input_index_map}")
+    return input_index_map
+
+
+def _generate_xla_autofuse_launch_wrapper(input_index_map: List[int],
+                                          output_num: int) -> str:
+    """Generate a stable array-based launch ABI for an Autofuse kernel."""
+    if output_num < 0:
+        raise CompilerError(
+            f"Invalid Autofuse output arity: outputs={output_num}")
+
+    input_num = len(input_index_map)
+    required_xla_input_num = (
+        max(input_index_map) + 1 if input_index_map else 0)
+
+    launch_param_decls = ["uint32_t blockDim", "void* stream"]
+    launch_param_decls.extend(
+        f"void* input{index}" for index in range(input_num))
+    launch_param_decls.extend(
+        f"void* output{index}" for index in range(output_num))
+    launch_param_decls.extend(
+        ["void* workspace", "AutofuseTilingData* tilingData"])
+
+    launch_args = ["blockDim", "stream"]
+    launch_args.extend(
+        f"inputData[{index}]" for index in input_index_map)
+    launch_args.extend(
+        f"outputData[{index}]" for index in range(output_num))
+    launch_args.extend(
+        ["workspace", "static_cast<AutofuseTilingData*>(tilingData)"])
+
+    launch_declaration = ",\n    ".join(launch_param_decls)
+    launch_call = ",\n      ".join(launch_args)
+
+    return f"""
+// AUTOFUSE_SPLIT_FILE_BEGIN: xla_autofuse_launch
+#include "autofuse_tiling_data.h"
+
+extern "C" int64_t AutofuseLaunch(
+    {launch_declaration});
+
+extern "C" int64_t XlaAutofuseLaunch(
+    uint32_t blockDim,
+    void* stream,
+    void** inputData,
+    int32_t inputNum,
+    void** outputData,
+    int32_t outputNum,
+    void* workspace,
+    void* tilingData) {{
+  if (inputNum < {required_xla_input_num} || outputNum != {output_num}) {{
+    return -1;
+  }}
+  (void)inputData;
+  (void)outputData;
+  return AutofuseLaunch(
+      {launch_call});
+}}
+// AUTOFUSE_SPLIT_FILE_END: xla_autofuse_launch
+"""
 
 
 # ================================================================
@@ -112,10 +187,12 @@ class AscGen:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # 反序列化 graph
+        input_index_map = _extract_xla_input_index_map(graph_text)
         graph = self._deserialize_graph(graph_text)
 
         # 执行 autofuse
-        tiling_def, host_tiling, op_kernel = self._run_autofuse(graph)
+        tiling_def, host_tiling, op_kernel = self._run_autofuse(
+            graph, input_index_map)
 
         # 保存源文件
         host_file, device_file = self._save_source_files(
@@ -136,7 +213,7 @@ class AscGen:
         logger.debug(f"Graph deserialized: \n{debug_str}")
         return graph
 
-    def _run_autofuse(self, graph):
+    def _run_autofuse(self, graph, input_index_map):
         """执行 autofuse 流程"""
         options = self.AutofuserOptions()
         fuser = self.Autofuser(options)
@@ -146,6 +223,15 @@ class AscGen:
 
         if not all([tiling_def, host_tiling, op_kernel]):
             raise CompilerError("Autofuse codegen failed")
+
+        input_num = graph.get_input_num()
+        output_num = graph.get_output_num()
+        if len(input_index_map) != input_num:
+            raise CompilerError(
+                "ASCIR Data index count does not match Autofuse input count: "
+                f"map={input_index_map}, inputs={input_num}")
+        host_tiling += _generate_xla_autofuse_launch_wrapper(
+            input_index_map, output_num)
 
         logger.info("Autofuse pipeline completed")
         return tiling_def, host_tiling, op_kernel
