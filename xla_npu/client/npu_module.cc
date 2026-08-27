@@ -43,7 +43,7 @@ static void RegisterNpuPlatform() {
   std::unique_ptr<stream_executor::Platform> platform(
       new stream_executor::NpuPlatform);
   stream_executor::PlatformManager::RegisterPlatform(std::move(platform));
-  NPU_LOG_FORMAT_PRINT(INFO, "Resister platform for '%s'.",
+  NPU_LOG_FORMAT_PRINT(INFO, "Register platform for '%s'.",
                        NpuConstant::platformName);
 }
 
@@ -61,7 +61,7 @@ static void RegisterNpuCompiler() {
     return std::make_unique<NpuCompiler>(stream_executor::kNpuPlatformId, "",
                                          "");
   });
-  NPU_LOG_FORMAT_PRINT(INFO, "Resister compiler for '%s'.",
+  NPU_LOG_FORMAT_PRINT(INFO, "Register compiler for '%s'.",
                        NpuConstant::platformName);
 }
 
@@ -72,7 +72,7 @@ static void RegisterNpuTransferManager() {
       []() -> std::unique_ptr<xla::TransferManager> {
         return std::make_unique<NpuTransferManager>();
       });
-  NPU_LOG_FORMAT_PRINT(INFO, "Resister transfer manager for '%s'.",
+  NPU_LOG_FORMAT_PRINT(INFO, "Register transfer manager for '%s'.",
                        NpuConstant::platformName);
 }
 
@@ -82,7 +82,7 @@ static void RegisterNpuComputationPlacer() {
   ComputationPlacer::RegisterComputationPlacer(
       stream_executor::kNpuPlatformId,
       []() { return std::make_unique<ComputationPlacer>(); });
-  NPU_LOG_FORMAT_PRINT(INFO, "Resister computation placer for '%s'.",
+  NPU_LOG_FORMAT_PRINT(INFO, "Register computation placer for '%s'.",
                        NpuConstant::platformName);
 }
 

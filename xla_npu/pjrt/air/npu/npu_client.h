@@ -399,7 +399,7 @@ inline absl::StatusOr<std::unique_ptr<PjRtClient>> GetPjRtNpuClient() {
     return absl::InternalError("ACL get device count failed.");
   }
   if (device_count <= 0) {
-    return absl::InternalError("Threre is no valid device.");
+    return absl::InternalError("There is no valid device.");
   }
   aclError acl_set_device = dep::aclrtSetDevice(device_id);
   if (acl_set_device != ACL_SUCCESS) {

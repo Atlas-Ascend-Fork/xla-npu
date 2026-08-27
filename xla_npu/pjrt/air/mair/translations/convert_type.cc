@@ -74,7 +74,7 @@ Status ConvertScalarTypeToDataType(Type type, DataType* dtype) {
       return Status::OK();
     }
     NPU_LOG_FORMAT_PRINT(DEBUG,
-                         "Converting %s to DataType. [ComplextType_NotFound]",
+                         "Converting %s to DataType. [ComplexType_NotFound]",
                          debugString(type).c_str());
     return Status::OK();
   }

@@ -114,7 +114,7 @@ void GraphGenTester::buildGeluModule(mlir::ModuleOp& module,
 
 void GraphGenTester::buildAddMulModule(mlir::ModuleOp& module,
                                        mlir::MLIRContext& context) {
-  std::cout << "Start build addNul mlir" << std::endl;
+  std::cout << "Start build addNull mlir" << std::endl;
   // 输入输出shape
   std::vector<int> broadcastTensorShape{10, 20};
 
@@ -406,7 +406,7 @@ int main(int argc, char** argv) {
   }
 
   GraphGenTester::Convert(module, graphPtr);
-  std::cout << "Finished convert to GE Grap:\n";
+  std::cout << "Finished convert to GE Graph:\n";
   std::cout << std::endl;
 
   return 0;

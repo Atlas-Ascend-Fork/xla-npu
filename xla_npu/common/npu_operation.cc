@@ -74,11 +74,11 @@ absl::Status NpuOperation::Memcpy(void* dst, void* src, size_t size_bytes,
   switch (memcpyType) {
     case MemcpyType::H2D:
       memcpyKind = ACL_MEMCPY_HOST_TO_DEVICE;
-      descStr = "Copy date from cpu to npu";
+      descStr = "Copy data from cpu to npu";
       break;
     case MemcpyType::D2H:
       memcpyKind = ACL_MEMCPY_DEVICE_TO_HOST;
-      descStr = "Copy date from npu to cpu";
+      descStr = "Copy data from npu to cpu";
       break;
   };
 
