@@ -67,7 +67,7 @@ void ConfigLoader::Register(const ConfigDescMap& desc_map) {
       default:
         NPU_LOG_FORMAT_PRINT(
             ERROR,
-            "Set config key - '%s' failed, config type - '%d' not support.",
+            "Set config key - '%s' failed, config type - '%d' not supported.",
             desc.str_desc, static_cast<int>(desc.type));
     }
 

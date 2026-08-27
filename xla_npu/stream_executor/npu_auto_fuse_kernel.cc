@@ -92,7 +92,7 @@ absl::Status NpuAutoFuseKernel::Launch(
   auto stream_handle = stream->platform_specific_handle();
   CHECK_COND_AND_PRINT_NPU_LOG(
       stream_handle.stream == nullptr,
-      "Acl stream need to be created or init before execute npu thunk.");
+      "Acl stream needs to be created or initialized before executing npu thunk.");
   auto acl_stream = stream_handle.stream;
   NPU_LOG_FORMAT_PRINT(DEBUG, "  acl_stream=%p", acl_stream);
 

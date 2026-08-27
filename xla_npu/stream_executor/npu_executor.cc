@@ -74,7 +74,7 @@ absl::Status NpuExecutor::Init() {
 absl::StatusOr<std::unique_ptr<Kernel>> NpuExecutor::LoadKernel(
     const KernelLoaderSpec& spec) {
   CHECK_COND_AND_PRINT_NPU_LOG(!spec.has_in_process_symbol(),
-                               "In process symbol when load kernel is empty");
+                               "In-process symbol found when load kernel is empty");
   auto npu_kernel_config_ptr = static_cast<xla::NpuKernelConfig*>(
       spec.in_process_symbol().value().symbol);
   switch (npu_kernel_config_ptr->npu_kernel_type) {

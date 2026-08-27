@@ -127,10 +127,10 @@ Status CompiledGraphSummary::GetOutputDtypes(
 
 std::string GEGetErrorMsg() { return "[STUB] Something error"; }
 
-std::string GEGetWarningMsg() { return "[STUB] Something warn"; }
+std::string GEGetWarningMsg() { return "[STUB] Something warned"; }
 
 ge::AscendString GEGetWarningMsgV2() {
-  std::string warning_msg = "[STUB] Something warn";
+  std::string warning_msg = "[STUB] Something warned";
   return ge::AscendString(warning_msg.c_str(), warning_msg.length());
 }
 
@@ -277,7 +277,7 @@ Status Session::RunGraph(uint32_t id, const std::vector<ge::Tensor>& inputs,
                          std::vector<ge::Tensor>& outputs) {
   std::cerr << "[STUB] Session::RunGraph graph " << id << std::endl;
   if (inputs.size() < 1U) {
-    std::cerr << "[STUB] Input size is empty" << id << std::endl;
+    std::cerr << "[STUB] Input size is empty for graph " << id << std::endl;
     return ge::SUCCESS;
   }
   auto spec = GraphSpecManager::GetSpec(id);
@@ -432,7 +432,7 @@ extern "C" {
 ge::Status GeSessionLoadGraph(
     ge::Session& session, uint32_t graph_id,
     const std::map<ge::AscendString, ge::AscendString>& option, void* stream) {
-  std::cerr << "[STUB] GeSessionLoadGraph, graph id is" << graph_id
+  std::cerr << "[STUB] GeSessionLoadGraph, graph id is " << graph_id
             << std::endl;
   return ge::SUCCESS;
 }

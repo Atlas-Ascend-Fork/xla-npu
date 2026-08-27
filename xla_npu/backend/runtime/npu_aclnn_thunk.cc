@@ -201,14 +201,14 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
   // Initialize 应该在执行前已经调用过，这里不应该再次调用
 
   if (params.stream == nullptr) {
-    NPU_LOG_FORMAT_PRINT(ERROR,
-                         "Stream object is null before executing NPU thunk.");
+    NPU_LOG_FORMAT_PRINT(
+        ERROR, "Stream needs to be created or initialized before executing npu thunk.");
     return absl::InternalError("");
   }
   auto stream_handle = params.stream->platform_specific_handle();
   if (stream_handle.stream == nullptr) {
     NPU_LOG_FORMAT_PRINT(
-        ERROR, "Native stream handle is null before executing NPU thunk.");
+        ERROR, "Stream needs to be created or initialized before executing npu thunk.");
     return absl::InternalError("");
   }
   auto stream = stream_handle.stream;

@@ -147,7 +147,7 @@ absl::Status NpuCustomKernelThunk::ExecuteOnStream(
     const ExecuteParams& params) {
   if (params.stream == nullptr) {
     const std::string& errMsg = absl::StrFormat(
-        "Xla stream need to be created or init before execute npu thunk.");
+        "Xla stream needs to be created or initialized before executing npu thunk.");
     NPU_LOG_FORMAT_PRINT(ERROR, errMsg);
     return absl::InternalError(errMsg);
   }

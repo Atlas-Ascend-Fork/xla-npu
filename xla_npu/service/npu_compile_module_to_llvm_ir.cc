@@ -162,7 +162,7 @@ absl::StatusOr<std::unique_ptr<BufferAssignment>> RunBufferAssignment(
     const HloModule* module, const NpuAliasInfo* alias_info,
     BufferValue::SizeFunction buffer_size_bytes_function) {
   if (!module->has_schedule()) {
-    const std::string err_msg = "Module need to be scheduled.";
+    const std::string err_msg = "Module needs to be scheduled.";
     NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
     return absl::UnavailableError(err_msg);
   }

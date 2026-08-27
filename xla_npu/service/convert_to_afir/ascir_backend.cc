@@ -1072,11 +1072,11 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
                        "ConvertAfirToAscir completed, ASCIR size: %d bytes",
                        ascir_text.size());
 
-  // Fix sched.axis and outputs.attr.axis for all nodes in order to using one set of axes for the entire graph.
+  // Fix sched.axis and outputs.attr.axis for all nodes in order to use one set of axes for the entire graph.
   ascir_text = FixNodeAxisInfo(ascir_text);
   NPU_LOG_PRINT(DEBUG,
-                "Fix sched.axis and outputs.attr.axis for all nodes in order to"
-                "using one set of axes for the entire graph.");
+                "Fix sched.axis and outputs.attr.axis for all nodes in order to "
+                "use one set of axes for the entire graph.");
 
   // Step 3: Generate kernel for entry computation
   TF_ASSIGN_OR_RETURN(auto comp_result,
