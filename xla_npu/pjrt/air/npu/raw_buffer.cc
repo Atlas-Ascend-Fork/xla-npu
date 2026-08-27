@@ -48,6 +48,7 @@ limitations under the License.
 
 #include "raw_buffer.h"
 #include "xla/xla_npu/dependency/interface/acl_interface.h"
+#include "xla/xla_npu/dependency/tool/log.h"
 
 namespace xla {
 constexpr size_t kSmallDataTransferByteSize = 102400;  // 100 KiB
@@ -245,7 +246,7 @@ NpuRawBuffer::CopyFromHostBuffer(
 
 void NpuRawBuffer::ReadDynamicShape(tsl::AsyncValueRef<xla::Shape> output_shape,
                                     xla::Shape shape) {
-  std::cout << "NPU does not support ReadDynamicShape" << std::endl;
+  NPU_LOG_FORMAT_PRINT(ERROR, "NPU does not support ReadDynamicShape");
 }
 
 absl::StatusOr<tsl::RCReference<PjRtDeviceEvent>>
@@ -325,7 +326,7 @@ void NpuRawBuffer::CopyTo(
     tsl::RCReference<PjRtDeviceEventPromise> definition_event_promise,
     tsl::RCReference<PjRtDeviceEventPromise> src_usage_event_promise,
     ::tsl::AsyncValueRef<bool> allocation_event) {
-  std::cout << "NPU does not support CopyTo" << std::endl;
+  NPU_LOG_FORMAT_PRINT(ERROR, "NPU does not support CopyTo");
 }
 
 }  // namespace xla
