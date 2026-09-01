@@ -22,7 +22,7 @@ import subprocess
 import sys
 import numpy as np
 
-from common.utils import ensure_dir, compare_results
+from common.utils import ensure_dir, compare_results, setup_device_environment
 
 
 class BaseRunner:
@@ -61,9 +61,13 @@ class BaseRunner:
         print(f"Running {run_type} inference ({num_runs} runs in single process)...")
         print(f"{'=' * 60}")
 
+        child_environment = os.environ.copy()
+        setup_device_environment(run_type, child_environment)
+
         result = subprocess.run(
             cmd,
-            capture_output=False
+            capture_output=False,
+            env=child_environment
         )
 
         return result.returncode == 0

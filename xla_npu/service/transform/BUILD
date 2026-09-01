@@ -119,6 +119,7 @@ cc_library(
     hdrs = ["npu_fusion_whitelist.h"],
     deps = [
         "//xla/hlo/ir:hlo",
+        "//xla/xla_npu/common:npu_config",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
 )

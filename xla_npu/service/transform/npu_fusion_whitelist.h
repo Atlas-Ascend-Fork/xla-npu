@@ -19,6 +19,7 @@ limitations under the License.
 #include "absl/container/flat_hash_set.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_opcode.h"
+#include "xla/xla_npu/common/npu_config.h"
 
 namespace xla {
 
@@ -37,6 +38,12 @@ class NpuFusionWhitelist {
 
   // Returns true if given opcode should skip fusion.
   static bool ShouldSkipFusion(HloOpcode opcode) {
+    // Old CANN versions cannot compile some multi-stage Reduce fusions.
+    if (opcode == HloOpcode::kReduce &&
+        NPU_CONFIG_GET_BOOL(NpuConfig::Key::USE_OLD_CANN_STYLE)) {
+      return true;
+    }
+
     // Hardcoded whitelist of opcodes to skip fusion
     // Note: Exp, Add, and Subtract are added to avoid numerical instability in fused kernels
     static const absl::flat_hash_set<HloOpcode> kSkipFusionOpcodes = {

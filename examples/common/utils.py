@@ -32,28 +32,35 @@ from common.config import (
 )
 
 
-def setup_npu_environment():
-    """Setup NPU environment variables for JAX."""
+def setup_npu_environment(environment=None):
+    """Setup NPU environment variables for JAX.
+
+    Args:
+        environment: Environment mapping to update. Defaults to os.environ.
+    """
+    environment = os.environ if environment is None else environment
     library_path = os.path.abspath(NPU_LIBRARY_NAME)
-    os.environ[ENV_PJRT_NAMES_AND_LIBRARY_PATHS] = f"{NPU_PLATFORM_NAME}:{library_path}"
-    os.environ[ENV_JAX_PLATFORMS] = NPU_PLATFORM_NAME
+    environment[ENV_PJRT_NAMES_AND_LIBRARY_PATHS] = f"{NPU_PLATFORM_NAME}:{library_path}"
+    environment[ENV_JAX_PLATFORMS] = NPU_PLATFORM_NAME
 
 
-def setup_device_environment(device):
+def setup_device_environment(device, environment=None):
     """Setup environment variables for the specified device.
     
     Args:
         device: Device to setup ('CPU' or 'NPU')
+        environment: Environment mapping to update. Defaults to os.environ.
     """
+    environment = os.environ if environment is None else environment
     if device == 'NPU':
         # Ensure NPU is initialized
-        setup_npu_environment()
+        setup_npu_environment(environment)
     else:
         # Ensure only CPU is used for CPU runs
-        os.environ[ENV_JAX_PLATFORMS] = 'cpu'
+        environment[ENV_JAX_PLATFORMS] = 'cpu'
         # Clear any NPU plugin paths
-        if ENV_PJRT_NAMES_AND_LIBRARY_PATHS in os.environ:
-            del os.environ[ENV_PJRT_NAMES_AND_LIBRARY_PATHS]
+        if ENV_PJRT_NAMES_AND_LIBRARY_PATHS in environment:
+            del environment[ENV_PJRT_NAMES_AND_LIBRARY_PATHS]
 
 
 def ensure_dir(file_path):
