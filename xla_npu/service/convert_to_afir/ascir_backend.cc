@@ -908,17 +908,24 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
 
   // Prepare parameters list: [graph_name, output_file, output_path, "--force_unknown=True", "--soc_version", "--compile_options"]
   int idx = 0;
-  bool use_old_cann_style =
-      NPU_CONFIG_GET_BOOL(xla::NpuConfig::Key::USE_OLD_CANN_STYLE);
   aclCANNPackageVersion version{};
   aclError ret = xla::dep::aclsysGetCANNVersion(ACL_PKG_NAME_CANN, &version);
+  // --compile_options is only accepted by the new autofuse jit_compile
+  // interface (CANN 9.1.0+). CANN 9.0.x keeps the legacy interface while its
+  // ascendc_ir proto already requires string-style axis.align (quoted ASCIR),
+  // so 9.0.x must run with USE_OLD_CANN_STYLE unset and skip this option.
   bool pass_soc_version = true;
+  bool pass_compile_options = false;
   if (ret == ACL_SUCCESS) {
     int major = 0;
-    if (absl::SimpleAtoi(version.majorVersion, &major)) {
+    int minor = 0;
+    if (absl::SimpleAtoi(version.majorVersion, &major) &&
+        absl::SimpleAtoi(version.minorVersion, &minor)) {
       pass_soc_version = (major > 8);
+      pass_compile_options = (major > 9) || (major == 9 && minor >= 1);
     } else {
-      NPU_LOG_FORMAT_PRINT(WARN, "Failed to parse CANN major version, fallback");
+      NPU_LOG_FORMAT_PRINT(WARN,
+                           "Failed to parse CANN major version, fallback");
     }
   } else {
     NPU_LOG_FORMAT_PRINT(WARN, "aclsysGetCANNVersion failed, fallback");
@@ -927,10 +934,10 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   int args_list_size = 4;
   if (pass_soc_version) {
     ++args_list_size;
-  } // When pass_soc_version is true, add one element.
-  if (!use_old_cann_style) {
+  }  // When pass_soc_version is true, add one element.
+  if (pass_compile_options) {
     ++args_list_size;
-  } // When use_old_cann_style is false, add one element.
+  }  // When pass_compile_options is true, add one element.
   PyObject* args_list = PyList_New(args_list_size);
   if (!args_list) {
     Py_DECREF(jit_compile_func);
@@ -943,19 +950,24 @@ absl::StatusOr<SingleComputationResult> AscirBackend::GenerateKernel(
   std::string output_path_arg = absl::StrCat("--output_path=", jit_output_path);
   const char* force_unknown_arg = "--force_unknown=True";
 
-  PyList_SetItem(args_list, idx++, PyUnicode_FromString(graph_name_arg.c_str()));
-  PyList_SetItem(args_list, idx++, PyUnicode_FromString(output_file_arg.c_str()));
-  PyList_SetItem(args_list, idx++, PyUnicode_FromString(output_path_arg.c_str()));
+  PyList_SetItem(args_list, idx++,
+                 PyUnicode_FromString(graph_name_arg.c_str()));
+  PyList_SetItem(args_list, idx++,
+                 PyUnicode_FromString(output_file_arg.c_str()));
+  PyList_SetItem(args_list, idx++,
+                 PyUnicode_FromString(output_path_arg.c_str()));
   PyList_SetItem(args_list, idx++, PyUnicode_FromString(force_unknown_arg));
 
   // Only set soc_version when pass_soc_version is true
-  if(pass_soc_version) {
-    std::string soc_version_arg = absl::StrCat("--soc_version=", options.soc_version);
-    PyList_SetItem(args_list, idx++, PyUnicode_FromString(soc_version_arg.c_str()));
+  if (pass_soc_version) {
+    std::string soc_version_arg =
+        absl::StrCat("--soc_version=", options.soc_version);
+    PyList_SetItem(args_list, idx++,
+                   PyUnicode_FromString(soc_version_arg.c_str()));
   }
 
-  // Only set compile_options_arg when use_old_cann_style is false
-  if (!use_old_cann_style) {
+  // Only set compile_options_arg for the new autofuse interface (CANN 9.1.0+)
+  if (pass_compile_options) {
     const char* compile_options_arg = "--compile_options=-Wno-unused-parameter";
     PyList_SetItem(args_list, idx++, PyUnicode_FromString(compile_options_arg));
   }
@@ -1074,9 +1086,10 @@ absl::StatusOr<NpuCompileResult> AscirBackend::Compile(
 
   // Fix sched.axis and outputs.attr.axis for all nodes in order to use one set of axes for the entire graph.
   ascir_text = FixNodeAxisInfo(ascir_text);
-  NPU_LOG_PRINT(DEBUG,
-                "Fix sched.axis and outputs.attr.axis for all nodes in order to "
-                "use one set of axes for the entire graph.");
+  NPU_LOG_PRINT(
+      DEBUG,
+      "Fix sched.axis and outputs.attr.axis for all nodes in order to "
+      "use one set of axes for the entire graph.");
 
   // Step 3: Generate kernel for entry computation
   TF_ASSIGN_OR_RETURN(auto comp_result,
