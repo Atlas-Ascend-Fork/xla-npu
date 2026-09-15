@@ -42,7 +42,7 @@ void* FunctionLoader::Get(const std::string& name) {
     if (handle == nullptr) {
       const std::string& err_msg = absl::StrFormat(
           "Open lib '%s' failed, reason: %s", this->fileName, dlerror());
-      NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+      NPU_LOG_PRINT(ERROR, err_msg);
       throw std::runtime_error(err_msg);
     }
     this->handle = handle;
@@ -52,7 +52,7 @@ void* FunctionLoader::Get(const std::string& name) {
   if (itr == registry.end()) {
     const std::string& err_msg =
         absl::StrFormat("Lib or func '%s' is not registered.", name);
-    NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+    NPU_LOG_PRINT(ERROR, err_msg);
     throw std::runtime_error(err_msg);
   }
 
@@ -64,7 +64,7 @@ void* FunctionLoader::Get(const std::string& name) {
   if (func == nullptr) {
     const std::string& err_msg =
         absl::StrFormat("Can't find func %s in %s.", name, this->fileName);
-    NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+    NPU_LOG_PRINT(ERROR, err_msg);
     throw std::runtime_error(err_msg);
   }
 

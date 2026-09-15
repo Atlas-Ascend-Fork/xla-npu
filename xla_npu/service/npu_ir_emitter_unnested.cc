@@ -470,7 +470,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloComputation(
     NPU_LOG_FORMAT_PRINT(DEBUG, "[FULL Info for HloInstruction %d] ", id++);
     HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
     std::string detailed_str = instr->ToString(options);
-    NPU_LOG_FORMAT_PRINT(DEBUG, detailed_str);
+    NPU_LOG_PRINT(DEBUG, detailed_str);
 
     int64_t previous_thunk_size = thunk_sequence_.size();
     TF_RETURN_IF_ERROR(EmitHloInstruction(instr));

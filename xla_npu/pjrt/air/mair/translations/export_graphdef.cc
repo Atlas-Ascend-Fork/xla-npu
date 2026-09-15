@@ -358,7 +358,11 @@ bool Exporter::processConcatV2Inputs(mlir::Operation& mlirOp,
     geOp.SetAttr("N", intAttr.getInt());
     return true;
   }
-  NPU_LOG_FORMAT_PRINT(ERROR, "ERROR: N value is illegal.");
+  const std::string n_attr =
+      nAttr ? mlir::debugString(nAttr) : std::string("<missing>");
+  NPU_LOG_FORMAT_PRINT(
+      ERROR, "Op %s has illegal N attribute: expected IntegerAttr, got %s",
+      mlirOp.getName().getStringRef().str().c_str(), n_attr.c_str());
   return false;
 }
 
@@ -428,8 +432,14 @@ bool Exporter::processOperationOutputs(mlir::Operation& mlirOp,
       mlir::Attribute valueAttr = mlirOp.getAttr("value");
       if (auto denseAttr = mlir::dyn_cast<mlir::ElementsAttr>(valueAttr)) {
         ge::Tensor valueTensor;
-        if (!ConvertToTensor(denseAttr, &valueTensor).ok()) {
-          NPU_LOG_FORMAT_PRINT(ERROR, "Fail to convert to tensor!!");
+        const Status convert_status = ConvertToTensor(denseAttr, &valueTensor);
+        if (!convert_status.ok()) {
+          NPU_LOG_FORMAT_PRINT(
+              ERROR,
+              "Failed to convert the value attribute of op %s to a tensor: %s",
+              mlirOp.getName().getStringRef().str().c_str(),
+              convert_status.ToString().c_str());
+          return false;
         }
         ge::TensorDesc desc = valueTensor.GetTensorDesc();
         ge::DataType dt = desc.GetDataType();

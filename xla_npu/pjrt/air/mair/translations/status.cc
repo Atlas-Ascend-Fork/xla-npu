@@ -19,8 +19,13 @@ limitations under the License.
 
 #include <deque>
 #include <map>
+#include <utility>
 
 namespace mlir::air {
+
+Status::Status(std::string message) : state_(std::make_unique<State>()) {
+  state_->msg = std::move(message);
+}
 
 void Status::Update(const Status& new_status) {
   if (ok()) {
@@ -45,8 +50,7 @@ std::string Status::ToString() const {
   if (state_ == nullptr) {
     return "OK";
   } else {
-    std::string result = "status error";
-    return result;
+    return state_->msg;
   }
 }
 

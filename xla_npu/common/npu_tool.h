@@ -105,7 +105,7 @@ class NpuTool {
                                         const void* deviceAddr,
                                         int64_t max_print_count,
                                         bool /*is_bool*/) {
-    NPU_LOG_FORMAT_PRINT(DEBUG, title);
+    NPU_LOG_PRINT(DEBUG, title);
 
     // 获取配置的最大打印数量
     if (max_print_count <= 0) {
@@ -144,7 +144,7 @@ class NpuTool {
                                         const int64_t& size,
                                         const void* deviceAddr,
                                         int64_t max_print_count = -1) {
-    NPU_LOG_FORMAT_PRINT(DEBUG, title);
+    NPU_LOG_PRINT(DEBUG, title);
 
     // 获取配置的最大打印数量
     if (max_print_count <= 0) {

@@ -71,7 +71,7 @@ void GetTensorData(Tensor* tensor, std::vector<T>* data) {
 
 // Converts an MLIR elements attribute and adds it to specified repeated field.
 template <typename T>
-void ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor* output) {
+Status ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor* output) {
   if (attr.isSplat()) {
     auto raw_data = attr.getRawData().data();
     auto ele_size = attr.getRawData().size();
@@ -84,14 +84,19 @@ void ConvertElementsAttr(const mlir::DenseElementsAttr attr, Tensor* output) {
         reinterpret_cast<const uint8_t*>(padding_data), dsize * ele_size);
     delete[] padding_data;
     if (status != ge::GRAPH_SUCCESS) {
+      return Status("Failed to set splat tensor data. GE status: " +
+                    std::to_string(static_cast<int64_t>(status)));
     }
   } else {
     auto raw_data = attr.getRawData();
     auto status = output->SetData(
         reinterpret_cast<const uint8_t*>(&raw_data.data()[0]), raw_data.size());
     if (status != ge::GRAPH_SUCCESS) {
+      return Status("Failed to set tensor data. GE status: " +
+                    std::to_string(static_cast<int64_t>(status)));
     }
   }
+  return Status::OK();
 }
 
 void ConvertToTensorShape(ArrayRef<int64_t> shape, Shape* output_shape) {
@@ -123,46 +128,33 @@ Status ConvertToTensor(const mlir::ElementsAttr attr, Tensor* output) {
 
   switch (output_dtype) {
     case DT_DOUBLE:
-      ConvertElementsAttr<double>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<double>(dense_attr, output);
     case DT_FLOAT16:
       // patch: DT_FLOAT16
-      ConvertElementsAttr<int16_t>(dense_attr, output);  // ge::fp16_t
-      break;
+      return ConvertElementsAttr<int16_t>(dense_attr, output);  // ge::fp16_t
     case DT_FLOAT:
-      ConvertElementsAttr<float>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<float>(dense_attr, output);
     case DT_QUINT8:
     case DT_INT8:
-      ConvertElementsAttr<int8_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<int8_t>(dense_attr, output);
     case DT_QUINT16:
     case DT_INT16:
-      ConvertElementsAttr<int16_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<int16_t>(dense_attr, output);
     case DT_INT32:
-      ConvertElementsAttr<int32_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<int32_t>(dense_attr, output);
     case DT_INT64:
-      ConvertElementsAttr<int64_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<int64_t>(dense_attr, output);
     case DT_UINT8:
-      ConvertElementsAttr<uint8_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<uint8_t>(dense_attr, output);
     case DT_UINT16:
-      ConvertElementsAttr<uint16_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<uint16_t>(dense_attr, output);
     case DT_UINT32:
-      ConvertElementsAttr<uint32_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<uint32_t>(dense_attr, output);
     case DT_UINT64:
-      ConvertElementsAttr<uint64_t>(dense_attr, output);
-      break;
+      return ConvertElementsAttr<uint64_t>(dense_attr, output);
     default:
       return Status::OK();
   }
-
-  return Status::OK();
 }
 
 }  // namespace mlir::air

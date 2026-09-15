@@ -273,11 +273,11 @@ void AddHloVerifier(HloPassPipeline* pipeline, HloVerifierOpts&& opts = {},
 void CheckNotScheduled(HloModule* hlo_module) {
   if (hlo_module->has_schedule() &&
       !hlo_module->config().debug_options().xla_disable_all_hlo_passes()) {
-    LOG(WARNING) << "\nThe current HLO module " << hlo_module->name()
-                 << " is scheduled and optimized. \n"
-                 << "It is not expected to run optimization passes again.\n"
-                    "Use a test method like RunAndCompareNoHloPasses() or "
-                 << "the xla_disable_all_hlo_passes flag.";
+    LOG(WARNING) << "The current HLO module " << hlo_module->name()
+                 << " is scheduled and optimized. It is not expected to run "
+                    "optimization passes again. Use a test method like "
+                    "RunAndCompareNoHloPasses() or the "
+                    "xla_disable_all_hlo_passes flag.";
   }
 }
 

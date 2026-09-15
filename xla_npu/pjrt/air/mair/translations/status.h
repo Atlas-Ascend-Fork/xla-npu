@@ -31,6 +31,9 @@ class Status {
   /// Create a success status.
   Status() {}
 
+  /// Create an error status with a diagnostic message.
+  explicit Status(std::string message);
+
   /// Copy the specified status.
   Status(const Status& s);
   Status& operator=(const Status& s);

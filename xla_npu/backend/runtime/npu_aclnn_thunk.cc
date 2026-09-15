@@ -201,14 +201,16 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
   // Initialize 应该在执行前已经调用过，这里不应该再次调用
 
   if (params.stream == nullptr) {
-    NPU_LOG_FORMAT_PRINT(
-        ERROR, "Stream needs to be created or initialized before executing npu thunk.");
+    NPU_LOG_FORMAT_PRINT(ERROR,
+                         "Stream needs to be created or initialized before "
+                         "executing npu thunk.");
     return absl::InternalError("");
   }
   auto stream_handle = params.stream->platform_specific_handle();
   if (stream_handle.stream == nullptr) {
-    NPU_LOG_FORMAT_PRINT(
-        ERROR, "Stream needs to be created or initialized before executing npu thunk.");
+    NPU_LOG_FORMAT_PRINT(ERROR,
+                         "Stream needs to be created or initialized before "
+                         "executing npu thunk.");
     return absl::InternalError("");
   }
   auto stream = stream_handle.stream;
@@ -268,7 +270,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "aclrtMemcpy for reshape failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -388,7 +390,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             expanded_shape.data(), expanded_shape.size(), device_addr);
         if (input_tensor == nullptr) {
           const std::string err_msg = "Failed to create expanded view tensor";
-          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          NPU_LOG_PRINT(ERROR, err_msg);
           return absl::InternalError(err_msg);
         }
       }
@@ -403,7 +405,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnExpandGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -483,7 +485,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnAddGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         dep::aclDestroyScalar(alpha);
         return absl::InternalError(err_msg);
       }
@@ -502,7 +504,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnTanhGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -530,7 +532,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnMulGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -548,7 +550,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnMatmulGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -564,7 +566,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnDivGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -584,7 +586,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnSubGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -600,7 +602,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnNegGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -616,7 +618,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnExpGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -643,7 +645,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnRsqrtGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -659,7 +661,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnSinGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -675,7 +677,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnCosGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -691,7 +693,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnMaximumGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -704,7 +706,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       // 获取concatenate维度, dimensions向量中应该只有一个元素
       if (thunk_info().dimensions.empty()) {
         const std::string err_msg = "Concatenate dimensions is empty";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
       int64_t dim = thunk_info().dimensions[0];
@@ -719,7 +721,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (tensor_list == nullptr) {
         const std::string err_msg =
             "Failed to create aclTensorList for concatenate";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -730,7 +732,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnCatGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -745,7 +747,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       // 获取 reduce 的维度信息
       if (thunk_info().dimensions.empty()) {
         const std::string err_msg = "Reduce dimensions is empty";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -755,7 +757,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (dims == nullptr) {
         const std::string err_msg =
             "Failed to create aclIntArray for reduce dimensions";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -783,7 +785,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "Reduce operation expects 3 parameters (input, init, output), but "
             "got %d",
             acl_tensor_ptr_vector.size());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         dep::aclDestroyIntArray(dims);
         return absl::InternalError(err_msg);
       }
@@ -830,7 +832,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         if (ret != ACL_SUCCESS) {
           const std::string err_msg = absl::StrFormat(
               "Call aclnnAmaxGetWorkspaceSize failed. Error code: %d", ret);
-          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          NPU_LOG_PRINT(ERROR, err_msg);
           dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
@@ -855,7 +857,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           const std::string err_msg = absl::StrFormat(
               "Call aclnnReduceSumGetWorkspaceSize failed. Error code: %d",
               ret);
-          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          NPU_LOG_PRINT(ERROR, err_msg);
           dep::aclDestroyIntArray(dims);
           return absl::InternalError(err_msg);
         }
@@ -873,7 +875,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       // Transpose 需要 dimensions 参数作为 permute 的维度顺序
       if (thunk_info().dimensions.empty()) {
         const std::string err_msg = "Transpose dimensions is empty";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -882,7 +884,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           thunk_info().dimensions.data(), thunk_info().dimensions.size());
       if (perm == nullptr) {
         const std::string err_msg = "Failed to create perm array for transpose";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -893,7 +895,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnPermuteGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         dep::aclDestroyIntArray(perm);
         return absl::InternalError(err_msg);
       }
@@ -1008,7 +1010,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (starts == nullptr || ends == nullptr || axes == nullptr ||
           steps == nullptr) {
         const std::string err_msg = "Failed to create aclIntArray for slice";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         if (starts) dep::aclDestroyIntArray(starts);
         if (ends) dep::aclDestroyIntArray(ends);
         if (axes) dep::aclDestroyIntArray(axes);
@@ -1030,7 +1032,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnSliceV2GetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1046,7 +1048,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
       if (slice_sizes.empty()) {
         const std::string err_msg = "DynamicSlice dimensions is empty";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1203,7 +1205,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (starts == nullptr || ends == nullptr || axes == nullptr ||
           steps == nullptr) {
         const std::string err_msg = "Failed to create aclIntArray for slice";
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         if (starts) dep::aclDestroyIntArray(starts);
         if (ends) dep::aclDestroyIntArray(ends);
         if (axes) dep::aclDestroyIntArray(axes);
@@ -1225,7 +1227,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnSliceV2GetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1242,7 +1244,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "Gather operation expects 3 parameters (input, index, output), but "
             "got %d",
             acl_tensor_ptr_vector.size());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1344,7 +1346,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         if (expanded_output_tensor == nullptr) {
           const std::string err_msg =
               "Failed to create expanded output tensor for Gather";
-          NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+          NPU_LOG_PRINT(ERROR, err_msg);
           return absl::InternalError(err_msg);
         }
 
@@ -1369,7 +1371,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnGatherV2GetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         if (need_cleanup && expanded_output_tensor) {
           dep::aclDestroyTensor(expanded_output_tensor);
         }
@@ -1394,7 +1396,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "Compare operation expects 3 parameters (input1, input2, output), "
             "but got %d",
             acl_tensor_ptr_vector.size());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1472,14 +1474,14 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       } else {
         const std::string err_msg = absl::StrFormat(
             "Unknown comparison direction in: %s", hlo_desc.c_str());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
       if (compare_ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Compare GetWorkspaceSize failed. Error code: %d", compare_ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
       break;
@@ -1493,7 +1495,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "Select operation expects 4 parameters (condition, self, other, "
             "output), but got %d",
             acl_tensor_ptr_vector.size());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1508,7 +1510,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnSWhereGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1525,7 +1527,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             "And operation expects 3 parameters (input1, input2, output), but "
             "got %d",
             acl_tensor_ptr_vector.size());
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1539,7 +1541,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnBitwiseAndTensorGetWorkspaceSize failed. Error code: %d",
             ret);
-        NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+        NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
 
@@ -1552,7 +1554,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       const std::string err_msg =
           absl::StrFormat("Op code(%v) does not support execute now",
                           HloOpcodeString(thunk_info().op_code));
-      NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+      NPU_LOG_PRINT(ERROR, err_msg);
       return absl::InternalError(err_msg);
     }
   }
@@ -1591,7 +1593,7 @@ NpuAclnnThunk::ExtractAclInputOutTensorPtr(
   for (size_t i = 0; i < param_addrs.size(); ++i) {
     addr_debug += absl::StrFormat("[%d]=%p; ", i, param_addrs[i]);
   }
-  NPU_LOG_FORMAT_PRINT(DEBUG, addr_debug);
+  NPU_LOG_PRINT(DEBUG, addr_debug);
 
   // 对于 kDot 算子，检测不对称的 batch 维度
   bool dot_lhs_expand = false;
@@ -1654,7 +1656,7 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream,
     auto* pool = NpuWorkspaceMemoryPool::GetInstance();
     if (pool == nullptr) {
       const std::string err_msg = "Workspace memory pool not available";
-      NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+      NPU_LOG_PRINT(ERROR, err_msg);
       return absl::InternalError(err_msg);
     }
 
@@ -1663,7 +1665,7 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream,
       const std::string err_msg =
           absl::StrFormat("Failed to allocate workspace from pool: %s",
                           alloc_result.status().ToString().c_str());
-      NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+      NPU_LOG_PRINT(ERROR, err_msg);
       return absl::InternalError(err_msg);
     }
     workspaceAddr = alloc_result.value();
@@ -1677,7 +1679,7 @@ absl::Status NpuAclnnThunk::ExecuteAclnn(aclrtStream& stream,
   if (ret != ACL_SUCCESS) {
     const std::string err_msg =
         absl::StrFormat("Execute aclnnExecFunc failed. Error code: %d", ret);
-    NPU_LOG_FORMAT_PRINT(ERROR, err_msg);
+    NPU_LOG_PRINT(ERROR, err_msg);
     return absl::InternalError(err_msg);
   }
 

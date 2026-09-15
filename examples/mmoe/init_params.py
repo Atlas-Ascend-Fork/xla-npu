@@ -62,7 +62,7 @@ def save_params_with_npz(params, filepath: str):
     
     flat_params = flatten_dict(params_np)
     np.savez(filepath, **flat_params)
-    print(f"参数已保存到：{filepath}")
+    print(f"Parameters saved to: {filepath}")
 
 
 def load_params_with_npz(filepath: str):
