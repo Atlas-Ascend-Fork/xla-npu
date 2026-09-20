@@ -2240,7 +2240,7 @@ aclrtBinaryGetFunction(const aclrtBinHandle binHandle, const char *kernelName,
  * @ingroup AscendCL
  * @brief Kernel Launch to device
  * @param [in] funcHandle  function handle
- * @param [in] blockDim  block dimentions
+ * @param [in] blockDim  block dimensions
  * @param [in] argsData  args data
  * @param [in] argsSize  args size
  * @param [in] stream   stream handle
@@ -2721,8 +2721,8 @@ ACL_FUNC_VISIBILITY aclError aclrtGetEventId(aclrtEvent event,
 
 /**
  * @ingroup AscendCL
- * @brief get avaliable event count
- * @param [out] eventCount  avaliable event count
+ * @brief get available event count
+ * @param [out] eventCount  available event count
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
@@ -2730,7 +2730,7 @@ ACL_FUNC_VISIBILITY aclError aclrtGetEventAvailNum(uint32_t *eventCount);
 
 /**
  * @ingroup AscendCL
- * @brief get device infomation.
+ * @brief get device information.
  * @param [in] deviceId  the device id
  * @param [in] attr      device attr
  * @param [out] value    the device info

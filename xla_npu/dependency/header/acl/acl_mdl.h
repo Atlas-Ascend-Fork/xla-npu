@@ -943,7 +943,7 @@ ACL_FUNC_VISIBILITY const char *aclmdlGetOpAttr(aclmdlDesc *modelDesc,
  * @brief get input name by index
  *
  * @param modelDesc [IN]  model description
- * @param index [IN]      intput tensor index
+ * @param index [IN]      input tensor index
  *
  * @retval input tensor name,the same life cycle with modelDesc
  */
@@ -967,7 +967,7 @@ ACL_FUNC_VISIBILITY const char *aclmdlGetOutputNameByIndex(
  * @brief get input format by index
  *
  * @param modelDesc [IN]  model description
- * @param index [IN]      intput tensor index
+ * @param index [IN]      input tensor index
  *
  * @retval input tensor format
  */
@@ -991,7 +991,7 @@ ACL_FUNC_VISIBILITY aclFormat aclmdlGetOutputFormat(const aclmdlDesc *modelDesc,
  * @brief get input data type by index
  *
  * @param modelDesc [IN]  model description
- * @param index [IN]  intput tensor index
+ * @param index [IN]  input tensor index
  *
  * @retval input tensor data type
  */
@@ -1015,8 +1015,8 @@ aclmdlGetOutputDataType(const aclmdlDesc *modelDesc, size_t index);
  * @brief get input tensor index by name
  *
  * @param modelDesc [IN]  model description
- * @param name [IN]    intput tensor name
- * @param index [OUT]  intput tensor index
+ * @param name [IN]    input tensor name
+ * @param index [OUT]  input tensor index
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure

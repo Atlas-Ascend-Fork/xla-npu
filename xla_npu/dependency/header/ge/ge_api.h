@@ -317,7 +317,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @brief Feed input data to graph.
   /// @param [in] graph_id graph id
   /// @param [in] inputs input data
-  /// @param [in] info intput data flow flag
+  /// @param [in] info input data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
   Status FeedDataFlowGraph(uint32_t graph_id, const std::vector<Tensor> &inputs,
@@ -328,7 +328,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] graph_id graph id
   /// @param [in] indexes fetch output data order(index cannot be duplicated)
   /// @param [in] inputs input data
-  /// @param [in] info intput data flow flag
+  /// @param [in] info input data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
   Status FeedDataFlowGraph(uint32_t graph_id,
@@ -341,7 +341,7 @@ class GE_FUNC_VISIBILITY Session {
   /// @param [in] graph_id graph id
   /// @param [in] raw_data_list can be 1 or n, feed will be combine n raw data automatically
   /// @param [in] indexes feed input index
-  /// @param [in] info intput data flow flag
+  /// @param [in] info input data flow flag
   /// @param [in] timeout data feed timeout(ms), -1 means never timeout
   /// @return Status result of function
   Status FeedRawData(uint32_t graph_id,

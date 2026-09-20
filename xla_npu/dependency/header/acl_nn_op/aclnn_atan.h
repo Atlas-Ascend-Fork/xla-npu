@@ -39,7 +39,7 @@ ACLNN_API aclnnStatus aclnnAtanGetWorkspaceSize(const aclTensor* input,
                                                 aclOpExecutor** executor);
 /**
  * @brief aclnnAtan的第二段接口，用于执行计算。
- * 功能描述：从输入矩阵的每一个元素进行反正切操作后输出。。
+ * 功能描述：从输入矩阵的每一个元素进行反正切操作后输出。
  * 计算公式：
  * out_{i}=tan^{-1}(input_{i})
  * 实现说明：

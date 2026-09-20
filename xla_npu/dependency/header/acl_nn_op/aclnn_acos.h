@@ -41,7 +41,7 @@ ACLNN_API aclnnStatus aclnnAcosGetWorkspaceSize(const aclTensor* input,
 
 /**
  * @brief aclnnAcos的第二段接口，用于执行计算。
- * 功能描述：从输入矩阵的每一个元素进行反余弦操作后输出。。
+ * 功能描述：从输入矩阵的每一个元素进行反余弦操作后输出。
  * 计算公式：
  * out_{i}=cos^{-1}(input_{i})
  * 实现说明：

@@ -25,7 +25,7 @@ extern "C" {
  * @brief aclnnUniqueDim的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
  *
- * 算子功能：在某一dim轴上，对输入张量self做去重操作。。
+ * 算子功能：在某一dim轴上，对输入张量self做去重操作。
  *
  * 实现说明：
  * api计算的基本路径：

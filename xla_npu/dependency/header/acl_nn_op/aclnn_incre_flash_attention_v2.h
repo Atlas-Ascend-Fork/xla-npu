@@ -52,7 +52,7 @@ aclnnIncreFlashAttentionV2GetWorkspaceSize(
     uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
- * @brief aclnnIncreFlashAttentionV2的第二段接口，，用于执行计算。
+ * @brief aclnnIncreFlashAttentionV2的第二段接口，用于执行计算。
  * funtion: aclnnIncreFlashAttentionV2
  * @param [in] workspace : workspace memory addr(input).
  * @param [in] workspaceSize : size of workspace(input).
