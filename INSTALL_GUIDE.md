@@ -8,7 +8,7 @@
 
 ### 必须满足
 - **Python = 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
-- **基本工具**：`wget`， `curl`， `git`， `tar`， `xz`
+- **基本工具**：`wget`， `curl`， `git`， `tar`， `xz`， `cmake`， `g++`
 - **磁盘空间**：至少 10GB 可用空间
 
 ### 推荐配置
@@ -41,7 +41,7 @@ python3.11 --version
 ### 2. 安装基本工具
 ```bash
 sudo apt-get update
-sudo apt-get install wget curl git tar xz-utils
+sudo apt-get install -y wget curl git tar xz-utils build-essential cmake
 ```
 
 ### 3. 克隆 xla-npu 仓库
@@ -78,8 +78,8 @@ conda activate ${xla-npu}
 
 - --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
   - 0：不支持融合，仅使用aclnn执行
-  - 1（默认值）：使用afir后端
-  - 2：使用npuir后端
+  - 1（默认值）：使用afir后端，不支持运行`examples/qwen` 的 Qwen2 样例
+  - 2：使用npuir后端，不支持运行`examples/qwen` 的 Qwen2 样例与`examples/mmoe` 的 MMOE 样例
   - 3：使用ge后端
 
 - ${xla-npu}：conda环境名称
