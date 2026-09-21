@@ -22,11 +22,11 @@
 - **start_indices**: `tensor<1x8x1xi32>` - 起始索引
 
 ### 参数
-- **offset_dims = [2]**: 切片维度在结果中的位置
-- **collapsed_slice_dims = [0]**: 被折叠的切片维度
-- **start_index_map = [0]**: 索引映射到 operand 的维度
-- **index_vector_dim = 2**: 索引向量的维度（最后一个维度）
-- **slice_sizes = [1, 896]**: 每个切片的大小
+- **offset_dims = [2]**：切片维度在结果中的位置
+- **collapsed_slice_dims = [0]**：被折叠的切片维度
+- **start_index_map = [0]**：索引映射到 operand 的维度
+- **index_vector_dim = 2**：索引向量的维度（最后一个维度）
+- **slice_sizes = [1, 896]**：每个切片的大小
 
 ### 输出
 - **result**: `tensor<1x8x896xf32>`

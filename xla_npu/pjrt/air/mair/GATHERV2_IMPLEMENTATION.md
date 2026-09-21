@@ -4,7 +4,7 @@
 
 ### 1. 在 mair_ops.td 中添加 GatherV2Op 定义
 
-**文件**：[mair_ops.td](file:///home/code/xla/xla/xla_npu/pjrt/air/mair/ir/mair_ops.td#L573-L588)
+**文件**：[mair_ops.td](ir/mair_ops.td#L573-L588)
 
 ```td
 def Air_GatherV2Op : Air_Op<"GatherV2", [Pure]> {
@@ -24,14 +24,14 @@ def Air_GatherV2Op : Air_Op<"GatherV2", [Pure]> {
 ```
 
 **参数说明**：
-- `x`: 输入张量
-- `indices`: 索引张量
-- `axis`: 指定收集的轴（标量张量）
-- `batch_dims`: 可选的 batch 维度数
+- `x`：输入张量
+- `indices`：索引张量
+- `axis`：指定收集的轴（标量张量）
+- `batch_dims`：可选的 batch 维度数
 
 ### 2. 实现 ConvertGatherOp 转换逻辑
 
-**文件**：[mair_passes.cc](file:///home/code/xla/xla/xla_npu/pjrt/air/mair/transforms/mair_passes.cc#L846-L971)
+**文件**：[mair_passes.cc](transforms/mair_passes.cc#L846-L971)
 
 **转换策略**：
 
@@ -80,7 +80,7 @@ def Air_GatherV2Op : Air_Op<"GatherV2", [Pure]> {
 
 ### 3. 在 export_graphdef.cc 中添加 GatherV2 导出
 
-**文件**：[export_graphdef.cc](file:///home/code/xla/xla/xla_npu/pjrt/air/mair/translations/export_graphdef.cc#L64)
+**文件**：[export_graphdef.cc](translations/export_graphdef.cc#L64)
 
 **添加的映射**：
 ```cpp

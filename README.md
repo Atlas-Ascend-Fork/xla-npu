@@ -35,6 +35,7 @@ source ${ASCEND_INSTALL_PATH}/cann/set_env.sh
 - `export SOC_VERSION=Ascend910B1`：设置此环境变量用于标识实际环境使用的NPU芯片版本，查看方式参考[acl API](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta1/API/appdevgapi/aclpythondevg_01_0009.html)。
 #### 可选配置
 - `export USE_OLD_CANN_STYLE=true`：在使用NPU_AUTO_FUSE_BACKEND=1，即afir融合后端时，仅在CANN 8.5.0及更早版本需要设置此环境变量；CANN 9.0.0及以上版本请勿设置（编译器会根据CANN版本自动适配autofuse接口参数与ASCIR格式），否则会报错
+- `export XLA_NPU_LOG_LEVEL=<level>`：控制XLA-NPU日志显示级别，取值为 `DEBUG`/`0`、`INFO`/`1`、`WARN`/`2`、`ERROR`/`3`，未设置时默认为 `INFO`
 
 ### 3. 在 JAX 中使用 NPU 后端
 
