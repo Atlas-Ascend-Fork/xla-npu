@@ -77,8 +77,9 @@ conda activate ${xla-npu}
   - help：帮助，查看build.sh脚本支持命令的帮助信息。
 
 - --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
-  - 0：不支持融合, 仅使用aclnn执行
+  - 0：不支持融合，仅使用aclnn执行
   - 1（默认值）：使用afir后端
+  - 2：使用npuir后端
   - 3：使用ge后端
 
 - ${xla-npu}：conda环境名称
@@ -93,7 +94,7 @@ ls -lh build/code/xla/bazel-bin/xla/xla_npu/pjrt/c/pjrt_c_api_npu_plugin.so
 
 ### 5. 设置环境变量
 ```bash
-source xla_npu_env
+source build/xla_npu_env
 ```
 
 ## 常见问题
@@ -102,7 +103,7 @@ source xla_npu_env
 
 **错误信息**：
 ```
-Python 版本不满足要求 (需要 = 3.11， 当前 3.9.x)
+Python 版本不满足要求（需要 = 3.11，当前 3.9.x）
 ```
 
 **解决方案**：

@@ -30,7 +30,7 @@ source ${ASCEND_INSTALL_PATH}/cann/set_env.sh
 > 建议在运行任意xla-npu测试用例前，执行`source ./build/xla_npu_env` （此文件在执行`./build/build.sh`后生成，且重复执行`./build/build.sh`后，不会再覆盖./build/xla_npu_env中的内容），确保所有必要运行环境变量已被配置。下面列举的环境变量中，标注为`已默认配置在xla_npu_env中`的，执行`source ./build/xla_npu_env`后，可不用再次手动配置。
 
 #### 必须配置
-- `export ASCEND_MLIR_PYTHON_PATH=`: xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径（比如`/path/to/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python`） - `已默认配置在xla_npu_env中`
+- `export ASCEND_MLIR_PYTHON_PATH=`：xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径（比如`/path/to/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python`） - `已默认配置在xla_npu_env中`
 - `export NPU_AUTO_FUSE_COMPILE_ARTIFACT_ROOT_DIR=`：算子编译产生输出的目录， 每次编译时会在其下创建以时间戳命名的子目录 - `已默认配置在xla_npu_env中`
 - `export SOC_VERSION=Ascend910B1`：设置此环境变量用于标识实际环境使用的NPU芯片版本，查看方式参考[acl API](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900beta1/API/appdevgapi/aclpythondevg_01_0009.html)。
 #### 可选配置

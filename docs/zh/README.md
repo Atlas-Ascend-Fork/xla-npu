@@ -29,15 +29,20 @@ xla\_npu实现OpenXLA PJRT运行时接口，通过调用CANN软件栈中Runtime�
 |jax.numpy.subtract|支持fp32|
 |jax.numpy.multiply|支持fp32|
 |jax.numpy.divide|支持fp32|
-|jax.numpy.dot|支持fp32|
 |jax.numpy.tanh|支持fp32|
-|jax.numpy.negative|支持fp32|
+|jax.numpy.sin|支持fp32|
+|jax.numpy.cos|支持fp32|
 |jax.numpy.exp|支持fp32|
+|jax.lax.rsqrt|支持fp32|
+|jax.numpy.negative|支持fp32|
 |jax.numpy.maximum|支持fp32|
 |jax.numpy.concatenate|支持fp32|
+|jax.numpy.transpose|支持fp32|
+|jax.lax.slice|支持fp32|
 |jax.numpy.max|支持fp32|
 |jax.numpy.sum|支持fp32|
-|jax.nn.gelu|支持fp32|
+
+> 说明：examples/ops 中还定义了 Dot、Gather、Compare、Select、And 等算子测试用例，因其对应的 HLO opcode 尚未在 NPU 后端实现（见 examples/ops/config.py 中 `_UNSUPPORTED_OPS` 说明），执行时会被跳过，故未列入上表。
 
 
 ## Demo
@@ -49,4 +54,4 @@ xla\_npu实现OpenXLA PJRT运行时接口，通过调用CANN软件栈中Runtime�
 **问题原因:**
 ASCEND_MLIR_PYTHON_PATH环境变量指向了一个错误或者无效路径
 **解决方法:**
-执行测试用例前, 重新执行`export ASCEND_MLIR_PYTHON_PATH=xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径`
+执行测试用例前，重新执行`export ASCEND_MLIR_PYTHON_PATH=xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径`
