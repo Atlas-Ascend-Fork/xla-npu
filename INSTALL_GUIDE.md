@@ -68,7 +68,7 @@ chmod +x build.sh
 
 或者，如果你使用 conda 环境：
 ```bash
-conda activate ${xla-npu}
+conda activate xla-npu
 ./build.sh ${action} --npu-auto-fuse-backend=${backend}
 ```
 - ${action}：表示脚本命令，取值如下
