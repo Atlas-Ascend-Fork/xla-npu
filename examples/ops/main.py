@@ -162,6 +162,10 @@ class OperationsRunner(BaseRunner):
                     for run_idx, diff_details in enumerate(run_diff_details):
                         if diff_details is not None:
                             print(f"  ❌ Run {run_idx + 1} (MISMATCH):")
+                            if diff_details.get('shape_mismatch'):
+                                print(f"    CPU output shape: {diff_details['cpu_output_shape']}")
+                                print(f"    NPU output shape: {diff_details['npu_output_shape']}")
+                                continue
                             print(f"    Max absolute difference: {diff_details['max_absolute_diff']:.6e}")
                             print(f"    Max relative difference: {diff_details['max_relative_diff']:.6e}")
                             print(f"    Mean absolute difference: {diff_details['mean_absolute_diff']:.6e}")

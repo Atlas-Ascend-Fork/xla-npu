@@ -140,6 +140,14 @@ def compare_results(output_cpu, output_npu, x_cpu, x_npu):
     """
     output_cpu = np.array(output_cpu)
     output_npu = np.array(output_npu)
+
+    # NumPy broadcasts different shapes, which can hide an incorrect NPU output.
+    if output_cpu.shape != output_npu.shape:
+        return False, {
+            'shape_mismatch': True,
+            'cpu_output_shape': output_cpu.shape,
+            'npu_output_shape': output_npu.shape,
+        }
     
     is_match = np.allclose(output_cpu, output_npu, rtol=COMPARISON_TOLERANCE, atol=COMPARISON_TOLERANCE)
     
