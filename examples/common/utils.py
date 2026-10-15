@@ -103,13 +103,14 @@ def time_function(func, *args, **kwargs):
     Returns:
         tuple: (result, execution_time_ms)
     """
-    # Warmup run
-    func(*args, **kwargs)
+    # Finish compilation and any asynchronous work before measuring.
+    jax.block_until_ready(func(*args, **kwargs))
     
     # Measure actual execution time
-    start_time = time.time()
+    start_time = time.perf_counter()
     result = func(*args, **kwargs)
-    end_time = time.time()
+    jax.block_until_ready(result)
+    end_time = time.perf_counter()
     
     execution_time_ms = (end_time - start_time) * 1000
     return result, execution_time_ms
