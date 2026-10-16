@@ -8,7 +8,7 @@ body:
     attributes:
       label: 在您提交issue前，请确认以下信息：
       options:
-        - label: 我已经搜索过[现有和历史issues](https://gitcode.com/cann/ge/issues)，确认这是一个新问题
+        - label: 我已经搜索过[现有和历史issues](https://gitcode.com/cann/xla-npu/issues)，确认这是一个新问题
           required: true
   - type: textarea
     attributes:
