@@ -46,8 +46,8 @@ namespace xla {
 namespace {
 // Returns a description of a transpose hero, that is compatible with all roots.
 // A root is compatible with the transpose hero if
-//   * Either the root has a traspose hero with the same normalized dimensions
-//   * Or the root output shape is equal to the the transpose input shape
+//   * Either the root has a transpose hero with the same normalized dimensions
+//   * Or the root output shape is equal to the transpose input shape
 std::optional<TransposeDescription> FindConsistentTransposeHero(
     const absl::InlinedVector<HloInstructionAdaptor, 2>& hlo_roots,
     const absl::InlinedVector<HloInstructionAdaptor, 2>& heroes) {
