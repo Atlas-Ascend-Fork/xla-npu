@@ -1019,11 +1019,6 @@ main() {
         esac
     done
 
-    # 读取 action（install/uninstall/help）
-    if [[ ${#positional[@]} -gt 0 ]]; then
-        action="${positional[0]}"
-    fi
-
     # 校验参数值
     if [[ -n "$NPU_AUTO_FUSE_BACKEND" ]]; then
         if [[ ! "$NPU_AUTO_FUSE_BACKEND" =~ ^[0123]$ ]]; then
