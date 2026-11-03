@@ -37,7 +37,7 @@ ACLNN_API aclnnStatus aclnnCumprodGetWorkspaceSize(
     aclTensor *out, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
- * @brief aclnnCumprod的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnInplaceCumprod的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_train
  * 算子功能： 计算输入张量（Tensor）input沿着指定维度的累积乘积。它返回一个新的张量，其形状与输入张量相同
  * @param [in] input: device侧的aclTensor，表示要进行累积乘积运算的输入张量，数据类型支持DT_FLOAT32, DT_FLOAT16, DT_BFLOAT16, DT_DOUBLE, 

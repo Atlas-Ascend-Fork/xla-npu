@@ -22,7 +22,7 @@ extern "C" {
 /**
  * @brief aclnnCeil的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_math
- * 算子功能：返回输入Tensor中每个元素向下取整的结果
+ * 算子功能：返回输入Tensor中每个元素向上取整的结果
  * 计算公式：
  * $$ out_{i} =ceil(self_{i}) $$
  *

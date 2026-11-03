@@ -48,7 +48,7 @@ ACLNN_API aclnnStatus aclnnSearchSortedGetWorkspaceSize(
     uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
- * @brief aclnnSearchSorted的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnSearchSorted的第二段接口，用于执行计算。
  *
  * 算子功能： 在一个已排序的张量（sortedSequence）中查找给定值（self）应该插入的位置。
  * @param [in] workspace: 在npu device侧申请的workspace内存起址。

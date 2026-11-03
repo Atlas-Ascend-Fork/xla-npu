@@ -52,7 +52,7 @@ ACLNN_API aclnnStatus aclnnArgMaxGetWorkspaceSize(const aclTensor* self,
                                                   aclOpExecutor** executor);
 
 /**
- * @brief aclnnArgMax的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnArgMax的第二段接口，用于执行计算。
  *
  * 算子功能：返回张量在指定维度上的最大值的索引。
  *

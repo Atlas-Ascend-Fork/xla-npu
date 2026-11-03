@@ -58,7 +58,7 @@ ACLNN_API aclnnStatus aclnnHardtanhBackwardGetWorkspaceSize(
     aclOpExecutor** executor);
 
 /**
- * @brief aclnnHardtanhBackward的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnHardtanhBackward的第二段接口，用于执行计算。
  *
  * 算子功能：完成Hardtanh的反向计算
  *

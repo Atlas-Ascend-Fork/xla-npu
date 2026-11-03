@@ -53,9 +53,9 @@ ACLNN_API aclnnStatus aclnnArgMinGetWorkspaceSize(const aclTensor* self,
                                                   aclOpExecutor** executor);
 
 /**
- * @brief aclnnArgMin的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnArgMin的第二段接口，用于执行计算。
  *
- * 算子功能：返回张量在指定维度上的最大值的索引。
+ * 算子功能：返回张量在指定维度上的最小值的索引。
  *
  * 实现说明：
  * api计算的基本路径：

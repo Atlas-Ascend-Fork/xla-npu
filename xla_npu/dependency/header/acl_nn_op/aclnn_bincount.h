@@ -48,7 +48,7 @@ ACLNN_API aclnnStatus aclnnBincountGetWorkspaceSize(
     aclTensor* out, uint64_t* workspaceSize, aclOpExecutor** executor);
 
 /**
- * @brief aclnnBincount的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnBincount的第二段接口，用于执行计算。
  *
  * 算子功能：计算非负整数数组中每个数的频率。
  * 计算公式：
