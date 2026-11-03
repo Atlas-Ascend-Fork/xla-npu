@@ -79,7 +79,6 @@ conda activate xla-npu
 - --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
   - 0：不支持融合，仅使用aclnn执行
   - 1（默认值）：使用afir后端，不支持运行`examples/qwen` 的 Qwen2 样例
-  - 2：使用npuir后端，不支持运行`examples/qwen` 的 Qwen2 样例与`examples/mmoe` 的 MMOE 样例
   - 3：使用ge后端
 
 - ${xla-npu}：conda环境名称

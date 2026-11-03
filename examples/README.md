@@ -60,6 +60,7 @@ examples/
    ```bash
    pip install flax==0.12.4
    ```
+5. 不同编译后端对模型样例的支持存在差异，构建前请参考 [INSTALL_GUIDE.md](../INSTALL_GUIDE.md) 选择 `--npu-auto-fuse-backend`。
 
 ### 运行算子测试样例
 

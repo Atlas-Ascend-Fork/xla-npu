@@ -7,5 +7,9 @@ build/*
 !build/build.sh
 compile_commands.json
 auto_fuse_compile_artifacts
-.claude/
-.opencode/
+.claude/*
+!.claude/README.md
+!.claude/skills/
+.opencode/*
+!.opencode/README.md
+!.opencode/opencode.jsonc
