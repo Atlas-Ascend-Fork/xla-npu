@@ -96,13 +96,48 @@ export CXX=/tmp/ccache_wrappers/clang++
 echo "[cc-probe] lld : $($CC /tmp/cc_probe/empty.cc -o /dev/null -Wl,--start-lib -Wl,--end-lib -fuse-ld=lld -v 2>&1 >/dev/null | tail -1)"
 echo "[cc-probe] gold: $($CC /tmp/cc_probe/empty.cc -o /dev/null -Wl,--start-lib -Wl,--end-lib -fuse-ld=gold -v 2>&1 >/dev/null | tail -1)"
 
+CCACHE_REDIS_HOST=${CCACHE_REDIS_HOST:-10.0.0.136}
+CCACHE_REDIS_PORT=${CCACHE_REDIS_PORT:-6380}
+echo "[ccache] $(ccache --version | head -1)"
+echo "[ccache] $(ccache --version | sed -n '/^Features:/p')"
+echo "[ccache] inherited: CCACHE_DIR=${CCACHE_DIR:-<unset>} CCACHE_MAXSIZE=${CCACHE_MAXSIZE:-<unset>} CCACHE_COMPILERCHECK=${CCACHE_COMPILERCHECK:-<unset>} CCACHE_NOHASHDIR=${CCACHE_NOHASHDIR:-<unset>} CCACHE_SECONDARY_STORAGE=${CCACHE_SECONDARY_STORAGE:-<unset>}"
+if timeout 5 bash -c 'echo > /dev/tcp/$0/$1' "$CCACHE_REDIS_HOST" "$CCACHE_REDIS_PORT" 2>/dev/null; then
+  echo "[ccache] redis ${CCACHE_REDIS_HOST}:${CCACHE_REDIS_PORT} reachable -> secondary storage ON, reshare ON"
+  export CCACHE_SECONDARY_STORAGE="redis://${CCACHE_REDIS_HOST}:${CCACHE_REDIS_PORT}"
+  export CCACHE_RESHARE=true
+else
+  unset CCACHE_SECONDARY_STORAGE CCACHE_RESHARE
+  echo "[ccache] redis ${CCACHE_REDIS_HOST}:${CCACHE_REDIS_PORT} UNREACHABLE -> secondary storage OFF"
+fi
+export CCACHE_DIR=${CCACHE_DIR:-/tmp/ccache_xla}
+export CCACHE_COMPILERCHECK=content
+export CCACHE_NOHASHDIR=true
+export CCACHE_SLOPPINESS=include_file_mtime,time_macros,include_file_ctime
+export CCACHE_UMASK=002
+export CCACHE_MAXSIZE=${CCACHE_MAXSIZE:-50G}
+mkdir -p "${CCACHE_DIR}"
+echo "[ccache] effective: CCACHE_DIR=${CCACHE_DIR} CCACHE_SECONDARY_STORAGE=${CCACHE_SECONDARY_STORAGE:-<none>} CCACHE_RESHARE=${CCACHE_RESHARE:-<unset>} CCACHE_COMPILERCHECK=${CCACHE_COMPILERCHECK}"
+ccache -z
+
 cat > ~/.bazelrc << 'EOF'
 build --action_env=CC=/tmp/ccache_wrappers/clang
 build --action_env=CXX=/tmp/ccache_wrappers/clang++
+build --action_env=CCACHE_DIR
 build --action_env=CCACHE_SECONDARY_STORAGE
+build --action_env=CCACHE_RESHARE
 build --action_env=CCACHE_COMPILERCHECK
 build --action_env=CCACHE_SLOPPINESS
+build --action_env=CCACHE_NOHASHDIR
+build --action_env=CCACHE_MAXSIZE
 build --action_env=CCACHE_UMASK
+build --host_action_env=CCACHE_DIR
+build --host_action_env=CCACHE_SECONDARY_STORAGE
+build --host_action_env=CCACHE_RESHARE
+build --host_action_env=CCACHE_COMPILERCHECK
+build --host_action_env=CCACHE_SLOPPINESS
+build --host_action_env=CCACHE_NOHASHDIR
+build --host_action_env=CCACHE_MAXSIZE
+build --host_action_env=CCACHE_UMASK
 EOF
 
 BAZELRC_FILE="${INSTALL_DIR}/build/code/xla/.bazelrc"
@@ -112,5 +147,9 @@ if [ -f "${BAZELRC_FILE}" ]; then
 fi
 
 LOG_DO bash build/build.sh install --npu-auto-fuse-backend=${ge_st_rt2}
-DP_ASSERT_EQUAL "$?" "0" "Build"
+build_rc=$?
+echo "[ccache] ================= stats ================="
+ccache -s
+echo "[ccache] ========================================="
+DP_ASSERT_EQUAL "$build_rc" "0" "Build"
 exit 0
