@@ -220,7 +220,11 @@ absl::StatusOr<absl::InlinedVector<int64_t, 3>> NpuGetPackedTransposeTileSizes(
   // Check the side outputs, etc.
   int64_t bits_per_element = GetBitwidth(spec.elem_type());
   if (bits_per_element >= kNpuBankBitwidth) {
-    return absl::InvalidArgumentError("Element type is too large");
+    return absl::InvalidArgumentError(absl::Substitute(
+        "Element type is too large: $0 has $1 bits per element, which must be "
+        "less than kNpuBankBitwidth ($2 bits)",
+        primitive_util::LowercasePrimitiveTypeName(spec.elem_type()),
+        bits_per_element, kNpuBankBitwidth));
   }
   absl::InlinedVector<int64_t, 3> tile_sizes(spec.canonical_rank(), 1);
   int64_t vector_size = kNpuBankBitwidth / bits_per_element;

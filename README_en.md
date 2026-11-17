@@ -85,8 +85,8 @@ The following projects and capabilities integrate XLA-NPU as an inference backen
 - **OpenXLA / XLA**: the compilation framework; `xla_npu/` is symlinked into the XLA workspace without modifying OpenXLA itself.
 - **JAX**: integrated through a PJRT plugin, supporting whole-graph `jax.jit()` compilation.
 - **CANN**:
-  - **Graph Engine (GE)**: optional graph compilation/execution backend (`NPU_AUTO_FUSE_BACKEND=3`).
-  - **AFIR / Ascend-MLIR**: HLO→AFIR→AscIR auto-fusion backend (`NPU_AUTO_FUSE_BACKEND=1`).
+  - **Graph Engine (GE)**: optional graph compilation/execution backend (selected at build time via `--npu-auto-fuse-backend=3`).
+  - **AFIR / Ascend-MLIR**: HLO→AFIR→AscIR auto-fusion backend (selected at build time via `--npu-auto-fuse-backend=1`).
   - **AutoFuse (graph-autofusion)**: Ascend C automatic fusion and AscIR code generation.
   - **ACLNN / ACL**: per-operator and graph execution runtime interfaces.
 

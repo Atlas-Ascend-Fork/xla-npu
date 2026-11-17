@@ -87,8 +87,8 @@ print(f"Result: {y.block_until_ready()}")
 - **OpenXLA / XLA**：本项目的编译框架基础，`xla_npu/` 以软链方式挂载进 XLA 工作区，不改动 OpenXLA 本体。
 - **JAX**：通过 PJRT 插件直接对接，支持 `jax.jit()` 整图编译。
 - **CANN**：
-  - **Graph Engine（GE）**：作为可选图编译/执行后端（`NPU_AUTO_FUSE_BACKEND=3`）。
-  - **AFIR / Ascend-MLIR**：HLO→AFIR→AscIR 自动融合后端（`NPU_AUTO_FUSE_BACKEND=1`）。
+  - **Graph Engine（GE）**：作为可选图编译/执行后端（构建时通过 `--npu-auto-fuse-backend=3` 选择）。
+  - **AFIR / Ascend-MLIR**：HLO→AFIR→AscIR 自动融合后端（构建时通过 `--npu-auto-fuse-backend=1` 选择）。
   - **AutoFuse（graph-autofusion）**：Ascend C 自动融合与 AscIR 代码生成。
   - **ACLNN / ACL**：逐算子执行与图执行的基础运行接口。
 

@@ -705,7 +705,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     case HloOpcode::kConcatenate: {
       // 获取concatenate维度, dimensions向量中应该只有一个元素
       if (thunk_info().dimensions.empty()) {
-        const std::string err_msg = "Concatenate dimensions is empty";
+        const std::string err_msg = "Concatenate dimensions are empty";
         NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
@@ -746,7 +746,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     case HloOpcode::kReduce: {
       // 获取 reduce 的维度信息
       if (thunk_info().dimensions.empty()) {
-        const std::string err_msg = "Reduce dimensions is empty";
+        const std::string err_msg = "Reduce dimensions are empty";
         NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
@@ -874,7 +874,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     case HloOpcode::kTranspose: {
       // Transpose 需要 dimensions 参数作为 permute 的维度顺序
       if (thunk_info().dimensions.empty()) {
-        const std::string err_msg = "Transpose dimensions is empty";
+        const std::string err_msg = "Transpose dimensions are empty";
         NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }
@@ -1047,7 +1047,7 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       const auto& slice_sizes = thunk_info().dimensions;
 
       if (slice_sizes.empty()) {
-        const std::string err_msg = "DynamicSlice dimensions is empty";
+        const std::string err_msg = "DynamicSlice dimensions are empty";
         NPU_LOG_PRINT(ERROR, err_msg);
         return absl::InternalError(err_msg);
       }

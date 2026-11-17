@@ -51,7 +51,11 @@ xla\_npu实现OpenXLA PJRT运行时接口，通过调用CANN软件栈中Runtime�
 
 ## 常见问题
 ### 使用afir融合后端执行测试用例报错"ModuleNotFoundError: No module named 'runtime'"
-**问题原因:**
+**问题原因：**
 ASCEND_MLIR_PYTHON_PATH环境变量指向了一个错误或者无效路径
-**解决方法:**
-执行测试用例前，重新执行`export ASCEND_MLIR_PYTHON_PATH=xla-npu代码仓中dependency下载的Ascend-MLIR中Python可执行文件路径`
+**解决方法：**
+执行测试用例前，重新执行：
+```bash
+export ASCEND_MLIR_PYTHON_PATH=/path/to/xla-npu/xla_npu/dependency/external/afir/Ascend-MLIR/python
+```
+其中 `/path/to/xla-npu` 需替换为 xla-npu 代码仓的实际路径。

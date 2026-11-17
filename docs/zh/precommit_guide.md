@@ -15,7 +15,7 @@
 
 ### 3.1 pre-commit安装步骤
 
-步骤 1: 安装 pre-commit 框架
+步骤 1：安装 pre-commit 框架
 
 ```bash
 # 使用 pip（推荐）
@@ -28,7 +28,7 @@ pre-commit --version
 
 **Windows 用户**：确保已安装 Python 和 pip。
 
-步骤 2: 进入项目目录
+步骤 2：进入项目目录
 
 ```bash
 cd /path/to/your/project
@@ -37,14 +37,14 @@ cd /path/to/your/project
 cd d:\complianceRepo\CANN
 ```
 
-步骤 3: 安装 Git Hooks
+步骤 3：安装 Git Hooks
 
 ```bash
 # 在项目根目录运行
 pre-commit install
 ```
 
-步骤 4: 验证安装（可选）
+步骤 4：验证安装（可选）
 
 ```bash
 # 测试 hook（不会真正提交）
@@ -139,7 +139,7 @@ bash scripts/oat_check.sh
 
 **场景**：尝试提交二进制文件（.so, .dll, .exe 等）。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   发现合规性问题
@@ -161,12 +161,12 @@ To skip this check temporarily:
 
 **行为**：**阻止提交，必须修复**
 
-**查看详情**:
+**查看详情**：
 ```bash
 cat oat_reports/single/result.txt
 ```
 
-**报告内容示例**:
+**报告内容示例**：
 ```
 ===================================
 OAT Scan Result Summary
@@ -187,7 +187,7 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 ===================================
 ```
 
-**解决方案**:
+**解决方案**：
 ```bash
 # 方法 1: 移除二进制文件
 git reset HEAD lib/libtest.so
@@ -206,7 +206,7 @@ git commit -m "update: add binary files to gitignore"
 
 **场景**：源代码文件缺少或许可证头格式不正确。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   发现合规性问题
@@ -221,12 +221,12 @@ git commit -m "update: add binary files to gitignore"
 
 **行为**：**阻止提交，必须修复**
 
-**查看详情**:
+**查看详情**：
 ```bash
 cat oat_reports/single/result.txt
 ```
 
-**报告内容示例**:
+**报告内容示例**：
 ```
 ===================================
 OAT Scan Result Summary
@@ -243,7 +243,7 @@ src/utils.cpp: MISSING_LICENSE_HEADER
 ===================================
 ```
 
-**解决方案**:
+**解决方案**：
 
 在文件顶部添加许可证头，例如 Apache License 2.0：
 
@@ -265,7 +265,7 @@ src/utils.cpp: MISSING_LICENSE_HEADER
  */
 ```
 
-**重新提交**:
+**重新提交**：
 ```bash
 git add src/main.cpp src/utils.cpp
 git commit -m "fix: add license headers"
@@ -319,7 +319,7 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 
 **场景**：首次提交，系统未安装 Java。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   Java 未安装 - 正在尝试自动安装
@@ -336,9 +336,9 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 
 **2) Java 未安装（Windows 手动安装）**
 
-**场景**: Windows 系统无法自动安装 Java。
+**场景**：Windows 系统无法自动安装 Java。
 
-**输出**:
+**输出**：
 ```
 [OAT] Windows 系统无法自动安装 Java
 [OAT] 请手动下载并安装：
@@ -354,7 +354,7 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 
 **行为**：**跳过检查，允许提交**
 
-**后续操作**: 
+**后续操作**：
 1. 按提示手动安装 Java
 2. 重启终端
 3. 运行 `pre-commit run oat-check` 验证环境
@@ -363,9 +363,9 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 
 **3)  Java 自动安装失败**
 
-**场景**: Linux/macOS 自动安装 Java 失败。
+**场景**：Linux/macOS 自动安装 Java 失败。
 
-**输出**:
+**输出**：
 ```
 [OAT] [ERROR] 自动安装失败
 
@@ -382,13 +382,13 @@ Full report: oat_reports/single/PlainReport_CANN.txt
 
 **行为**：**跳过检查，允许提交**
 
-**可能原因**:
+**可能原因**：
 - 网络连接问题
 - 包管理器未配置
 - 权限不足
 - macOS 未安装 Homebrew
 
-**解决方案**:
+**解决方案**：
 ```bash
 # Linux
 sudo apt update
@@ -411,7 +411,7 @@ pre-commit run oat-check
 
 **场景**：首次提交，系统未安装 Maven。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   Maven 未安装 - 正在尝试自动安装
@@ -427,9 +427,9 @@ pre-commit run oat-check
 
 **5) Maven 未安装（Windows 手动安装）**
 
-**场景**: Windows 系统无法自动安装 Maven。
+**场景**：Windows 系统无法自动安装 Maven。
 
-**输出**:
+**输出**：
 ```
 [OAT] Windows 系统无法自动安装 Maven
 [OAT] 请手动下载并安装：
@@ -453,9 +453,9 @@ pre-commit run oat-check
 
 **6) Maven 打包失败**
 
-**场景**: Maven 打包 OAT JAR 失败。
+**场景**：Maven 打包 OAT JAR 失败。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   Maven 打包失败
@@ -482,9 +482,9 @@ pre-commit run oat-check
 
 **行为**：**跳过检查，允许提交**
 
-**解决方案**:
+**解决方案**：
 
-**方法 1: 手动打包**
+**方法 1：手动打包**
 ```bash
 cd ../tools_oat
 mvn clean package -DskipTests
@@ -492,7 +492,7 @@ mvn clean package -DskipTests
 # 查看输出，应该看到 BUILD SUCCESS
 ```
 
-**方法 2: 配置阿里云镜像（国内网络）**
+**方法 2：配置阿里云镜像（国内网络）**
 ```bash
 mkdir -p ~/.m2
 cat > ~/.m2/settings.xml <<'EOF'
@@ -513,13 +513,13 @@ cd ../tools_oat
 mvn clean package -DskipTests
 ```
 
-**方法 3: 从团队获取 JAR**
+**方法 3：从团队获取 JAR**
 ```bash
 # 如果团队已有编译好的 JAR，直接复制
 # 将 JAR 文件复制到 ../tools_oat/target/ 目录
 ```
 
-**验证修复**:
+**验证修复**：
 ```bash
 pre-commit run oat-check
 ```
@@ -528,7 +528,7 @@ pre-commit run oat-check
 
 **7) tools_oat 克隆失败**
 
-**输出**:
+**输出**：
 ```
 [OAT] tools_oat not found. Cloning...
 [OAT] [ERROR] Failed to clone tools_oat.
@@ -537,7 +537,7 @@ pre-commit run oat-check
 
 **原因**：网络连接问题。
 
-**解决方案**:
+**解决方案**：
 ```bash
 # 方法 1: 检查网络
 ping gitcode.com
@@ -557,9 +557,9 @@ git config --global http.proxy http://proxy.example.com:8080
 
 **8) OAT 扫描执行失败**
 
-**场景**: OAT JAR 运行失败。
+**场景**：OAT JAR 运行失败。
 
-**输出**:
+**输出**：
 ```
 ====================================================================
   OAT 扫描执行失败
@@ -586,7 +586,7 @@ git config --global http.proxy http://proxy.example.com:8080
 
 **行为**：**跳过检查，允许提交**
 
-**解决方案**:
+**解决方案**：
 ```bash
 # 步骤 1: 删除旧 JAR
 rm ../tools_oat/target/ohos_ossaudittool-*.jar

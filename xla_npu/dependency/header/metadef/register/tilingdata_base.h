@@ -245,7 +245,7 @@ REGISTER_TILING_DATA_CLASS(MaxPool, MaxPoolTilingData)
                                 field_name, (arr_size) * sizeof(arr_type));  \
     if (err_t != EOK) {                                                      \
       GeLogError(                                                            \
-          "tilingdata_base.h TILING_DATA_FIELD_DEF_ARR memcpy is failed !"); \
+          "tilingdata_base.h TILING_DATA_FIELD_DEF_ARR memcpy failed !");    \
     }                                                                        \
   }                                                                          \
   arr_type *get_##field_name() {                                             \

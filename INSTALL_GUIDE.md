@@ -7,7 +7,7 @@
 ## 系统要求
 
 ### 必须满足
-- **Python = 3.11**：必须预先安装（系统自带、apt 安装或 conda 环境）
+- **Python >= 3.11**（推荐 3.11）：必须预先安装（系统自带、apt 安装或 conda 环境）
 - **基本工具**：`wget`， `curl`， `git`， `tar`， `xz`， `cmake`， `g++`
 - **磁盘空间**：至少 10GB 可用空间
 
@@ -71,6 +71,8 @@ chmod +x build.sh
 conda activate xla-npu
 ./build.sh ${action} --npu-auto-fuse-backend=${backend}
 ```
+其中 `xla-npu` 为 conda 环境名称（见"安装前准备"一节创建的环境），并非脚本参数。
+
 - ${action}：表示脚本命令，取值如下
   - install：安装，默认不支持重复安装，如果需要重复安装，需要设置环境变量FORCE_REINSTALL为1，如：export FORCE_REINSTALL=1。
   - uninstall：卸载，默认卸载需要二次确认，如果不希望二次确认，需要设置环境变量FORCE_UNINSTALL为1，如：export FORCE_UNINSTALL=1。
@@ -79,9 +81,9 @@ conda activate xla-npu
 - --npu-auto-fuse-backend=`${backend}`：表示编译选项，仅${action}为install时支持，可选，`${backend}`取值如下：
   - 0：不支持融合，仅使用aclnn执行
   - 1（默认值）：使用afir后端，不支持运行`examples/qwen` 的 Qwen2 样例
+  - 2：使用npuir后端
   - 3：使用ge后端
 
-- ${xla-npu}：conda环境名称
 - 其它安装环境变量说明：
   - PARALLEL_JOBS：并行编译任务数，默认为cpu核数。可选，如：export PARALLEL_JOBS=4。
 
@@ -102,7 +104,7 @@ source build/xla_npu_env
 
 **错误信息**：
 ```
-Python 版本不满足要求（需要 = 3.11，当前 3.9.x）
+Python 版本不满足要求（需要 >= 3.11，当前 3.9.x）
 ```
 
 **解决方案**：
