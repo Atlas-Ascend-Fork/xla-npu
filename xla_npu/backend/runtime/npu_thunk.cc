@@ -43,6 +43,7 @@ Modification: Custom adaptation for NPU/XLA-NPU scenarios.
 #include "xla/ffi/execution_context.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_instructions.h"
+#include "xla/primitive_util.h"
 #include "xla/service/global_device_id.h"
 #include "xla/service/service_executable_run_options.h"
 #include "xla/status_macros.h"
@@ -228,6 +229,14 @@ NpuThunk::ThunkInfo NpuThunk::ThunkInfo::WithProfileAnnotation(
 
   HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
   thunk_info.hloInstrDesc = instr->ToString(options);
+  // The printed reduce instruction does not spell out its reducer, which the
+  // ACLNN thunk needs to pick maximum vs sum. Append the reducer opcode.
+  if (instr->opcode() == HloOpcode::kReduce && instr->to_apply() != nullptr &&
+      instr->to_apply()->root_instruction() != nullptr) {
+    thunk_info.hloInstrDesc += " reducer=";
+    thunk_info.hloInstrDesc +=
+        HloOpcodeString(instr->to_apply()->root_instruction()->opcode());
+  }
   thunk_info.op_name = std::string(instr->name());
   thunk_info.op_code = instr->opcode();
   for (int i = 0; i < instr->operand_count(); ++i) {
@@ -307,12 +316,19 @@ absl::Status NpuThunk::InitializeSpecialValues(
     const std::vector<BufferAllocation::Slice>& args) {
   const auto* allocations = params.buffer_allocations;
 
-  // 遍历所有 args，检查并替换特殊值
-  // 注意：我们只处理标量浮点类型的 buffer
-  for (const auto& slice : args) {
-    // 获取 buffer 对应的 shape (从 thunk_info 中)
-    // 由于我们没有直接的 shape 信息，这里使用一个简单的策略:
-    // 检查所有小的 buffer (< 16 bytes)，这些很可能是标量常量
+  // 遍历所有 args，检查并替换特殊值。
+  // 只处理标量 F32 buffer：整数/其他 dtype 的 buffer 也有可能是 4 字节，
+  // 若按 float 解读会把任意整数值误判成 NaN/inf 并写回 0。
+  const auto& param_shapes = thunk_info().param_shapes;
+  for (size_t arg_idx = 0; arg_idx < args.size(); ++arg_idx) {
+    const auto& slice = args[arg_idx];
+    if (arg_idx >= param_shapes.size()) {
+      continue;
+    }
+    const Shape& shape = param_shapes[arg_idx];
+    if (!shape.IsArray() || shape.element_type() != PrimitiveType::F32) {
+      continue;
+    }
     auto addr = allocations->GetDeviceAddress(slice);
     void* device_addr = addr.opaque();
     size_t size = addr.size();

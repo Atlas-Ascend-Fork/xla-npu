@@ -93,6 +93,12 @@ bool CanFuseNpu(const HloInstruction* consumer,
     return false;
   }
 
+  // ByteSizeOfElements only accepts array shapes; tuple-shaped producers
+  // (e.g. parameters passed as tuples) are not fusible here.
+  if (!producer->shape().IsArray()) {
+    return false;
+  }
+
   // Don't fuse if output shape is too large (simplified heuristic to avoid
   // register pressure issues)
   int64_t output_size = ShapeUtil::ByteSizeOfElements(producer->shape());
