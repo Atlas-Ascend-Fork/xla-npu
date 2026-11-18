@@ -51,7 +51,7 @@ XLA-NPU 是 OpenXLA/XLA 的昇腾 NPU 后端，位于 JAX 运行时与 CANN 软�
 XLA-NPU 提供两条可选的 PJRT 执行路径：
 
 - **StreamExecutor 路径**：`xla_npu/pjrt/npu/` 基于 XLA StreamExecutor 抽象实现，逐算子或按融合结果提交到 NPU，是默认的通用路径。
-- **GE/AIR 路径**：`xla_npu/pjrt/air/` 将 StableHLO 经 `mair` 方言转换为 GE 图，由 Graph Engine 完成整图编译与执行，可通过 `NPU_AUTO_FUSE_BACKEND=3` 选择。
+- **GE/AIR 路径**：`xla_npu/pjrt/air/` 将 StableHLO 经 `mair` 方言转换为 GE 图，由 Graph Engine 完成整图编译与执行，构建时通过 `--npu-auto-fuse-backend=3` 选择（详见下文「后端选择」）。
 
 ## 5. 后端选择
 
@@ -61,6 +61,7 @@ XLA-NPU 提供两条可选的 PJRT 执行路径：
 | --- | --- | --- |
 | `0` | ACLNN | 不使用融合，逐算子调用 ACLNN |
 | `1` | AFIR/AscIR | HLO→AFIR→AscIR 自动融合（默认） |
+| `2` | npuir | 使用 npuir 后端 |
 | `3` | GE/AIR | StableHLO→`mair`→GE 图执行 |
 
 ## 6. 融合机制
