@@ -1559,8 +1559,10 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
   }
 
-  // 使用统一的流同步函数
-  TF_RETURN_IF_ERROR(SyncStreamIfEnabled(params.stream));
+  // ACLNN launches asynchronously on the ACL stream, but the PJRT completion
+  // events do not reliably observe that stream. Block here so buffers are safe
+  // to read/rewrite once the thunk returns.
+  TF_RETURN_IF_ERROR(params.stream->BlockHostUntilDone());
 
   // 根据环境变量控制是否打印输入输出值(包含d2h操作,影响性能)
   // 打印输出值需要先同步流,确保数据已从设备复制到主机

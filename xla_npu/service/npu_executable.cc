@@ -803,10 +803,10 @@ absl::Status NpuExecutable::ExecuteThunks(
     }
   }
 
-  se::DeviceMemoryAllocator* const memory_allocator = run_options->allocator();
-  // Force synchronous execution if the allocator requires it.
-  const bool block_host_until_done =
-      !memory_allocator->AllowsAsynchronousDeallocation();
+  // ACLNN thunks are enqueued asynchronously on the ACL stream, and the PJRT
+  // completion events do not reliably track that stream, so always block before
+  // returning.
+  const bool block_host_until_done = true;
 
   ModuleIdentifier unique_id = has_module() ? module().unique_id() : -1;
   NpuThunk::ExecutableSource executable_source = {
