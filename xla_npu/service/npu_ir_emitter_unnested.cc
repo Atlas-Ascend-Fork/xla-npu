@@ -387,6 +387,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(
     case HloOpcode::kIsFinite:
     case HloOpcode::kLog1p:
     case HloOpcode::kLog:
+    case HloOpcode::kLogistic:
     case HloOpcode::kMap:
     case HloOpcode::kMaximum:
     case HloOpcode::kMinimum:
@@ -422,6 +423,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(
     case HloOpcode::kReduce:  // reduce 需要特殊处理
     case HloOpcode::kSlice:   // 静态 slice 操作
     case HloOpcode::kDynamicSlice:
+    case HloOpcode::kDynamicUpdateSlice:
       return EmitNpuAclnnThunk(instr);
 
     case HloOpcode::kCall:
@@ -429,7 +431,10 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(
     case HloOpcode::kConstant:
       return EmitConstant(Cast<HloConstantInstruction>(instr));
     case HloOpcode::kCustomCall:
-      // 实现此功能
+      if (instr->custom_call_target() == "npu$argmax" ||
+          instr->custom_call_target() == "npu$copy") {
+        return EmitNpuAclnnThunk(instr);
+      }
       return absl::OkStatus();
     case HloOpcode::kFusion:
       return EmitFusion(Cast<HloFusionInstruction>(instr));
@@ -442,6 +447,7 @@ absl::Status NpuIrEmitterUnnested::EmitHloInstruction(
     case HloOpcode::kBitcast:
     case HloOpcode::kGetTupleElement:
     case HloOpcode::kParameter:
+    case HloOpcode::kOptimizationBarrier:
     case HloOpcode::kTuple:
       NPU_LOG_FORMAT_PRINT(DEBUG, "Emit no thunk");
       return absl::OkStatus();

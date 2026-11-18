@@ -229,6 +229,14 @@ NpuThunk::ThunkInfo NpuThunk::ThunkInfo::WithProfileAnnotation(
 
   HloPrintOptions options = NpuTool::GetDetailedPrintOptions();
   thunk_info.hloInstrDesc = instr->ToString(options);
+  // The printed reduce instruction does not spell out its reducer, which the
+  // ACLNN thunk needs to pick maximum vs sum. Append the reducer opcode.
+  if (instr->opcode() == HloOpcode::kReduce && instr->to_apply() != nullptr &&
+      instr->to_apply()->root_instruction() != nullptr) {
+    thunk_info.hloInstrDesc += " reducer=";
+    thunk_info.hloInstrDesc +=
+        HloOpcodeString(instr->to_apply()->root_instruction()->opcode());
+  }
   thunk_info.op_name = std::string(instr->name());
   thunk_info.op_code = instr->opcode();
   for (int i = 0; i < instr->operand_count(); ++i) {

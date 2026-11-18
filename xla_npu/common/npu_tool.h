@@ -264,6 +264,12 @@ class NpuTool {
         return aclDataType::ACL_INT8;
       case PrimitiveType::U8:
         return aclDataType::ACL_UINT8;
+      case PrimitiveType::U16:
+        return aclDataType::ACL_UINT16;
+      case PrimitiveType::U32:
+        return aclDataType::ACL_UINT32;
+      case PrimitiveType::U64:
+        return aclDataType::ACL_UINT64;
       case PrimitiveType::F16:
         return aclDataType::ACL_FLOAT16;
       case PrimitiveType::BF16:

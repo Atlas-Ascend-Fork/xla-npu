@@ -174,6 +174,76 @@ DECLARE_ACL_FUNC_IN_OPAPI(aclnnRsqrtGetWorkspaceSize,
 
 DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnRsqrt)
 
+// Cast operation: convert dtype
+// Reference: acl_nn_op/aclnn_cast.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnCastGetWorkspaceSize,
+                          (const aclTensor* self, const aclDataType dtype,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, dtype, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnCast)
+
+// ArgMax operation
+// Reference: acl_nn_op/aclnn_argmax.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnArgMaxGetWorkspaceSize,
+                          (const aclTensor* self, int64_t dim, bool keepdim,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, dim, keepdim, out, workspaceSize, executor))
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnArgMax)
+
+// Sqrt operation
+// Reference: acl_nn_op/aclnn_sqrt.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSqrtGetWorkspaceSize,
+                          (const aclTensor* self, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, out, workspaceSize, executor))
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSqrt)
+
+// Inplace scalar fill (used to broadcast a scalar)
+// Reference: acl_nn_op/aclnn_fill_scalar.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnInplaceFillScalarGetWorkspaceSize,
+                          (aclTensor * selfRef, const aclScalar* value,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (selfRef, value, workspaceSize, executor))
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnInplaceFillScalar)
+
+// Logical / bitwise OR
+// Reference: acl_nn_op/aclnn_logical_or.h, acl_nn_op/aclnn_bitwise_or_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnLogicalOrGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnLogicalOr)
+
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnBitwiseOrTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* other,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, other, out, workspaceSize, executor))
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnBitwiseOrTensor)
+
+// Power operation: self ^ exponent
+// Reference: acl_nn_op/aclnn_pow_tensor_tensor.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnPowTensorTensorGetWorkspaceSize,
+                          (const aclTensor* self, const aclTensor* exponent,
+                           aclTensor* out, uint64_t* workspaceSize,
+                           aclOpExecutor** executor),
+                          (self, exponent, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnPowTensorTensor)
+
+// Sigmoid operation
+// Reference: acl_nn_op/aclnn_sigmoid.h
+DECLARE_ACL_FUNC_IN_OPAPI(aclnnSigmoidGetWorkspaceSize,
+                          (const aclTensor* self, aclTensor* out,
+                           uint64_t* workspaceSize, aclOpExecutor** executor),
+                          (self, out, workspaceSize, executor))
+
+DECLARE_ACL_EXEC_FUNC_IN_OPAPI(aclnnSigmoid)
+
 // Sin operation: sin(x)
 // Reference: acl_nn_op/aclnn_sin.h
 DECLARE_ACL_FUNC_IN_OPAPI(aclnnSinGetWorkspaceSize,

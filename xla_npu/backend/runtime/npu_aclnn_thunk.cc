@@ -57,8 +57,10 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
     case HloOpcode::kNegate:
     case HloOpcode::kExp:
     case HloOpcode::kRsqrt:
+    case HloOpcode::kSqrt:
     case HloOpcode::kSin:
     case HloOpcode::kCos:
+    case HloOpcode::kLogistic:
       if (param_shapes.size() != 2) {
         NPU_LOG_FORMAT_PRINT(ERROR,
                              "Param shape size %d does not meet target value 2",
@@ -72,6 +74,7 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
     case HloOpcode::kDivide:
     case HloOpcode::kSubtract:
     case HloOpcode::kMaximum:
+    case HloOpcode::kPower:
       if (param_shapes.size() != 3) {
         NPU_LOG_FORMAT_PRINT(ERROR,
                              "Param shape size %d does not meet target value 3",
@@ -93,6 +96,23 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
       if (param_shapes.size() != 3) {
         NPU_LOG_FORMAT_PRINT(
             ERROR, "Reduce param shape size %d does not meet target value 3",
+            param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kCustomCall:
+      if (param_shapes.size() != 2) {
+        NPU_LOG_FORMAT_PRINT(
+            ERROR, "ArgMax custom call expects 2 parameters, got %d",
+            param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kIota:
+      // Iota only writes its output buffer.
+      if (param_shapes.size() != 1) {
+        NPU_LOG_FORMAT_PRINT(
+            ERROR, "Iota param shape size %d does not meet target value 1",
             param_shapes.size());
         return false;
       }
@@ -127,6 +147,16 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
         return false;
       }
       break;
+    case HloOpcode::kDynamicUpdateSlice:
+      // operand + update + start_indices... + output
+      if (param_shapes.size() < 4) {
+        NPU_LOG_FORMAT_PRINT(
+            ERROR,
+            "DynamicUpdateSlice param shape size %d is less than 4",
+            param_shapes.size());
+        return false;
+      }
+      break;
     case HloOpcode::kGather:
       // Gather 操作：输入 + 索引 + 输出 = 3 个参数
       if (param_shapes.size() != 3) {
@@ -154,12 +184,31 @@ static bool CheckInputOuputParamsSize(HloOpcode op_code,
         return false;
       }
       break;
+    case HloOpcode::kOr:
+      // Or (BitwiseOr/LogicalOr) 操作：input1 + input2 + output = 3 个参数
+      if (param_shapes.size() != 3) {
+        NPU_LOG_FORMAT_PRINT(
+            ERROR, "Or param shape size %d does not meet target value 3",
+            param_shapes.size());
+        return false;
+      }
+      break;
     case HloOpcode::kAnd:
       // And (BitwiseAnd/LogicalAnd) 操作：input1 + input2 + output = 3 个参数
       if (param_shapes.size() != 3) {
         NPU_LOG_FORMAT_PRINT(
             ERROR, "And param shape size %d does not meet target value 3",
             param_shapes.size());
+        return false;
+      }
+      break;
+    case HloOpcode::kConvert:
+      // Convert operation: input + output = 2 parameters
+      if (param_shapes.size() != 2) {
+        NPU_LOG_FORMAT_PRINT(ERROR,
+                             "Convert param shape size %d does not meet target "
+                             "value 2",
+                             param_shapes.size());
         return false;
       }
       break;
@@ -247,6 +296,114 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
   }
 
   switch (thunk_info().op_code) {
+    case HloOpcode::kCustomCall: {
+      const std::string& desc = thunk_info().hloInstrDesc;
+      if (desc.find("npu$copy") != std::string::npos) {
+        const int64_t bytes =
+            NpuTool::GetXlaShapeSize(param_shapes[0]) *
+            ShapeUtil::ByteSizeOfPrimitiveType(param_shapes[0].element_type());
+        void* src = allocations->GetDeviceAddress(args_[0]).opaque();
+        void* dst = allocations->GetDeviceAddress(args_.back()).opaque();
+        ret = dep::aclrtMemcpy(dst, bytes, src, bytes,
+                               ACL_MEMCPY_DEVICE_TO_DEVICE);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "npu$copy memcpy failed. Error code: %d", ret));
+        }
+        exec_ret = absl::OkStatus();
+        break;
+      }
+      int64_t dim = 0;
+      const size_t pos = desc.find("axis=");
+      if (pos != std::string::npos) {
+        dim = std::stoll(desc.substr(pos + strlen("axis=")));
+      }
+      ret = dep::aclnnArgMaxGetWorkspaceSize(
+          acl_tensor_ptr_vector[0], dim, true,
+          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        return absl::InternalError(absl::StrFormat(
+            "Call aclnnArgMaxGetWorkspaceSize failed. Error code: %d", ret));
+      }
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                              dep::aclnnArgMax);
+      break;
+    }
+
+    case HloOpcode::kIota: {
+      const Shape& output_shape = param_shapes.back();
+      const std::vector<int64_t> dims(output_shape.dimensions().begin(),
+                                      output_shape.dimensions().end());
+      int64_t iota_dim = 0;
+      const std::string& iota_desc = thunk_info().hloInstrDesc;
+      const size_t pos = iota_desc.find("iota_dimension=");
+      if (pos != std::string::npos) {
+        iota_dim = std::stoll(iota_desc.substr(pos + strlen("iota_dimension=")));
+      }
+      if (iota_dim < 0 || iota_dim >= static_cast<int64_t>(dims.size())) {
+        return absl::InternalError("Iota dimension is out of range");
+      }
+      std::vector<int64_t> strides(dims.size(), 1);
+      int64_t stride = 1;
+      for (int i = static_cast<int>(dims.size()) - 1; i >= 0; --i) {
+        strides[i] = stride;
+        stride *= dims[i];
+      }
+      const int64_t count = NpuTool::GetXlaShapeSize(output_shape);
+      const size_t elem_bytes =
+          ShapeUtil::ByteSizeOfPrimitiveType(output_shape.element_type());
+      std::vector<char> host(static_cast<size_t>(count) * elem_bytes, 0);
+      for (int64_t linear = 0; linear < count; ++linear) {
+        const int64_t value = (linear / strides[iota_dim]) % dims[iota_dim];
+        char* dst = host.data() + static_cast<size_t>(linear) * elem_bytes;
+        switch (output_shape.element_type()) {
+          case PrimitiveType::S8:
+            *reinterpret_cast<int8_t*>(dst) = static_cast<int8_t>(value);
+            break;
+          case PrimitiveType::U8:
+            *reinterpret_cast<uint8_t*>(dst) = static_cast<uint8_t>(value);
+            break;
+          case PrimitiveType::S16:
+            *reinterpret_cast<int16_t*>(dst) = static_cast<int16_t>(value);
+            break;
+          case PrimitiveType::U16:
+            *reinterpret_cast<uint16_t*>(dst) = static_cast<uint16_t>(value);
+            break;
+          case PrimitiveType::S32:
+            *reinterpret_cast<int32_t*>(dst) = static_cast<int32_t>(value);
+            break;
+          case PrimitiveType::U32:
+            *reinterpret_cast<uint32_t*>(dst) = static_cast<uint32_t>(value);
+            break;
+          case PrimitiveType::S64:
+            *reinterpret_cast<int64_t*>(dst) = value;
+            break;
+          case PrimitiveType::U64:
+            *reinterpret_cast<uint64_t*>(dst) = static_cast<uint64_t>(value);
+            break;
+          case PrimitiveType::F32:
+            *reinterpret_cast<float*>(dst) = static_cast<float>(value);
+            break;
+          case PrimitiveType::F64:
+            *reinterpret_cast<double*>(dst) = static_cast<double>(value);
+            break;
+          default:
+            return absl::UnimplementedError(
+                "Iota currently supports integer and f32/f64 element types");
+        }
+      }
+      void* output_addr = allocations->GetDeviceAddress(args_.back()).opaque();
+      ret = dep::aclrtMemcpy(output_addr, host.size(), host.data(), host.size(),
+                             ACL_MEMCPY_HOST_TO_DEVICE);
+      if (ret != ACL_SUCCESS) {
+        return absl::InternalError(
+            absl::StrFormat("Failed to upload iota buffer. Error code: %d",
+                            ret));
+      }
+      exec_ret = absl::OkStatus();
+      break;
+    }
+
     case HloOpcode::kReshape: {
       // Reshape operation: copy data from input to output using aclrtMemcpy
       // Even if shapes are different, the underlying data size is the same
@@ -294,6 +451,41 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       NPU_LOG_FORMAT_PRINT(DEBUG, "Broadcast: input shape %s, target size %s",
                            NpuTool::GetXlaShapeString(param_shapes[0]).c_str(),
                            shape_str.c_str());
+
+      // Scalar broadcasts cannot be expressed as a stride-0 view for ACLNN
+      // Expand. Materialize them on the host for modest sizes.
+      if (NpuTool::GetXlaShapeSize(param_shapes[0]) == 1) {
+        const Shape& input_shape = param_shapes[0];
+        const size_t elem_bytes =
+            ShapeUtil::ByteSizeOfPrimitiveType(input_shape.element_type());
+        const int64_t count = NpuTool::GetXlaShapeSize(param_shapes.back());
+        constexpr int64_t kMaxHostBroadcastElements = 16 * 1024 * 1024;
+        if (count > 0 && count <= kMaxHostBroadcastElements) {
+          std::vector<char> scalar_bytes(elem_bytes);
+          auto input_addr = allocations->GetDeviceAddress(args_[0]).opaque();
+          ret = dep::aclrtMemcpy(scalar_bytes.data(), elem_bytes, input_addr,
+                                 elem_bytes, ACL_MEMCPY_DEVICE_TO_HOST);
+          if (ret != ACL_SUCCESS) {
+            return absl::InternalError(absl::StrFormat(
+                "Failed to read broadcast scalar. Error code: %d", ret));
+          }
+          std::vector<char> host(static_cast<size_t>(count) * elem_bytes);
+          for (int64_t i = 0; i < count; ++i) {
+            std::memcpy(host.data() + static_cast<size_t>(i) * elem_bytes,
+                        scalar_bytes.data(), elem_bytes);
+          }
+          void* output_addr =
+              allocations->GetDeviceAddress(args_.back()).opaque();
+          ret = dep::aclrtMemcpy(output_addr, host.size(), host.data(),
+                                 host.size(), ACL_MEMCPY_HOST_TO_DEVICE);
+          if (ret != ACL_SUCCESS) {
+            return absl::InternalError(absl::StrFormat(
+                "Failed to fill broadcast scalar. Error code: %d", ret));
+          }
+          exec_ret = absl::OkStatus();
+          break;
+        }
+      }
 
       // Check if input and output shapes are the same (identity broadcast)
       if (input_shape_data == output_param_size_data) {
@@ -418,10 +610,38 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kAdd: {
+      // ACLNN Add has no UINT32 kernel; the values used here (indices,
+      // positions) fit in INT32, so reinterpret the buffers as INT32 views.
+      const bool add_is_u32 =
+          param_shapes[0].element_type() == PrimitiveType::U32;
+      aclTensor* add_lhs = acl_tensor_ptr_vector[0];
+      aclTensor* add_rhs = acl_tensor_ptr_vector[1];
+      aclTensor* add_out = acl_tensor_ptr_vector.back();
+      if (add_is_u32) {
+        add_lhs = NpuTool::CreateAclTensorPtr(
+            param_shapes[0], PrimitiveType::S32,
+            allocations->GetDeviceAddress(args_[0]).opaque());
+        add_rhs = NpuTool::CreateAclTensorPtr(
+            param_shapes[1], PrimitiveType::S32,
+            allocations->GetDeviceAddress(args_[1]).opaque());
+        add_out = NpuTool::CreateAclTensorPtr(
+            param_shapes.back(), PrimitiveType::S32,
+            allocations->GetDeviceAddress(args_.back()).opaque());
+        if (add_lhs == nullptr || add_rhs == nullptr || add_out == nullptr) {
+          if (add_lhs != nullptr) dep::aclDestroyTensor(add_lhs);
+          if (add_rhs != nullptr) dep::aclDestroyTensor(add_rhs);
+          if (add_out != nullptr) dep::aclDestroyTensor(add_out);
+          return absl::InternalError("Failed to create U32 add views");
+        }
+      }
+
       // 优化：对于 RMSNorm 中的 variance + epsilon 场景
       // 检测输入类型，如果是 FP16/BF16，尝试使用 FP32 计算以减少精度损失
       aclDataType input_type =
-          NpuTool::ConvertXlaType2AclDataType(param_shapes[0].element_type());
+          add_is_u32
+              ? ACL_INT32
+              : NpuTool::ConvertXlaType2AclDataType(
+                    param_shapes[0].element_type());
 
       // RMSNorm 关键优化：FP16/BF16 输入时，使用 FP32 计算
       bool use_fp32_compute =
@@ -480,13 +700,17 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       aclScalar* alpha = dep::aclCreateScalar(&alpha_val, alpha_type);
 
       ret = dep::aclnnAddGetWorkspaceSize(
-          acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1], alpha,
-          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+          add_lhs, add_rhs, alpha, add_out, &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnAddGetWorkspaceSize failed. Error code: %d", ret);
         NPU_LOG_PRINT(ERROR, err_msg);
         dep::aclDestroyScalar(alpha);
+        if (add_is_u32) {
+          dep::aclDestroyTensor(add_lhs);
+          dep::aclDestroyTensor(add_rhs);
+          dep::aclDestroyTensor(add_out);
+        }
         return absl::InternalError(err_msg);
       }
 
@@ -494,6 +718,44 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnAdd);
 
       dep::aclDestroyScalar(alpha);
+      if (add_is_u32) {
+        dep::aclDestroyTensor(add_lhs);
+        dep::aclDestroyTensor(add_rhs);
+        dep::aclDestroyTensor(add_out);
+      }
+      break;
+    }
+
+    case HloOpcode::kPower: {
+      ret = dep::aclnnPowTensorTensorGetWorkspaceSize(
+          acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+          acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnPowTensorTensorGetWorkspaceSize failed. Error code: %d",
+            ret);
+        NPU_LOG_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                              dep::aclnnPowTensorTensor);
+      break;
+    }
+
+    case HloOpcode::kLogistic: {
+      ret = dep::aclnnSigmoidGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                              acl_tensor_ptr_vector.back(),
+                                              &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSigmoidGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                              dep::aclnnSigmoid);
       break;
     }
 
@@ -542,20 +804,334 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
     }
 
     case HloOpcode::kDot: {
-      int8_t cubeMathType = 0;
-      ret = dep::aclnnMatmulGetWorkspaceSize(
-          acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
-          acl_tensor_ptr_vector.back(), cubeMathType, &workspaceSize,
-          &executor);
-      if (ret != ACL_SUCCESS) {
-        const std::string err_msg = absl::StrFormat(
-            "Call aclnnMatmulGetWorkspaceSize failed. Error code: %d", ret);
-        NPU_LOG_PRINT(ERROR, err_msg);
-        return absl::InternalError(err_msg);
+      const std::string& dot_desc = thunk_info().hloInstrDesc;
+      auto parse_dim_list = [&dot_desc](const char* key) {
+        std::vector<int64_t> dims;
+        const size_t key_pos = dot_desc.find(key);
+        if (key_pos == std::string::npos) return dims;
+        const size_t open = dot_desc.find('{', key_pos);
+        if (open == std::string::npos) return dims;
+        const size_t close = dot_desc.find('}', open);
+        if (close == std::string::npos) return dims;
+        const std::string body = dot_desc.substr(open + 1, close - open - 1);
+        size_t pos = 0;
+        while (pos < body.size()) {
+          const size_t comma = body.find(',', pos);
+          const std::string part =
+              body.substr(pos, comma == std::string::npos ? std::string::npos
+                                                          : comma - pos);
+          try {
+            dims.push_back(std::stoll(part));
+          } catch (...) {
+          }
+          if (comma == std::string::npos) break;
+          pos = comma + 1;
+        }
+        return dims;
+      };
+      const std::vector<int64_t> lhs_batch = parse_dim_list("lhs_batch_dims");
+      const std::vector<int64_t> rhs_batch = parse_dim_list("rhs_batch_dims");
+      const std::vector<int64_t> lhs_contracting =
+          parse_dim_list("lhs_contracting_dims");
+      const std::vector<int64_t> rhs_contracting =
+          parse_dim_list("rhs_contracting_dims");
+      const Shape& lhs_shape = param_shapes[0];
+      const Shape& rhs_shape = param_shapes[1];
+      const Shape& out_shape = param_shapes.back();
+      const int lhs_rank = lhs_shape.dimensions().size();
+      const int rhs_rank = rhs_shape.dimensions().size();
+      const int out_rank = out_shape.dimensions().size();
+
+      const bool is_batched = !lhs_batch.empty() || !rhs_batch.empty() ||
+                              lhs_rank > 2 || rhs_rank > 2;
+      if (!is_batched) {
+        // Fast path for 2D dots: pass a strided view instead of copying when
+        // the contracting dimension is not the matmul innermost one.
+        auto make_transposed_view = [&](int arg_index) -> aclTensor* {
+          const Shape& shape = param_shapes[arg_index];
+          if (!shape.has_layout() || shape.layout().minor_to_major(0) != 1 ||
+              shape.layout().minor_to_major(1) != 0) {
+            return nullptr;
+          }
+          const int64_t d0 = shape.dimensions(0);
+          const int64_t d1 = shape.dimensions(1);
+          const std::vector<int64_t> view_dims = {d1, d0};
+          const std::vector<int64_t> view_strides = {1, d1};
+          const std::vector<int64_t> storage_dims = {d0, d1};
+          void* addr = allocations->GetDeviceAddress(args_[arg_index]).opaque();
+          return dep::aclCreateTensor(
+              view_dims.data(), view_dims.size(),
+              NpuTool::ConvertXlaType2AclDataType(shape.element_type()),
+              view_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
+              storage_dims.data(), storage_dims.size(), addr);
+        };
+        aclTensor* lhs = acl_tensor_ptr_vector[0];
+        aclTensor* rhs = acl_tensor_ptr_vector[1];
+        aclTensor* lhs_view = nullptr;
+        aclTensor* rhs_view = nullptr;
+        const int64_t lhs_contract =
+            lhs_contracting.empty() ? -1 : lhs_contracting[0];
+        const int64_t rhs_contract =
+            rhs_contracting.empty() ? -1 : rhs_contracting[0];
+        bool unsupported_dot = false;
+        if (lhs_contract == 0) {
+          lhs_view = make_transposed_view(0);
+          if (lhs_view == nullptr) unsupported_dot = true;
+          else lhs = lhs_view;
+        }
+        if (rhs_contract == 1) {
+          rhs_view = make_transposed_view(1);
+          if (rhs_view == nullptr) unsupported_dot = true;
+          else rhs = rhs_view;
+        }
+        if (unsupported_dot || (lhs_contract != 0 && lhs_contract != 1) ||
+            (rhs_contract != 0 && rhs_contract != 1)) {
+          if (lhs_view != nullptr) dep::aclDestroyTensor(lhs_view);
+          if (rhs_view != nullptr) dep::aclDestroyTensor(rhs_view);
+          return absl::UnimplementedError(absl::StrFormat(
+              "Unsupported Dot contracting dims: %s", dot_desc.c_str()));
+        }
+        int8_t cubeMathType = 0;
+        ret = dep::aclnnMatmulGetWorkspaceSize(
+            lhs, rhs, acl_tensor_ptr_vector.back(), cubeMathType,
+            &workspaceSize, &executor);
+        if (ret != ACL_SUCCESS) {
+          if (lhs_view != nullptr) dep::aclDestroyTensor(lhs_view);
+          if (rhs_view != nullptr) dep::aclDestroyTensor(rhs_view);
+          const std::string err_msg = absl::StrFormat(
+              "Call aclnnMatmulGetWorkspaceSize failed. Error code: %d", ret);
+          NPU_LOG_PRINT(ERROR, err_msg);
+          return absl::InternalError(err_msg);
+        }
+        exec_ret =
+            ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMatmul);
+        if (lhs_view != nullptr) dep::aclDestroyTensor(lhs_view);
+        if (rhs_view != nullptr) dep::aclDestroyTensor(rhs_view);
+        break;
       }
 
-      exec_ret =
-          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnMatmul);
+      // Batched dot: permute each operand into [B, M, K] / [B, K, N] views,
+      // run a batched aclnnMatmul, and write directly into the XLA output
+      // buffer (whose row-major flattening is exactly [B, M, N]).
+      if (lhs_contracting.size() != 1 || rhs_contracting.size() != 1 ||
+          lhs_batch.size() != rhs_batch.size()) {
+        return absl::UnimplementedError(absl::StrFormat(
+            "Unsupported batched Dot: %s", dot_desc.c_str()));
+      }
+      const int64_t lhs_contract = lhs_contracting[0];
+      const int64_t rhs_contract = rhs_contracting[0];
+      int64_t batch = 1;
+      std::vector<int64_t> expected;
+      auto is_in = [](const std::vector<int64_t>& list, int64_t v) {
+        for (int64_t x : list) {
+          if (x == v) return true;
+        }
+        return false;
+      };
+      for (size_t i = 0; i < lhs_batch.size(); ++i) {
+        const int64_t ld = lhs_batch[i];
+        const int64_t rd = rhs_batch[i];
+        if (lhs_shape.dimensions(ld) != rhs_shape.dimensions(rd)) {
+          return absl::UnimplementedError(
+              "Batched Dot with mismatched batch dimensions");
+        }
+        batch *= lhs_shape.dimensions(ld);
+        expected.push_back(lhs_shape.dimensions(ld));
+      }
+      const int64_t K = lhs_shape.dimensions(lhs_contract);
+      if (rhs_shape.dimensions(rhs_contract) != K) {
+        return absl::UnimplementedError(
+            "Batched Dot with mismatched contracting dimensions");
+      }
+      std::vector<int64_t> lhs_free;
+      for (int d = 0; d < lhs_rank; ++d) {
+        if (!is_in(lhs_batch, d) && d != lhs_contract) lhs_free.push_back(d);
+      }
+      std::vector<int64_t> rhs_free;
+      for (int d = 0; d < rhs_rank; ++d) {
+        if (!is_in(rhs_batch, d) && d != rhs_contract) rhs_free.push_back(d);
+      }
+      int64_t M = 1;
+      for (int64_t d : lhs_free) {
+        M *= lhs_shape.dimensions(d);
+        expected.push_back(lhs_shape.dimensions(d));
+      }
+      int64_t N = 1;
+      for (int64_t d : rhs_free) {
+        N *= rhs_shape.dimensions(d);
+        expected.push_back(rhs_shape.dimensions(d));
+      }
+      if (static_cast<int>(expected.size()) != out_rank) {
+        return absl::UnimplementedError(
+            "Batched Dot output rank is not supported");
+      }
+      for (int i = 0; i < out_rank; ++i) {
+        if (expected[i] != out_shape.dimensions(i)) {
+          return absl::UnimplementedError(
+              "Batched Dot output shape is not supported");
+        }
+      }
+      if (out_shape.has_layout()) {
+        for (int i = 0; i < out_rank; ++i) {
+          if (out_shape.layout().minor_to_major(i) != out_rank - 1 - i) {
+            return absl::UnimplementedError(
+                "Batched Dot requires a row-major output layout");
+          }
+        }
+      }
+
+      std::vector<int64_t> lhs_perm = lhs_batch;
+      lhs_perm.insert(lhs_perm.end(), lhs_free.begin(), lhs_free.end());
+      lhs_perm.push_back(lhs_contract);
+      std::vector<int64_t> rhs_perm = rhs_batch;
+      rhs_perm.push_back(rhs_contract);
+      rhs_perm.insert(rhs_perm.end(), rhs_free.begin(), rhs_free.end());
+
+      auto permute_operand = [&](int arg_index, const Shape& shape,
+                                 const std::vector<int64_t>& perm,
+                                 aclTensor** out_tensor,
+                                 void** out_buffer) -> absl::Status {
+        *out_tensor = nullptr;
+        *out_buffer = nullptr;
+        const std::vector<int64_t> dims =
+            NpuTool::ConvertXlaShape2VectorShape(shape);
+        std::vector<int64_t> permuted_dims;
+        for (int64_t d : perm) permuted_dims.push_back(dims[d]);
+        std::vector<int64_t> strides(permuted_dims.size(), 1);
+        int64_t stride = 1;
+        for (int i = static_cast<int>(permuted_dims.size()) - 1; i >= 0; --i) {
+          strides[i] = stride;
+          stride *= permuted_dims[i];
+        }
+        const int64_t count = NpuTool::GetXlaShapeSize(shape);
+        const size_t bytes =
+            count * ShapeUtil::ByteSizeOfPrimitiveType(shape.element_type());
+        void* buffer = nullptr;
+        aclnnStatus alloc_ret =
+            dep::aclrtMalloc(&buffer, bytes, ACL_MEM_MALLOC_HUGE_FIRST);
+        if (alloc_ret != ACL_SUCCESS) {
+          return absl::InternalError(
+              absl::StrFormat("Failed to allocate Dot permute buffer. Error "
+                              "code: %d",
+                              alloc_ret));
+        }
+        aclTensor* tensor = dep::aclCreateTensor(
+            permuted_dims.data(), permuted_dims.size(),
+            NpuTool::ConvertXlaType2AclDataType(shape.element_type()),
+            strides.data(), 0, aclFormat::ACL_FORMAT_ND, permuted_dims.data(),
+            permuted_dims.size(), buffer);
+        if (tensor == nullptr) {
+          dep::aclrtFree(buffer);
+          return absl::InternalError("Failed to create Dot permute tensor");
+        }
+        aclIntArray* perm_array =
+            dep::aclCreateIntArray(perm.data(), perm.size());
+        if (perm_array == nullptr) {
+          dep::aclDestroyTensor(tensor);
+          dep::aclrtFree(buffer);
+          return absl::InternalError("Failed to create Dot permute array");
+        }
+        uint64_t permute_workspace = 0;
+        aclOpExecutor* permute_executor = nullptr;
+        aclnnStatus permute_ret = dep::aclnnPermuteGetWorkspaceSize(
+            acl_tensor_ptr_vector[arg_index], perm_array, tensor,
+            &permute_workspace, &permute_executor);
+        absl::Status status =
+            permute_ret == ACL_SUCCESS
+                ? ExecuteAclnn(acl_stream, permute_workspace, permute_executor,
+                               dep::aclnnPermute)
+                : absl::InternalError(absl::StrFormat(
+                      "aclnnPermuteGetWorkspaceSize failed. Error code: %d",
+                      permute_ret));
+        dep::aclDestroyIntArray(perm_array);
+        if (!status.ok()) {
+          dep::aclDestroyTensor(tensor);
+          dep::aclrtFree(buffer);
+          return status;
+        }
+        *out_tensor = tensor;
+        *out_buffer = buffer;
+        return absl::OkStatus();
+      };
+
+      aclTensor* lhs_permuted = nullptr;
+      aclTensor* rhs_permuted = nullptr;
+      void* lhs_buffer = nullptr;
+      void* rhs_buffer = nullptr;
+      absl::Status permute_status =
+          permute_operand(0, lhs_shape, lhs_perm, &lhs_permuted, &lhs_buffer);
+      if (permute_status.ok()) {
+        permute_status = permute_operand(1, rhs_shape, rhs_perm, &rhs_permuted,
+                                         &rhs_buffer);
+      }
+      if (!permute_status.ok()) {
+        if (lhs_permuted != nullptr) dep::aclDestroyTensor(lhs_permuted);
+        if (rhs_permuted != nullptr) dep::aclDestroyTensor(rhs_permuted);
+        if (lhs_buffer != nullptr) dep::aclrtFree(lhs_buffer);
+        if (rhs_buffer != nullptr) dep::aclrtFree(rhs_buffer);
+        return permute_status;
+      }
+
+      auto make_view = [&](const std::vector<int64_t>& dims, void* buffer,
+                           PrimitiveType type) -> aclTensor* {
+        std::vector<int64_t> strides(dims.size(), 1);
+        int64_t stride = 1;
+        for (int i = static_cast<int>(dims.size()) - 1; i >= 0; --i) {
+          strides[i] = stride;
+          stride *= dims[i];
+        }
+        return dep::aclCreateTensor(
+            dims.data(), dims.size(), NpuTool::ConvertXlaType2AclDataType(type),
+            strides.data(), 0, aclFormat::ACL_FORMAT_ND, dims.data(),
+            dims.size(), buffer);
+      };
+      const std::vector<int64_t> lhs_view_dims = {batch, M, K};
+      const std::vector<int64_t> rhs_view_dims = {batch, K, N};
+      const std::vector<int64_t> out_view_dims = {batch, M, N};
+      aclTensor* lhs_view =
+          make_view(lhs_view_dims, lhs_buffer, lhs_shape.element_type());
+      aclTensor* rhs_view =
+          make_view(rhs_view_dims, rhs_buffer, rhs_shape.element_type());
+      void* output_buffer =
+          allocations->GetDeviceAddress(args_.back()).opaque();
+      aclTensor* out_view =
+          make_view(out_view_dims, output_buffer, out_shape.element_type());
+      if (lhs_view == nullptr || rhs_view == nullptr || out_view == nullptr) {
+        if (lhs_view != nullptr) dep::aclDestroyTensor(lhs_view);
+        if (rhs_view != nullptr) dep::aclDestroyTensor(rhs_view);
+        if (out_view != nullptr) dep::aclDestroyTensor(out_view);
+        dep::aclDestroyTensor(lhs_permuted);
+        dep::aclDestroyTensor(rhs_permuted);
+        dep::aclrtFree(lhs_buffer);
+        dep::aclrtFree(rhs_buffer);
+        return absl::InternalError("Failed to create batched Dot views");
+      }
+
+      int8_t batched_cube_math_type = 0;
+      ret = dep::aclnnMatmulGetWorkspaceSize(
+          lhs_view, rhs_view, out_view, batched_cube_math_type, &workspaceSize,
+          &executor);
+      absl::Status matmul_status =
+          ret == ACL_SUCCESS
+              ? absl::OkStatus()
+              : absl::InternalError(absl::StrFormat(
+                    "Call aclnnMatmulGetWorkspaceSize (batched) failed. Error "
+                    "code: %d",
+                    ret));
+      if (matmul_status.ok()) {
+        exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                                dep::aclnnMatmul);
+        matmul_status = exec_ret;
+      }
+      dep::aclrtSynchronizeStream(acl_stream);
+      dep::aclDestroyTensor(lhs_view);
+      dep::aclDestroyTensor(rhs_view);
+      dep::aclDestroyTensor(out_view);
+      dep::aclDestroyTensor(lhs_permuted);
+      dep::aclDestroyTensor(rhs_permuted);
+      dep::aclrtFree(lhs_buffer);
+      dep::aclrtFree(rhs_buffer);
+      if (!matmul_status.ok()) return matmul_status;
       break;
     }
 
@@ -624,6 +1200,22 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
       exec_ret =
           ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnExp);
+      break;
+    }
+
+    case HloOpcode::kSqrt: {
+      ret = dep::aclnnSqrtGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                           acl_tensor_ptr_vector.back(),
+                                           &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnSqrtGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret =
+          ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSqrt);
       break;
     }
 
@@ -765,15 +1357,9 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       aclDataType input_dtype =
           NpuTool::ConvertXlaType2AclDataType(param_shapes[0].element_type());
 
-      // 优化：对于 FP16/BF16 输入，使用 FP32 累加以减少精度损失
-      // 对于 FP32 输入，使用输入类型以保持数据类型匹配
-      aclDataType accumulate_dtype = input_dtype;
-      if (input_dtype == ACL_FLOAT16 || input_dtype == ACL_BF16) {
-        accumulate_dtype = ACL_FLOAT;
-        NPU_LOG_FORMAT_PRINT(DEBUG,
-                             "ReduceSum: Using FP32 accumulation for FP16/BF16 "
-                             "input to reduce precision loss");
-      }
+      // aclnnReduceSum's dtype argument must match the output tensor dtype.
+      aclDataType accumulate_dtype = NpuTool::ConvertXlaType2AclDataType(
+          param_shapes[2].element_type());
 
       // 对于reduce操作,aclnnReduceSum只需要输入和输出,不需要初始值
       // XLA的reduce有3个参数:输入、初始值、输出
@@ -1172,6 +1758,15 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           }
         }
 
+        // XLA clamps dynamic slice start indices into the valid range.
+        if (i < input_shape.dimensions().size()) {
+          const int64_t dim = input_shape.dimensions()[i];
+          int64_t max_start = dim - slice_sizes_logical[i];
+          if (max_start < 0) max_start = 0;
+          if (start_val < 0) start_val = 0;
+          if (start_val > max_start) start_val = max_start;
+        }
+
         // 计算 end 值：start + slice_size
         int64_t end_val = start_val + slice_sizes_logical[i];
 
@@ -1233,6 +1828,184 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
       exec_ret =
           ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnSliceV2);
+      break;
+    }
+
+    case HloOpcode::kDynamicUpdateSlice: {
+      // XLA DUS writes a rectangular update into a dynamically positioned
+      // slice of operand. Lower it to a copy of operand into output followed
+      // by layout-aware device-to-device block copies of update.
+      if (param_shapes.size() < 4) {
+        return absl::InternalError(
+            "DynamicUpdateSlice expects at least 4 parameters");
+      }
+      const Shape& operand_shape = param_shapes[0];
+      const Shape& update_shape = param_shapes[1];
+      const Shape& output_shape = param_shapes.back();
+      const int rank = operand_shape.dimensions().size();
+      const int k_starts = param_shapes.size() - 3;
+      if (!operand_shape.IsArray() || !update_shape.IsArray() ||
+          !output_shape.IsArray() || rank == 0 || k_starts != rank ||
+          update_shape.dimensions().size() != rank ||
+          operand_shape.dimensions() != output_shape.dimensions()) {
+        return absl::UnimplementedError(
+            "DynamicUpdateSlice currently supports array operands and updates "
+            "with the same non-zero rank");
+      }
+
+      // Make sure pending producers of the start indices have completed
+      // before reading them back to the host.
+      ret = dep::aclrtSynchronizeStream(acl_stream);
+      if (ret != ACL_SUCCESS) {
+        return absl::InternalError(
+            absl::StrFormat("aclrtSynchronizeStream failed. Error code: %d",
+                            ret));
+      }
+
+      auto strides_of = [](const Shape& shape) {
+        const int r = shape.dimensions().size();
+        std::vector<int64_t> strides(r, 1);
+        int64_t stride = 1;
+        if (shape.has_layout()) {
+          for (int i = 0; i < r; ++i) {
+            const int d = shape.layout().minor_to_major(i);
+            strides[d] = stride;
+            stride *= shape.dimensions(d);
+          }
+        } else {
+          for (int d = r - 1; d >= 0; --d) {
+            strides[d] = stride;
+            stride *= shape.dimensions(d);
+          }
+        }
+        return strides;
+      };
+      const auto operand_strides = strides_of(operand_shape);
+      const auto update_strides = strides_of(update_shape);
+      const int64_t elem_bytes =
+          ShapeUtil::ByteSizeOfPrimitiveType(operand_shape.element_type());
+
+      std::vector<int64_t> starts(rank, 0);
+      for (int d = 0; d < rank; ++d) {
+        const int arg_index = 2 + d;
+        const Shape& start_shape = param_shapes[arg_index];
+        auto start_addr = allocations->GetDeviceAddress(args_[arg_index]);
+        const size_t bytes =
+            ShapeUtil::ByteSizeOfPrimitiveType(start_shape.element_type());
+        if (bytes > sizeof(int64_t)) {
+          return absl::UnimplementedError(
+              "DynamicUpdateSlice start index wider than 64 bits");
+        }
+        int64_t raw = 0;
+        ret = dep::aclrtMemcpy(&raw, sizeof(raw), start_addr.opaque(), bytes,
+                               ACL_MEMCPY_DEVICE_TO_HOST);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "Failed to read DynamicUpdateSlice start index. Error code: %d",
+              ret));
+        }
+        int64_t value = 0;
+        switch (start_shape.element_type()) {
+          case PrimitiveType::U8:
+            value = static_cast<uint8_t>(raw);
+            break;
+          case PrimitiveType::S8:
+            value = static_cast<int8_t>(raw);
+            break;
+          case PrimitiveType::U16:
+            value = static_cast<uint16_t>(raw);
+            break;
+          case PrimitiveType::S16:
+            value = static_cast<int16_t>(raw);
+            break;
+          case PrimitiveType::U32:
+            value = static_cast<uint32_t>(raw);
+            break;
+          case PrimitiveType::S32:
+            value = static_cast<int32_t>(raw);
+            break;
+          case PrimitiveType::U64:
+            value = static_cast<int64_t>(static_cast<uint64_t>(raw));
+            break;
+          case PrimitiveType::S64:
+            value = raw;
+            break;
+          default:
+            return absl::UnimplementedError(
+                "DynamicUpdateSlice start index must be an integer");
+        }
+        int64_t max_start =
+            operand_shape.dimensions(d) - update_shape.dimensions(d);
+        if (max_start < 0) max_start = 0;
+        if (value < 0) value = 0;
+        if (value > max_start) value = max_start;
+        starts[d] = value;
+      }
+
+
+      void* operand_addr = allocations->GetDeviceAddress(args_[0]).opaque();
+      void* update_addr = allocations->GetDeviceAddress(args_[1]).opaque();
+      void* output_addr = allocations->GetDeviceAddress(args_.back()).opaque();
+      const int64_t total_bytes =
+          NpuTool::GetXlaShapeSize(operand_shape) * elem_bytes;
+      if (output_addr != operand_addr) {
+        ret = dep::aclrtMemcpy(output_addr, total_bytes, operand_addr,
+                               total_bytes, ACL_MEMCPY_DEVICE_TO_DEVICE);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "aclrtMemcpy for DynamicUpdateSlice operand copy failed. Error "
+              "code: %d",
+              ret));
+        }
+      }
+
+      // Coalesce the trailing dimensions whose physical strides agree.
+      int split = rank;
+      for (int d = rank - 1; d >= 0; --d) {
+        if (operand_strides[d] == update_strides[d]) {
+          split = d;
+        } else {
+          break;
+        }
+      }
+      int64_t inner_elems = 1;
+      for (int d = rank - 1; d >= split; --d) {
+        if (update_strides[d] != inner_elems) {
+          return absl::UnimplementedError(
+              "DynamicUpdateSlice update is not contiguous in its trailing "
+              "dimensions");
+        }
+        inner_elems *= update_shape.dimensions(d);
+      }
+      int64_t outer_elems = 1;
+      for (int d = 0; d < split; ++d) {
+        outer_elems *= update_shape.dimensions(d);
+      }
+      int64_t inner_dst_base = 0;
+      for (int d = split; d < rank; ++d) {
+        inner_dst_base += starts[d] * operand_strides[d];
+      }
+      const int64_t block_bytes = inner_elems * elem_bytes;
+      for (int64_t outer = 0; outer < outer_elems; ++outer) {
+        int64_t remaining = outer;
+        int64_t dst = inner_dst_base;
+        for (int d = split - 1; d >= 0; --d) {
+          const int64_t idx = remaining % update_shape.dimensions(d);
+          remaining /= update_shape.dimensions(d);
+          dst += (starts[d] + idx) * operand_strides[d];
+        }
+        const int64_t src = outer * inner_elems;
+        ret = dep::aclrtMemcpy(
+            static_cast<char*>(output_addr) + dst * elem_bytes, block_bytes,
+            static_cast<const char*>(update_addr) + src * elem_bytes, block_bytes,
+            ACL_MEMCPY_DEVICE_TO_DEVICE);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "aclrtMemcpy for DynamicUpdateSlice block failed. Error code: %d",
+              ret));
+        }
+      }
+      exec_ret = absl::OkStatus();
       break;
     }
 
@@ -1364,14 +2137,136 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
             expanded_shape_str.c_str());
       }
 
+      // A gather whose slice covers the whole input always clamps its start
+      // offset to zero; it is an identity copy of the input.
+      auto parse_slice_sizes = [&desc]() {
+        std::vector<int64_t> sizes;
+        const size_t key_pos = desc.find("slice_sizes={");
+        if (key_pos == std::string::npos) return sizes;
+        const size_t open = desc.find('{', key_pos);
+        const size_t close = desc.find('}', open);
+        if (open == std::string::npos || close == std::string::npos) return sizes;
+        const std::string body = desc.substr(open + 1, close - open - 1);
+        size_t pos = 0;
+        while (pos < body.size()) {
+          const size_t comma = body.find(',', pos);
+          const std::string part =
+              body.substr(pos, comma == std::string::npos ? std::string::npos
+                                                          : comma - pos);
+          try {
+            sizes.push_back(std::stoll(part));
+          } catch (...) {
+          }
+          if (comma == std::string::npos) break;
+          pos = comma + 1;
+        }
+        return sizes;
+      };
+      const std::vector<int64_t> slice_sizes = parse_slice_sizes();
+      bool full_slice = !slice_sizes.empty() &&
+                        slice_sizes.size() == input_shape.dimensions().size();
+      if (full_slice) {
+        for (size_t i = 0; i < slice_sizes.size(); ++i) {
+          if (slice_sizes[i] != input_shape.dimensions(i)) {
+            full_slice = false;
+            break;
+          }
+        }
+      }
+      if (full_slice &&
+          NpuTool::GetXlaShapeSize(input_shape) ==
+              NpuTool::GetXlaShapeSize(output_shape)) {
+        void* input_addr = allocations->GetDeviceAddress(args_[0]).opaque();
+        void* output_addr = allocations->GetDeviceAddress(args_.back()).opaque();
+        const size_t bytes =
+            NpuTool::GetXlaShapeSize(input_shape) *
+            ShapeUtil::ByteSizeOfPrimitiveType(input_shape.element_type());
+        ret = dep::aclrtMemcpy(output_addr, bytes, input_addr, bytes,
+                               ACL_MEMCPY_DEVICE_TO_DEVICE);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "Failed to copy full-slice gather. Error code: %d", ret));
+        }
+        exec_ret = absl::OkStatus();
+        if (need_cleanup && expanded_output_tensor) {
+          dep::aclDestroyTensor(expanded_output_tensor);
+        }
+        break;
+      }
+
+      // ACLNN GatherV2 accepts integer index tensors but not unsigned 32-bit
+      // indices, which is what XLA frontends commonly emit for token ids.
+      aclTensor* index_tensor = acl_tensor_ptr_vector[1];
+      void* cast_index_buf = nullptr;
+      aclTensor* cast_index_tensor = nullptr;
+      if (index_shape.element_type() == PrimitiveType::U32) {
+        std::vector<int64_t> index_dims(index_shape.dimensions().begin(),
+                                        index_shape.dimensions().end());
+        std::vector<int64_t> index_strides(index_dims.size(), 1);
+        int64_t stride = 1;
+        for (int i = static_cast<int>(index_dims.size()) - 1; i >= 0; --i) {
+          index_strides[i] = stride;
+          stride *= index_dims[i];
+        }
+        const int64_t index_count = NpuTool::GetXlaShapeSize(index_shape);
+        const size_t cast_bytes = index_count * sizeof(int32_t);
+        ret = dep::aclrtMalloc(&cast_index_buf, cast_bytes,
+                               ACL_MEM_MALLOC_HUGE_FIRST);
+        if (ret != ACL_SUCCESS) {
+          if (need_cleanup && expanded_output_tensor) {
+            dep::aclDestroyTensor(expanded_output_tensor);
+          }
+          return absl::InternalError(
+              absl::StrFormat("Failed to allocate gather index cast buffer. "
+                              "Error code: %d",
+                              ret));
+        }
+        cast_index_tensor = dep::aclCreateTensor(
+            index_dims.data(), index_dims.size(), ACL_INT32,
+            index_strides.data(), 0, aclFormat::ACL_FORMAT_ND,
+            index_dims.data(), index_dims.size(), cast_index_buf);
+        if (cast_index_tensor == nullptr) {
+          dep::aclrtFree(cast_index_buf);
+          if (need_cleanup && expanded_output_tensor) {
+            dep::aclDestroyTensor(expanded_output_tensor);
+          }
+          return absl::InternalError(
+              "Failed to create gather index cast tensor");
+        }
+        uint64_t cast_workspace_size = 0;
+        aclOpExecutor* cast_executor = nullptr;
+        ret = dep::aclnnCastGetWorkspaceSize(
+            acl_tensor_ptr_vector[1], ACL_INT32, cast_index_tensor,
+            &cast_workspace_size, &cast_executor);
+        if (ret == ACL_SUCCESS) {
+          exec_ret = ExecuteAclnn(acl_stream, cast_workspace_size, cast_executor,
+                                  dep::aclnnCast);
+        }
+        if (ret != ACL_SUCCESS || !exec_ret.ok()) {
+          dep::aclDestroyTensor(cast_index_tensor);
+          dep::aclrtFree(cast_index_buf);
+          if (need_cleanup && expanded_output_tensor) {
+            dep::aclDestroyTensor(expanded_output_tensor);
+          }
+          return absl::InternalError(absl::StrFormat(
+              "Failed to cast gather index from U32. Error code: %d", ret));
+        }
+        index_tensor = cast_index_tensor;
+      }
+
       // 使用 GatherV2
       ret = dep::aclnnGatherV2GetWorkspaceSize(
-          acl_tensor_ptr_vector[0], dim, acl_tensor_ptr_vector[1],
-          output_tensor, &workspaceSize, &executor);
+          acl_tensor_ptr_vector[0], dim, index_tensor, output_tensor,
+          &workspaceSize, &executor);
       if (ret != ACL_SUCCESS) {
         const std::string err_msg = absl::StrFormat(
             "Call aclnnGatherV2GetWorkspaceSize failed. Error code: %d", ret);
         NPU_LOG_PRINT(ERROR, err_msg);
+        if (cast_index_tensor != nullptr) {
+          dep::aclrtSynchronizeStream(acl_stream);
+          dep::aclDestroyTensor(cast_index_tensor);
+          dep::aclrtFree(cast_index_buf);
+        }
         if (need_cleanup && expanded_output_tensor) {
           dep::aclDestroyTensor(expanded_output_tensor);
         }
@@ -1382,6 +2277,11 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
           ExecuteAclnn(acl_stream, workspaceSize, executor, dep::aclnnGatherV2);
 
       // 清理创建的tensor
+      if (cast_index_tensor != nullptr) {
+        dep::aclrtSynchronizeStream(acl_stream);
+        dep::aclDestroyTensor(cast_index_tensor);
+        dep::aclrtFree(cast_index_buf);
+      }
       if (need_cleanup && expanded_output_tensor) {
         dep::aclDestroyTensor(expanded_output_tensor);
       }
@@ -1519,6 +2419,40 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
       break;
     }
 
+    case HloOpcode::kOr: {
+      if (acl_tensor_ptr_vector.size() < 3) {
+        return absl::InternalError(
+            "Or operation expects 3 parameters (input1, input2, output)");
+      }
+      const bool is_bool =
+          param_shapes[0].element_type() == PrimitiveType::PRED;
+      if (is_bool) {
+        ret = dep::aclnnLogicalOrGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "Call aclnnLogicalOrGetWorkspaceSize failed. Error code: %d",
+              ret));
+        }
+        exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                                dep::aclnnLogicalOr);
+      } else {
+        ret = dep::aclnnBitwiseOrTensorGetWorkspaceSize(
+            acl_tensor_ptr_vector[0], acl_tensor_ptr_vector[1],
+            acl_tensor_ptr_vector.back(), &workspaceSize, &executor);
+        if (ret != ACL_SUCCESS) {
+          return absl::InternalError(absl::StrFormat(
+              "Call aclnnBitwiseOrTensorGetWorkspaceSize failed. Error code: "
+              "%d",
+              ret));
+        }
+        exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                                dep::aclnnBitwiseOrTensor);
+      }
+      break;
+    }
+
     case HloOpcode::kAnd: {
       // And (BitwiseAnd/LogicalAnd) 操作：输入 1 + 输入 2 + 输出 = 3 个参数
       // 支持 BOOL 类型的逻辑与和整数类型的按位与
@@ -1547,6 +2481,34 @@ absl::Status NpuAclnnThunk::ExecuteOnStream(const ExecuteParams& params) {
 
       exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
                               dep::aclnnBitwiseAndTensor);
+      break;
+    }
+
+    case HloOpcode::kConvert: {
+      if (acl_tensor_ptr_vector.size() < 2) {
+        const std::string err_msg = absl::StrFormat(
+            "Convert operation expects 2 parameters (input, output), but got "
+            "%d",
+            acl_tensor_ptr_vector.size());
+        NPU_LOG_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      aclDataType output_dtype = NpuTool::ConvertXlaType2AclDataType(
+          param_shapes.back().element_type());
+      ret = dep::aclnnCastGetWorkspaceSize(acl_tensor_ptr_vector[0],
+                                           output_dtype,
+                                           acl_tensor_ptr_vector.back(),
+                                           &workspaceSize, &executor);
+      if (ret != ACL_SUCCESS) {
+        const std::string err_msg = absl::StrFormat(
+            "Call aclnnCastGetWorkspaceSize failed. Error code: %d", ret);
+        NPU_LOG_PRINT(ERROR, err_msg);
+        return absl::InternalError(err_msg);
+      }
+
+      exec_ret = ExecuteAclnn(acl_stream, workspaceSize, executor,
+                              dep::aclnnCast);
       break;
     }
 
